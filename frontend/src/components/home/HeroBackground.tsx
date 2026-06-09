@@ -5,98 +5,19 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withRepeat,
-  withSequence,
   withTiming,
   Easing,
   interpolate,
-  Extrapolation,
-  type SharedValue,
 } from 'react-native-reanimated';
 import theme from '@/styles/theme';
 
 const { colors } = theme;
-const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
+const { height: SCREEN_H } = Dimensions.get('window');
 
 const DOT_ROWS = 7;
 const DOT_COLS = 14;
 const DOT_SIZE = 2;
 const DOT_GAP = 22;
-
-interface HeroBackgroundProps {
-  scrollY?: SharedValue<number>;
-}
-
-const FloatingOrb = ({
-  size,
-  color,
-  top,
-  left,
-  delay = 0,
-  scrollY,
-}: {
-  size: number;
-  color: string;
-  top: number;
-  left: number;
-  delay?: number;
-  scrollY?: SharedValue<number>;
-}) => {
-  const drift = useSharedValue(0);
-  const pulse = useSharedValue(0);
-
-  
-  
-  useEffect(() => {
-    drift.value = withRepeat(
-      withSequence(
-        withTiming(1, { duration: 4200 + delay, easing: Easing.inOut(Easing.sin) }),
-        withTiming(0, { duration: 4200 + delay, easing: Easing.inOut(Easing.sin) }),
-      ),
-      -1,
-      false,
-    );
-    pulse.value = withRepeat(
-      withSequence(
-        withTiming(1, { duration: 3000 + delay, easing: Easing.inOut(Easing.quad) }),
-        withTiming(0, { duration: 3000 + delay, easing: Easing.inOut(Easing.quad) }),
-      ),
-      -1,
-      false,
-    );
-  }, [delay, drift, pulse]);
-
-  const animatedStyle = useAnimatedStyle(() => {
-    const parallax = scrollY
-      ? interpolate(scrollY.value, [0, 200], [0, -30], Extrapolation.CLAMP)
-      : 0;
-
-    return {
-      transform: [
-        { translateY: interpolate(drift.value, [0, 1], [0, -18]) + parallax },
-        { translateX: interpolate(drift.value, [0, 1], [0, 12]) },
-        { scale: interpolate(pulse.value, [0, 1], [1, 1.12]) },
-      ],
-      opacity: interpolate(pulse.value, [0, 1], [0.35, 0.55]),
-    };
-  });
-
-  return (
-    <Animated.View
-      style={[
-        styles.orb,
-        {
-          width: size,
-          height: size,
-          borderRadius: size / 2,
-          backgroundColor: color,
-          top,
-          left,
-        },
-        animatedStyle,
-      ]}
-    />
-  );
-};
 
 const DotGrid = () => (
   <View style={styles.dotGrid} pointerEvents="none">
@@ -133,7 +54,7 @@ const CrossPattern = () => (
   </View>
 );
 
-const HeroBackground: React.FC<HeroBackgroundProps> = ({ scrollY }) => {
+const HeroBackground: React.FC = () => {
   const shimmer = useSharedValue(0);
 
   useEffect(() => {
@@ -149,7 +70,7 @@ const HeroBackground: React.FC<HeroBackgroundProps> = ({ scrollY }) => {
   }));
 
   return (
-    <View style={StyleSheet.absoluteFill}>
+    <View style={StyleSheet.absoluteFill} pointerEvents="none">
       <LinearGradient
         colors={['#061428', '#0C2D5E', colors.primaryDark, colors.primary]}
         locations={[0, 0.35, 0.72, 1]}
@@ -177,11 +98,6 @@ const HeroBackground: React.FC<HeroBackgroundProps> = ({ scrollY }) => {
       <DotGrid />
       <CrossPattern />
 
-      <FloatingOrb size={180} color="rgba(45,212,191,0.25)" top={-40} left={-50} delay={0} scrollY={scrollY} />
-      <FloatingOrb size={140} color="rgba(74,156,245,0.3)" top={60} left={SCREEN_W - 100} delay={400} scrollY={scrollY} />
-      <FloatingOrb size={100} color="rgba(245,185,66,0.18)" top={180} left={SCREEN_W * 0.3} delay={800} scrollY={scrollY} />
-      <FloatingOrb size={220} color="rgba(26,115,232,0.15)" top={SCREEN_H * 0.05} left={SCREEN_W * 0.5} delay={200} scrollY={scrollY} />
-
       {/* Diagonal accent lines */}
       <View style={styles.diagonalLines} pointerEvents="none">
         {Array.from({ length: 6 }).map((_, i) => (
@@ -206,9 +122,6 @@ const HeroBackground: React.FC<HeroBackgroundProps> = ({ scrollY }) => {
 };
 
 const styles = StyleSheet.create({
-  orb: {
-    position: 'absolute',
-  },
   dotGrid: {
     position: 'absolute',
     top: 24,

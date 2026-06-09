@@ -92,12 +92,12 @@ const HomeScreen = () => {
           showsVerticalScrollIndicator={false}
           onScroll={scrollHandler}
           scrollEventThrottle={16}
-          bounces={false}
+          removeClippedSubviews
+          bounces={Platform.OS === 'ios'}
         >
           <HomeHeader
             searchQuery={searchQuery}
             onSearchChange={handleSearchChange}
-            scrollY={scrollY}
           />
 
           <View style={styles.contentSection}>

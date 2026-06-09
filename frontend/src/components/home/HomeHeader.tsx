@@ -9,17 +9,10 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, {
-  FadeInDown,
-  useAnimatedStyle,
-  interpolate,
-  Extrapolation,
-  type SharedValue,
-} from 'react-native-reanimated';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import SearchBar from './SearchBar';
 import HeroBackground from './HeroBackground';
 import theme from '@/styles/theme';
-import device from '@/styles/device';
 
 const { colors, spacing, typography, borderRadius, shadows, moderateScale } = theme;
 
@@ -30,22 +23,19 @@ const STATUS_BAR_HEIGHT = Platform.OS === 'android'
 const UPLOAD_ACTIONS = [
   {
     id: 'prescription',
-    icon: 'document-text' as const,
+    icon: 'document-text-outline' as const,
     title: 'Upload Prescription',
-    subtitle: 'Snap or upload Rx',
   },
   {
     id: 'tablet',
-    icon: 'camera' as const,
-    title: 'Upload Tablet Pic',
-    subtitle: 'Identify medicine',
+    icon: 'camera-outline' as const,
+    title: 'Upload Tablet Photo',
   },
 ];
 
 interface HomeHeaderProps {
   searchQuery: string;
   onSearchChange: (text: string) => void;
-  scrollY?: SharedValue<number>;
 }
 
 const getGreeting = (): string => {
@@ -58,59 +48,16 @@ const getGreeting = (): string => {
 const HomeHeader: React.FC<HomeHeaderProps> = ({
   searchQuery,
   onSearchChange,
-  scrollY: externalScrollY,
 }) => {
   const insets = useSafeAreaInsets();
   const topInset = Platform.OS === 'ios' ? insets.top : STATUS_BAR_HEIGHT;
   const greeting = useMemo(() => getGreeting(), []);
 
-  const headerParallax = useAnimatedStyle(() => ({
-    transform: externalScrollY
-      ? [
-          {
-            translateY: interpolate(
-              externalScrollY.value,
-              [0, 120],
-              [0, -24],
-              Extrapolation.CLAMP,
-            ),
-          },
-        ]
-      : [],
-  }));
-
-  const searchLift = useAnimatedStyle(() => ({
-    transform: externalScrollY
-      ? [
-          {
-            translateY: interpolate(
-              externalScrollY.value,
-              [0, 100],
-              [0, -8],
-              Extrapolation.CLAMP,
-            ),
-          },
-          {
-            scale: interpolate(
-              externalScrollY.value,
-              [0, 100],
-              [1, 0.98],
-              Extrapolation.CLAMP,
-            ),
-          },
-        ]
-      : [],
-    opacity: externalScrollY
-      ? interpolate(externalScrollY.value, [0, 80], [1, 0.92], Extrapolation.CLAMP)
-      : 1,
-  }));
-
   return (
     <View style={styles.heroWrapper}>
-      <HeroBackground scrollY={externalScrollY} />
+      <HeroBackground />
 
-      <Animated.View style={headerParallax}>
-        <View style={[styles.heroContent, { paddingTop: topInset + spacing.md }]}>
+      <View style={[styles.heroContent, { paddingTop: topInset + spacing.md }]}>
         <Animated.View entering={FadeInDown.delay(80).duration(500).springify()}>
           <View style={styles.topRow}>
             <View style={styles.greetingBlock}>
@@ -137,10 +84,9 @@ const HomeHeader: React.FC<HomeHeaderProps> = ({
         >
           <TouchableOpacity style={styles.locationBar} activeOpacity={0.85}>
             <View style={styles.locationIconWrap}>
-              <Ionicons name="location" size={moderateScale(16)} color={colors.accentGold} />
+              <Ionicons name="location" size={moderateScale(14)} color={colors.accentGold} />
             </View>
             <View style={styles.locationText}>
-              <Text style={styles.deliverLabel}>Deliver to</Text>
               <Text style={styles.addressText} numberOfLines={1}>
                 Hyderabad, 500032
               </Text>
@@ -154,7 +100,7 @@ const HomeHeader: React.FC<HomeHeaderProps> = ({
         </Animated.View>
 
         <Animated.View entering={FadeInDown.delay(240).duration(500).springify()}>
-          <Animated.View style={[styles.searchShell, searchLift]}>
+          <View style={styles.searchShell}>
             <View style={styles.searchGlow} />
             <SearchBar
               value={searchQuery}
@@ -162,41 +108,39 @@ const HomeHeader: React.FC<HomeHeaderProps> = ({
               insideHeader
               elevated
             />
-          </Animated.View>
+          </View>
         </Animated.View>
 
         <Animated.View
           entering={FadeInDown.delay(320).duration(500).springify()}
-          style={[styles.uploadRow, device.isSmallDevice && styles.uploadRowStacked]}
+          style={styles.uploadPanelWrap}
         >
-          {UPLOAD_ACTIONS.map((action) => (
-            <TouchableOpacity
-              key={action.id}
-              style={styles.uploadCard}
-              activeOpacity={0.85}
-            >
-              <View style={styles.uploadIconBox}>
-                <Ionicons name={action.icon} size={moderateScale(18)} color={colors.white} />
-              </View>
-              <View style={styles.uploadTextWrap}>
-                <Text style={styles.uploadTitle} numberOfLines={2}>
-                  {action.title}
-                </Text>
-                <Text style={styles.uploadSubtitle} numberOfLines={1}>
-                  {action.subtitle}
-                </Text>
-              </View>
-              <Ionicons
-                name="chevron-forward"
-                size={moderateScale(16)}
-                color="rgba(255,255,255,0.45)"
-                style={styles.uploadChevron}
-              />
-            </TouchableOpacity>
-          ))}
+          <View style={styles.uploadPanel}>
+            {UPLOAD_ACTIONS.map((action, index) => (
+              <React.Fragment key={action.id}>
+                {index > 0 && <View style={styles.uploadDivider} />}
+                <TouchableOpacity style={styles.uploadRow} activeOpacity={0.85}>
+                  <View style={styles.uploadIconWrap}>
+                    <Ionicons
+                      name={action.icon}
+                      size={moderateScale(18)}
+                      color={colors.white}
+                    />
+                  </View>
+                  <Text style={styles.uploadLabel} numberOfLines={1}>
+                    {action.title}
+                  </Text>
+                  <Ionicons
+                    name="chevron-forward"
+                    size={moderateScale(16)}
+                    color="rgba(255,255,255,0.45)"
+                  />
+                </TouchableOpacity>
+              </React.Fragment>
+            ))}
+          </View>
         </Animated.View>
-        </View>
-      </Animated.View>
+      </View>
 
       <View style={styles.waveFill} pointerEvents="none" />
     </View>
@@ -207,7 +151,7 @@ const styles = StyleSheet.create({
   heroWrapper: {
     overflow: 'hidden',
     marginBottom: -spacing.md,
-    paddingBottom: spacing.xxl,
+    paddingBottom: spacing.xxl + spacing.md,
   },
   heroContent: {
     paddingHorizontal: spacing.xl,
@@ -287,15 +231,15 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.lg,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.2)',
-    paddingVertical: spacing.md,
+    paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
     gap: spacing.sm,
   },
   locationIconWrap: {
-    width: moderateScale(32),
-    height: moderateScale(32),
-    borderRadius: moderateScale(16),
-    backgroundColor: 'rgba(245,185,66,0.2)',
+    width: moderateScale(28),
+    height: moderateScale(28),
+    borderRadius: moderateScale(14),
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
@@ -303,15 +247,10 @@ const styles = StyleSheet.create({
   locationText: {
     flex: 1,
     minWidth: 0,
-  },
-  deliverLabel: {
-    fontSize: moderateScale(10),
-    fontWeight: '600',
-    color: 'rgba(255,255,255,0.55)',
-    letterSpacing: 0.2,
+    justifyContent: 'center',
   },
   addressText: {
-    fontSize: moderateScale(14),
+    fontSize: moderateScale(13),
     fontWeight: '700',
     color: colors.white,
   },
@@ -330,54 +269,43 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(26,115,232,0.35)',
     opacity: 0.5,
   },
-  uploadRow: {
-    flexDirection: 'row',
+  uploadPanelWrap: {
     width: '100%',
-    gap: spacing.sm,
+    marginBottom: spacing.lg,
   },
-  uploadRowStacked: {
-    flexDirection: 'column',
-  },
-  uploadCard: {
-    flex: 1,
-    minWidth: 0,
-    flexDirection: 'row',
-    alignItems: 'center',
+  uploadPanel: {
     backgroundColor: 'rgba(255,255,255,0.1)',
     borderRadius: borderRadius.lg,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.15)',
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.sm,
+    borderColor: 'rgba(255,255,255,0.2)',
+    overflow: 'hidden',
+  },
+  uploadRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: spacing.sm + 2,
+    paddingHorizontal: spacing.md,
     gap: spacing.sm,
   },
-  uploadIconBox: {
-    width: moderateScale(34),
-    height: moderateScale(34),
+  uploadDivider: {
+    height: 1,
+    marginHorizontal: spacing.md,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+  },
+  uploadIconWrap: {
+    width: moderateScale(32),
+    height: moderateScale(32),
     borderRadius: moderateScale(10),
-    backgroundColor: 'rgba(255,255,255,0.18)',
+    backgroundColor: 'rgba(255,255,255,0.15)',
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
   },
-  uploadTextWrap: {
+  uploadLabel: {
     flex: 1,
-    minWidth: 0,
-  },
-  uploadTitle: {
-    fontSize: moderateScale(12),
-    fontWeight: '700',
+    fontSize: moderateScale(13),
+    fontWeight: '600',
     color: colors.white,
-    lineHeight: moderateScale(16),
-  },
-  uploadSubtitle: {
-    fontSize: moderateScale(10),
-    fontWeight: '500',
-    color: 'rgba(255,255,255,0.55)',
-    marginTop: 2,
-  },
-  uploadChevron: {
-    flexShrink: 0,
   },
   waveFill: {
     position: 'absolute',
