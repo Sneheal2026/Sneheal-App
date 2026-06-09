@@ -101,11 +101,12 @@ const HomeScreen = () => {
           />
 
           <View style={styles.contentSection}>
-            <PromoBanner />
+          <CategoriesGrid />
             <CategoryCards />
-            <OrderVia />
-            <FullWidthBanner />
-            <CategoriesGrid />
+            {/* <OrderVia /> */}
+            <PromoBanner />
+            {/* <FullWidthBanner /> */}
+           
           </View>
 
           <Image
@@ -124,7 +125,7 @@ const styles = StyleSheet.create({
     paddingBottom: 0,
   },
   contentSection: {
-    paddingTop: spacing.sm,
+    paddingTop: spacing.md,
   },
   pillImage: {
     width: SCREEN_WIDTH,

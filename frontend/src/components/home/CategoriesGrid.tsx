@@ -1,86 +1,99 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Image } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Dimensions,
+  Image,
+} from 'react-native';
 import theme from '@/styles/theme';
 
-const { colors, spacing, typography, borderRadius } = theme;
+const { colors, spacing, typography, borderRadius, shadows, moderateScale } = theme;
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const ITEM_WIDTH = (SCREEN_WIDTH - spacing.xl * 2 - spacing.md * 2) / 3;
+
+const H_MARGIN = spacing.xl;
+const INNER_PADDING = spacing.sm;
+const GRID_GAP = spacing.sm;
+const NUM_COLUMNS = 4;
+const GRID_WIDTH =
+  SCREEN_WIDTH - H_MARGIN * 2 - INNER_PADDING * 2;
+const CARD_WIDTH =
+  (GRID_WIDTH - GRID_GAP * (NUM_COLUMNS - 1)) / NUM_COLUMNS;
+const CARD_HEIGHT = moderateScale(88);
+const ICON_SIZE = moderateScale(36);
 
 interface CategoryItem {
   id: string;
   name: string;
   imageUri: string;
-  bgGradient: [string, string];
 }
 
 const CATEGORIES: CategoryItem[] = [
   {
     id: '1',
-    name: 'Vitamins',
-    imageUri: 'https://cdn-icons-png.flaticon.com/512/2920/2920306.png',
-    bgGradient: ['#E3F2FD', '#BBDEFB'],
+    name: 'Pain Relief',
+    imageUri: 'https://cdn-icons-png.flaticon.com/512/2966/2966333.png',
   },
   {
     id: '2',
-    name: 'Pain Relief',
-    imageUri: 'https://cdn-icons-png.flaticon.com/512/2964/2964514.png',
-    bgGradient: ['#FFF3E0', '#FFE0B2'],
+    name: 'Vitamins',
+    imageUri: 'https://cdn-icons-png.flaticon.com/512/2920/2920306.png',
   },
   {
     id: '3',
-    name: 'Diabetes',
-    imageUri: 'https://cdn-icons-png.flaticon.com/512/3174/3174780.png',
-    bgGradient: ['#E8F5E9', '#C8E6C9'],
+    name: 'First Aid',
+    imageUri: 'https://cdn-icons-png.flaticon.com/512/2913/2913133.png',
   },
   {
     id: '4',
-    name: 'Heart Care',
-    imageUri: 'https://cdn-icons-png.flaticon.com/512/2920/2920306.png',
-    bgGradient: ['#FCE4EC', '#F8BBD0'],
+    name: 'Cold & Flu',
+    imageUri: 'https://cdn-icons-png.flaticon.com/512/2966/2966326.png',
   },
   {
     id: '5',
-    name: 'Skin Care',
-    imageUri: 'https://cdn-icons-png.flaticon.com/512/2964/2964514.png',
-    bgGradient: ['#F3E5F5', '#E1BEE7'],
+    name: 'Skincare',
+    imageUri: 'https://cdn-icons-png.flaticon.com/512/2913/2913310.png',
   },
   {
     id: '6',
     name: 'Baby Care',
-    imageUri: 'https://cdn-icons-png.flaticon.com/512/3174/3174780.png',
-    bgGradient: ['#E0F7FA', '#B2EBF2'],
+    imageUri: 'https://cdn-icons-png.flaticon.com/512/2910/2910653.png',
+  },
+  {
+    id: '7',
+    name: 'Personal Care',
+    imageUri: 'https://cdn-icons-png.flaticon.com/512/2910/2910788.png',
+  },
+  {
+    id: '8',
+    name: 'More',
+    imageUri: 'https://cdn-icons-png.flaticon.com/512/1828/1828765.png',
   },
 ];
 
 const CategoriesGrid = () => {
   return (
-    <View style={styles.container}>
-      {/* Section Header */}
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Shop by Category</Text>
-        <TouchableOpacity>
-          <Text style={styles.seeAllText}>View All</Text>
-        </TouchableOpacity>
-      </View>
+    <View style={styles.section}>
+      <Text style={styles.sectionTitle}>Categories</Text>
 
-      {/* Grid */}
       <View style={styles.grid}>
         {CATEGORIES.map((item) => (
           <TouchableOpacity
             key={item.id}
-            style={[styles.gridItem, { width: ITEM_WIDTH }]}
-            activeOpacity={0.75}
+            style={styles.gridItem}
+            activeOpacity={0.72}
           >
-            <LinearGradient
-              colors={item.bgGradient}
-              style={styles.imageWrapper}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-            >
-              <Image source={{ uri: item.imageUri }} style={styles.gridImage} resizeMode="contain" />
-            </LinearGradient>
-            <Text style={styles.itemName} numberOfLines={1}>{item.name}</Text>
+            <View style={styles.card}>
+              <Image
+                source={{ uri: item.imageUri }}
+                style={styles.icon}
+                resizeMode="contain"
+              />
+              <Text style={styles.itemName} numberOfLines={2}>
+                {item.name}
+              </Text>
+            </View>
           </TouchableOpacity>
         ))}
       </View>
@@ -89,55 +102,57 @@ const CategoriesGrid = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
+  section: {
+    marginHorizontal: H_MARGIN,
     marginBottom: spacing.xl,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.xl,
-    marginBottom: spacing.lg,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.lg,
+    paddingHorizontal: INNER_PADDING,
+    backgroundColor: '#FEF8F4',
+    borderRadius: borderRadius.xl,
   },
   sectionTitle: {
     ...typography.h4,
-    fontSize: 17,
+    fontSize: moderateScale(18),
+    fontWeight: '700',
     color: colors.textPrimary,
-  },
-  seeAllText: {
-    ...typography.bodySmall,
-    color: colors.accentTeal,
-    fontWeight: 'bold',
+    letterSpacing: -0.3,
+    marginBottom: spacing.lg,
+    paddingHorizontal: spacing.xs,
   },
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    paddingHorizontal: spacing.xl,
-    gap: spacing.md,
-    justifyContent: 'flex-start',
+    gap: GRID_GAP,
   },
   gridItem: {
-    alignItems: 'center',
-    marginBottom: spacing.sm,
+    width: CARD_WIDTH,
   },
-  imageWrapper: {
-    width: ITEM_WIDTH,
-    height: ITEM_WIDTH * 0.85,
+  card: {
+    width: CARD_WIDTH,
+    height: CARD_HEIGHT,
+    backgroundColor: colors.white,
     borderRadius: borderRadius.lg,
     alignItems: 'center',
     justifyContent: 'center',
-    overflow: 'hidden',
+    paddingHorizontal: spacing.xs,
+    paddingVertical: spacing.sm,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 0, 0, 0.04)',
+    ...shadows.sm,
   },
-  gridImage: {
-    width: ITEM_WIDTH * 0.52,
-    height: ITEM_WIDTH * 0.52,
+  icon: {
+    width: ICON_SIZE,
+    height: ICON_SIZE,
+    marginBottom: spacing.xs,
   },
   itemName: {
     ...typography.caption,
-    fontWeight: 'bold',
+    fontSize: moderateScale(10.5),
+    fontWeight: '600',
     color: colors.textPrimary,
-    marginTop: spacing.sm,
     textAlign: 'center',
+    lineHeight: moderateScale(13),
   },
 });
 
