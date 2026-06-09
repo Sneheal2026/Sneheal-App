@@ -44,6 +44,8 @@ const FloatingOrb = ({
   const drift = useSharedValue(0);
   const pulse = useSharedValue(0);
 
+  
+  
   useEffect(() => {
     drift.value = withRepeat(
       withSequence(
