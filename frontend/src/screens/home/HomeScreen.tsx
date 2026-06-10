@@ -20,6 +20,7 @@ import {
   SearchBar,
   PromoBanner,
   CategoriesGrid,
+  FeaturedProducts,
 } from '@/components/home';
 import theme from '@/styles/theme';
 import globalStyles from '@/styles/globalStyles';
@@ -130,6 +131,7 @@ const HomeScreen = () => {
           <View style={styles.contentSection}>
             <CategoriesGrid />
             <PromoBanner isScrolling={isScrolling} />
+            <FeaturedProducts />
           </View>
 
           <View style={styles.pillImageWrap}>

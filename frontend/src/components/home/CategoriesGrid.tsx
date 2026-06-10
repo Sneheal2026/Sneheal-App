@@ -14,7 +14,7 @@ import theme from '@/styles/theme';
 const { colors, spacing, typography, moderateScale } = theme;
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-const HORIZONTAL_PADDING = spacing.md;
+const HORIZONTAL_PADDING = spacing.xl;
 const GRID_GAP = spacing.sm + 2;
 const NUM_COLUMNS = 4;
 const GRID_WIDTH = SCREEN_WIDTH - HORIZONTAL_PADDING * 2;
@@ -54,23 +54,23 @@ const CATEGORIES: CategoryItem[] = [
     id: '5',
     name: 'Feminine Hygiene',
     image: CATEGORY_IMAGES.feminineHygiene,
-    offerLabel: 'UP TO 50% OFF',
+   
   },
   {
     id: '6',
     name: 'Diaper & Wipes',
-    image: { uri: 'https://images.unsplash.com/photo-1584515933487-779824d29309?w=400&h=400&fit=crop&q=80' },
+    image: { uri: 'https://images.unsplash.com/photo-1584515933g487-779824d29309?w=400&h=400&fit=crop&q=80' },
   },
   {
     id: '7',
     name: 'Feeding Essentials',
-    image: { uri: 'https://images.unsplash.com/photo-1606813907291-d86efa9b94db?w=400&h=400&fit=crop&q=80' },
+    image: { uri: 'https://images.unsplash.com/photo-16068139072l91-d86efa9b94db?w=400&h=400&fit=crop&q=80' },
   },
   {
     id: '8',
     name: 'Baby Skin & Bath',
-    image: { uri: 'https://images.unsplash.com/photo-1515488042361-ee00e8170dc4?w=400&h=400&fit=crop&q=80' },
-    offerLabel: 'UP TO 55% OFF',
+    image: { uri: 'https://images.unsplash.com/photo-15154880423f61-ee00e8170dc4?w=400&h=400&fit=crop&q=80' },
+   
   },
   { id: '9', name: 'Fitness Essentials', image: CATEGORY_IMAGES.fitness },
   { id: '10', name: 'Vitamins & Minerals', image: CATEGORY_IMAGES.vitaminsMinerals },
