@@ -7,13 +7,16 @@ import {
   Image,
   Dimensions,
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   useSharedValue,
   useAnimatedScrollHandler,
   useAnimatedStyle,
+  useAnimatedReaction,
   interpolate,
   Extrapolation,
+  runOnJS,
 } from 'react-native-reanimated';
 import {
   HomeHeader,
@@ -33,11 +36,17 @@ const { colors, spacing } = theme;
 const STICKY_THRESHOLD = 140;
 
 const HomeScreen = () => {
+  const navigation = useNavigation();
   const [searchQuery, setSearchQuery] = useState('');
   const [isScrolling, setIsScrolling] = useState(false);
+  const [stickyHeaderActive, setStickyHeaderActive] = useState(false);
   const scrollY = useSharedValue(0);
   const scrollEndTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const insets = useSafeAreaInsets();
+
+  const handleOpenSettings = useCallback(() => {
+    navigation.getParent()?.navigate('Settings' as never);
+  }, [navigation]);
 
   const STATUS_BAR_HEIGHT = Platform.OS === 'android'
     ? StatusBar.currentHeight ?? 24
@@ -49,6 +58,13 @@ const HomeScreen = () => {
       scrollY.value = event.contentOffset.y;
     },
   });
+
+  useAnimatedReaction(
+    () => scrollY.value >= STICKY_THRESHOLD - 30,
+    (active) => {
+      runOnJS(setStickyHeaderActive)(active);
+    },
+  );
 
   const stickyStyle = useAnimatedStyle(() => ({
     opacity: interpolate(
@@ -103,7 +119,7 @@ const HomeScreen = () => {
             { paddingTop: topInset + spacing.sm },
             stickyStyle,
           ]}
-          pointerEvents="box-none"
+          pointerEvents={stickyHeaderActive ? 'box-none' : 'none'}
         >
           <SearchBar value={searchQuery} onChangeText={handleSearchChange} compact />
         </Animated.View>
@@ -126,9 +142,11 @@ const HomeScreen = () => {
             searchQuery={searchQuery}
             onSearchChange={handleSearchChange}
             isScrolling={isScrolling}
+            onAccountPress={handleOpenSettings}
           />
 
           <View style={styles.contentSection}>
+         
             <CategoriesGrid />
             <PromoBanner isScrolling={isScrolling} />
             <FeaturedProducts />

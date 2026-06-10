@@ -37,6 +37,7 @@ interface HomeHeaderProps {
   searchQuery: string;
   onSearchChange: (text: string) => void;
   isScrolling?: boolean;
+  onAccountPress?: () => void;
 }
 
 const getGreeting = (): string => {
@@ -50,6 +51,7 @@ const HomeHeader: React.FC<HomeHeaderProps> = ({
   searchQuery,
   onSearchChange,
   isScrolling = false,
+  onAccountPress,
 }) => {
   const insets = useSafeAreaInsets();
   const topInset = Platform.OS === 'ios' ? insets.top : STATUS_BAR_HEIGHT;
@@ -60,25 +62,33 @@ const HomeHeader: React.FC<HomeHeaderProps> = ({
       <HeroBackground pauseAnimation={isScrolling} />
 
       <View style={[styles.heroContent, { paddingTop: topInset + spacing.md }]}>
-        <Animated.View entering={FadeInDown.delay(80).duration(500).springify()}>
-          <View style={styles.topRow}>
-            <View style={styles.greetingBlock}>
-              <Text style={styles.greeting}>{greeting}</Text>
-              <Text style={styles.userName} numberOfLines={1} adjustsFontSizeToFit>
-                Pranay Chepur
-              </Text>
-            </View>
-            <View style={styles.topActions}>
-              <TouchableOpacity style={styles.glassBtn} activeOpacity={0.8}>
-                <Ionicons name="notifications-outline" size={20} color={colors.white} />
-                <View style={styles.notifDot} />
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.avatarBtn} activeOpacity={0.8}>
-                <Ionicons name="person" size={18} color={colors.primary} />
-              </TouchableOpacity>
-            </View>
+        <View style={styles.topRow}>
+          <Animated.View
+            entering={FadeInDown.delay(80).duration(500).springify()}
+            style={styles.greetingBlock}
+          >
+            <Text style={styles.greeting}>{greeting}</Text>
+            <Text style={styles.userName} numberOfLines={1} adjustsFontSizeToFit>
+              Pranay Chepur
+            </Text>
+          </Animated.View>
+          <View style={styles.topActions}>
+            <TouchableOpacity style={styles.glassBtn} activeOpacity={0.8}>
+              <Ionicons name="notifications-outline" size={20} color={colors.white} />
+              <View style={styles.notifDot} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.avatarBtn}
+              activeOpacity={0.75}
+              onPress={onAccountPress}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              accessibilityLabel="Open account settings"
+              accessibilityRole="button"
+            >
+              <Ionicons name="person" size={18} color={colors.primary} />
+            </TouchableOpacity>
           </View>
-        </Animated.View>
+        </View>
 
         <Animated.View
           entering={FadeInDown.delay(160).duration(500).springify()}
@@ -190,6 +200,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.sm,
     flexShrink: 0,
+    zIndex: 20,
+    elevation: 20,
   },
   glassBtn: {
     width: moderateScale(40),

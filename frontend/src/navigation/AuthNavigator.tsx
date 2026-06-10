@@ -6,6 +6,7 @@ import RegistrationScreen from '@/screens/auth/RegistrationScreen';
 import DeliveryAgentHomeScreen from '@/screens/delivery/DeliveryAgentHomeScreen';
 import DoctorHomeScreen from '@/screens/doctor/DoctorHomeScreen';
 import AppNavigator from './AppNavigator';
+import SettingsScreen from '@/screens/settings/SettingsScreen';
 import type { AuthStackParamList } from './types';
 import theme from '@/styles/theme';
 
@@ -25,6 +26,7 @@ const AuthNavigator = () => {
       <Stack.Screen name="Otp" component={OtpScreen} />
       <Stack.Screen name="Registration" component={RegistrationScreen} />
       <Stack.Screen name="Main" component={AppNavigator} />
+      <Stack.Screen name="Settings" component={SettingsScreen} />
       <Stack.Screen name="DeliveryAgentMain" component={DeliveryAgentHomeScreen} />
       <Stack.Screen name="DoctorMain" component={DoctorHomeScreen} />
     </Stack.Navigator>

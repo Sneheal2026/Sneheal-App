@@ -11,6 +11,7 @@ export type AuthStackParamList = {
   Otp: { phoneNumber: string };
   Registration: { phoneNumber: string };
   Main: undefined;
+  Settings: undefined;
   DeliveryAgentMain: undefined;
   DoctorMain: undefined;
 };

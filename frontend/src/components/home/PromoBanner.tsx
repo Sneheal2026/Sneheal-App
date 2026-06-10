@@ -98,7 +98,7 @@ const LOOP_SLIDES: PromoSlide[] = [...PROMO_SLIDES, PROMO_SLIDES[0]];
 const styles = StyleSheet.create({
   container: {
     paddingHorizontal: spacing.xl,
-    marginTop: -spacing.sm,
+    marginTop: spacing.xl,
     marginBottom: spacing.md,
   },
   carouselViewport: {
