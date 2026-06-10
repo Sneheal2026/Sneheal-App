@@ -1,14 +1,14 @@
-import React, { useRef, useCallback, useMemo } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   Dimensions,
+  FlatList,
   Image,
-  Animated,
-  ImageSourcePropType,
   Platform,
+  ImageSourcePropType,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import theme from '@/styles/theme';
@@ -16,20 +16,19 @@ import theme from '@/styles/theme';
 const { colors, spacing, typography, moderateScale } = theme;
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-// Responsive card sizing - adapts to screen width
-const HORIZONTAL_PADDING = spacing.lg;
-const CARD_GAP = spacing.sm + 4;
-const getResponsiveCardWidth = () => {
-  if (SCREEN_WIDTH < 360) return moderateScale(130); // Small phones
-  if (SCREEN_WIDTH < 400) return moderateScale(140); // Medium phones
-  return moderateScale(152); // Large phones & tablets
-};
-const CARD_WIDTH = getResponsiveCardWidth();
-const CARD_HEIGHT = moderateScale(245);
-const IMAGE_HEIGHT = moderateScale(125);
+const CARD_WIDTH = SCREEN_WIDTH * 0.42;
+const CARD_MARGIN = spacing.md;
 
-const DISCOUNT_GREEN = '#1F9D55';
-const PRICE_COLOR = '#0A74DA';
+const PRODUCT_IMAGES = {
+  vitaminsMinerals: require('../../../assets/images/Vitamins-Minerals.png'),
+  nutritionDrinks: require('../../../assets/images/Nutrition-Drinks.png'),
+  feverCold: require('../../../assets/images/Fever-Cold.png'),
+  painRelief: require('../../../assets/images/Pain-Relief.png'),
+  ayurveda: require('../../../assets/images/Ayurveda.png'),
+  fitness: require('../../../assets/images/Fitness.png'),
+  oralCare: require('../../../assets/images/Oral-Care.png'),
+  hairCare: require('../../../assets/images/Hair-Care.png'),
+} as const;
 
 interface Product {
   id: string;
@@ -37,325 +36,253 @@ interface Product {
   image: ImageSourcePropType;
   price: number;
   originalPrice?: number;
-  discount?: string;
 }
 
-const FEATURED_PRODUCTS: Product[] = [
+const PRODUCTS: Product[] = [
   {
     id: '1',
-    name: 'Dietary Supplement Health Products',
-    image: { uri: 'https://images.unsplash.com/photo-1550572017-4950f68cdd8a?w=400&h=400&fit=crop&q=80' },
-    price: 6.99,
-    discount: '25% OFF',
+    name: 'Daily Multivitamin Capsules',
+    image: PRODUCT_IMAGES.vitaminsMinerals,
+    price: 12.49,
+    originalPrice: 16.65,
   },
   {
     id: '2',
     name: 'Pediacare Super Immune Plus',
-    image: { uri: 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=400&h=400&fit=crop&q=80' },
+    image: PRODUCT_IMAGES.nutritionDrinks,
     price: 15.99,
     originalPrice: 18.15,
-    discount: '25% OFF',
   },
   {
     id: '3',
-    name: 'Daily Multivitamin Capsules',
-    image: { uri: 'https://images.unsplash.com/photo-1607619056574-7b8d3ee536b2?w=400&h=400&fit=crop&q=80' },
-    price: 12.49,
-    originalPrice: 16.65,
-    discount: '25% OFF',
+    name: 'Fever & Cold Relief Syrup',
+    image: PRODUCT_IMAGES.feverCold,
+    price: 6.99,
   },
   {
     id: '4',
-    name: 'Omega-3 Fish Oil 1000mg',
-    image: { uri: 'https://images.unsplash.com/photo-1526045478516-99145907023c?w=400&h=400&fit=crop&q=80' },
-    price: 18.99,
-    discount: '30% OFF',
+    name: 'Pain Relief Tablets',
+    image: PRODUCT_IMAGES.painRelief,
+    price: 4.99,
+    originalPrice: 6.99,
   },
   {
     id: '5',
-    name: 'Vitamin D3 5000 IU',
-    image: { uri: 'https://images.unsplash.com/photo-1471864190281-a93a3070b6de?w=400&h=400&fit=crop&q=80' },
-    price: 9.99,
-    originalPrice: 14.99,
-    discount: '33% OFF',
+    name: 'Ayurvedic Immunity Booster',
+    image: PRODUCT_IMAGES.ayurveda,
+    price: 22.99,
   },
   {
     id: '6',
-    name: 'Turmeric Curcumin Complex',
-    image: { uri: 'https://images.unsplash.com/photo-1615485500834-bc10199bc6ed?w=400&h=400&fit=crop&q=80' },
-    price: 22.99,
-    discount: '20% OFF',
+    name: 'Dietary Supplement Health Products',
+    image: PRODUCT_IMAGES.fitness,
+    price: 18.99,
   },
   {
     id: '7',
-    name: 'Probiotic 50 Billion CFU',
-    image: { uri: 'https://images.unsplash.com/photo-1584017911766-d451b3d0e843?w=400&h=400&fit=crop&q=80' },
-    price: 27.99,
-    originalPrice: 34.99,
-    discount: '20% OFF',
+    name: 'Oral Care Essentials',
+    image: PRODUCT_IMAGES.oralCare,
+    price: 9.99,
+    originalPrice: 14.99,
   },
   {
     id: '8',
     name: 'Biotin Hair Growth Support',
-    image: { uri: 'https://images.unsplash.com/photo-1585435557343-3b092031a831?w=400&h=400&fit=crop&q=80' },
+    image: PRODUCT_IMAGES.hairCare,
     price: 14.99,
-    discount: '15% OFF',
   },
 ];
 
-const ProductImage = React.memo(({ source }: { source: ImageSourcePropType }) => {
-  const opacity = useRef(new Animated.Value(0)).current;
-
-  const handleLoadEnd = useCallback(() => {
-    Animated.timing(opacity, {
-      toValue: 1,
-      duration: 250,
-      useNativeDriver: true,
-    }).start();
-  }, [opacity]);
-
-  return (
-    <Animated.Image
-      source={source}
-      style={[styles.productImage, { opacity }]}
-      resizeMode="contain"
-      onLoadEnd={handleLoadEnd}
-    />
-  );
-});
-
-ProductImage.displayName = 'ProductImage';
+const ADD_GREEN = '#1F9D55';
+const PRICE_BLUE = '#0A74DA';
 
 interface ProductCardProps {
   item: Product;
-  onAddToCart: (id: string) => void;
-  onDelete: (id: string) => void;
+  quantity: number;
+  onIncrement: (id: string) => void;
+  onDecrement: (id: string) => void;
 }
 
-const ProductCard = React.memo(({ item, onAddToCart, onDelete }: ProductCardProps) => {
-  const handleAddToCart = useCallback(() => {
-    onAddToCart(item.id);
-  }, [item.id, onAddToCart]);
+const ProductCard = ({ item, quantity, onIncrement, onDecrement }: ProductCardProps) => (
+  <View style={styles.card} pointerEvents="box-none">
+    <View style={styles.imageBox} pointerEvents="none">
+      <Image source={item.image} style={styles.image} resizeMode="contain" />
+    </View>
 
-  const handleDelete = useCallback(() => {
-    onDelete(item.id);
-  }, [item.id, onDelete]);
+    <View style={styles.info} pointerEvents="box-none">
+      <Text style={styles.name} numberOfLines={2} pointerEvents="none">
+        {item.name}
+      </Text>
 
-  return (
-    <View style={styles.cardWrapper} pointerEvents="box-none">
-      <View style={styles.card} pointerEvents="box-none">
-        {item.discount && (
-          <View style={styles.discountBadge} pointerEvents="none">
-            <Text style={styles.discountText}>{item.discount}</Text>
+      <View style={styles.footer} pointerEvents="box-none">
+        <View style={styles.priceBox} pointerEvents="none">
+          <Text style={styles.price}>${item.price.toFixed(2)}</Text>
+          {item.originalPrice && (
+            <Text style={styles.oldPrice}>${item.originalPrice.toFixed(2)}</Text>
+          )}
+        </View>
+
+        {quantity === 0 ? (
+          <TouchableOpacity
+            style={styles.addBtn}
+            activeOpacity={0.8}
+            onPress={() => onIncrement(item.id)}
+            hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+          >
+            <Ionicons name="add" size={20} color={colors.white} />
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.qtyCounter}>
+            <TouchableOpacity
+              style={styles.qtyBtn}
+              activeOpacity={0.7}
+              onPress={() => onDecrement(item.id)}
+              hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+            >
+              <Ionicons name="remove" size={18} color={colors.textPrimary} />
+            </TouchableOpacity>
+
+            <Text style={styles.qtyText} pointerEvents="none">
+              {quantity}
+            </Text>
+
+            <TouchableOpacity
+              style={[styles.qtyBtn, styles.qtyBtnAdd]}
+              activeOpacity={0.8}
+              onPress={() => onIncrement(item.id)}
+              hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+            >
+              <Ionicons name="add" size={18} color={colors.white} />
+            </TouchableOpacity>
           </View>
         )}
-
-        <View style={styles.imageContainer} pointerEvents="none">
-          <ProductImage source={item.image} />
-        </View>
-
-        <View style={styles.contentContainer} pointerEvents="box-none">
-          <Text style={styles.productName} numberOfLines={2}>
-            {item.name}
-          </Text>
-
-          <View style={styles.priceRow} pointerEvents="box-none">
-            <View style={styles.priceContainer} pointerEvents="none">
-              <Text style={styles.price}>${item.price.toFixed(2)}</Text>
-              {item.originalPrice && (
-                <Text style={styles.originalPrice}>${item.originalPrice.toFixed(2)}</Text>
-              )}
-            </View>
-
-            <View style={styles.actionButtons}>
-              <TouchableOpacity
-                style={styles.deleteButton}
-                onPress={handleDelete}
-                activeOpacity={0.7}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              >
-                <Ionicons name="trash-outline" size={moderateScale(16)} color={colors.textSecondary} />
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.addButton}
-                onPress={handleAddToCart}
-                activeOpacity={0.8}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              >
-                <Ionicons name="add" size={moderateScale(20)} color={colors.white} />
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
       </View>
     </View>
-  );
-});
-
-ProductCard.displayName = 'ProductCard';
+  </View>
+);
 
 const FeaturedProducts = () => {
-  const scrollX = useRef(new Animated.Value(0)).current;
-  
-  const handleAddToCart = useCallback((productId: string) => {
-    console.log('Add to cart:', productId);
+  const [quantities, setQuantities] = useState<Record<string, number>>({});
+
+  const handleIncrement = useCallback((id: string) => {
+    setQuantities((prev) => ({
+      ...prev,
+      [id]: (prev[id] ?? 0) + 1,
+    }));
   }, []);
 
-  const handleDelete = useCallback((productId: string) => {
-    console.log('Delete product:', productId);
+  const handleDecrement = useCallback((id: string) => {
+    setQuantities((prev) => {
+      const current = prev[id] ?? 0;
+      if (current <= 1) {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      }
+      return { ...prev, [id]: current - 1 };
+    });
   }, []);
 
   const renderItem = useCallback(
     ({ item }: { item: Product }) => (
-      <ProductCard item={item} onAddToCart={handleAddToCart} onDelete={handleDelete} />
+      <ProductCard
+        item={item}
+        quantity={quantities[item.id] ?? 0}
+        onIncrement={handleIncrement}
+        onDecrement={handleDecrement}
+      />
     ),
-    [handleAddToCart, handleDelete],
-  );
-
-  const keyExtractor = useCallback((item: Product) => item.id, []);
-
-  const getItemLayout = useCallback(
-    (_: any, index: number) => ({
-      length: CARD_WIDTH + CARD_GAP,
-      offset: (CARD_WIDTH + CARD_GAP) * index,
-      index,
-    }),
-    [],
-  );
-
-  const onScroll = useMemo(
-    () =>
-      Animated.event([{ nativeEvent: { contentOffset: { x: scrollX } } }], {
-        useNativeDriver: true,
-      }),
-    [scrollX],
+    [quantities, handleIncrement, handleDecrement],
   );
 
   return (
-    <View style={styles.section}>
-      <View style={styles.headerRow}>
-        <Text style={styles.sectionTitle}>Wellness Product</Text>
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.title}>Featured Products</Text>
         <TouchableOpacity activeOpacity={0.7}>
-          <Text style={styles.viewAllText}>View All</Text>
+          <Text style={styles.viewAll}>View All</Text>
         </TouchableOpacity>
       </View>
 
-      <Animated.FlatList
-        data={FEATURED_PRODUCTS}
+      <FlatList
+        data={PRODUCTS}
         renderItem={renderItem}
-        keyExtractor={keyExtractor}
+        keyExtractor={(item) => item.id}
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.listContent}
-        scrollEventThrottle={16}
-        onScroll={onScroll}
-        decelerationRate={0.9}
-        bounces={true}
-        bouncesZoom={false}
-        overScrollMode="never"
-        removeClippedSubviews={false}
-        maxToRenderPerBatch={6}
-        initialNumToRender={4}
-        windowSize={10}
-        getItemLayout={getItemLayout}
-        updateCellsBatchingPeriod={50}
-        disableIntervalMomentum={true}
-        directionalLockEnabled={true}
-        nestedScrollEnabled={false}
+        contentContainerStyle={styles.list}
+        ItemSeparatorComponent={() => <View style={{ width: CARD_MARGIN }} />}
+        nestedScrollEnabled
+        directionalLockEnabled
       />
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  section: {
-    marginBottom: spacing.lg + spacing.xs,
+  container: {
+    marginBottom: spacing.xl,
+    marginTop: spacing.xl,
   },
-  headerRow: {
+  header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: HORIZONTAL_PADDING,
-    marginBottom: spacing.md + 2,
+    paddingHorizontal: spacing.lg,
+    marginBottom: spacing.md,
   },
-  sectionTitle: {
-    ...typography.h4,
+  title: {
     fontSize: moderateScale(18),
     fontWeight: '700',
     color: colors.textPrimary,
-    letterSpacing: -0.4,
+    letterSpacing: -0.3,
   },
-  viewAllText: {
+  viewAll: {
     fontSize: moderateScale(14),
     fontWeight: '600',
-    color: PRICE_COLOR,
-    letterSpacing: -0.2,
+    color: PRICE_BLUE,
   },
-  listContent: {
-    paddingLeft: HORIZONTAL_PADDING,
-    paddingRight: HORIZONTAL_PADDING,
-  },
-  cardWrapper: {
-    width: CARD_WIDTH,
-    marginRight: CARD_GAP,
+  list: {
+    paddingHorizontal: spacing.lg,
   },
   card: {
-    width: '100%',
-    height: CARD_HEIGHT,
+    width: CARD_WIDTH,
     backgroundColor: colors.white,
-    borderRadius: moderateScale(14),
+    borderRadius: moderateScale(8),
     overflow: 'hidden',
+    borderWidth: 2,
+    borderColor: colors.cardBorder,
     ...Platform.select({
       ios: {
-        shadowColor: colors.black,
-        shadowOffset: { width: 0, height: 3 },
-        shadowOpacity: 0.1,
-        shadowRadius: 12,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.06,
+        shadowRadius: 6,
       },
       android: {
-        elevation: 4,
+        elevation: 2,
       },
     }),
-    borderWidth: Platform.OS === 'android' ? 0.5 : 0,
-    borderColor: colors.borderLight,
   },
-  discountBadge: {
-    position: 'absolute',
-    top: spacing.sm,
-    left: spacing.sm,
-    backgroundColor: DISCOUNT_GREEN,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: moderateScale(4),
-    borderRadius: moderateScale(6),
-    zIndex: 10,
-  },
-  discountText: {
-    fontSize: moderateScale(10),
-    fontWeight: '800',
-    color: colors.white,
-    letterSpacing: 0.3,
-    textTransform: 'uppercase',
-  },
-  imageContainer: {
+  imageBox: {
     width: '100%',
-    height: IMAGE_HEIGHT,
+    height: CARD_WIDTH * 0.8,
     backgroundColor: '#F5F8FA',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingTop: spacing.sm,
-    paddingHorizontal: spacing.xs,
+    padding: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderLight,
   },
-  productImage: {
-    width: '80%',
-    height: '80%',
+  image: {
+    width: '75%',
+    height: '75%',
   },
-  contentContainer: {
-    flex: 1,
+  info: {
     padding: spacing.sm,
     paddingTop: spacing.xs,
   },
-  productName: {
+  name: {
     fontSize: moderateScale(13),
     fontWeight: '500',
     color: colors.textPrimary,
@@ -363,51 +290,64 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
     minHeight: moderateScale(34),
   },
-  priceRow: {
+  footer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 'auto',
   },
-  priceContainer: {
+  priceBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xs,
+    gap: 6,
   },
   price: {
     fontSize: moderateScale(16),
     fontWeight: '700',
-    color: PRICE_COLOR,
-    letterSpacing: -0.3,
+    color: PRICE_BLUE,
   },
-  originalPrice: {
+  oldPrice: {
     fontSize: moderateScale(12),
     fontWeight: '500',
     color: colors.textSecondary,
     textDecorationLine: 'line-through',
-    letterSpacing: -0.2,
   },
-  actionButtons: {
+  addBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    backgroundColor: ADD_GREEN,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#188A47',
+  },
+  qtyCounter: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xs,
-  },
-  deleteButton: {
-    width: moderateScale(32),
-    height: moderateScale(32),
-    borderRadius: moderateScale(8),
     backgroundColor: colors.surfaceSecondary,
-    alignItems: 'center',
-    justifyContent: 'center',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.border,
+    overflow: 'hidden',
   },
-  addButton: {
-    width: moderateScale(32),
-    height: moderateScale(32),
-    borderRadius: moderateScale(8),
-    backgroundColor: DISCOUNT_GREEN,
+  qtyBtn: {
+    width: 30,
+    height: 30,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: colors.white,
+  },
+  qtyBtnAdd: {
+    backgroundColor: ADD_GREEN,
+  },
+  qtyText: {
+    minWidth: 24,
+    textAlign: 'center',
+    fontSize: moderateScale(14),
+    fontWeight: '700',
+    color: colors.textPrimary,
+    paddingHorizontal: 2,
   },
 });
 
-export default React.memo(FeaturedProducts);
+export default FeaturedProducts;

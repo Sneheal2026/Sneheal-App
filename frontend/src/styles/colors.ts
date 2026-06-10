@@ -43,7 +43,7 @@ const colors = {
   accentPink: '#FFE0EC',
   accentTeal: '#00897B',
   accentPurple: '#5B2E91',
-  cardBorder: '#E8E8E8',
+  cardBorder: '#D1D5DB',
   orderBtnBorder: '#D9D9D9',
 
   // Utility
