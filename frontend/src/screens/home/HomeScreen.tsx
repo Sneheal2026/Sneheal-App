@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import {
   View,
   StyleSheet,
@@ -19,15 +19,13 @@ import {
   HomeHeader,
   SearchBar,
   PromoBanner,
-  CategoryCards,
-  OrderVia,
-  FullWidthBanner,
   CategoriesGrid,
 } from '@/components/home';
 import theme from '@/styles/theme';
 import globalStyles from '@/styles/globalStyles';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const PILL_IMAGE = require('../../../assets/images/Sneheal-Pill-2.webp');
 
 const { colors, spacing } = theme;
 
@@ -35,7 +33,9 @@ const STICKY_THRESHOLD = 140;
 
 const HomeScreen = () => {
   const [searchQuery, setSearchQuery] = useState('');
+  const [isScrolling, setIsScrolling] = useState(false);
   const scrollY = useSharedValue(0);
+  const scrollEndTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const insets = useSafeAreaInsets();
 
   const STATUS_BAR_HEIGHT = Platform.OS === 'android'
@@ -72,6 +72,26 @@ const HomeScreen = () => {
     setSearchQuery(text);
   }, []);
 
+  const clearScrollEndTimer = useCallback(() => {
+    if (scrollEndTimer.current) {
+      clearTimeout(scrollEndTimer.current);
+      scrollEndTimer.current = null;
+    }
+  }, []);
+
+  const handleScrollBegin = useCallback(() => {
+    clearScrollEndTimer();
+    setIsScrolling(true);
+  }, [clearScrollEndTimer]);
+
+  const handleScrollEnd = useCallback(() => {
+    clearScrollEndTimer();
+    scrollEndTimer.current = setTimeout(() => {
+      setIsScrolling(false);
+      scrollEndTimer.current = null;
+    }, 80);
+  }, [clearScrollEndTimer]);
+
   return (
     <SafeAreaView style={globalStyles.safeArea} edges={[]}>
       <View style={{ flex: 1, backgroundColor: colors.background }}>
@@ -82,6 +102,7 @@ const HomeScreen = () => {
             { paddingTop: topInset + spacing.sm },
             stickyStyle,
           ]}
+          pointerEvents="box-none"
         >
           <SearchBar value={searchQuery} onChangeText={handleSearchChange} compact />
         </Animated.View>
@@ -92,28 +113,32 @@ const HomeScreen = () => {
           showsVerticalScrollIndicator={false}
           onScroll={scrollHandler}
           scrollEventThrottle={16}
-          removeClippedSubviews
+          onScrollBeginDrag={handleScrollBegin}
+          onMomentumScrollBegin={clearScrollEndTimer}
+          onScrollEndDrag={handleScrollEnd}
+          onMomentumScrollEnd={handleScrollEnd}
+          removeClippedSubviews={Platform.OS === 'android'}
+          overScrollMode="never"
           bounces={Platform.OS === 'ios'}
         >
           <HomeHeader
             searchQuery={searchQuery}
             onSearchChange={handleSearchChange}
+            isScrolling={isScrolling}
           />
 
           <View style={styles.contentSection}>
-          <CategoriesGrid />
-            <CategoryCards />
-            {/* <OrderVia /> */}
-            <PromoBanner />
-            {/* <FullWidthBanner /> */}
-           
+            <CategoriesGrid />
+            <PromoBanner isScrolling={isScrolling} />
           </View>
 
-          <Image
-            source={require('../../../assets/images/Sneheal-Pill-1.png')}
-            style={styles.pillImage}
-            resizeMode="contain"
-          />
+          <View style={styles.pillImageWrap}>
+            <Image
+              source={PILL_IMAGE}
+              style={styles.pillImage}
+              resizeMode="contain"
+            />
+          </View>
         </Animated.ScrollView>
       </View>
     </SafeAreaView>
@@ -127,11 +152,14 @@ const styles = StyleSheet.create({
   contentSection: {
     paddingTop: spacing.md,
   },
-  pillImage: {
-    width: SCREEN_WIDTH,
-    height: SCREEN_WIDTH * 2,
+  pillImageWrap: {
     marginTop: -109,
     marginBottom: -109,
+    overflow: 'hidden',
+  },
+  pillImage: {
+    width: SCREEN_WIDTH,
+    height: SCREEN_WIDTH * 1.9,
   },
   stickyHeader: {
     position: 'absolute',

@@ -13,7 +13,6 @@ import Animated, {
   useAnimatedStyle,
   withTiming,
   Easing,
-  cancelAnimation,
   runOnJS,
 } from 'react-native-reanimated';
 import theme from '@/styles/theme';
@@ -29,7 +28,6 @@ const ITEM_STRIDE = SLIDE_WIDTH + SLIDE_GAP;
 const AUTO_PLAY_MS = 3600;
 const SCROLL_DURATION = 1300;
 const SMOOTH_EASING = Easing.bezier(0.22, 1, 0.36, 1);
-const PROGRESS_TRACK_WIDTH = BANNER_WIDTH * 0.38;
 
 interface PromoSlide {
   id: string;
@@ -95,233 +93,7 @@ const PROMO_SLIDES: PromoSlide[] = [
   },
 ];
 
-// Clone first slide at end for seamless forward loop
 const LOOP_SLIDES: PromoSlide[] = [...PROMO_SLIDES, PROMO_SLIDES[0]];
-
-const PatternOverlay = () => (
-  <View style={styles.patternWrap} pointerEvents="none">
-    {Array.from({ length: 10 }).map((_, i) => (
-      <View
-        key={i}
-        style={[
-          styles.patternLine,
-          { left: i * 34 - 12, opacity: 0.05 + (i % 2) * 0.03 },
-        ]}
-      />
-    ))}
-    <View style={styles.patternDots}>
-      {Array.from({ length: 24 }).map((_, i) => (
-        <View
-          key={i}
-          style={[
-            styles.patternDot,
-            { opacity: i % 3 === 0 ? 0.14 : 0.07 },
-          ]}
-        />
-      ))}
-    </View>
-  </View>
-);
-
-const PromoSlideCard = ({ slide }: { slide: PromoSlide }) => (
-  <View style={styles.slide}>
-    <Image
-      source={{ uri: slide.imageUri }}
-      style={StyleSheet.absoluteFill}
-      resizeMode="cover"
-    />
-    <LinearGradient
-      colors={slide.overlay}
-      start={{ x: 0, y: 0.2 }}
-      end={{ x: 1, y: 0.9 }}
-      style={StyleSheet.absoluteFill}
-    />
-    <PatternOverlay />
-
-    <View style={styles.slideBody}>
-      <View style={styles.textBlock}>
-        <View style={styles.codeRow}>
-          <Text style={styles.codePrefix}>Use code </Text>
-          <View style={styles.codeBadge}>
-            <Text style={styles.codeText}>{slide.code}</Text>
-          </View>
-        </View>
-        <Text style={styles.codeSuffix}>at checkout</Text>
-        <Text style={styles.urgency}>{slide.urgency}</Text>
-        <Text style={styles.title} numberOfLines={2}>
-          {slide.title}
-        </Text>
-      </View>
-
-      <Image
-        source={{ uri: slide.decorImage }}
-        style={styles.decorImage}
-        resizeMode="contain"
-      />
-    </View>
-
-    <TouchableOpacity style={styles.ctaButton} activeOpacity={0.88}>
-      <Text style={styles.ctaText}>{slide.cta}</Text>
-    </TouchableOpacity>
-  </View>
-);
-
-const PromoBanner = () => {
-  const [activeIndex, setActiveIndex] = useState(0);
-  const visualIndexRef = useRef(0);
-  const isAnimatingRef = useRef(false);
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const advanceForwardRef = useRef<() => void>(() => {});
-  const translateX = useSharedValue(0);
-  const progress = useSharedValue(0);
-  const slideCount = PROMO_SLIDES.length;
-
-  const restartProgress = useCallback(() => {
-    cancelAnimation(progress);
-    progress.value = 0;
-    progress.value = withTiming(1, {
-      duration: AUTO_PLAY_MS,
-      easing: Easing.linear,
-    });
-  }, [progress]);
-
-  const clearTimer = useCallback(() => {
-    if (timerRef.current) {
-      clearTimeout(timerRef.current);
-      timerRef.current = null;
-    }
-  }, []);
-
-  const scheduleAutoPlay = useCallback(() => {
-    clearTimer();
-    timerRef.current = setTimeout(() => {
-      advanceForwardRef.current();
-    }, AUTO_PLAY_MS);
-  }, [clearTimer]);
-
-  const handleSettled = useCallback((index: number) => {
-    visualIndexRef.current = index;
-    isAnimatingRef.current = false;
-    setActiveIndex(index);
-    restartProgress();
-    scheduleAutoPlay();
-  }, [restartProgress, scheduleAutoPlay]);
-
-  const handleSettledRef = useRef(handleSettled);
-  handleSettledRef.current = handleSettled;
-
-  const settleSlide = useCallback((index: number) => {
-    handleSettledRef.current(index);
-  }, []);
-
-  const advanceForward = useCallback(() => {
-    if (isAnimatingRef.current) return;
-
-    isAnimatingRef.current = true;
-    clearTimer();
-
-    const fromIndex = visualIndexRef.current;
-    const nextVisual = fromIndex + 1;
-    const previewIndex = nextVisual >= slideCount ? 0 : nextVisual;
-
-    setActiveIndex(previewIndex);
-
-    translateX.value = withTiming(
-      -nextVisual * ITEM_STRIDE,
-      {
-        duration: SCROLL_DURATION,
-        easing: SMOOTH_EASING,
-      },
-      (finished) => {
-        'worklet';
-        if (!finished) {
-          runOnJS(settleSlide)(fromIndex);
-          return;
-        }
-
-        if (nextVisual >= slideCount) {
-          translateX.value = 0;
-          runOnJS(settleSlide)(0);
-        } else {
-          runOnJS(settleSlide)(nextVisual);
-        }
-      },
-    );
-  }, [translateX, clearTimer, settleSlide, slideCount]);
-
-  advanceForwardRef.current = advanceForward;
-
-  const goToSlide = useCallback((targetIndex: number) => {
-    if (isAnimatingRef.current || targetIndex === visualIndexRef.current) return;
-
-    const fromIndex = visualIndexRef.current;
-    isAnimatingRef.current = true;
-    clearTimer();
-    setActiveIndex(targetIndex);
-
-    translateX.value = withTiming(
-      -targetIndex * ITEM_STRIDE,
-      {
-        duration: SCROLL_DURATION,
-        easing: SMOOTH_EASING,
-      },
-      (finished) => {
-        'worklet';
-        runOnJS(settleSlide)(finished ? targetIndex : fromIndex);
-      },
-    );
-  }, [translateX, clearTimer, settleSlide]);
-
-  useEffect(() => {
-    restartProgress();
-    scheduleAutoPlay();
-    return () => clearTimer();
-  }, [restartProgress, scheduleAutoPlay, clearTimer]);
-
-  const trackStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: translateX.value }],
-  }));
-
-  const progressStyle = useAnimatedStyle(() => ({
-    width: progress.value * PROGRESS_TRACK_WIDTH,
-  }));
-
-  return (
-    <View style={styles.container}>
-      <View style={styles.carouselViewport}>
-        <Animated.View style={[styles.carouselTrack, trackStyle]}>
-          {LOOP_SLIDES.map((slide, index) => (
-            <View key={`${slide.id}-${index}`} style={styles.slideWrapper}>
-              <PromoSlideCard slide={slide} />
-            </View>
-          ))}
-        </Animated.View>
-      </View>
-
-      <View style={styles.progressRow}>
-        {/* <View style={styles.progressTrack}>
-          <Animated.View style={[styles.progressFill, progressStyle]} />
-        </View> */}
-        <View style={styles.dotsRow}>
-          {PROMO_SLIDES.map((slide, index) => (
-            <TouchableOpacity
-              key={slide.id}
-              onPress={() => goToSlide(index)}
-              hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
-            >
-              <View
-                style={[
-                  styles.dot,
-                  index === activeIndex && styles.dotActive,
-                ]}
-              />
-            </TouchableOpacity>
-          ))}
-        </View>
-      </View>
-    </View>
-  );
-};
 
 const styles = StyleSheet.create({
   container: {
@@ -470,18 +242,6 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
     gap: spacing.sm,
   },
-  progressTrack: {
-    width: PROGRESS_TRACK_WIDTH,
-    height: 3,
-    borderRadius: 2,
-    backgroundColor: colors.borderLight,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    borderRadius: 2,
-    backgroundColor: colors.primary,
-  },
   dotsRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -499,4 +259,229 @@ const styles = StyleSheet.create({
   },
 });
 
-export default PromoBanner;
+const PATTERN_OVERLAY = (
+  <View style={styles.patternWrap} pointerEvents="none">
+    {Array.from({ length: 10 }).map((_, i) => (
+      <View
+        key={i}
+        style={[
+          styles.patternLine,
+          { left: i * 34 - 12, opacity: 0.05 + (i % 2) * 0.03 },
+        ]}
+      />
+    ))}
+    <View style={styles.patternDots}>
+      {Array.from({ length: 24 }).map((_, i) => (
+        <View
+          key={i}
+          style={[
+            styles.patternDot,
+            { opacity: i % 3 === 0 ? 0.14 : 0.07 },
+          ]}
+        />
+      ))}
+    </View>
+  </View>
+);
+
+const PromoSlideCard = React.memo(({ slide }: { slide: PromoSlide }) => (
+  <View style={styles.slide}>
+    <Image
+      source={{ uri: slide.imageUri }}
+      style={StyleSheet.absoluteFill}
+      resizeMode="cover"
+    />
+    <LinearGradient
+      colors={slide.overlay}
+      start={{ x: 0, y: 0.2 }}
+      end={{ x: 1, y: 0.9 }}
+      style={StyleSheet.absoluteFill}
+    />
+    {PATTERN_OVERLAY}
+
+    <View style={styles.slideBody}>
+      <View style={styles.textBlock}>
+        <View style={styles.codeRow}>
+          <Text style={styles.codePrefix}>Use code </Text>
+          <View style={styles.codeBadge}>
+            <Text style={styles.codeText}>{slide.code}</Text>
+          </View>
+        </View>
+        <Text style={styles.codeSuffix}>at checkout</Text>
+        <Text style={styles.urgency}>{slide.urgency}</Text>
+        <Text style={styles.title} numberOfLines={2}>
+          {slide.title}
+        </Text>
+      </View>
+
+      <Image
+        source={{ uri: slide.decorImage }}
+        style={styles.decorImage}
+        resizeMode="contain"
+      />
+    </View>
+
+    <TouchableOpacity style={styles.ctaButton} activeOpacity={0.88}>
+      <Text style={styles.ctaText}>{slide.cta}</Text>
+    </TouchableOpacity>
+  </View>
+));
+
+PromoSlideCard.displayName = 'PromoSlideCard';
+
+interface PromoBannerProps {
+  isScrolling?: boolean;
+}
+
+const PromoBanner = ({ isScrolling = false }: PromoBannerProps) => {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const visualIndexRef = useRef(0);
+  const isAnimatingRef = useRef(false);
+  const isScrollingRef = useRef(isScrolling);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const advanceForwardRef = useRef<() => void>(() => {});
+  const translateX = useSharedValue(0);
+  const slideCount = PROMO_SLIDES.length;
+
+  isScrollingRef.current = isScrolling;
+
+  const clearTimer = useCallback(() => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+  }, []);
+
+  const scheduleAutoPlay = useCallback(() => {
+    if (isScrollingRef.current) return;
+
+    clearTimer();
+    timerRef.current = setTimeout(() => {
+      advanceForwardRef.current();
+    }, AUTO_PLAY_MS);
+  }, [clearTimer]);
+
+  const handleSettled = useCallback((index: number) => {
+    visualIndexRef.current = index;
+    isAnimatingRef.current = false;
+    setActiveIndex(index);
+    scheduleAutoPlay();
+  }, [scheduleAutoPlay]);
+
+  const handleSettledRef = useRef(handleSettled);
+  handleSettledRef.current = handleSettled;
+
+  const settleSlide = useCallback((index: number) => {
+    handleSettledRef.current(index);
+  }, []);
+
+  const advanceForward = useCallback(() => {
+    if (isAnimatingRef.current) return;
+
+    isAnimatingRef.current = true;
+    clearTimer();
+
+    const fromIndex = visualIndexRef.current;
+    const nextVisual = fromIndex + 1;
+    const previewIndex = nextVisual >= slideCount ? 0 : nextVisual;
+
+    setActiveIndex(previewIndex);
+
+    translateX.value = withTiming(
+      -nextVisual * ITEM_STRIDE,
+      {
+        duration: SCROLL_DURATION,
+        easing: SMOOTH_EASING,
+      },
+      (finished) => {
+        'worklet';
+        if (!finished) {
+          runOnJS(settleSlide)(fromIndex);
+          return;
+        }
+
+        if (nextVisual >= slideCount) {
+          translateX.value = 0;
+          runOnJS(settleSlide)(0);
+        } else {
+          runOnJS(settleSlide)(nextVisual);
+        }
+      },
+    );
+  }, [translateX, clearTimer, settleSlide, slideCount]);
+
+  advanceForwardRef.current = advanceForward;
+
+  const goToSlide = useCallback((targetIndex: number) => {
+    if (isAnimatingRef.current || targetIndex === visualIndexRef.current) return;
+
+    const fromIndex = visualIndexRef.current;
+    isAnimatingRef.current = true;
+    clearTimer();
+    setActiveIndex(targetIndex);
+
+    translateX.value = withTiming(
+      -targetIndex * ITEM_STRIDE,
+      {
+        duration: SCROLL_DURATION,
+        easing: SMOOTH_EASING,
+      },
+      (finished) => {
+        'worklet';
+        runOnJS(settleSlide)(finished ? targetIndex : fromIndex);
+      },
+    );
+  }, [translateX, clearTimer, settleSlide]);
+
+  useEffect(() => {
+    if (isScrolling) {
+      clearTimer();
+      return;
+    }
+
+    if (!isAnimatingRef.current) {
+      scheduleAutoPlay();
+    }
+
+    return () => clearTimer();
+  }, [isScrolling, clearTimer, scheduleAutoPlay]);
+
+  const trackStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: translateX.value }],
+  }));
+
+  return (
+    <View style={styles.container}>
+      <View style={styles.carouselViewport}>
+        <Animated.View style={[styles.carouselTrack, trackStyle]}>
+          {LOOP_SLIDES.map((slide, index) => (
+            <View key={`${slide.id}-${index}`} style={styles.slideWrapper}>
+              <PromoSlideCard slide={slide} />
+            </View>
+          ))}
+        </Animated.View>
+      </View>
+
+      <View style={styles.progressRow}>
+        <View style={styles.dotsRow}>
+          {PROMO_SLIDES.map((slide, index) => (
+            <TouchableOpacity
+              key={slide.id}
+              onPress={() => goToSlide(index)}
+              hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+            >
+              <View
+                style={[
+                  styles.dot,
+                  index === activeIndex && styles.dotActive,
+                ]}
+              />
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+    </View>
+  );
+};
+
+export default React.memo(PromoBanner);

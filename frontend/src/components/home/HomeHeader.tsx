@@ -36,6 +36,7 @@ const UPLOAD_ACTIONS = [
 interface HomeHeaderProps {
   searchQuery: string;
   onSearchChange: (text: string) => void;
+  isScrolling?: boolean;
 }
 
 const getGreeting = (): string => {
@@ -48,6 +49,7 @@ const getGreeting = (): string => {
 const HomeHeader: React.FC<HomeHeaderProps> = ({
   searchQuery,
   onSearchChange,
+  isScrolling = false,
 }) => {
   const insets = useSafeAreaInsets();
   const topInset = Platform.OS === 'ios' ? insets.top : STATUS_BAR_HEIGHT;
@@ -55,7 +57,7 @@ const HomeHeader: React.FC<HomeHeaderProps> = ({
 
   return (
     <View style={styles.heroWrapper}>
-      <HeroBackground />
+      <HeroBackground pauseAnimation={isScrolling} />
 
       <View style={[styles.heroContent, { paddingTop: topInset + spacing.md }]}>
         <Animated.View entering={FadeInDown.delay(80).duration(500).springify()}>
@@ -320,4 +322,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default HomeHeader;
+export default React.memo(HomeHeader);

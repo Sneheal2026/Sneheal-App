@@ -8,6 +8,7 @@ import Animated, {
   withTiming,
   Easing,
   interpolate,
+  cancelAnimation,
 } from 'react-native-reanimated';
 import theme from '@/styles/theme';
 
@@ -18,108 +19,6 @@ const DOT_ROWS = 7;
 const DOT_COLS = 14;
 const DOT_SIZE = 2;
 const DOT_GAP = 22;
-
-const DotGrid = () => (
-  <View style={styles.dotGrid} pointerEvents="none">
-    {Array.from({ length: DOT_ROWS }).map((_, row) => (
-      <View key={row} style={styles.dotRow}>
-        {Array.from({ length: DOT_COLS }).map((__, col) => (
-          <View
-            key={col}
-            style={[
-              styles.dot,
-              (row + col) % 3 === 0 && styles.dotBright,
-            ]}
-          />
-        ))}
-      </View>
-    ))}
-  </View>
-);
-
-const CrossPattern = () => (
-  <View style={styles.crossPattern} pointerEvents="none">
-    {Array.from({ length: 5 }).map((_, i) => (
-      <View
-        key={i}
-        style={[
-          styles.cross,
-          { top: 40 + i * 55, right: 20 + (i % 2) * 30 },
-        ]}
-      >
-        <View style={styles.crossH} />
-        <View style={styles.crossV} />
-      </View>
-    ))}
-  </View>
-);
-
-const HeroBackground: React.FC = () => {
-  const shimmer = useSharedValue(0);
-
-  useEffect(() => {
-    shimmer.value = withRepeat(
-      withTiming(1, { duration: 6000, easing: Easing.linear }),
-      -1,
-      false,
-    );
-  }, [shimmer]);
-
-  const meshStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(shimmer.value, [0, 0.5, 1], [0.15, 0.28, 0.15]),
-  }));
-
-  return (
-    <View style={StyleSheet.absoluteFill} pointerEvents="none">
-      <LinearGradient
-        colors={['#061428', '#0C2D5E', colors.primaryDark, colors.primary]}
-        locations={[0, 0.35, 0.72, 1]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={StyleSheet.absoluteFill}
-      />
-
-      <LinearGradient
-        colors={['transparent', 'rgba(13,148,136,0.35)', 'transparent']}
-        start={{ x: 0, y: 0.2 }}
-        end={{ x: 1, y: 0.8 }}
-        style={[StyleSheet.absoluteFill, { opacity: 0.6 }]}
-      />
-
-      <Animated.View style={[styles.meshHighlight, meshStyle]}>
-        <LinearGradient
-          colors={['rgba(255,255,255,0)', 'rgba(255,255,255,0.12)', 'rgba(255,255,255,0)']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={StyleSheet.absoluteFill}
-        />
-      </Animated.View>
-
-      <DotGrid />
-      <CrossPattern />
-
-      {/* Diagonal accent lines */}
-      <View style={styles.diagonalLines} pointerEvents="none">
-        {Array.from({ length: 6 }).map((_, i) => (
-          <View
-            key={i}
-            style={[
-              styles.diagonalLine,
-              { left: i * 70 - 20, opacity: 0.04 + (i % 2) * 0.03 },
-            ]}
-          />
-        ))}
-      </View>
-
-      {/* Bottom fade into content */}
-      <LinearGradient
-        colors={['transparent', 'rgba(6,20,40,0.4)']}
-        style={styles.bottomFade}
-        pointerEvents="none"
-      />
-    </View>
-  );
-};
 
 const styles = StyleSheet.create({
   dotGrid: {
@@ -195,4 +94,120 @@ const styles = StyleSheet.create({
   },
 });
 
-export default HeroBackground;
+const DOT_GRID = (
+  <View style={styles.dotGrid} pointerEvents="none">
+    {Array.from({ length: DOT_ROWS }).map((_, row) => (
+      <View key={row} style={styles.dotRow}>
+        {Array.from({ length: DOT_COLS }).map((__, col) => (
+          <View
+            key={col}
+            style={[
+              styles.dot,
+              (row + col) % 3 === 0 && styles.dotBright,
+            ]}
+          />
+        ))}
+      </View>
+    ))}
+  </View>
+);
+
+const CROSS_PATTERN = (
+  <View style={styles.crossPattern} pointerEvents="none">
+    {Array.from({ length: 5 }).map((_, i) => (
+      <View
+        key={i}
+        style={[
+          styles.cross,
+          { top: 40 + i * 55, right: 20 + (i % 2) * 30 },
+        ]}
+      >
+        <View style={styles.crossH} />
+        <View style={styles.crossV} />
+      </View>
+    ))}
+  </View>
+);
+
+const DIAGONAL_LINES = (
+  <View style={styles.diagonalLines} pointerEvents="none">
+    {Array.from({ length: 6 }).map((_, i) => (
+      <View
+        key={i}
+        style={[
+          styles.diagonalLine,
+          { left: i * 70 - 20, opacity: 0.04 + (i % 2) * 0.03 },
+        ]}
+      />
+    ))}
+  </View>
+);
+
+interface HeroBackgroundProps {
+  pauseAnimation?: boolean;
+}
+
+const HeroBackground: React.FC<HeroBackgroundProps> = ({ pauseAnimation = false }) => {
+  const shimmer = useSharedValue(0);
+
+  useEffect(() => {
+    if (pauseAnimation) {
+      cancelAnimation(shimmer);
+      return;
+    }
+
+    shimmer.value = withRepeat(
+      withTiming(1, { duration: 6000, easing: Easing.linear }),
+      -1,
+      false,
+    );
+
+    return () => {
+      cancelAnimation(shimmer);
+    };
+  }, [pauseAnimation, shimmer]);
+
+  const meshStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(shimmer.value, [0, 0.5, 1], [0.15, 0.28, 0.15]),
+  }));
+
+  return (
+    <View style={StyleSheet.absoluteFill} pointerEvents="none">
+      <LinearGradient
+        colors={['#061428', '#0C2D5E', colors.primaryDark, colors.primary]}
+        locations={[0, 0.35, 0.72, 1]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={StyleSheet.absoluteFill}
+      />
+
+      <LinearGradient
+        colors={['transparent', 'rgba(13,148,136,0.35)', 'transparent']}
+        start={{ x: 0, y: 0.2 }}
+        end={{ x: 1, y: 0.8 }}
+        style={[StyleSheet.absoluteFill, { opacity: 0.6 }]}
+      />
+
+      <Animated.View style={[styles.meshHighlight, meshStyle]}>
+        <LinearGradient
+          colors={['rgba(255,255,255,0)', 'rgba(255,255,255,0.12)', 'rgba(255,255,255,0)']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={StyleSheet.absoluteFill}
+        />
+      </Animated.View>
+
+      {DOT_GRID}
+      {CROSS_PATTERN}
+      {DIAGONAL_LINES}
+
+      <LinearGradient
+        colors={['transparent', 'rgba(6,20,40,0.4)']}
+        style={styles.bottomFade}
+        pointerEvents="none"
+      />
+    </View>
+  );
+};
+
+export default React.memo(HeroBackground);
