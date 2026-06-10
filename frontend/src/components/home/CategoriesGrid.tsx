@@ -7,6 +7,7 @@ import {
   Dimensions,
   Image,
   Animated,
+  ImageSourcePropType,
 } from 'react-native';
 import theme from '@/styles/theme';
 
@@ -23,99 +24,73 @@ const IMAGE_BOX_SIZE = CARD_WIDTH;
 const CARD_BG = '#D9E5F3';
 const OFFER_GREEN = '#1F9D55';
 
+const CATEGORY_IMAGES = {
+  skinCare: require('../../../assets/images/Skin-Care.png'),
+  sexualWellness: require('../../../assets/images/Sexual-wellness.png'),
+  oralCare: require('../../../assets/images/Oral-Care.png'),
+  hairCare: require('../../../assets/images/Hair-Care.png'),
+  feminineHygiene: require('../../../assets/images/Feminine.png'),
+  fitness: require('../../../assets/images/Fitness.png'),
+  vitaminsMinerals: require('../../../assets/images/Vitamins-Minerals.png'),
+  nutritionDrinks: require('../../../assets/images/Nutrition-Drinks.png'),
+  ayurveda: require('../../../assets/images/Ayurveda.png'),
+  painRelief: require('../../../assets/images/Pain-Relief.png'),
+  feverCold: require('../../../assets/images/Fever-Cold.png'),
+} as const;
+
 interface CategoryItem {
   id: string;
   name: string;
-  imageUri: string;
+  image: ImageSourcePropType;
   offerLabel?: string;
 }
 
 const CATEGORIES: CategoryItem[] = [
-  {
-    id: '1',
-    name: 'Skin Care',
-    imageUri: 'https://images.unsplash.com/photo-1570172619644-d3b0d63d584c?w=400&h=400&fit=crop&q=80',
-  },
-  {
-    id: '2',
-    name: 'Sexual Wellness',
-    imageUri: 'https://images.unsplash.com/photo-1505751172879-3b926a3939a7?w=400&h=400&fit=crop&q=80',
-  },
-  {
-    id: '3',
-    name: 'Oral Care',
-    imageUri: 'https://images.unsplash.com/photo-1622372738946-62e02505feb3?w=400&h=400&fit=crop&q=80',
-  },
-  {
-    id: '4',
-    name: 'Hair Care',
-    imageUri: 'https://images.unsplash.com/photo-1527799820374-dcf8d9a4e0f2?w=400&h=400&fit=crop&q=80',
-  },
+  { id: '1', name: 'Skin Care', image: CATEGORY_IMAGES.skinCare },
+  { id: '2', name: 'Sexual Wellness', image: CATEGORY_IMAGES.sexualWellness },
+  { id: '3', name: 'Oral Care', image: CATEGORY_IMAGES.oralCare },
+  { id: '4', name: 'Hair Care', image: CATEGORY_IMAGES.hairCare },
   {
     id: '5',
     name: 'Feminine Hygiene',
-    imageUri: 'https://images.unsplash.com/photo-1585386959984-a4155223163e?w=400&h=400&fit=crop&q=80',
+    image: CATEGORY_IMAGES.feminineHygiene,
     offerLabel: 'UP TO 50% OFF',
   },
   {
     id: '6',
     name: 'Diaper & Wipes',
-    imageUri: 'https://images.unsplash.com/photo-1584515933487-779824d29309?w=400&h=400&fit=crop&q=80',
+    image: { uri: 'https://images.unsplash.com/photo-1584515933487-779824d29309?w=400&h=400&fit=crop&q=80' },
   },
   {
     id: '7',
     name: 'Feeding Essentials',
-    imageUri: 'https://images.unsplash.com/photo-1606813907291-d86efa9b94db?w=400&h=400&fit=crop&q=80',
+    image: { uri: 'https://images.unsplash.com/photo-1606813907291-d86efa9b94db?w=400&h=400&fit=crop&q=80' },
   },
   {
     id: '8',
     name: 'Baby Skin & Bath',
-    imageUri: 'https://images.unsplash.com/photo-1515488042361-ee00e8170dc4?w=400&h=400&fit=crop&q=80',
+    image: { uri: 'https://images.unsplash.com/photo-1515488042361-ee00e8170dc4?w=400&h=400&fit=crop&q=80' },
     offerLabel: 'UP TO 55% OFF',
   },
-  {
-    id: '9',
-    name: 'Fitness Essentials',
-    imageUri: 'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=400&h=400&fit=crop&q=80',
-  },
-  {
-    id: '10',
-    name: 'Vitamins & Minerals',
-    imageUri: 'https://images.unsplash.com/photo-1584308664894-6d09c1f84d07?w=400&h=400&fit=crop&q=80',
-  },
-  {
-    id: '11',
-    name: 'Nutritional Drinks',
-    imageUri: 'https://images.unsplash.com/photo-1571171637578-41bc2dd41cd7?w=400&h=400&fit=crop&q=80',
-  },
-  {
-    id: '12',
-    name: 'Ayurveda Essentials',
-    imageUri: 'https://images.unsplash.com/photo-1607619056574-7b8d3ee197b0?w=400&h=400&fit=crop&q=80',
-  },
+  { id: '9', name: 'Fitness Essentials', image: CATEGORY_IMAGES.fitness },
+  { id: '10', name: 'Vitamins & Minerals', image: CATEGORY_IMAGES.vitaminsMinerals },
+  { id: '11', name: 'Nutritional Drinks', image: CATEGORY_IMAGES.nutritionDrinks },
+  { id: '12', name: 'Ayurveda Essentials', image: CATEGORY_IMAGES.ayurveda },
   {
     id: '13',
     name: 'Health Devices',
-    imageUri: 'https://images.unsplash.com/photo-1579684272160-0ff8e7f458f1?w=400&h=400&fit=crop&q=80',
+    image: { uri: 'https://images.unsplash.com/photo-1579684272160-0ff8e7f458f1?w=400&h=400&fit=crop&q=80' },
   },
   {
     id: '14',
     name: 'Home Essentials',
-    imageUri: 'https://images.unsplash.com/photo-1563453393397-3414fa577d22?w=400&h=400&fit=crop&q=80',
+    image: { uri: 'https://images.unsplash.com/photo-1563453393397-3414fa577d22?w=400&h=400&fit=crop&q=80' },
   },
-  {
-    id: '15',
-    name: 'Pain Relief',
-    imageUri: 'https://images.unsplash.com/photo-1471864190281-a93fc2b1c0ff?w=400&h=400&fit=crop&q=80',
-  },
-  {
-    id: '16',
-    name: 'Fever & Cold',
-    imageUri: 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=400&h=400&fit=crop&q=80',
-  },
+  { id: '15', name: 'Pain Relief', image: CATEGORY_IMAGES.painRelief },
+  { id: '16', name: 'Fever & Cold', image: CATEGORY_IMAGES.feverCold },
 ];
 
-const CategoryImage = React.memo(({ uri }: { uri: string }) => {
+const CategoryImage = React.memo(({ source }: { source: ImageSourcePropType }) => {
   const opacity = useRef(new Animated.Value(0)).current;
 
   const handleLoadEnd = () => {
@@ -128,7 +103,7 @@ const CategoryImage = React.memo(({ uri }: { uri: string }) => {
 
   return (
     <Animated.Image
-      source={{ uri }}
+      source={source}
       style={[styles.productImage, { opacity }]}
       resizeMode="contain"
       onLoadEnd={handleLoadEnd}
@@ -141,7 +116,7 @@ CategoryImage.displayName = 'CategoryImage';
 const CategoryCard = React.memo(({ item }: { item: CategoryItem }) => (
   <TouchableOpacity style={styles.gridItem} activeOpacity={0.85}>
     <View style={styles.imageBox}>
-      <CategoryImage uri={item.imageUri} />
+      <CategoryImage source={item.image} />
       {item.offerLabel ? (
         <View style={styles.offerBanner}>
           <Text style={styles.offerText} numberOfLines={1}>
@@ -161,7 +136,9 @@ CategoryCard.displayName = 'CategoryCard';
 const CategoriesGrid = () => {
   useEffect(() => {
     CATEGORIES.forEach((item) => {
-      Image.prefetch(item.imageUri).catch(() => {});
+      if (typeof item.image === 'object' && item.image !== null && 'uri' in item.image && item.image.uri) {
+        Image.prefetch(item.image.uri).catch(() => {});
+      }
     });
   }, []);
 
