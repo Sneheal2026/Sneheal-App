@@ -13,11 +13,14 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import theme from '@/styles/theme';
 
-const { colors, spacing, typography, moderateScale } = theme;
+const { colors, spacing, typography, moderateScale, device } = theme;
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-const CARD_WIDTH = SCREEN_WIDTH * 0.42;
+const CARD_WIDTH = device.isSmallDevice
+  ? SCREEN_WIDTH * 0.44
+  : SCREEN_WIDTH * 0.42;
 const CARD_MARGIN = spacing.md;
+const ADD_BTN_SIZE = moderateScale(32, 0.35);
 
 const PRODUCT_IMAGES = {
   vitaminsMinerals: require('../../../assets/images/Vitamins-Minerals.png'),
@@ -116,10 +119,14 @@ const ProductCard = ({ item, quantity, onIncrement, onDecrement }: ProductCardPr
 
       <View style={styles.footer} pointerEvents="box-none">
         <View style={styles.priceBox} pointerEvents="none">
-          <Text style={styles.price}>${item.price.toFixed(2)}</Text>
-          {item.originalPrice && (
-            <Text style={styles.oldPrice}>${item.originalPrice.toFixed(2)}</Text>
-          )}
+          <Text style={styles.price} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>
+            ${item.price.toFixed(2)}
+          </Text>
+          {item.originalPrice ? (
+            <Text style={styles.oldPrice} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>
+              ${item.originalPrice.toFixed(2)}
+            </Text>
+          ) : null}
         </View>
 
         {quantity === 0 ? (
@@ -129,7 +136,7 @@ const ProductCard = ({ item, quantity, onIncrement, onDecrement }: ProductCardPr
             onPress={() => onIncrement(item.id)}
             hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
           >
-            <Ionicons name="add" size={20} color={colors.white} />
+            <Ionicons name="add" size={moderateScale(18, 0.35)} color={colors.white} />
           </TouchableOpacity>
         ) : (
           <View style={styles.qtyCounter}>
@@ -292,47 +299,55 @@ const styles = StyleSheet.create({
   },
   footer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    gap: spacing.xs,
+    minHeight: ADD_BTN_SIZE,
   },
   priceBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
+    flex: 1,
+    minWidth: 0,
+    justifyContent: 'center',
+    paddingRight: spacing.xxs,
   },
   price: {
-    fontSize: moderateScale(16),
+    fontSize: moderateScale(15, 0.35),
     fontWeight: '700',
     color: PRICE_BLUE,
+    lineHeight: moderateScale(18, 0.35),
   },
   oldPrice: {
-    fontSize: moderateScale(12),
+    fontSize: moderateScale(11, 0.35),
     fontWeight: '500',
     color: colors.textSecondary,
     textDecorationLine: 'line-through',
+    lineHeight: moderateScale(14, 0.35),
+    marginTop: 1,
   },
   addBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
+    width: ADD_BTN_SIZE,
+    height: ADD_BTN_SIZE,
+    borderRadius: moderateScale(9, 0.35),
     backgroundColor: ADD_GREEN,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: '#188A47',
+    flexShrink: 0,
   },
   qtyCounter: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.surfaceSecondary,
-    borderRadius: 10,
+    borderRadius: moderateScale(9, 0.35),
     borderWidth: 1,
     borderColor: colors.border,
     overflow: 'hidden',
+    flexShrink: 0,
+    height: ADD_BTN_SIZE,
   },
   qtyBtn: {
-    width: 30,
-    height: 30,
+    width: moderateScale(28, 0.35),
+    height: ADD_BTN_SIZE,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.white,
@@ -341,9 +356,9 @@ const styles = StyleSheet.create({
     backgroundColor: ADD_GREEN,
   },
   qtyText: {
-    minWidth: 24,
+    minWidth: moderateScale(22, 0.35),
     textAlign: 'center',
-    fontSize: moderateScale(14),
+    fontSize: moderateScale(13, 0.35),
     fontWeight: '700',
     color: colors.textPrimary,
     paddingHorizontal: 2,
