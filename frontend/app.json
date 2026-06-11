@@ -8,7 +8,10 @@
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Sneheal needs your location to deliver medicines to your exact address."
+      }
     },
     "android": {
       "softwareKeyboardLayoutMode": "resize",
@@ -18,7 +21,16 @@
         "backgroundImage": "./assets/images/Sneheal-Logoo.png",
         "monochromeImage": "./assets/images/Sneheal-Logoo.png"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
+      ],
+      "config": {
+        "googleMaps": {
+          "apiKey": "YOUR_GOOGLE_MAPS_API_KEY"
+        }
+      }
     },
     "web": {
       "output": "static",
@@ -39,6 +51,12 @@
         {
           "photosPermission": "Allow Sneheal to access your photos to upload your Aadhar card.",
           "cameraPermission": "Allow Sneheal to use your camera to photograph your Aadhar card."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Sneheal needs your location to deliver medicines to your exact address."
         }
       ]
     ]

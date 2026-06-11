@@ -4,6 +4,7 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
+  ScrollView,
   Platform,
   StatusBar,
 } from 'react-native';
@@ -38,6 +39,8 @@ interface HomeHeaderProps {
   onSearchChange: (text: string) => void;
   isScrolling?: boolean;
   onAccountPress?: () => void;
+  addressLabel?: string;
+  onLocationPress?: () => void;
 }
 
 const getGreeting = (): string => {
@@ -52,6 +55,8 @@ const HomeHeader: React.FC<HomeHeaderProps> = ({
   onSearchChange,
   isScrolling = false,
   onAccountPress,
+  addressLabel = 'Add delivery address',
+  onLocationPress,
 }) => {
   const insets = useSafeAreaInsets();
   const topInset = Platform.OS === 'ios' ? insets.top : STATUS_BAR_HEIGHT;
@@ -90,26 +95,38 @@ const HomeHeader: React.FC<HomeHeaderProps> = ({
           </View>
         </View>
 
-        <Animated.View
-          entering={FadeInDown.delay(160).duration(500).springify()}
-          style={styles.locationWrap}
-        >
-          <TouchableOpacity style={styles.locationBar} activeOpacity={0.85}>
-            <View style={styles.locationIconWrap}>
+        <View style={styles.locationWrap}>
+          <View style={styles.locationBar}>
+            <TouchableOpacity
+              style={styles.locationIconWrap}
+              onPress={onLocationPress}
+              activeOpacity={0.85}
+            >
               <Ionicons name="location" size={moderateScale(14)} color={colors.accentGold} />
-            </View>
-            <View style={styles.locationText}>
-              <Text style={styles.addressText} numberOfLines={1}>
-                Hyderabad, 500032
-              </Text>
-            </View>
-            <Ionicons
-              name="chevron-down"
-              size={moderateScale(16)}
-              color="rgba(255,255,255,0.7)"
-            />
-          </TouchableOpacity>
-        </Animated.View>
+            </TouchableOpacity>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.locationScroll}
+              contentContainerStyle={styles.locationScrollContent}
+              nestedScrollEnabled
+              directionalLockEnabled
+            >
+              <TouchableOpacity onPress={onLocationPress} activeOpacity={0.85}>
+                <Text style={styles.addressText} numberOfLines={1}>
+                  {addressLabel}
+                </Text>
+              </TouchableOpacity>
+            </ScrollView>
+            <TouchableOpacity onPress={onLocationPress} activeOpacity={0.85}>
+              <Ionicons
+                name="chevron-down"
+                size={moderateScale(16)}
+                color="rgba(255,255,255,0.7)"
+              />
+            </TouchableOpacity>
+          </View>
+        </View>
 
         <Animated.View entering={FadeInDown.delay(240).duration(500).springify()}>
           <View style={styles.searchShell}>
@@ -241,6 +258,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     width: '100%',
+    minHeight: moderateScale(44),
     backgroundColor: 'rgba(255,255,255,0.1)',
     borderRadius: borderRadius.lg,
     borderWidth: 1,
@@ -258,15 +276,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     flexShrink: 0,
   },
-  locationText: {
+  locationScroll: {
     flex: 1,
     minWidth: 0,
-    justifyContent: 'center',
+  },
+  locationScrollContent: {
+    alignItems: 'center',
   },
   addressText: {
     fontSize: moderateScale(13),
     fontWeight: '700',
     color: colors.white,
+    lineHeight: moderateScale(18),
   },
   searchShell: {
     position: 'relative',

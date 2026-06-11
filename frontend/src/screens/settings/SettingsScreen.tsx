@@ -51,8 +51,10 @@ const ACCOUNT_ITEMS = [
 const SettingsScreen = () => {
   const navigation = useNavigation();
 
-  const handleItemPress = (_id: string) => {
-    // Wire up navigation when individual settings screens are ready
+  const handleItemPress = (id: string) => {
+    if (id === 'addresses') {
+      navigation.navigate('SavedAddresses' as never);
+    }
   };
 
   return (

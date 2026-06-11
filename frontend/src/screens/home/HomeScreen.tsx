@@ -7,7 +7,7 @@ import {
   Image,
   Dimensions,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   useSharedValue,
@@ -27,6 +27,9 @@ import {
 } from '@/components/home';
 import { FEATURED_PRODUCTS } from '@/components/home/FeaturedProducts';
 import FloatingCartBar from '@/components/cart/FloatingCartBar';
+import { getDeliveryAddress, formatAddressDisplay } from '@/services/addressStorage';
+import { useLocationPermission } from '@/hooks/useLocationPermission';
+import { reverseGeocodeCoordinates } from '@/hooks/useReverseGeocode';
 import theme from '@/styles/theme';
 import globalStyles from '@/styles/globalStyles';
 
@@ -43,9 +46,66 @@ const HomeScreen = () => {
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [isScrolling, setIsScrolling] = useState(false);
   const [stickyHeaderActive, setStickyHeaderActive] = useState(false);
+  const [addressLabel, setAddressLabel] = useState('Detecting location...');
   const scrollY = useSharedValue(0);
   const scrollEndTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const liveAddressCache = useRef<string | null>(null);
   const insets = useSafeAreaInsets();
+  const { getCurrentLocation } = useLocationPermission();
+  const getCurrentLocationRef = useRef(getCurrentLocation);
+  getCurrentLocationRef.current = getCurrentLocation;
+
+  const setAddressIfChanged = useCallback((next: string) => {
+    setAddressLabel((prev) => (prev === next ? prev : next));
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      let cancelled = false;
+
+      const loadAddress = async () => {
+        const saved = await getDeliveryAddress();
+        if (cancelled) return;
+
+        if (saved) {
+          setAddressIfChanged(formatAddressDisplay(saved));
+          return;
+        }
+
+        if (liveAddressCache.current) {
+          setAddressIfChanged(liveAddressCache.current);
+          return;
+        }
+
+        setAddressIfChanged('Detecting location...');
+
+        const location = await getCurrentLocationRef.current();
+        if (cancelled) return;
+
+        if (!location) {
+          setAddressIfChanged('Add delivery address');
+          return;
+        }
+
+        try {
+          const geocoded = await reverseGeocodeCoordinates(location.coords);
+          if (!cancelled) {
+            liveAddressCache.current = geocoded.formattedAddress;
+            setAddressIfChanged(geocoded.formattedAddress);
+          }
+        } catch {
+          if (!cancelled) {
+            setAddressIfChanged('Add delivery address');
+          }
+        }
+      };
+
+      void loadAddress();
+      return () => {
+        cancelled = true;
+      };
+    }, [setAddressIfChanged]),
+  );
 
   const handleIncrement = useCallback((id: string) => {
     setQuantities((prev) => ({
@@ -83,6 +143,10 @@ const HomeScreen = () => {
 
   const handleOpenCart = useCallback(() => {
     navigation.navigate('Cart' as never);
+  }, [navigation]);
+
+  const handleOpenLocation = useCallback(() => {
+    navigation.getParent()?.navigate('SelectLocation' as never);
   }, [navigation]);
 
   const STATUS_BAR_HEIGHT = Platform.OS === 'android'
@@ -182,6 +246,8 @@ const HomeScreen = () => {
             onSearchChange={handleSearchChange}
             isScrolling={isScrolling}
             onAccountPress={handleOpenSettings}
+            addressLabel={addressLabel}
+            onLocationPress={handleOpenLocation}
           />
 
           <View style={styles.contentSection}>
