@@ -64,7 +64,7 @@ const SettingsScreen = () => {
         bounces
       >
         <LinearGradient
-          colors={['#E3F2FD', '#F0F9FF', colors.surfaceSecondary]}
+          colors={['#1A73E8', '#6495ED', colors.surfaceSecondary]}
           locations={[0, 0.45, 1]}
           style={styles.heroGradient}
         >

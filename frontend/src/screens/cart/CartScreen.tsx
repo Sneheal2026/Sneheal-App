@@ -1,22 +1,25 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
-  Image,
   ScrollView,
+  Pressable,
   Platform,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import theme from '@/styles/theme';
-import globalStyles from '@/styles/globalStyles';
+import { CartBilling, CartItemRow } from '@/components/cart';
+import type { BillLine } from '@/components/cart';
 import type { TabScreenProps } from '@/navigation/types';
 
-const { colors, spacing, typography, borderRadius, moderateScale } = theme;
+const { colors, spacing, typography, borderRadius, moderateScale, shadows } = theme;
 
-const ADD_GREEN = '#1F9D55';
+const PAGE_BG = '#F5F6F8';
+const BLINKIT_GREEN = '#0C831F';
+const DELIVERY_FEE = 2.99;
 
 const DUMMY_CART_ITEMS = [
   {
@@ -24,272 +27,366 @@ const DUMMY_CART_ITEMS = [
     name: 'Daily Multivitamin Capsules',
     image: require('../../../assets/images/Vitamins-Minerals.png'),
     price: 12.49,
+    originalPrice: 16.65,
     quantity: 2,
+    unit: '60 capsules',
   },
   {
     id: '2',
     name: 'Pediacare Super Immune Plus',
     image: require('../../../assets/images/Nutrition-Drinks.png'),
     price: 15.99,
+    originalPrice: 18.15,
     quantity: 1,
+    unit: '400 ml',
   },
   {
     id: '4',
     name: 'Pain Relief Tablets',
     image: require('../../../assets/images/Pain-Relief.png'),
     price: 4.99,
+    originalPrice: 6.99,
     quantity: 3,
+    unit: '10 tablets',
   },
 ];
 
-const SUBTOTAL = DUMMY_CART_ITEMS.reduce(
-  (sum, item) => sum + item.price * item.quantity,
-  0,
-);
-
 const CartScreen = (_props: TabScreenProps<'Cart'>) => {
+  const insets = useSafeAreaInsets();
+
+  const itemCount = DUMMY_CART_ITEMS.reduce((sum, item) => sum + item.quantity, 0);
+
+  const { itemTotal, mrpTotal, savings, grandTotal } = useMemo(() => {
+    const itemTotal = DUMMY_CART_ITEMS.reduce(
+      (sum, item) => sum + item.price * item.quantity,
+      0,
+    );
+    const mrpTotal = DUMMY_CART_ITEMS.reduce(
+      (sum, item) => sum + (item.originalPrice ?? item.price) * item.quantity,
+      0,
+    );
+    const productSavings = mrpTotal - itemTotal;
+    const deliverySavings = DELIVERY_FEE;
+    const savings = productSavings + deliverySavings;
+    const grandTotal = itemTotal;
+
+    return { itemTotal, mrpTotal, savings, grandTotal };
+  }, []);
+
+  const billLines: BillLine[] = [
+    {
+      label: 'Item total',
+      value: `$${itemTotal.toFixed(2)}`,
+      strikethrough: mrpTotal > itemTotal ? `$${mrpTotal.toFixed(2)}` : undefined,
+    },
+    {
+      label: 'Delivery charge',
+      value: 'FREE',
+      strikethrough: `$${DELIVERY_FEE.toFixed(2)}`,
+      free: true,
+    },
+    {
+      label: 'Handling charge',
+      value: 'FREE',
+      strikethrough: '$1.00',
+      free: true,
+    },
+    {
+      label: 'Small cart fee',
+      value: '$0.00',
+    },
+  ];
+
   return (
-    <SafeAreaView style={globalStyles.safeArea} edges={['top']}>
-      <View style={styles.header}>
-        <Text style={styles.title}>My Cart</Text>
-        <Text style={styles.subtitle}>3 items in your basket</Text>
-      </View>
-
-      <ScrollView
-        style={styles.list}
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {DUMMY_CART_ITEMS.map((item) => (
-          <View key={item.id} style={styles.itemRow}>
-            <View style={styles.itemImageWrap}>
-              <Image source={item.image} style={styles.itemImage} resizeMode="contain" />
-            </View>
-
-            <View style={styles.itemInfo}>
-              <Text style={styles.itemName} numberOfLines={2}>
-                {item.name}
-              </Text>
-              <Text style={styles.itemPrice}>${item.price.toFixed(2)}</Text>
-            </View>
-
-            <View style={styles.qtyCounter}>
-              <TouchableOpacity style={styles.qtyBtn} activeOpacity={0.7}>
-                <Ionicons name="remove" size={16} color={ADD_GREEN} />
-              </TouchableOpacity>
-              <Text style={styles.qtyText}>{item.quantity}</Text>
-              <TouchableOpacity style={[styles.qtyBtn, styles.qtyBtnAdd]} activeOpacity={0.8}>
-                <Ionicons name="add" size={16} color={colors.white} />
-              </TouchableOpacity>
-            </View>
+    <View style={styles.root}>
+      <SafeAreaView style={styles.safeTop} edges={['top']}>
+        <View style={styles.header}>
+          <View>
+            <Text style={styles.title}>My Cart</Text>
+            <Text style={styles.subtitle}>
+              {itemCount} {itemCount === 1 ? 'item' : 'items'} · Review before checkout
+            </Text>
           </View>
-        ))}
-
-        <View style={styles.summaryCard}>
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Subtotal</Text>
-            <Text style={styles.summaryValue}>${SUBTOTAL.toFixed(2)}</Text>
-          </View>
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Delivery</Text>
-            <Text style={[styles.summaryValue, styles.freeDelivery]}>FREE</Text>
-          </View>
-          <View style={styles.divider} />
-          <View style={styles.summaryRow}>
-            <Text style={styles.totalLabel}>Total</Text>
-            <Text style={styles.totalValue}>${SUBTOTAL.toFixed(2)}</Text>
+          <View style={styles.countBadge}>
+            <Text style={styles.countText}>{itemCount}</Text>
           </View>
         </View>
 
-        <View style={styles.perksCard}>
-          <View style={styles.perkRow}>
-            <Ionicons name="shield-checkmark" size={16} color={colors.success} />
-            <Text style={styles.perkText}>Genuine medicines guaranteed</Text>
+        <View style={styles.deliveryStrip}>
+          <View style={styles.deliveryIcon}>
+            <Ionicons name="flash" size={14} color={BLINKIT_GREEN} />
           </View>
-          <View style={styles.perkRow}>
-            <Ionicons name="flash" size={16} color={colors.warning} />
-            <Text style={styles.perkText}>Delivery in 30–45 mins</Text>
+          <View style={styles.deliveryTextBlock}>
+            <Text style={styles.deliveryTitle}>Delivery in 30–45 mins</Text>
+            <Text style={styles.deliverySub}>Shipment of {DUMMY_CART_ITEMS.length} items</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+        </View>
+      </SafeAreaView>
+
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: moderateScale(100, 0.35) + insets.bottom },
+        ]}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.itemsSection}>
+          <Text style={styles.sectionLabel}>Items in your cart</Text>
+          <View style={styles.itemsList}>
+            {DUMMY_CART_ITEMS.map((item) => (
+              <CartItemRow
+                key={item.id}
+                name={item.name}
+                image={item.image}
+                price={item.price}
+                originalPrice={item.originalPrice}
+                quantity={item.quantity}
+                unit={item.unit}
+              />
+            ))}
+          </View>
+        </View>
+
+        <View style={styles.couponRow}>
+          <View style={styles.couponLeft}>
+            <Ionicons name="ticket-outline" size={18} color={BLINKIT_GREEN} />
+            <Text style={styles.couponText}>Apply coupon</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+        </View>
+
+        <CartBilling
+          lines={billLines}
+          savings={savings}
+          grandTotal={grandTotal}
+        />
+
+        <View style={styles.trustRow}>
+          <View style={styles.trustChip}>
+            <Ionicons name="shield-checkmark" size={14} color={BLINKIT_GREEN} />
+            <Text style={styles.trustText}>Genuine medicines</Text>
+          </View>
+          <View style={styles.trustChip}>
+            <Ionicons name="snow-outline" size={14} color={colors.primary} />
+            <Text style={styles.trustText}>Cold-chain safe</Text>
           </View>
         </View>
       </ScrollView>
 
-      <View style={styles.checkoutBar}>
-        <TouchableOpacity style={styles.checkoutBtn} activeOpacity={0.85}>
-          <Text style={styles.checkoutText}>Proceed to checkout</Text>
-          <Text style={styles.checkoutPrice}>${SUBTOTAL.toFixed(2)}</Text>
-        </TouchableOpacity>
+      <View style={[styles.checkoutBar, { paddingBottom: Math.max(insets.bottom, spacing.md) }]}>
+        <View style={styles.checkoutLeft}>
+          <Text style={styles.checkoutTotal}>${grandTotal.toFixed(2)}</Text>
+          <Text style={styles.checkoutSub}>TOTAL</Text>
+        </View>
+
+        <Pressable
+          style={({ pressed }) => [styles.placeOrderBtn, pressed && styles.placeOrderPressed]}
+        >
+          <LinearGradient
+            colors={[BLINKIT_GREEN, '#0A6B1A']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.placeOrderGradient}
+          >
+            <Text style={styles.placeOrderText}>Place order</Text>
+            <Ionicons name="arrow-forward" size={18} color={colors.white} />
+          </LinearGradient>
+        </Pressable>
       </View>
-    </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  header: {
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.md,
-  },
-  title: {
-    ...typography.h2,
-    color: colors.textPrimary,
-    marginBottom: spacing.xs,
-  },
-  subtitle: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
-  },
-  list: {
+  root: {
     flex: 1,
+    backgroundColor: PAGE_BG,
   },
-  listContent: {
-    paddingHorizontal: spacing.xl,
-    paddingBottom: spacing.xxxl,
+  safeTop: {
+    backgroundColor: colors.white,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderLight,
   },
-  itemRow: {
+  header: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.sm,
+  },
+  title: {
+    fontSize: moderateScale(22, 0.35),
+    fontWeight: '800',
+    color: colors.textPrimary,
+    letterSpacing: -0.3,
+  },
+  subtitle: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    marginTop: 2,
+  },
+  countBadge: {
+    width: moderateScale(36, 0.35),
+    height: moderateScale(36, 0.35),
+    borderRadius: borderRadius.full,
+    backgroundColor: PAGE_BG,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  countText: {
+    fontSize: moderateScale(14, 0.35),
+    fontWeight: '800',
+    color: colors.textPrimary,
+  },
+  deliveryStrip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: spacing.xl,
+    marginBottom: spacing.md,
+    padding: spacing.md,
+    backgroundColor: PAGE_BG,
+    borderRadius: borderRadius.md,
+    gap: spacing.sm,
+  },
+  deliveryIcon: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: '#E7F5EB',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  deliveryTextBlock: {
+    flex: 1,
+    gap: 1,
+  },
+  deliveryTitle: {
+    ...typography.bodySmall,
+    fontWeight: '700',
+    color: colors.textPrimary,
+  },
+  deliverySub: {
+    ...typography.caption,
+    color: colors.textMuted,
+  },
+  scroll: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.sm,
+  },
+  itemsSection: {
+    gap: spacing.sm,
+  },
+  sectionLabel: {
+    ...typography.caption,
+    fontWeight: '700',
+    color: colors.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+    marginBottom: spacing.xxs,
+  },
+  itemsList: {
+    gap: spacing.sm,
+  },
+  couponRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     backgroundColor: colors.white,
     borderRadius: borderRadius.lg,
     padding: spacing.md,
-    marginBottom: spacing.sm,
+    marginTop: spacing.md,
     borderWidth: 1,
-    borderColor: colors.borderLight,
-    gap: spacing.md,
+    borderColor: colors.border,
+    borderStyle: 'dashed',
   },
-  itemImageWrap: {
-    width: moderateScale(56, 0.35),
-    height: moderateScale(56, 0.35),
-    borderRadius: borderRadius.md,
-    backgroundColor: colors.surfaceSecondary,
+  couponLeft: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    padding: spacing.xs,
+    gap: spacing.sm,
   },
-  itemImage: {
-    width: '100%',
-    height: '100%',
+  couponText: {
+    ...typography.bodySmall,
+    fontWeight: '600',
+    color: colors.textPrimary,
   },
-  itemInfo: {
+  trustRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginTop: spacing.md,
+    marginBottom: spacing.lg,
+  },
+  trustChip: {
     flex: 1,
-    minWidth: 0,
-    gap: spacing.xxs,
-  },
-  itemName: {
-    ...typography.bodySmall,
-    fontWeight: '600',
-    color: colors.textPrimary,
-  },
-  itemPrice: {
-    ...typography.bodySmall,
-    fontWeight: '700',
-    color: colors.primary,
-  },
-  qtyCounter: {
     flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.white,
-    borderRadius: borderRadius.md,
-    borderWidth: 1.5,
-    borderColor: ADD_GREEN,
-    flexShrink: 0,
-  },
-  qtyBtn: {
-    width: 30,
-    height: 30,
     alignItems: 'center',
     justifyContent: 'center',
+    gap: spacing.xs,
     backgroundColor: colors.white,
-  },
-  qtyBtnAdd: {
-    backgroundColor: ADD_GREEN,
-  },
-  qtyText: {
-    minWidth: 24,
-    textAlign: 'center',
-    fontSize: moderateScale(13, 0.35),
-    fontWeight: '700',
-    color: colors.textPrimary,
-  },
-  summaryCard: {
-    backgroundColor: colors.white,
-    borderRadius: borderRadius.lg,
-    padding: spacing.lg,
-    marginTop: spacing.md,
+    borderRadius: borderRadius.md,
+    paddingVertical: spacing.sm,
     borderWidth: 1,
     borderColor: colors.borderLight,
-    gap: spacing.sm,
   },
-  summaryRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  summaryLabel: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
-  },
-  summaryValue: {
-    ...typography.bodySmall,
-    fontWeight: '600',
-    color: colors.textPrimary,
-  },
-  freeDelivery: {
-    color: colors.success,
-    fontWeight: '700',
-  },
-  divider: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: colors.border,
-    marginVertical: spacing.xs,
-  },
-  totalLabel: {
-    ...typography.body,
-    fontWeight: '700',
-    color: colors.textPrimary,
-  },
-  totalValue: {
-    ...typography.h4,
-    color: colors.textPrimary,
-  },
-  perksCard: {
-    backgroundColor: colors.surfaceSecondary,
-    borderRadius: borderRadius.lg,
-    padding: spacing.lg,
-    marginTop: spacing.md,
-    gap: spacing.sm,
-  },
-  perkRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  perkText: {
+  trustText: {
     ...typography.caption,
+    fontWeight: '600',
     color: colors.textSecondary,
-    fontWeight: '500',
   },
   checkoutBar: {
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.sm,
-    paddingBottom: Platform.OS === 'ios' ? spacing.lg : spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: colors.borderLight,
-    backgroundColor: colors.white,
-  },
-  checkoutBtn: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: ADD_GREEN,
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.md,
+    backgroundColor: colors.white,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    gap: spacing.lg,
+    ...shadows.lg,
+    shadowOffset: { width: 0, height: -3 },
+  },
+  checkoutLeft: {
+    gap: 1,
+  },
+  checkoutTotal: {
+    fontSize: moderateScale(20, 0.35),
+    fontWeight: '800',
+    color: colors.textPrimary,
+  },
+  checkoutSub: {
+    ...typography.caption,
+    fontWeight: '700',
+    color: colors.textMuted,
+    letterSpacing: 0.5,
+  },
+  placeOrderBtn: {
+    flex: 1,
     borderRadius: borderRadius.lg,
-    paddingVertical: spacing.md + 2,
+    overflow: 'hidden',
+  },
+  placeOrderPressed: {
+    opacity: 0.92,
+  },
+  placeOrderGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    paddingVertical: Platform.OS === 'ios' ? spacing.md + 2 : spacing.md,
     paddingHorizontal: spacing.xl,
   },
-  checkoutText: {
-    ...typography.button,
-    color: colors.white,
-  },
-  checkoutPrice: {
+  placeOrderText: {
     ...typography.button,
     color: colors.white,
   },
