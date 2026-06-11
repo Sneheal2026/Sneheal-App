@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useMemo } from 'react';
 import {
   View,
   StyleSheet,
@@ -25,6 +25,8 @@ import {
   CategoriesGrid,
   FeaturedProducts,
 } from '@/components/home';
+import { FEATURED_PRODUCTS } from '@/components/home/FeaturedProducts';
+import FloatingCartBar from '@/components/cart/FloatingCartBar';
 import theme from '@/styles/theme';
 import globalStyles from '@/styles/globalStyles';
 
@@ -38,14 +40,49 @@ const STICKY_THRESHOLD = 140;
 const HomeScreen = () => {
   const navigation = useNavigation();
   const [searchQuery, setSearchQuery] = useState('');
+  const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [isScrolling, setIsScrolling] = useState(false);
   const [stickyHeaderActive, setStickyHeaderActive] = useState(false);
   const scrollY = useSharedValue(0);
   const scrollEndTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const insets = useSafeAreaInsets();
 
+  const handleIncrement = useCallback((id: string) => {
+    setQuantities((prev) => ({
+      ...prev,
+      [id]: (prev[id] ?? 0) + 1,
+    }));
+  }, []);
+
+  const handleDecrement = useCallback((id: string) => {
+    setQuantities((prev) => {
+      const current = prev[id] ?? 0;
+      if (current <= 1) {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      }
+      return { ...prev, [id]: current - 1 };
+    });
+  }, []);
+
+  const totalItems = useMemo(
+    () => Object.values(quantities).reduce((sum, qty) => sum + qty, 0),
+    [quantities],
+  );
+
+  const previewImages = useMemo(
+    () =>
+      FEATURED_PRODUCTS.filter((p) => (quantities[p.id] ?? 0) > 0).map((p) => p.image),
+    [quantities],
+  );
+
   const handleOpenSettings = useCallback(() => {
     navigation.getParent()?.navigate('Settings' as never);
+  }, [navigation]);
+
+  const handleOpenCart = useCallback(() => {
+    navigation.navigate('Cart' as never);
   }, [navigation]);
 
   const STATUS_BAR_HEIGHT = Platform.OS === 'android'
@@ -111,8 +148,7 @@ const HomeScreen = () => {
 
   return (
     <SafeAreaView style={globalStyles.safeArea} edges={[]}>
-      <View style={{ flex: 1, backgroundColor: colors.background }}>
-
+      <View style={styles.screen}>
         <Animated.View
           style={[
             styles.stickyHeader,
@@ -126,7 +162,10 @@ const HomeScreen = () => {
 
         <Animated.ScrollView
           style={globalStyles.screenContainer}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[
+            styles.scrollContent,
+            totalItems > 0 && styles.scrollContentWithCart,
+          ]}
           showsVerticalScrollIndicator={false}
           onScroll={scrollHandler}
           scrollEventThrottle={16}
@@ -134,7 +173,7 @@ const HomeScreen = () => {
           onMomentumScrollBegin={clearScrollEndTimer}
           onScrollEndDrag={handleScrollEnd}
           onMomentumScrollEnd={handleScrollEnd}
-          removeClippedSubviews={Platform.OS === 'android'}
+          removeClippedSubviews={false}
           overScrollMode="never"
           bounces={Platform.OS === 'ios'}
         >
@@ -146,13 +185,16 @@ const HomeScreen = () => {
           />
 
           <View style={styles.contentSection}>
-         
             <CategoriesGrid />
             <PromoBanner isScrolling={isScrolling} />
-            <FeaturedProducts />
+            <FeaturedProducts
+              quantities={quantities}
+              onIncrement={handleIncrement}
+              onDecrement={handleDecrement}
+            />
           </View>
 
-          <View style={styles.pillImageWrap}>
+          <View style={styles.pillImageWrap} pointerEvents="none">
             <Image
               source={PILL_IMAGE}
               style={styles.pillImage}
@@ -160,22 +202,38 @@ const HomeScreen = () => {
             />
           </View>
         </Animated.ScrollView>
+
+        <FloatingCartBar
+          totalItems={totalItems}
+          previewImages={previewImages}
+          onPress={handleOpenCart}
+        />
       </View>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
   scrollContent: {
     paddingBottom: 0,
   },
+  scrollContentWithCart: {
+    paddingBottom: spacing.xxxxxl + spacing.xl,
+  },
   contentSection: {
     paddingTop: spacing.md,
+    zIndex: 10,
+    elevation: 10,
   },
   pillImageWrap: {
     marginTop: -109,
     marginBottom: -109,
     overflow: 'hidden',
+    zIndex: 0,
   },
   pillImage: {
     width: SCREEN_WIDTH,
