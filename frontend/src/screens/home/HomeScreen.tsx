@@ -142,6 +142,10 @@ const HomeScreen = () => {
     navigation.getParent()?.navigate('Settings' as never);
   }, [navigation]);
 
+  const handleOpenNotifications = useCallback(() => {
+    navigation.getParent()?.navigate('Notifications' as never);
+  }, [navigation]);
+
   const handleOpenCart = useCallback(() => {
     navigation.navigate('Cart' as never);
   }, [navigation]);
@@ -259,6 +263,7 @@ const HomeScreen = () => {
             isVoiceListening={isListening}
             isScrolling={isScrolling}
             onAccountPress={handleOpenSettings}
+            onNotificationsPress={handleOpenNotifications}
             addressLabel={addressLabel}
             onLocationPress={handleOpenLocation}
           />

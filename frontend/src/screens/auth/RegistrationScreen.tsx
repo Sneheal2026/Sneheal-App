@@ -55,12 +55,12 @@ async function pickAadharImage(
   const result =
     source === 'camera'
       ? await ImagePicker.launchCameraAsync({
-          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          mediaTypes: 'images',
           allowsEditing: true,
           quality: 0.85,
         })
       : await ImagePicker.launchImageLibraryAsync({
-          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          mediaTypes: 'images',
           allowsEditing: true,
           quality: 0.85,
         });

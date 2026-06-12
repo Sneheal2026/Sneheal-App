@@ -41,6 +41,7 @@ interface HomeHeaderProps {
   isVoiceListening?: boolean;
   isScrolling?: boolean;
   onAccountPress?: () => void;
+  onNotificationsPress?: () => void;
   addressLabel?: string;
   onLocationPress?: () => void;
 }
@@ -59,6 +60,7 @@ const HomeHeader: React.FC<HomeHeaderProps> = ({
   isVoiceListening = false,
   isScrolling = false,
   onAccountPress,
+  onNotificationsPress,
   addressLabel = 'Add delivery address',
   onLocationPress,
 }) => {
@@ -82,7 +84,14 @@ const HomeHeader: React.FC<HomeHeaderProps> = ({
             </Text>
           </Animated.View>
           <View style={styles.topActions}>
-            <TouchableOpacity style={styles.glassBtn} activeOpacity={0.8}>
+            <TouchableOpacity
+              style={styles.glassBtn}
+              activeOpacity={0.8}
+              onPress={onNotificationsPress}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              accessibilityLabel="Open notifications"
+              accessibilityRole="button"
+            >
               <Ionicons name="notifications-outline" size={20} color={colors.white} />
               <View style={styles.notifDot} />
             </TouchableOpacity>

@@ -1,18 +1,19 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
-  TouchableOpacity,
+  Pressable,
+  StatusBar,
+  Platform,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import theme from '@/styles/theme';
-import globalStyles from '@/styles/globalStyles';
 
-const { colors, spacing, typography, borderRadius, shadows } = theme;
+const { colors, spacing, typography, borderRadius } = theme;
 
 const ACTIVE_DELIVERIES = [
   {
@@ -36,42 +37,74 @@ const ACTIVE_DELIVERIES = [
 ];
 
 const STATS = [
-  { label: "Today's deliveries", value: '8', icon: 'bicycle' as const },
-  { label: 'Earnings today', value: '₹640', icon: 'wallet' as const },
-  { label: 'Rating', value: '4.9', icon: 'star' as const },
+  { label: "Today's deliveries", value: '8', icon: 'bicycle-outline' as const },
+  { label: 'Earnings today', value: '₹640', icon: 'wallet-outline' as const },
+  { label: 'Rating', value: '4.9', icon: 'star-outline' as const },
 ];
 
 const DeliveryAgentHomeScreen = () => {
+  const insets = useSafeAreaInsets();
+  const navigation = useNavigation();
+  const [isOnline, setIsOnline] = useState(true);
+
+  const greeting = useMemo(() => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 17) return 'Good afternoon';
+    return 'Good evening';
+  }, []);
+
   return (
-    <SafeAreaView style={globalStyles.safeArea} edges={['top']}>
+    <View style={styles.root}>
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor={colors.surface}
+        translucent={Platform.OS === 'android'}
+      />
+
+      <SafeAreaView edges={['top']} style={styles.safeTop}>
+        <View style={styles.header}>
+          <View>
+            <Text style={styles.greeting}>{greeting}</Text>
+            <Text style={styles.agentName}>Delivery Agent</Text>
+          </View>
+          <Pressable
+            onPress={() => navigation.navigate('Notifications' as never)}
+            style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}
+            hitSlop={8}
+            accessibilityLabel="Notifications"
+            accessibilityRole="button"
+          >
+            <Ionicons name="notifications-outline" size={22} color={colors.textPrimary} />
+            <View style={styles.badge} />
+          </Pressable>
+        </View>
+
+        <Pressable
+          onPress={() => setIsOnline((prev) => !prev)}
+          style={({ pressed }) => [
+            styles.statusRow,
+            !isOnline && styles.statusRowOffline,
+            pressed && styles.pressed,
+          ]}
+          accessibilityRole="switch"
+          accessibilityState={{ checked: isOnline }}
+        >
+          <View style={[styles.statusDot, !isOnline && styles.statusDotOffline]} />
+          <Text style={styles.statusText}>
+            {isOnline ? 'Online — accepting orders' : 'Offline — tap to go online'}
+          </Text>
+        </Pressable>
+      </SafeAreaView>
+
       <ScrollView
-        style={styles.container}
-        contentContainerStyle={styles.scrollContent}
+        style={styles.scroll}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: insets.bottom + spacing.xl },
+        ]}
         showsVerticalScrollIndicator={false}
       >
-        <LinearGradient
-          colors={[colors.secondary, colors.secondaryDark]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.header}
-        >
-          <View style={styles.headerTop}>
-            <View>
-              <Text style={styles.greeting}>Good afternoon</Text>
-              <Text style={styles.agentName}>Delivery Agent</Text>
-            </View>
-            <TouchableOpacity style={styles.bellBtn}>
-              <Ionicons name="notifications-outline" size={22} color={colors.textInverse} />
-              <View style={styles.badge} />
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.statusPill}>
-            <View style={styles.statusDot} />
-            <Text style={styles.statusText}>You are online — accepting orders</Text>
-          </View>
-        </LinearGradient>
-
         <View style={styles.statsRow}>
           {STATS.map((stat) => (
             <View key={stat.label} style={styles.statCard}>
@@ -84,103 +117,109 @@ const DeliveryAgentHomeScreen = () => {
 
         <Text style={styles.sectionTitle}>Active deliveries</Text>
 
-        {ACTIVE_DELIVERIES.map((delivery) => (
-          <View key={delivery.id} style={styles.deliveryCard}>
-            <View style={styles.deliveryHeader}>
-              <Text style={styles.orderId}>{delivery.orderId}</Text>
-              <View style={styles.statusChip}>
-                <Text style={styles.statusChipText}>{delivery.status}</Text>
-              </View>
-            </View>
-            <Text style={styles.customerName}>{delivery.customer}</Text>
-            <View style={styles.addressRow}>
-              <Ionicons name="location-outline" size={16} color={colors.textSecondary} />
-              <Text style={styles.addressText}>{delivery.address}</Text>
-            </View>
-            <View style={styles.deliveryMeta}>
-              <Text style={styles.metaText}>{delivery.items} items</Text>
-              <Text style={styles.metaDot}>•</Text>
-              <Text style={styles.metaText}>{delivery.distance}</Text>
-            </View>
-            <TouchableOpacity style={styles.actionBtn} activeOpacity={0.85}>
-              <Text style={styles.actionBtnText}>View route</Text>
-              <Ionicons name="navigate" size={16} color={colors.textInverse} />
-            </TouchableOpacity>
-          </View>
-        ))}
-
-        <View style={styles.tipCard}>
-          <Ionicons name="bulb-outline" size={22} color={colors.warning} />
-          <View style={styles.tipContent}>
-            <Text style={styles.tipTitle}>Tip of the day</Text>
-            <Text style={styles.tipText}>
-              Complete deliveries before 8 PM to earn a ₹100 bonus today.
+        {ACTIVE_DELIVERIES.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Ionicons name="bicycle-outline" size={40} color={colors.textMuted} />
+            <Text style={styles.emptyTitle}>No active deliveries</Text>
+            <Text style={styles.emptyText}>
+              New orders will show up here when you are online.
             </Text>
           </View>
-        </View>
+        ) : (
+          ACTIVE_DELIVERIES.map((delivery) => (
+            <View key={delivery.id} style={styles.deliveryCard}>
+              <View style={styles.deliveryHeader}>
+                <Text style={styles.orderId}>{delivery.orderId}</Text>
+                <View style={styles.statusChip}>
+                  <Text style={styles.statusChipText}>{delivery.status}</Text>
+                </View>
+              </View>
+
+              <Text style={styles.customerName}>{delivery.customer}</Text>
+
+              <View style={styles.addressRow}>
+                <Ionicons name="location-outline" size={16} color={colors.textSecondary} />
+                <Text style={styles.addressText}>{delivery.address}</Text>
+              </View>
+
+              <Text style={styles.metaText}>
+                {delivery.items} items · {delivery.distance}
+              </Text>
+
+              <Pressable
+                style={({ pressed }) => [styles.actionBtn, pressed && styles.pressed]}
+                accessibilityRole="button"
+              >
+                <Text style={styles.actionBtnText}>View route</Text>
+                <Ionicons name="navigate-outline" size={16} color={colors.textInverse} />
+              </Pressable>
+            </View>
+          ))
+        )}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  root: {
     flex: 1,
     backgroundColor: colors.background,
   },
-  scrollContent: {
-    paddingBottom: spacing.xxl,
+  safeTop: {
+    backgroundColor: colors.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderLight,
   },
   header: {
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.xxl,
-    borderBottomLeftRadius: borderRadius.xxl,
-    borderBottomRightRadius: borderRadius.xxl,
-  },
-  headerTop: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: spacing.lg,
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.md,
   },
   greeting: {
     ...typography.bodySmall,
-    color: 'rgba(255,255,255,0.75)',
+    color: colors.textSecondary,
     marginBottom: spacing.xxs,
   },
   agentName: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: colors.textInverse,
-    letterSpacing: -0.3,
+    ...typography.h3,
+    color: colors.textPrimary,
   },
-  bellBtn: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: 'rgba(255,255,255,0.18)',
+  iconBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.surfaceSecondary,
     alignItems: 'center',
     justifyContent: 'center',
   },
   badge: {
     position: 'absolute',
-    top: 10,
-    right: 10,
+    top: 9,
+    right: 9,
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: colors.accentGold,
+    backgroundColor: colors.error,
+    borderWidth: 1.5,
+    borderColor: colors.surface,
   },
-  statusPill: {
+  statusRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    alignSelf: 'flex-start',
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    borderRadius: borderRadius.full,
+    marginHorizontal: spacing.xl,
+    marginBottom: spacing.md,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
+    borderRadius: borderRadius.lg,
+    backgroundColor: colors.successLight,
     gap: spacing.sm,
+  },
+  statusRowOffline: {
+    backgroundColor: colors.surfaceSecondary,
   },
   statusDot: {
     width: 8,
@@ -188,28 +227,36 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     backgroundColor: colors.success,
   },
+  statusDotOffline: {
+    backgroundColor: colors.textMuted,
+  },
   statusText: {
-    ...typography.caption,
-    color: colors.textInverse,
+    ...typography.bodySmall,
+    color: colors.textPrimary,
     fontWeight: '600',
+    flex: 1,
+  },
+  scroll: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.lg,
   },
   statsRow: {
     flexDirection: 'row',
-    paddingHorizontal: spacing.lg,
-    marginTop: -spacing.xl,
     gap: spacing.sm,
+    marginBottom: spacing.xl,
   },
   statCard: {
     flex: 1,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.surfaceSecondary,
     borderRadius: borderRadius.lg,
     padding: spacing.md,
     alignItems: 'center',
-    ...shadows.md,
   },
   statValue: {
-    fontSize: 18,
-    fontWeight: '800',
+    ...typography.h4,
     color: colors.textPrimary,
     marginTop: spacing.xs,
   },
@@ -217,25 +264,20 @@ const styles = StyleSheet.create({
     ...typography.caption,
     color: colors.textSecondary,
     textAlign: 'center',
-    marginTop: 2,
+    marginTop: spacing.xxs,
   },
   sectionTitle: {
-    fontSize: 17,
-    fontWeight: '800',
+    ...typography.h4,
     color: colors.textPrimary,
-    marginHorizontal: spacing.xl,
-    marginTop: spacing.xl,
     marginBottom: spacing.md,
   },
   deliveryCard: {
-    marginHorizontal: spacing.lg,
-    marginBottom: spacing.md,
     backgroundColor: colors.surface,
     borderRadius: borderRadius.lg,
     padding: spacing.lg,
     borderWidth: 1,
-    borderColor: colors.borderLight,
-    ...shadows.sm,
+    borderColor: colors.border,
+    marginBottom: spacing.md,
   },
   deliveryHeader: {
     flexDirection: 'row',
@@ -261,7 +303,7 @@ const styles = StyleSheet.create({
     color: colors.success,
   },
   customerName: {
-    fontSize: 16,
+    ...typography.body,
     fontWeight: '700',
     color: colors.textPrimary,
     marginBottom: spacing.xs,
@@ -270,25 +312,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
-    marginBottom: spacing.sm,
+    marginBottom: spacing.xs,
   },
   addressText: {
     ...typography.bodySmall,
     color: colors.textSecondary,
     flex: 1,
   },
-  deliveryMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: spacing.md,
-  },
   metaText: {
     ...typography.caption,
     color: colors.textMuted,
-  },
-  metaDot: {
-    marginHorizontal: spacing.xs,
-    color: colors.textMuted,
+    marginBottom: spacing.md,
   },
   actionBtn: {
     flexDirection: 'row',
@@ -304,29 +338,24 @@ const styles = StyleSheet.create({
     color: colors.textInverse,
     fontSize: 14,
   },
-  tipCard: {
-    flexDirection: 'row',
-    marginHorizontal: spacing.lg,
-    marginTop: spacing.md,
-    padding: spacing.lg,
-    backgroundColor: colors.warningLight,
-    borderRadius: borderRadius.lg,
-    gap: spacing.md,
-    alignItems: 'flex-start',
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: spacing.xxl,
+    paddingHorizontal: spacing.lg,
+    gap: spacing.sm,
   },
-  tipContent: {
-    flex: 1,
-  },
-  tipTitle: {
-    fontSize: 14,
-    fontWeight: '700',
+  emptyTitle: {
+    ...typography.h4,
     color: colors.textPrimary,
-    marginBottom: spacing.xxs,
+    marginTop: spacing.sm,
   },
-  tipText: {
-    ...typography.caption,
+  emptyText: {
+    ...typography.bodySmall,
     color: colors.textSecondary,
-    lineHeight: 18,
+    textAlign: 'center',
+  },
+  pressed: {
+    opacity: 0.85,
   },
 });
 

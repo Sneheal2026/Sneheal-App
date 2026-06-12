@@ -12,6 +12,7 @@ export type AuthStackParamList = {
   Registration: { phoneNumber: string };
   Main: undefined;
   Settings: undefined;
+  Notifications: undefined;
   SavedAddresses: undefined;
   SelectLocation: undefined;
   DeliveryAgentMain: undefined;
