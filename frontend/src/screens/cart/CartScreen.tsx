@@ -15,7 +15,7 @@ import { CartBilling, CartItemRow } from '@/components/cart';
 import type { BillLine } from '@/components/cart';
 import type { TabScreenProps } from '@/navigation/types';
 
-const { colors, spacing, typography, borderRadius, moderateScale, shadows } = theme;
+const { colors, spacing, typography, borderRadius, moderateScale } = theme;
 
 const PAGE_BG = '#F5F6F8';
 const BLINKIT_GREEN = '#0C831F';
@@ -128,7 +128,7 @@ const CartScreen = (_props: TabScreenProps<'Cart'>) => {
         style={styles.scroll}
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingBottom: moderateScale(100, 0.35) + insets.bottom },
+          { paddingBottom: Math.max(insets.bottom, spacing.lg) },
         ]}
         showsVerticalScrollIndicator={false}
       >
@@ -173,28 +173,28 @@ const CartScreen = (_props: TabScreenProps<'Cart'>) => {
             <Text style={styles.trustText}>Cold-chain safe</Text>
           </View>
         </View>
-      </ScrollView>
 
-      <View style={[styles.checkoutBar, { paddingBottom: Math.max(insets.bottom, spacing.md) }]}>
-        <View style={styles.checkoutLeft}>
-          <Text style={styles.checkoutTotal}>${grandTotal.toFixed(2)}</Text>
-          <Text style={styles.checkoutSub}>TOTAL</Text>
-        </View>
+        <View style={styles.checkoutBar}>
+          <View style={styles.checkoutLeft}>
+            <Text style={styles.checkoutTotal}>${grandTotal.toFixed(2)}</Text>
+            <Text style={styles.checkoutSub}>TOTAL</Text>
+          </View>
 
-        <Pressable
-          style={({ pressed }) => [styles.placeOrderBtn, pressed && styles.placeOrderPressed]}
-        >
-          <LinearGradient
-            colors={[BLINKIT_GREEN, '#0A6B1A']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.placeOrderGradient}
+          <Pressable
+            style={({ pressed }) => [styles.placeOrderBtn, pressed && styles.placeOrderPressed]}
           >
-            <Text style={styles.placeOrderText}>Place order</Text>
-            <Ionicons name="arrow-forward" size={18} color={colors.white} />
-          </LinearGradient>
-        </Pressable>
-      </View>
+            <LinearGradient
+              colors={[BLINKIT_GREEN, '#0A6B1A']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.placeOrderGradient}
+            >
+              <Text style={styles.placeOrderText}>Place order</Text>
+              {/* <Ionicons name="arrow-forward" size={18} color={colors.white} /> */}
+            </LinearGradient>
+          </Pressable>
+        </View>
+      </ScrollView>
     </View>
   );
 };
@@ -321,7 +321,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.sm,
     marginTop: spacing.md,
-    marginBottom: spacing.lg,
   },
   trustChip: {
     flex: 1,
@@ -341,20 +340,13 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   checkoutBar: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.md,
+    marginTop: spacing.lg,
+    padding: spacing.md,
     backgroundColor: colors.white,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
+    borderRadius: borderRadius.lg,
     gap: spacing.lg,
-    ...shadows.lg,
-    shadowOffset: { width: 0, height: -3 },
   },
   checkoutLeft: {
     gap: 1,

@@ -39,11 +39,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
         returnKeyType="search"
       />
       <TouchableOpacity style={styles.micBtn} activeOpacity={0.7}>
-        <Ionicons name="mic-outline" size={18} color={colors.textMuted} />
-      </TouchableOpacity>
-      <View style={styles.divider} />
-      <TouchableOpacity style={styles.cameraBtn} activeOpacity={0.7}>
-        <Ionicons name="camera-outline" size={18} color={colors.textSecondary} />
+        <Ionicons name="mic-outline" size={18} color={colors.textSecondary} />
       </TouchableOpacity>
     </View>
   );
@@ -105,16 +101,6 @@ const styles = StyleSheet.create({
     paddingVertical: 0,
   },
   micBtn: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-  },
-  divider: {
-    width: 1,
-    height: 20,
-    backgroundColor: colors.border,
-    marginHorizontal: spacing.sm,
-  },
-  cameraBtn: {
     paddingHorizontal: spacing.xs,
     paddingVertical: spacing.xs,
   },

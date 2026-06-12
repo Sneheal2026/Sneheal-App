@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -12,22 +12,27 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
+  cancelAnimation,
   Easing,
   runOnJS,
 } from 'react-native-reanimated';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import theme from '@/styles/theme';
 
 const { colors, spacing, borderRadius, moderateScale } = theme;
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-const BANNER_WIDTH = SCREEN_WIDTH - spacing.xl * 2;
+const SIDE_INSET = spacing.xl;
+const PEEK = spacing.lg;
+const BANNER_WIDTH = SCREEN_WIDTH;
 const BANNER_HEIGHT = moderateScale(172);
 const SLIDE_GAP = spacing.md;
-const SLIDE_WIDTH = BANNER_WIDTH - SLIDE_GAP;
+const SLIDE_WIDTH = SCREEN_WIDTH - SIDE_INSET - PEEK;
 const ITEM_STRIDE = SLIDE_WIDTH + SLIDE_GAP;
 const AUTO_PLAY_MS = 3600;
 const SCROLL_DURATION = 1300;
 const SMOOTH_EASING = Easing.bezier(0.22, 1, 0.36, 1);
+const VELOCITY_THRESHOLD = 450;
 
 interface PromoSlide {
   id: string;
@@ -93,11 +98,13 @@ const PROMO_SLIDES: PromoSlide[] = [
   },
 ];
 
+const SLIDE_COUNT = PROMO_SLIDES.length;
+const MAX_TRANSLATE = -(SLIDE_COUNT - 1) * ITEM_STRIDE;
+
 const LOOP_SLIDES: PromoSlide[] = [...PROMO_SLIDES, PROMO_SLIDES[0]];
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: spacing.xl,
     marginTop: spacing.xl,
     marginBottom: spacing.md,
   },
@@ -109,6 +116,7 @@ const styles = StyleSheet.create({
   carouselTrack: {
     flexDirection: 'row',
     height: BANNER_HEIGHT,
+    paddingLeft: SIDE_INSET,
   },
   slideWrapper: {
     width: SLIDE_WIDTH,
@@ -341,7 +349,7 @@ const PromoBanner = ({ isScrolling = false }: PromoBannerProps) => {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const advanceForwardRef = useRef<() => void>(() => {});
   const translateX = useSharedValue(0);
-  const slideCount = PROMO_SLIDES.length;
+  const dragStartX = useSharedValue(0);
 
   isScrollingRef.current = isScrolling;
 
@@ -375,6 +383,78 @@ const PromoBanner = ({ isScrolling = false }: PromoBannerProps) => {
     handleSettledRef.current(index);
   }, []);
 
+  const snapToIndex = useCallback((targetIndex: number) => {
+    const clamped = Math.max(0, Math.min(SLIDE_COUNT - 1, targetIndex));
+    const fromIndex = visualIndexRef.current;
+
+    isAnimatingRef.current = true;
+    clearTimer();
+    setActiveIndex(clamped);
+
+    translateX.value = withTiming(
+      -clamped * ITEM_STRIDE,
+      {
+        duration: SCROLL_DURATION,
+        easing: SMOOTH_EASING,
+      },
+      (finished) => {
+        'worklet';
+        runOnJS(settleSlide)(finished ? clamped : fromIndex);
+      },
+    );
+  }, [translateX, clearTimer, settleSlide]);
+
+  const snapToIndexRef = useRef(snapToIndex);
+  snapToIndexRef.current = snapToIndex;
+
+  const onDragStart = useCallback(() => {
+    clearTimer();
+    isAnimatingRef.current = true;
+  }, [clearTimer]);
+
+  const handlePanEnd = useCallback((currentX: number, velocityX: number) => {
+    const rawIndex = -currentX / ITEM_STRIDE;
+    let targetIndex: number;
+
+    if (Math.abs(velocityX) > VELOCITY_THRESHOLD) {
+      targetIndex = velocityX < 0
+        ? Math.ceil(rawIndex - 0.12)
+        : Math.floor(rawIndex + 0.12);
+    } else {
+      targetIndex = Math.round(rawIndex);
+    }
+
+    snapToIndexRef.current(targetIndex);
+  }, []);
+
+  const panGesture = useMemo(
+    () => Gesture.Pan()
+      .activeOffsetX([-14, 14])
+      .failOffsetY([-12, 12])
+      .onStart(() => {
+        'worklet';
+        cancelAnimation(translateX);
+        dragStartX.value = translateX.value;
+        runOnJS(onDragStart)();
+      })
+      .onUpdate((event) => {
+        'worklet';
+        const next = dragStartX.value + event.translationX;
+        translateX.value = Math.min(0, Math.max(MAX_TRANSLATE, next));
+      })
+      .onEnd((event) => {
+        'worklet';
+        runOnJS(handlePanEnd)(translateX.value, event.velocityX);
+      })
+      .onFinalize((_event, success) => {
+        'worklet';
+        if (!success) {
+          runOnJS(handlePanEnd)(translateX.value, 0);
+        }
+      }),
+    [onDragStart, handlePanEnd, translateX, dragStartX],
+  );
+
   const advanceForward = useCallback(() => {
     if (isAnimatingRef.current) return;
 
@@ -383,7 +463,7 @@ const PromoBanner = ({ isScrolling = false }: PromoBannerProps) => {
 
     const fromIndex = visualIndexRef.current;
     const nextVisual = fromIndex + 1;
-    const previewIndex = nextVisual >= slideCount ? 0 : nextVisual;
+    const previewIndex = nextVisual >= SLIDE_COUNT ? 0 : nextVisual;
 
     setActiveIndex(previewIndex);
 
@@ -400,7 +480,7 @@ const PromoBanner = ({ isScrolling = false }: PromoBannerProps) => {
           return;
         }
 
-        if (nextVisual >= slideCount) {
+        if (nextVisual >= SLIDE_COUNT) {
           translateX.value = 0;
           runOnJS(settleSlide)(0);
         } else {
@@ -408,30 +488,14 @@ const PromoBanner = ({ isScrolling = false }: PromoBannerProps) => {
         }
       },
     );
-  }, [translateX, clearTimer, settleSlide, slideCount]);
+  }, [translateX, clearTimer, settleSlide]);
 
   advanceForwardRef.current = advanceForward;
 
   const goToSlide = useCallback((targetIndex: number) => {
     if (isAnimatingRef.current || targetIndex === visualIndexRef.current) return;
-
-    const fromIndex = visualIndexRef.current;
-    isAnimatingRef.current = true;
-    clearTimer();
-    setActiveIndex(targetIndex);
-
-    translateX.value = withTiming(
-      -targetIndex * ITEM_STRIDE,
-      {
-        duration: SCROLL_DURATION,
-        easing: SMOOTH_EASING,
-      },
-      (finished) => {
-        'worklet';
-        runOnJS(settleSlide)(finished ? targetIndex : fromIndex);
-      },
-    );
-  }, [translateX, clearTimer, settleSlide]);
+    snapToIndex(targetIndex);
+  }, [snapToIndex]);
 
   useEffect(() => {
     if (isScrolling) {
@@ -452,15 +516,17 @@ const PromoBanner = ({ isScrolling = false }: PromoBannerProps) => {
 
   return (
     <View style={styles.container}>
-      <View style={styles.carouselViewport}>
-        <Animated.View style={[styles.carouselTrack, trackStyle]}>
-          {LOOP_SLIDES.map((slide, index) => (
-            <View key={`${slide.id}-${index}`} style={styles.slideWrapper}>
-              <PromoSlideCard slide={slide} />
-            </View>
-          ))}
-        </Animated.View>
-      </View>
+      <GestureDetector gesture={panGesture}>
+        <View style={styles.carouselViewport}>
+          <Animated.View style={[styles.carouselTrack, trackStyle]}>
+            {LOOP_SLIDES.map((slide, index) => (
+              <View key={`${slide.id}-${index}`} style={styles.slideWrapper}>
+                <PromoSlideCard slide={slide} />
+              </View>
+            ))}
+          </Animated.View>
+        </View>
+      </GestureDetector>
 
       <View style={styles.progressRow}>
         <View style={styles.dotsRow}>
