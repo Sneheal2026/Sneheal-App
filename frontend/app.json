@@ -10,14 +10,16 @@
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "Sneheal needs your location to deliver medicines to your exact address."
+        "NSLocationWhenInUseUsageDescription": "Sneheal needs your location to deliver medicines to your exact address.",
+        "NSMicrophoneUsageDescription": "Allow Sneheal to use the microphone for voice search.",
+        "NSSpeechRecognitionUsageDescription": "Allow Sneheal to use speech recognition for voice search."
       }
     },
     "android": {
       "package": "com.sneheal.app",
       "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/Sneheal-Logoo.png",
+        "foregroundImage": "./assets/images/icon.png",
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
@@ -29,7 +31,7 @@
     },
     "web": {
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/favicon-48.png"
     },
     "plugins": [
       [
@@ -52,6 +54,13 @@
         "expo-location",
         {
           "locationWhenInUsePermission": "Sneheal needs your location to deliver medicines to your exact address."
+        }
+      ],
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "Allow Sneheal to use the microphone for voice search.",
+          "speechRecognitionPermission": "Allow Sneheal to use speech recognition for voice search."
         }
       ]
     ],

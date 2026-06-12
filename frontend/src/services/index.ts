@@ -1,2 +1,1 @@
-// API services
-// Example: export { authService } from './authService';
+export { speechRecognitionService } from './speechRecognitionService';

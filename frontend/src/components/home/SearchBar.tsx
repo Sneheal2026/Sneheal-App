@@ -8,6 +8,8 @@ const { colors, spacing, typography, borderRadius, shadows } = theme;
 interface SearchBarProps {
   value: string;
   onChangeText: (text: string) => void;
+  onMicPress?: () => void;
+  isListening?: boolean;
   compact?: boolean;
   insideHeader?: boolean;
   elevated?: boolean;
@@ -16,6 +18,8 @@ interface SearchBarProps {
 const SearchBar: React.FC<SearchBarProps> = ({
   value,
   onChangeText,
+  onMicPress,
+  isListening = false,
   compact = false,
   insideHeader = false,
   elevated = false,
@@ -32,14 +36,26 @@ const SearchBar: React.FC<SearchBarProps> = ({
       <Ionicons name="search" size={18} color={colors.textMuted} style={styles.searchIcon} />
       <TextInput
         style={styles.searchInput}
-        placeholder="Search medicines "
-        placeholderTextColor={colors.textMuted}
+        placeholder={isListening ? 'Listening...' : 'Search medicines '}
+        placeholderTextColor={isListening ? colors.primary : colors.textMuted}
         value={value}
         onChangeText={onChangeText}
         returnKeyType="search"
       />
-      <TouchableOpacity style={styles.micBtn} activeOpacity={0.7}>
-        <Ionicons name="mic-outline" size={18} color={colors.textSecondary} />
+      <TouchableOpacity
+        style={[styles.micBtn, isListening && styles.micBtnActive]}
+        activeOpacity={0.7}
+        onPress={() => {
+          void onMicPress?.();
+        }}
+        accessibilityLabel={isListening ? 'Stop voice search' : 'Start voice search'}
+        accessibilityRole="button"
+      >
+        <Ionicons
+          name={isListening ? 'mic' : 'mic-outline'}
+          size={18}
+          color={isListening ? colors.primary : colors.textSecondary}
+        />
       </TouchableOpacity>
     </View>
   );
@@ -103,6 +119,10 @@ const styles = StyleSheet.create({
   micBtn: {
     paddingHorizontal: spacing.xs,
     paddingVertical: spacing.xs,
+    borderRadius: borderRadius.full,
+  },
+  micBtnActive: {
+    backgroundColor: colors.primary + '18',
   },
 });
 

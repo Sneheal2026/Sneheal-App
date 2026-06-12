@@ -22,3 +22,14 @@ export type ApiResponse<T> = {
   error?: string;
   message?: string;
 };
+
+export type {
+  VoiceRecognitionState,
+  SpeechPermissionStatus,
+  SpeechErrorCategory,
+  SpeechRecognitionError,
+  UseVoiceRecognitionOptions,
+  UseVoiceRecognitionReturn,
+} from './speech.types';
+
+export { mapSpeechError, mapPermissionError } from './speech.types';

@@ -29,6 +29,7 @@ import { FEATURED_PRODUCTS } from '@/components/home/FeaturedProducts';
 import FloatingCartBar from '@/components/cart/FloatingCartBar';
 import { getDeliveryAddress, formatAddressDisplay } from '@/services/addressStorage';
 import { useLocationPermission } from '@/hooks/useLocationPermission';
+import { useVoiceRecognition } from '@/hooks/useVoiceRecognition';
 import { reverseGeocodeCoordinates } from '@/hooks/useReverseGeocode';
 import theme from '@/styles/theme';
 import globalStyles from '@/styles/globalStyles';
@@ -190,6 +191,10 @@ const HomeScreen = () => {
     setSearchQuery(text);
   }, []);
 
+  const { toggleListening, isListening } = useVoiceRecognition({
+    onTranscriptChange: handleSearchChange,
+  });
+
   const clearScrollEndTimer = useCallback(() => {
     if (scrollEndTimer.current) {
       clearTimeout(scrollEndTimer.current);
@@ -221,7 +226,13 @@ const HomeScreen = () => {
           ]}
           pointerEvents={stickyHeaderActive ? 'box-none' : 'none'}
         >
-          <SearchBar value={searchQuery} onChangeText={handleSearchChange} compact />
+          <SearchBar
+            value={searchQuery}
+            onChangeText={handleSearchChange}
+            onMicPress={toggleListening}
+            isListening={isListening}
+            compact
+          />
         </Animated.View>
 
         <Animated.ScrollView
@@ -244,6 +255,8 @@ const HomeScreen = () => {
           <HomeHeader
             searchQuery={searchQuery}
             onSearchChange={handleSearchChange}
+            onMicPress={toggleListening}
+            isVoiceListening={isListening}
             isScrolling={isScrolling}
             onAccountPress={handleOpenSettings}
             addressLabel={addressLabel}

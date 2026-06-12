@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import SearchBar from '@/components/home/SearchBar';
+import { useVoiceRecognition } from '@/hooks/useVoiceRecognition';
 import theme from '@/styles/theme';
 import globalStyles from '@/styles/globalStyles';
 
@@ -36,12 +37,18 @@ const CATEGORIES = [
 const SearchScreen = () => {
   const [searchQuery, setSearchQuery] = useState('');
 
+  const { toggleListening, isListening } = useVoiceRecognition({
+    onTranscriptChange: setSearchQuery,
+  });
+
   return (
     <SafeAreaView style={globalStyles.safeArea} edges={['top']}>
       <View style={styles.searchWrap}>
         <SearchBar
           value={searchQuery}
           onChangeText={setSearchQuery}
+          onMicPress={toggleListening}
+          isListening={isListening}
           compact
         />
       </View>

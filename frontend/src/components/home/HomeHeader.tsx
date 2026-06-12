@@ -37,6 +37,8 @@ const UPLOAD_ACTIONS = [
 interface HomeHeaderProps {
   searchQuery: string;
   onSearchChange: (text: string) => void;
+  onMicPress?: () => void;
+  isVoiceListening?: boolean;
   isScrolling?: boolean;
   onAccountPress?: () => void;
   addressLabel?: string;
@@ -53,6 +55,8 @@ const getGreeting = (): string => {
 const HomeHeader: React.FC<HomeHeaderProps> = ({
   searchQuery,
   onSearchChange,
+  onMicPress,
+  isVoiceListening = false,
   isScrolling = false,
   onAccountPress,
   addressLabel = 'Add delivery address',
@@ -134,6 +138,8 @@ const HomeHeader: React.FC<HomeHeaderProps> = ({
             <SearchBar
               value={searchQuery}
               onChangeText={onSearchChange}
+              onMicPress={onMicPress}
+              isListening={isVoiceListening}
               insideHeader
               elevated
             />
