@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -8,18 +8,27 @@ import {
   Platform,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import theme from '@/styles/theme';
 import { CartBilling, CartItemRow } from '@/components/cart';
 import type { BillLine } from '@/components/cart';
 import type { TabScreenProps } from '@/navigation/types';
+import { getDeliveryAddress, formatAddressDisplay } from '@/services/addressStorage';
+import type { DeliveryAddress, AddressLabel } from '@/types/address';
 
 const { colors, spacing, typography, borderRadius, moderateScale } = theme;
 
 const PAGE_BG = '#F5F6F8';
 const BLINKIT_GREEN = '#0C831F';
 const DELIVERY_FEE = 2.99;
+
+const LABEL_CONFIG: Record<AddressLabel, { text: string; icon: keyof typeof Ionicons.glyphMap }> = {
+  home: { text: 'Home', icon: 'home-outline' },
+  work: { text: 'Work', icon: 'briefcase-outline' },
+  other: { text: 'Other', icon: 'location-outline' },
+};
 
 const DUMMY_CART_ITEMS = [
   {
@@ -51,8 +60,41 @@ const DUMMY_CART_ITEMS = [
   },
 ];
 
-const CartScreen = (_props: TabScreenProps<'Cart'>) => {
+const CartScreen = ({ navigation }: TabScreenProps<'Cart'>) => {
   const insets = useSafeAreaInsets();
+  const [savedAddress, setSavedAddress] = useState<DeliveryAddress | null>(null);
+
+  const loadAddress = useCallback(async () => {
+    const address = await getDeliveryAddress();
+    setSavedAddress(address);
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      void loadAddress();
+    }, [loadAddress]),
+  );
+
+  const handleAddressPress = useCallback(() => {
+    const parent = navigation.getParent();
+    if (savedAddress) {
+      parent?.navigate('SavedAddresses' as never);
+      return;
+    }
+    parent?.navigate('SelectLocation' as never);
+  }, [navigation, savedAddress]);
+
+  const addressTitle = savedAddress
+    ? LABEL_CONFIG[savedAddress.label].text
+    : 'Add delivery address';
+
+  const addressSubtitle = savedAddress
+    ? formatAddressDisplay(savedAddress)
+    : 'Set your delivery location for checkout';
+
+  const addressIcon = savedAddress
+    ? LABEL_CONFIG[savedAddress.label].icon
+    : 'location-outline';
 
   const itemCount = DUMMY_CART_ITEMS.reduce((sum, item) => sum + item.quantity, 0);
 
@@ -112,16 +154,32 @@ const CartScreen = (_props: TabScreenProps<'Cart'>) => {
           </View>
         </View>
 
-        <View style={styles.deliveryStrip}>
-          <View style={styles.deliveryIcon}>
-            <Ionicons name="flash" size={14} color={BLINKIT_GREEN} />
+        <Pressable
+          style={({ pressed }) => [styles.addressStrip, pressed && styles.addressStripPressed]}
+          onPress={handleAddressPress}
+          accessibilityRole="button"
+          accessibilityLabel={savedAddress ? 'Change delivery address' : 'Add delivery address'}
+        >
+          <View style={[styles.addressIcon, !savedAddress && styles.addressIconEmpty]}>
+            <Ionicons
+              name={addressIcon}
+              size={15}
+              color={savedAddress ? BLINKIT_GREEN : colors.textMuted}
+            />
           </View>
-          <View style={styles.deliveryTextBlock}>
-            <Text style={styles.deliveryTitle}>Delivery in 30–45 mins</Text>
-            <Text style={styles.deliverySub}>Shipment of {DUMMY_CART_ITEMS.length} items</Text>
+          <View style={styles.addressTextBlock}>
+            <Text
+              style={[styles.addressTitle, !savedAddress && styles.addressTitleEmpty]}
+              numberOfLines={1}
+            >
+              {addressTitle}
+            </Text>
+            <Text style={styles.addressSub} numberOfLines={2}>
+              {addressSubtitle}
+            </Text>
           </View>
           <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
-        </View>
+        </Pressable>
       </SafeAreaView>
 
       <ScrollView
@@ -243,7 +301,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: colors.textPrimary,
   },
-  deliveryStrip: {
+  addressStrip: {
     flexDirection: 'row',
     alignItems: 'center',
     marginHorizontal: spacing.xl,
@@ -252,27 +310,41 @@ const styles = StyleSheet.create({
     backgroundColor: PAGE_BG,
     borderRadius: borderRadius.md,
     gap: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
   },
-  deliveryIcon: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
+  addressStripPressed: {
+    opacity: 0.92,
+  },
+  addressIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: '#E7F5EB',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  deliveryTextBlock: {
-    flex: 1,
-    gap: 1,
+  addressIconEmpty: {
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
-  deliveryTitle: {
+  addressTextBlock: {
+    flex: 1,
+    gap: 2,
+  },
+  addressTitle: {
     ...typography.bodySmall,
     fontWeight: '700',
     color: colors.textPrimary,
   },
-  deliverySub: {
+  addressTitleEmpty: {
+    color: BLINKIT_GREEN,
+  },
+  addressSub: {
     ...typography.caption,
     color: colors.textMuted,
+    lineHeight: moderateScale(16, 0.35),
   },
   scroll: {
     flex: 1,

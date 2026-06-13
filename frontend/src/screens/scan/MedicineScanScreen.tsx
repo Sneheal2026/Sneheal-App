@@ -7,6 +7,7 @@ import {
   Pressable,
   Alert,
   useWindowDimensions,
+  type LayoutChangeEvent,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,14 +18,15 @@ import Animated, {
   FadeIn,
   FadeInDown,
   FadeInUp,
+  Extrapolation,
+  interpolate,
   useAnimatedStyle,
   useSharedValue,
   withRepeat,
-  withSequence,
   withTiming,
   Easing,
+  cancelAnimation,
 } from 'react-native-reanimated';
-import MedicineLoader from '@/components/common/MedicineLoader';
 import theme from '@/styles/theme';
 import { pickImageFromSource, type PickedImage } from '@/utils/imagePicker';
 import type { AuthScreenProps } from '@/navigation/types';
@@ -44,6 +46,8 @@ const SCAN_TIPS = [
 ];
 
 const SCAN_DURATION_MS = 2600;
+const SCAN_BEAM_DURATION_MS = 2800;
+const SCAN_ZONE_INSET = moderateScale(24);
 
 const CornerBracket = ({ position }: { position: 'tl' | 'tr' | 'bl' | 'br' }) => {
   const bracketStyle = [
@@ -57,6 +61,93 @@ const CornerBracket = ({ position }: { position: 'tl' | 'tr' | 'bl' | 'br' }) =>
   return <View style={bracketStyle} />;
 };
 
+interface ScanBeamOverlayProps {
+  active: boolean;
+  insetX?: number;
+}
+
+const ScanBeamOverlay = ({ active, insetX = SCAN_ZONE_INSET }: ScanBeamOverlayProps) => {
+  const scanProgress = useSharedValue(0);
+  const zoneHeight = useSharedValue(0);
+
+  useEffect(() => {
+    if (!active) {
+      cancelAnimation(scanProgress);
+      scanProgress.value = 0;
+      return;
+    }
+
+    scanProgress.value = 0;
+    scanProgress.value = withRepeat(
+      withTiming(1, {
+        duration: SCAN_BEAM_DURATION_MS,
+        easing: Easing.bezier(0.42, 0, 0.58, 1),
+      }),
+      -1,
+      false,
+    );
+
+    return () => {
+      cancelAnimation(scanProgress);
+    };
+  }, [active, scanProgress]);
+
+  const handleZoneLayout = useCallback(
+    (event: LayoutChangeEvent) => {
+      zoneHeight.value = event.nativeEvent.layout.height;
+    },
+    [zoneHeight],
+  );
+
+  const beamStyle = useAnimatedStyle(() => {
+    const height = zoneHeight.value;
+    if (height <= 0) {
+      return { opacity: 0, transform: [{ translateY: 0 }] };
+    }
+
+    const travelRange = Math.max(height - insetX * 2, 1);
+    const translateY = insetX + scanProgress.value * travelRange;
+    const opacity = interpolate(
+      scanProgress.value,
+      [0, 0.04, 0.96, 1],
+      [0.25, 1, 1, 0.25],
+      Extrapolation.CLAMP,
+    );
+
+    return {
+      opacity,
+      transform: [{ translateY }],
+    };
+  });
+
+  const trailStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(scanProgress.value, [0, 0.5, 1], [0.55, 0.35, 0.2], Extrapolation.CLAMP),
+  }));
+
+  if (!active) {
+    return null;
+  }
+
+  return (
+    <View style={styles.scanOverlay} onLayout={handleZoneLayout} pointerEvents="none">
+      <Animated.View style={[styles.scanBeamWrap, { left: insetX, right: insetX }, beamStyle]}>
+        <LinearGradient
+          colors={['rgba(26,115,232,0)', 'rgba(26,115,232,0.95)', 'rgba(26,115,232,0)']}
+          start={{ x: 0, y: 0.5 }}
+          end={{ x: 1, y: 0.5 }}
+          style={styles.scanBeamLine}
+        />
+        <Animated.View style={[styles.scanBeamTrailWrap, trailStyle]}>
+          <LinearGradient
+            colors={['rgba(26,115,232,0.42)', 'rgba(26,115,232,0.14)', 'rgba(26,115,232,0)']}
+            style={styles.scanBeamTrail}
+          />
+        </Animated.View>
+      </Animated.View>
+    </View>
+  );
+};
+
 const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => {
   const insets = useSafeAreaInsets();
   const { width: screenWidth } = useWindowDimensions();
@@ -67,22 +158,18 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
   const [isScanning, setIsScanning] = useState(false);
   const [scanComplete, setScanComplete] = useState(false);
 
-  const scanLine = useSharedValue(0);
+  const bracketPulse = useSharedValue(0.72);
 
   useEffect(() => {
-    scanLine.value = withRepeat(
-      withSequence(
-        withTiming(1, { duration: 2200, easing: Easing.inOut(Easing.ease) }),
-        withTiming(0, { duration: 2200, easing: Easing.inOut(Easing.ease) }),
-      ),
+    bracketPulse.value = withRepeat(
+      withTiming(1, { duration: 1800, easing: Easing.inOut(Easing.sin) }),
       -1,
-      false,
+      true,
     );
-  }, [scanLine]);
+  }, [bracketPulse]);
 
-  const scanLineStyle = useAnimatedStyle(() => ({
-    top: `${8 + scanLine.value * 78}%`,
-    opacity: pickedImage ? 0 : 0.85,
+  const bracketGlowStyle = useAnimatedStyle(() => ({
+    opacity: bracketPulse.value,
   }));
 
   const canScan = Boolean(pickedImage) && !isScanning && !isPicking;
@@ -177,14 +264,14 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
         keyboardShouldPersistTaps="handled"
       >
         <Animated.View entering={FadeInDown.duration(400)} style={styles.heroBlock}>
-          <View style={styles.heroIconRow}>
+          {/* <View style={styles.heroIconRow}>
             <View style={styles.heroIcon}>
               <Ionicons name="document-text-outline" size={18} color={ACCENT} />
             </View>
             <View style={styles.heroIcon}>
               <Ionicons name="medkit-outline" size={18} color={colors.secondary} />
             </View>
-          </View>
+          </View> */}
           <Text style={styles.heroTitle}>Prescription or medicine photo</Text>
           <Text style={styles.heroSubtitle}>
             Upload any clear image — we will scan and identify it for you.
@@ -210,30 +297,38 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
                     contentFit="cover"
                     transition={220}
                   />
-                  <LinearGradient
-                    colors={['transparent', 'rgba(15,23,42,0.72)']}
-                    style={styles.previewGradient}
-                  >
-                    <View style={styles.readyPill}>
-                      <Ionicons name="checkmark-circle" size={14} color={colors.success} />
-                      <Text style={styles.readyPillText}>Ready to scan</Text>
+                  {isScanning ? (
+                    <View style={styles.scanningOverlay}>
+                      <ScanBeamOverlay active />
+                      <View style={styles.scanningStatus}>
+                        <View style={styles.scanningDot} />
+                        <Text style={styles.scanningStatusText}>Analyzing image...</Text>
+                      </View>
                     </View>
-                  </LinearGradient>
+                  ) : (
+                    <LinearGradient
+                      colors={['transparent', 'rgba(15,23,42,0.72)']}
+                      style={styles.previewGradient}
+                    >
+                      <View style={styles.readyPill}>
+                        <Ionicons name="checkmark-circle" size={14} color={colors.success} />
+                        <Text style={styles.readyPillText}>Ready to scan</Text>
+                      </View>
+                    </LinearGradient>
+                  )}
                 </>
               ) : (
                 <View style={styles.emptyWrap}>
-                  <CornerBracket position="tl" />
-                  <CornerBracket position="tr" />
-                  <CornerBracket position="bl" />
-                  <CornerBracket position="br" />
-                  <Animated.View style={[styles.scanLine, scanLineStyle]} />
+                  <Animated.View style={[styles.bracketGlow, bracketGlowStyle]}>
+                    <CornerBracket position="tl" />
+                    <CornerBracket position="tr" />
+                    <CornerBracket position="bl" />
+                    <CornerBracket position="br" />
+                  </Animated.View>
+                  <ScanBeamOverlay active />
                   <View style={styles.emptyIcon}>
                     <Ionicons name="scan-outline" size={moderateScale(36)} color={ACCENT} />
                   </View>
-                  <Text style={styles.emptyTitle}>Tap to add photo</Text>
-                  <Text style={styles.emptySubtitle}>
-                    Prescription slip, tablet strip, or bottle label
-                  </Text>
                 </View>
               )}
             </View>
@@ -318,7 +413,6 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
         </Pressable>
       </View>
 
-      {isScanning && <MedicineLoader message="Analyzing your photo..." />}
     </View>
   );
 };
@@ -455,6 +549,58 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: spacing.xl,
+    overflow: 'hidden',
+  },
+  bracketGlow: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  scanOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    overflow: 'hidden',
+  },
+  scanBeamWrap: {
+    position: 'absolute',
+    top: 0,
+  },
+  scanBeamLine: {
+    height: 2,
+    borderRadius: 1,
+  },
+  scanBeamTrailWrap: {
+    marginTop: -1,
+  },
+  scanBeamTrail: {
+    height: moderateScale(56),
+  },
+  scanningOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(15,23,42,0.38)',
+    overflow: 'hidden',
+  },
+  scanningStatus: {
+    position: 'absolute',
+    left: spacing.md,
+    right: spacing.md,
+    bottom: spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'center',
+    gap: spacing.sm,
+    backgroundColor: 'rgba(255,255,255,0.94)',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.full,
+  },
+  scanningDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: ACCENT,
+  },
+  scanningStatusText: {
+    ...typography.caption,
+    fontWeight: '700',
+    color: colors.textPrimary,
   },
   bracket: {
     position: 'absolute',
@@ -489,18 +635,6 @@ const styles = StyleSheet.create({
     borderBottomWidth: BRACKET_THICK,
     borderRightWidth: BRACKET_THICK,
     borderBottomRightRadius: 8,
-  },
-  scanLine: {
-    position: 'absolute',
-    left: spacing.lg + 4,
-    right: spacing.lg + 4,
-    height: 2,
-    backgroundColor: ACCENT,
-    shadowColor: ACCENT,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.8,
-    shadowRadius: 6,
-    elevation: 4,
   },
   emptyIcon: {
     width: moderateScale(64),

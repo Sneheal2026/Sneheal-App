@@ -30,15 +30,13 @@ export async function pickImageFromSource(
     source === 'camera'
       ? await ImagePicker.launchCameraAsync({
           mediaTypes: 'images',
-          allowsEditing: true,
+          allowsEditing: false,
           quality: 0.9,
-          aspect: [4, 3],
         })
       : await ImagePicker.launchImageLibraryAsync({
           mediaTypes: 'images',
-          allowsEditing: true,
+          allowsEditing: false,
           quality: 0.9,
-          aspect: [4, 3],
         });
 
   if (result.canceled || !result.assets[0]?.uri) {
