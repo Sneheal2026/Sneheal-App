@@ -1,0 +1,16 @@
+# Dependencies
+node_modules/
+
+# Secrets — use .env.example as the template
+.env
+.env.local
+.env.*.local
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Runtime / local
+uploads/
+.cache/

@@ -8,7 +8,7 @@ export type UserRole = 'customer' | 'delivery_agent' | 'doctor';
 // ── Auth Stack ──────────────────────────────────────────────────
 export type AuthStackParamList = {
   PhoneNumber: undefined;
-  Otp: { phoneNumber: string };
+  Otp: { phoneNumber: string; devOtp?: string };
   Registration: { phoneNumber: string };
   Main: undefined;
   Settings: undefined;

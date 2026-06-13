@@ -1,0 +1,1 @@
+ALTER TABLE otp_verifications MODIFY otp VARCHAR(64) NOT NULL;

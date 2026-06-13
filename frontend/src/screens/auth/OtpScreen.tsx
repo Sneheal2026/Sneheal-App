@@ -17,6 +17,12 @@ import {
 import theme from '@/styles/theme';
 import { APP_CONFIG } from '@/constants';
 import { formatPhoneNumber } from '@/utils';
+import { sendOtp, verifyOtp } from '@/services/authService';
+import { ApiError } from '@/services/apiClient';
+import { useAuth } from '@/context/AuthContext';
+import { devLog } from '@/utils/devLogger';
+import { fillOtpSmoothly } from '@/utils/otpFill';
+import { resolveAuthRoute } from '@/navigation/resolveAuthRoute';
 import type { AuthScreenProps } from '@/navigation/types';
 
 const { colors, spacing, typography, borderRadius } = theme;
@@ -28,12 +34,41 @@ const OTP_BOX_WIDTH =
   OTP_LENGTH;
 
 const OtpScreen = ({ navigation, route }: AuthScreenProps<'Otp'>) => {
-  const phoneNumber = route.params.phoneNumber;
+  const { signIn } = useAuth();
+  const { phoneNumber, devOtp: initialDevOtp } = route.params;
   const [otpValues, setOtpValues] = useState<string[]>(Array(OTP_LENGTH).fill(''));
-  const [resendTimer, setResendTimer] = useState(APP_CONFIG.OTP_RESEND_SECONDS);
+  const [resendTimer, setResendTimer] = useState<number>(APP_CONFIG.OTP_RESEND_SECONDS);
   const [canResend, setCanResend] = useState(false);
   const [isValidating, setIsValidating] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
+  const [isResending, setIsResending] = useState(false);
+  const [isAutoFilling, setIsAutoFilling] = useState(false);
   const inputRefs = useRef<(TextInput | null)[]>([]);
+
+  const applyOtpSmoothly = useCallback((otp: string | undefined, source: string) => {
+    if (!otp) return undefined;
+
+    devLog('OtpScreen', `Auto-filling OTP (${source})`, { otp });
+    setIsAutoFilling(true);
+    setOtpValues(Array(OTP_LENGTH).fill(''));
+
+    return fillOtpSmoothly(
+      otp,
+      (index, digit) => {
+        setOtpValues((prev) => {
+          const next = [...prev];
+          next[index] = digit;
+          return next;
+        });
+      },
+      () => setIsAutoFilling(false),
+    );
+  }, []);
+
+  useEffect(() => {
+    const cleanup = applyOtpSmoothly(initialDevOtp, 'phone-screen');
+    return cleanup;
+  }, [initialDevOtp, applyOtpSmoothly]);
 
   useEffect(() => {
     if (resendTimer > 0) {
@@ -44,9 +79,10 @@ const OtpScreen = ({ navigation, route }: AuthScreenProps<'Otp'>) => {
   }, [resendTimer]);
 
   useEffect(() => {
+    if (isAutoFilling) return undefined;
     const timer = setTimeout(() => inputRefs.current[0]?.focus(), 400);
     return () => clearTimeout(timer);
-  }, []);
+  }, [isAutoFilling]);
 
   const handleChange = (text: string, index: number) => {
     if (!/^\d*$/.test(text)) return;
@@ -54,6 +90,7 @@ const OtpScreen = ({ navigation, route }: AuthScreenProps<'Otp'>) => {
     const newOtp = [...otpValues];
     newOtp[index] = text.slice(-1);
     setOtpValues(newOtp);
+    setApiError(null);
 
     if (text && index < OTP_LENGTH - 1) {
       inputRefs.current[index + 1]?.focus();
@@ -66,24 +103,70 @@ const OtpScreen = ({ navigation, route }: AuthScreenProps<'Otp'>) => {
     }
   };
 
-  const handleVerify = useCallback(() => {
+  const handleVerify = useCallback(async () => {
     const otp = otpValues.join('');
-    if (otp.length !== OTP_LENGTH || isValidating) return;
+    if (otp.length !== OTP_LENGTH || isValidating || isAutoFilling) return;
 
     setIsValidating(true);
-    setTimeout(() => {
-      setIsValidating(false);
-      navigation.navigate('Registration', { phoneNumber });
-    }, 1200);
-  }, [otpValues, isValidating, navigation, phoneNumber]);
+    setApiError(null);
+    devLog('OtpScreen', 'Verify pressed', { phoneNumber, otp });
 
-  const handleResend = () => {
-    if (!canResend) return;
-    setCanResend(false);
-    setResendTimer(APP_CONFIG.OTP_RESEND_SECONDS);
-    setOtpValues(Array(OTP_LENGTH).fill(''));
-    setIsValidating(false);
-    inputRefs.current[0]?.focus();
+    try {
+      const result = await verifyOtp(phoneNumber, otp);
+      await signIn(result);
+      devLog('OtpScreen', 'Verify success', {
+        userId: result.user.id,
+        profileCompleted: result.user.profileCompleted,
+      });
+
+      const { route: nextRoute, params } = resolveAuthRoute(result.user);
+      if (params) {
+        navigation.reset({
+          index: 0,
+          routes: [{ name: nextRoute, params }],
+        });
+      } else {
+        navigation.reset({
+          index: 0,
+          routes: [{ name: nextRoute }],
+        });
+      }
+    } catch (error) {
+      const message =
+        error instanceof ApiError
+          ? error.message
+          : 'Unable to verify OTP. Please try again.';
+      devLog('OtpScreen', 'Verify failed', message);
+      setApiError(message);
+    } finally {
+      setIsValidating(false);
+    }
+  }, [otpValues, isValidating, isAutoFilling, navigation, phoneNumber]);
+
+  const handleResend = async () => {
+    if (!canResend || isResending) return;
+
+    setIsResending(true);
+    setApiError(null);
+    devLog('OtpScreen', 'Resend pressed', { phoneNumber });
+
+    try {
+      const result = await sendOtp(phoneNumber);
+      setCanResend(false);
+      setResendTimer(APP_CONFIG.OTP_RESEND_SECONDS);
+      setIsValidating(false);
+      applyOtpSmoothly(result.devOtp, 'resend');
+      devLog('OtpScreen', 'Resend success', { devOtp: result.devOtp ?? 'not in response' });
+    } catch (error) {
+      const message =
+        error instanceof ApiError
+          ? error.message
+          : 'Unable to resend OTP. Please try again.';
+      devLog('OtpScreen', 'Resend failed', message);
+      setApiError(message);
+    } finally {
+      setIsResending(false);
+    }
   };
 
   const isOtpComplete = otpValues.every((val) => val !== '');
@@ -97,12 +180,18 @@ const OtpScreen = ({ navigation, route }: AuthScreenProps<'Otp'>) => {
         <AuthPrimaryButton
           title="Verify & Continue"
           onPress={handleVerify}
-          disabled={!isOtpComplete}
+          disabled={!isOtpComplete || isAutoFilling}
           loading={isValidating}
         />
       }
     >
       <Text style={styles.title}>Enter verification code</Text>
+
+      {__DEV__ && initialDevOtp ? (
+        <Text style={styles.devHint}>
+          Dev mode: OTP auto-filled from API response
+        </Text>
+      ) : null}
 
       <View style={styles.sentRow}>
         <Text style={styles.sentText}>
@@ -129,6 +218,7 @@ const OtpScreen = ({ navigation, route }: AuthScreenProps<'Otp'>) => {
               { width: OTP_BOX_WIDTH },
               digit ? styles.otpBoxFilled : null,
               isValidating ? styles.otpBoxValidating : null,
+              isAutoFilling && digit ? styles.otpBoxAutoFill : null,
             ]}
             value={digit}
             onChangeText={(text) => handleChange(text, index)}
@@ -136,7 +226,7 @@ const OtpScreen = ({ navigation, route }: AuthScreenProps<'Otp'>) => {
             keyboardType="number-pad"
             maxLength={1}
             selectTextOnFocus
-            editable={!isValidating}
+            editable={!isValidating && !isAutoFilling}
           />
         ))}
       </View>
@@ -149,13 +239,19 @@ const OtpScreen = ({ navigation, route }: AuthScreenProps<'Otp'>) => {
       ) : (
         <View style={styles.resendRow}>
           <Text style={styles.resendLabel}>Didn&apos;t receive the code?</Text>
-          <TouchableOpacity onPress={handleResend} disabled={!canResend}>
-            <Text style={[styles.resendBtn, !canResend && styles.resendBtnDisabled]}>
-              {canResend ? 'Resend OTP' : `Resend in ${resendTimer}s`}
+          <TouchableOpacity onPress={handleResend} disabled={!canResend || isResending}>
+            <Text style={[styles.resendBtn, (!canResend || isResending) && styles.resendBtnDisabled]}>
+              {isResending
+                ? 'Sending...'
+                : canResend
+                  ? 'Resend OTP'
+                  : `Resend in ${resendTimer}s`}
             </Text>
           </TouchableOpacity>
         </View>
       )}
+
+      {apiError ? <Text style={styles.errorText}>{apiError}</Text> : null}
     </AuthScreenLayout>
   );
 };
@@ -167,6 +263,12 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     marginBottom: spacing.md,
     letterSpacing: -0.2,
+  },
+  devHint: {
+    ...typography.caption,
+    color: colors.success,
+    marginBottom: spacing.md,
+    fontWeight: '600',
   },
   sentRow: {
     flexDirection: 'row',
@@ -209,6 +311,9 @@ const styles = StyleSheet.create({
     borderColor: colors.success,
     backgroundColor: colors.successLight,
   },
+  otpBoxAutoFill: {
+    borderColor: colors.primary,
+  },
   validatingPill: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -242,6 +347,11 @@ const styles = StyleSheet.create({
   resendBtnDisabled: {
     color: colors.textMuted,
     fontWeight: '500',
+  },
+  errorText: {
+    ...typography.caption,
+    color: colors.error,
+    marginTop: spacing.md,
   },
 });
 

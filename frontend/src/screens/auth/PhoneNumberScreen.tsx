@@ -9,6 +9,9 @@ import {
 import { AuthScreenLayout, AuthPrimaryButton } from '@/components/auth';
 import theme from '@/styles/theme';
 import { APP_CONFIG } from '@/constants';
+import { sendOtp } from '@/services/authService';
+import { ApiError } from '@/services/apiClient';
+import { devLog } from '@/utils/devLogger';
 import type { AuthScreenProps } from '@/navigation/types';
 
 const { colors, spacing, typography, borderRadius } = theme;
@@ -22,6 +25,8 @@ const formatPhoneDisplay = (digits: string): string => {
 const PhoneNumberScreen = ({ navigation }: AuthScreenProps<'PhoneNumber'>) => {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [isFocused, setIsFocused] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
   const inputRef = useRef<TextInput>(null);
 
   const isValid = phoneNumber.length === 10;
@@ -29,11 +34,35 @@ const PhoneNumberScreen = ({ navigation }: AuthScreenProps<'PhoneNumber'>) => {
 
   const handleChange = useCallback((text: string) => {
     setPhoneNumber(text.replace(/\D/g, '').slice(0, 10));
+    setApiError(null);
   }, []);
 
-  const handleContinue = () => {
-    if (isValid) {
-      navigation.navigate('Otp', { phoneNumber });
+  const handleContinue = async () => {
+    if (!isValid || isLoading) return;
+
+    setIsLoading(true);
+    setApiError(null);
+    devLog('PhoneScreen', 'Continue pressed', { phoneNumber });
+
+    try {
+      const result = await sendOtp(phoneNumber);
+      devLog('PhoneScreen', 'OTP sent, navigating to Otp', {
+        devOtp: result.devOtp ?? 'not in response',
+        resendAfterSeconds: result.resendAfterSeconds,
+      });
+      navigation.navigate('Otp', {
+        phoneNumber,
+        devOtp: result.devOtp,
+      });
+    } catch (error) {
+      const message =
+        error instanceof ApiError
+          ? error.message
+          : 'Unable to send OTP. Please try again.';
+      devLog('PhoneScreen', 'sendOtp failed', message);
+      setApiError(message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -45,6 +74,7 @@ const PhoneNumberScreen = ({ navigation }: AuthScreenProps<'PhoneNumber'>) => {
             title="Continue"
             onPress={handleContinue}
             disabled={!isValid}
+            loading={isLoading}
           />
           <Text style={styles.termsText}>
             By continuing, you agree to our{' '}
@@ -95,6 +125,8 @@ const PhoneNumberScreen = ({ navigation }: AuthScreenProps<'PhoneNumber'>) => {
       {showError ? (
         <Text style={styles.errorText}>Enter a valid 10-digit mobile number</Text>
       ) : null}
+
+      {apiError ? <Text style={styles.errorText}>{apiError}</Text> : null}
     </AuthScreenLayout>
   );
 };
