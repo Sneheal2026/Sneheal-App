@@ -21,18 +21,11 @@ const STATUS_BAR_HEIGHT = Platform.OS === 'android'
   ? StatusBar.currentHeight ?? 24
   : 0;
 
-const UPLOAD_ACTIONS = [
-  {
-    id: 'prescription',
-    icon: 'document-text-outline' as const,
-    title: 'Upload Prescription',
-  },
-  {
-    id: 'tablet',
-    icon: 'camera-outline' as const,
-    title: 'Upload Tablet Photo',
-  },
-];
+const UPLOAD_ACTION = {
+  icon: 'scan-outline' as const,
+  title: 'Scan Prescription or Medicine',
+  subtitle: 'Upload a photo and tap to scan',
+};
 
 interface HomeHeaderProps {
   searchQuery: string;
@@ -44,6 +37,7 @@ interface HomeHeaderProps {
   onNotificationsPress?: () => void;
   addressLabel?: string;
   onLocationPress?: () => void;
+  onUploadScanPress?: () => void;
 }
 
 const getGreeting = (): string => {
@@ -63,6 +57,7 @@ const HomeHeader: React.FC<HomeHeaderProps> = ({
   onNotificationsPress,
   addressLabel = 'Add delivery address',
   onLocationPress,
+  onUploadScanPress,
 }) => {
   const insets = useSafeAreaInsets();
   const topInset = Platform.OS === 'ios' ? insets.top : STATUS_BAR_HEIGHT;
@@ -159,30 +154,36 @@ const HomeHeader: React.FC<HomeHeaderProps> = ({
           entering={FadeInDown.delay(320).duration(500).springify()}
           style={styles.uploadPanelWrap}
         >
-          <View style={styles.uploadPanel}>
-            {UPLOAD_ACTIONS.map((action, index) => (
-              <React.Fragment key={action.id}>
-                {index > 0 && <View style={styles.uploadDivider} />}
-                <TouchableOpacity style={styles.uploadRow} activeOpacity={0.85}>
-                  <View style={styles.uploadIconWrap}>
-                    <Ionicons
-                      name={action.icon}
-                      size={moderateScale(18)}
-                      color={colors.white}
-                    />
-                  </View>
-                  <Text style={styles.uploadLabel} numberOfLines={1}>
-                    {action.title}
-                  </Text>
-                  <Ionicons
-                    name="chevron-forward"
-                    size={moderateScale(16)}
-                    color="rgba(255,255,255,0.45)"
-                  />
-                </TouchableOpacity>
-              </React.Fragment>
-            ))}
-          </View>
+          <TouchableOpacity
+            style={styles.uploadPanel}
+            activeOpacity={0.85}
+            onPress={onUploadScanPress}
+            accessibilityRole="button"
+            accessibilityLabel={UPLOAD_ACTION.title}
+          >
+            <View style={styles.uploadRow}>
+              <View style={styles.uploadIconWrap}>
+                <Ionicons
+                  name={UPLOAD_ACTION.icon}
+                  size={moderateScale(18)}
+                  color={colors.white}
+                />
+              </View>
+              <View style={styles.uploadTextWrap}>
+                <Text style={styles.uploadLabel} numberOfLines={1}>
+                  {UPLOAD_ACTION.title}
+                </Text>
+                <Text style={styles.uploadSubtitle} numberOfLines={1}>
+                  {UPLOAD_ACTION.subtitle}
+                </Text>
+              </View>
+              <Ionicons
+                name="chevron-forward"
+                size={moderateScale(16)}
+                color="rgba(255,255,255,0.45)"
+              />
+            </View>
+          </TouchableOpacity>
         </Animated.View>
       </View>
 
@@ -337,10 +338,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     gap: spacing.sm,
   },
-  uploadDivider: {
-    height: 1,
-    marginHorizontal: spacing.md,
-    backgroundColor: 'rgba(255,255,255,0.12)',
+  uploadTextWrap: {
+    flex: 1,
+    minWidth: 0,
   },
   uploadIconWrap: {
     width: moderateScale(32),
@@ -352,10 +352,15 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   uploadLabel: {
-    flex: 1,
     fontSize: moderateScale(13),
-    fontWeight: '600',
+    fontWeight: '700',
     color: colors.white,
+    marginBottom: 1,
+  },
+  uploadSubtitle: {
+    fontSize: moderateScale(11),
+    fontWeight: '500',
+    color: 'rgba(255,255,255,0.58)',
   },
   waveFill: {
     position: 'absolute',

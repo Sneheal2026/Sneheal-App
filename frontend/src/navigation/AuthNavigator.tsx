@@ -9,6 +9,7 @@ import AppNavigator from './AppNavigator';
 import SettingsScreen from '@/screens/settings/SettingsScreen';
 import NotificationsScreen from '@/screens/notifications/NotificationsScreen';
 import SavedAddressesScreen from '@/screens/settings/SavedAddressesScreen';
+import MedicineScanScreen from '@/screens/scan/MedicineScanScreen';
 import type { AuthStackParamList } from './types';
 import theme from '@/styles/theme';
 
@@ -39,6 +40,7 @@ const AuthNavigator = () => {
           presentation: 'modal',
         }}
       />
+      <Stack.Screen name="MedicineScan" component={MedicineScanScreen} />
       <Stack.Screen name="DeliveryAgentMain" component={DeliveryAgentHomeScreen} />
       <Stack.Screen name="DoctorMain" component={DoctorHomeScreen} />
     </Stack.Navigator>

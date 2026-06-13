@@ -8,6 +8,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   useSharedValue,
@@ -33,6 +34,7 @@ import { useVoiceRecognition } from '@/hooks/useVoiceRecognition';
 import { reverseGeocodeCoordinates } from '@/hooks/useReverseGeocode';
 import theme from '@/styles/theme';
 import globalStyles from '@/styles/globalStyles';
+import type { AuthStackParamList } from '@/navigation/types';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const PILL_IMAGE = require('../../../assets/images/Sneheal-Pill-2.webp');
@@ -154,6 +156,11 @@ const HomeScreen = () => {
     navigation.getParent()?.navigate('SelectLocation' as never);
   }, [navigation]);
 
+  const handleUploadScan = useCallback(() => {
+    const parent = navigation.getParent<NativeStackNavigationProp<AuthStackParamList>>();
+    parent?.navigate('MedicineScan');
+  }, [navigation]);
+
   const STATUS_BAR_HEIGHT = Platform.OS === 'android'
     ? StatusBar.currentHeight ?? 24
     : 0;
@@ -266,6 +273,7 @@ const HomeScreen = () => {
             onNotificationsPress={handleOpenNotifications}
             addressLabel={addressLabel}
             onLocationPress={handleOpenLocation}
+            onUploadScanPress={handleUploadScan}
           />
 
           <View style={styles.contentSection}>

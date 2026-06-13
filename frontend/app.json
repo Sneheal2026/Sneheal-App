@@ -46,8 +46,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Allow Sneheal to access your photos to upload your Aadhar card.",
-          "cameraPermission": "Allow Sneheal to use your camera to photograph your Aadhar card."
+          "photosPermission": "Allow Sneheal to access your photos to upload prescriptions and medicine images.",
+          "cameraPermission": "Allow Sneheal to use your camera to photograph prescriptions and medicines."
         }
       ],
       [
