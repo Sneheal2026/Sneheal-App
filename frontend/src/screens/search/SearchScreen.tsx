@@ -3,12 +3,14 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   Pressable,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import Animated from 'react-native-reanimated';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import SearchBar from '@/components/home/SearchBar';
 import { useVoiceRecognition } from '@/hooks/useVoiceRecognition';
+import { useTabBarScrollHandler } from '@/hooks/useTabBarScrollHandler';
+import { getTabBarHeight } from '@/navigation/tabBarConfig';
 import theme from '@/styles/theme';
 import globalStyles from '@/styles/globalStyles';
 
@@ -36,6 +38,9 @@ const CATEGORIES = [
 
 const SearchScreen = () => {
   const [searchQuery, setSearchQuery] = useState('');
+  const insets = useSafeAreaInsets();
+  const tabBarHeight = getTabBarHeight(insets.bottom);
+  const tabBarScrollHandler = useTabBarScrollHandler();
 
   const { toggleListening, isListening } = useVoiceRecognition({
     onTranscriptChange: setSearchQuery,
@@ -53,10 +58,12 @@ const SearchScreen = () => {
         />
       </View>
 
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
+      <Animated.ScrollView
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: tabBarHeight + spacing.lg }]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
+        onScroll={tabBarScrollHandler}
+        scrollEventThrottle={16}
       >
         <Text style={styles.sectionTitle}>Popular Searches</Text>
         <View style={styles.chipsRow}>
@@ -79,7 +86,7 @@ const SearchScreen = () => {
             </Pressable>
           ))}
         </View>
-      </ScrollView>
+      </Animated.ScrollView>
     </SafeAreaView>
   );
 };
@@ -91,7 +98,6 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: spacing.xl,
-    paddingBottom: spacing.xxxxxl,
   },
   sectionTitle: {
     ...typography.h4,

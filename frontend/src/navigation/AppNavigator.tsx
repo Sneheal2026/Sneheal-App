@@ -7,6 +7,9 @@ import HomeScreen from '@/screens/home/HomeScreen';
 import SearchScreen from '@/screens/search/SearchScreen';
 import CartScreen from '@/screens/cart/CartScreen';
 import OrdersScreen from '@/screens/orders/OrdersScreen';
+import AnimatedTabBar from '@/components/navigation/AnimatedTabBar';
+import { TabBarVisibilityProvider } from '@/context/TabBarVisibilityContext';
+import { getTabBarHeight } from '@/navigation/tabBarConfig';
 import type { TabParamList } from './types';
 import theme from '@/styles/theme';
 
@@ -30,51 +33,54 @@ const TABS: TabConfig[] = [
   { name: 'Orders', component: OrdersScreen, title: 'Orders', iconOutline: 'receipt-outline', iconFilled: 'receipt' },
 ];
 
-const TAB_BAR_BASE_HEIGHT = Platform.OS === 'ios' ? 56 : 52;
-
 const AppNavigator = () => {
   const insets = useSafeAreaInsets();
+  const tabBarHeight = getTabBarHeight(insets.bottom);
 
   return (
-    <Tab.Navigator
-      screenOptions={({ route }) => ({
-        headerShown: false,
-        tabBarIcon: ({ focused, color, size }) => {
-          const tab = TABS.find((t) => t.name === route.name);
-          const iconName = focused ? tab?.iconFilled : tab?.iconOutline;
-          return <Ionicons name={iconName ?? 'ellipse'} size={size} color={color} />;
-        },
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.textMuted,
-        tabBarLabelStyle: {
-          ...typography.caption,
-          fontWeight: 'bold',
-          marginTop: spacing.xxs,
-        },
-        tabBarStyle: {
-          ...styles.tabBar,
-          paddingBottom: insets.bottom + spacing.sm,
-          height: TAB_BAR_BASE_HEIGHT + insets.bottom + spacing.sm,
-        },
-        tabBarItemStyle: styles.tabItem,
-      })}
-    >
-      {TABS.map((tab) => (
-        <Tab.Screen
-          key={tab.name}
-          name={tab.name}
-          component={tab.component}
-          options={{ title: tab.title }}
-        />
-      ))}
-    </Tab.Navigator>
+    <TabBarVisibilityProvider>
+      <Tab.Navigator
+        tabBar={(props) => <AnimatedTabBar {...props} />}
+        screenOptions={({ route }) => ({
+          headerShown: false,
+          tabBarIcon: ({ focused, color, size }) => {
+            const tab = TABS.find((t) => t.name === route.name);
+            const iconName = focused ? tab?.iconFilled : tab?.iconOutline;
+            return <Ionicons name={iconName ?? 'ellipse'} size={size} color={color} />;
+          },
+          tabBarActiveTintColor: colors.primary,
+          tabBarInactiveTintColor: colors.textMuted,
+          tabBarLabelStyle: {
+            ...typography.caption,
+            fontWeight: 'bold',
+            marginTop: spacing.xxs,
+          },
+          tabBarStyle: {
+            ...styles.tabBar,
+            position: 'absolute',
+            paddingBottom: insets.bottom + spacing.sm,
+            height: tabBarHeight,
+          },
+          tabBarItemStyle: styles.tabItem,
+        })}
+      >
+        {TABS.map((tab) => (
+          <Tab.Screen
+            key={tab.name}
+            name={tab.name}
+            component={tab.component}
+            options={{ title: tab.title }}
+          />
+        ))}
+      </Tab.Navigator>
+    </TabBarVisibilityProvider>
   );
 };
 
 const styles = StyleSheet.create({
   tabBar: {
     backgroundColor: colors.surface,
-    borderTopWidth: 0,
+    borderTopWidth: 2,
     paddingTop: spacing.sm,
     ...shadows.md,
     shadowColor: colors.black,

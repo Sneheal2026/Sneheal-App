@@ -3,10 +3,10 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   Pressable,
   Platform,
 } from 'react-native';
+import Animated from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -15,6 +15,8 @@ import theme from '@/styles/theme';
 import { CartBilling, CartItemRow } from '@/components/cart';
 import type { BillLine } from '@/components/cart';
 import type { TabScreenProps } from '@/navigation/types';
+import { useTabBarScrollHandler } from '@/hooks/useTabBarScrollHandler';
+import { getTabBarHeight } from '@/navigation/tabBarConfig';
 import { getDeliveryAddress, formatAddressDisplay } from '@/services/addressStorage';
 import type { DeliveryAddress, AddressLabel } from '@/types/address';
 
@@ -62,6 +64,8 @@ const DUMMY_CART_ITEMS = [
 
 const CartScreen = ({ navigation }: TabScreenProps<'Cart'>) => {
   const insets = useSafeAreaInsets();
+  const tabBarScrollHandler = useTabBarScrollHandler();
+  const tabBarHeight = getTabBarHeight(insets.bottom);
   const [savedAddress, setSavedAddress] = useState<DeliveryAddress | null>(null);
 
   const loadAddress = useCallback(async () => {
@@ -182,13 +186,15 @@ const CartScreen = ({ navigation }: TabScreenProps<'Cart'>) => {
         </Pressable>
       </SafeAreaView>
 
-      <ScrollView
+      <Animated.ScrollView
         style={styles.scroll}
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingBottom: Math.max(insets.bottom, spacing.lg) },
+          { paddingBottom: tabBarHeight + spacing.lg },
         ]}
         showsVerticalScrollIndicator={false}
+        onScroll={tabBarScrollHandler}
+        scrollEventThrottle={16}
       >
         <View style={styles.itemsSection}>
           <Text style={styles.sectionLabel}>Items in your cart</Text>
@@ -252,7 +258,7 @@ const CartScreen = ({ navigation }: TabScreenProps<'Cart'>) => {
             </LinearGradient>
           </Pressable>
         </View>
-      </ScrollView>
+      </Animated.ScrollView>
     </View>
   );
 };

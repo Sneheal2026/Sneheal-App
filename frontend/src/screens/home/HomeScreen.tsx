@@ -28,6 +28,8 @@ import {
 } from '@/components/home';
 import { FEATURED_PRODUCTS } from '@/components/home/FeaturedProducts';
 import FloatingCartBar from '@/components/cart/FloatingCartBar';
+import { useTabBarScrollState } from '@/hooks/useTabBarScrollHandler';
+import { updateTabBarOnScroll } from '@/utils/tabBarScrollWorklet';
 import { getDeliveryAddress, formatAddressDisplay } from '@/services/addressStorage';
 import { useLocationPermission } from '@/hooks/useLocationPermission';
 import { useVoiceRecognition } from '@/hooks/useVoiceRecognition';
@@ -51,6 +53,7 @@ const HomeScreen = () => {
   const [stickyHeaderActive, setStickyHeaderActive] = useState(false);
   const [addressLabel, setAddressLabel] = useState('Detecting location...');
   const scrollY = useSharedValue(0);
+  const { tabBarOffset, tabBarHeight, lastScrollY } = useTabBarScrollState();
   const scrollEndTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const liveAddressCache = useRef<string | null>(null);
   const insets = useSafeAreaInsets();
@@ -168,7 +171,9 @@ const HomeScreen = () => {
 
   const scrollHandler = useAnimatedScrollHandler({
     onScroll: (event) => {
-      scrollY.value = event.contentOffset.y;
+      const offsetY = event.contentOffset.y;
+      scrollY.value = offsetY;
+      updateTabBarOnScroll(offsetY, lastScrollY, tabBarOffset, tabBarHeight);
     },
   });
 
@@ -250,7 +255,11 @@ const HomeScreen = () => {
           style={globalStyles.screenContainer}
           contentContainerStyle={[
             styles.scrollContent,
-            totalItems > 0 && styles.scrollContentWithCart,
+            {
+              paddingBottom: totalItems > 0
+                ? tabBarHeight + spacing.xxxxxl
+                : tabBarHeight,
+            },
           ]}
           showsVerticalScrollIndicator={false}
           onScroll={scrollHandler}
@@ -310,12 +319,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  scrollContent: {
-    paddingBottom: 0,
-  },
-  scrollContentWithCart: {
-    paddingBottom: spacing.xxxxxl + spacing.xl,
-  },
+  scrollContent: {},
   contentSection: {
     paddingTop: spacing.md,
     zIndex: 10,
