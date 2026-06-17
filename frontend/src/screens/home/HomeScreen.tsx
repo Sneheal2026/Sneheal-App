@@ -239,7 +239,7 @@ const HomeScreen = () => {
 
   useFocusEffect(
     useCallback(() => {
-      StatusBar.setBarStyle('light-content');
+      StatusBar.setBarStyle('dark-content');
       if (Platform.OS === 'android') {
         StatusBar.setTranslucent(true);
         StatusBar.setBackgroundColor(colors.headerGradientStart);
@@ -254,7 +254,7 @@ const HomeScreen = () => {
 
   return (
     <SafeAreaView style={globalStyles.safeArea} edges={[]}>
-      <ExpoStatusBar style="light" translucent />
+      <ExpoStatusBar style="dark" translucent />
       <View style={styles.screen}>
         <Animated.View
           style={[
@@ -368,7 +368,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.headerGradientMid,
     paddingBottom: spacing.sm,
     borderBottomWidth: 1,
-    borderBottomColor: colors.headerGlassBorder,
+    borderBottomColor: 'rgba(0,0,0,0.05)',
     shadowColor: colors.black,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,

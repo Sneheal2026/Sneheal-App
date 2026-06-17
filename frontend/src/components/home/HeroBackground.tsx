@@ -39,7 +39,7 @@ const HeroBackground: React.FC<HeroBackgroundProps> = ({ pauseAnimation = false 
   }, [pauseAnimation, shimmer]);
 
   const meshStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(shimmer.value, [0, 0.5, 1], [0, 0.15, 0]),
+    opacity: interpolate(shimmer.value, [0, 0.5, 1], [0, 0.12, 0]),
   }));
 
   return (
@@ -48,27 +48,19 @@ const HeroBackground: React.FC<HeroBackgroundProps> = ({ pauseAnimation = false 
         colors={[
           colors.headerGradientStart,
           colors.headerGradientMid,
-          colors.primaryDark,
-          colors.primary,
+          colors.headerGradientEnd,
         ]}
-        locations={[0, 0.35, 0.72, 1]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={StyleSheet.absoluteFill}
-      />
-
-      <LinearGradient
-        colors={['rgba(26,115,232,0.2)', 'transparent', 'rgba(74,156,245,0.15)']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
+        locations={[0, 0.5, 1]}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
         style={StyleSheet.absoluteFill}
       />
 
       <Animated.View style={[StyleSheet.absoluteFill, meshStyle]} pointerEvents="none">
         <LinearGradient
-          colors={['rgba(255,255,255,0)', 'rgba(255,255,255,0.1)', 'rgba(255,255,255,0)']}
-          start={{ x: 0, y: 0.3 }}
-          end={{ x: 1, y: 0.7 }}
+          colors={['rgba(255,255,255,0)', 'rgba(255,255,255,0.35)', 'rgba(255,255,255,0)']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
           style={StyleSheet.absoluteFill}
         />
       </Animated.View>

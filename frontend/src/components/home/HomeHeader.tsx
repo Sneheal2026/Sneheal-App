@@ -91,7 +91,7 @@ const HomeHeader: React.FC<HomeHeaderProps> = ({
               <Ionicons
                 name="notifications-outline"
                 size={moderateScale(20)}
-                color={colors.headerTextOnDark}
+                color={colors.headerTextDark}
               />
               <View style={styles.notifDot} />
             </TouchableOpacity>
@@ -106,7 +106,7 @@ const HomeHeader: React.FC<HomeHeaderProps> = ({
               <Ionicons
                 name="person-outline"
                 size={moderateScale(20)}
-                color={colors.headerTextOnDark}
+                color={colors.headerTextDark}
               />
             </TouchableOpacity>
           </Animated.View>
@@ -248,6 +248,11 @@ const styles = StyleSheet.create({
     borderColor: colors.headerGlassBorder,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: colors.black,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
   },
   notifDot: {
     position: 'absolute',
@@ -258,7 +263,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     backgroundColor: colors.error,
     borderWidth: 1.5,
-    borderColor: colors.headerGradientMid,
+    borderColor: colors.white,
   },
   locationRow: {
     flexDirection: 'row',
