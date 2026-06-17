@@ -7,7 +7,10 @@ import {
   Image,
   ImageSourcePropType,
 } from 'react-native';
+import Animated, { useAnimatedStyle } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTabBarVisibility } from '@/context/TabBarVisibilityContext';
 import theme from '@/styles/theme';
 
 const { colors, spacing, typography, moderateScale, shadows } = theme;
@@ -22,12 +25,28 @@ interface FloatingCartBarProps {
 }
 
 const FloatingCartBar = ({ totalItems, previewImages, onPress }: FloatingCartBarProps) => {
+  const { tabBarOffset, tabBarHeight } = useTabBarVisibility();
+  const { bottom: bottomInset } = useSafeAreaInsets();
+
+  const wrapperStyle = useAnimatedStyle(() => {
+    const offset = tabBarOffset.value;
+    const hiddenProgress = tabBarHeight > 0 ? offset / tabBarHeight : 0;
+
+    return {
+      bottom:
+        spacing.md +
+        tabBarHeight -
+        offset +
+        hiddenProgress * bottomInset,
+    };
+  });
+
   if (totalItems === 0) return null;
 
   const itemLabel = totalItems === 1 ? '1 item' : `${totalItems} items`;
 
   return (
-    <View style={styles.wrapper}>
+    <Animated.View style={[styles.wrapper, wrapperStyle]}>
       <Pressable
         onPress={onPress}
         style={({ pressed }) => [styles.bar, pressed && styles.barPressed]}
@@ -54,7 +73,7 @@ const FloatingCartBar = ({ totalItems, previewImages, onPress }: FloatingCartBar
 
         <Ionicons name="chevron-forward" size={18} color={colors.white} />
       </Pressable>
-    </View>
+    </Animated.View>
   );
 };
 
@@ -63,7 +82,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: spacing.lg,
     right: spacing.lg,
-    bottom: spacing.lg,
     zIndex: 50,
     elevation: 50,
   },

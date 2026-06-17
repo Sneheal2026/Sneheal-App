@@ -257,7 +257,7 @@ const HomeScreen = () => {
             styles.scrollContent,
             {
               paddingBottom: totalItems > 0
-                ? tabBarHeight + spacing.xxxxxl
+                ? tabBarHeight + spacing.xxxxxl + spacing.xxl + spacing.md
                 : tabBarHeight,
             },
           ]}
