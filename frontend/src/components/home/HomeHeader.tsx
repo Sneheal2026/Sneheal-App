@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -15,17 +15,7 @@ import SearchBar from './SearchBar';
 import HeroBackground from './HeroBackground';
 import theme from '@/styles/theme';
 
-const { colors, spacing, typography, borderRadius, shadows, moderateScale } = theme;
-
-const STATUS_BAR_HEIGHT = Platform.OS === 'android'
-  ? StatusBar.currentHeight ?? 24
-  : 0;
-
-const UPLOAD_ACTION = {
-  icon: 'scan-outline' as const,
-  title: 'Scan Prescription or Medicine',
-  subtitle: 'Upload a photo and tap to scan',
-};
+const { colors, spacing, borderRadius, moderateScale } = theme;
 
 interface HomeHeaderProps {
   searchQuery: string;
@@ -36,16 +26,10 @@ interface HomeHeaderProps {
   onAccountPress?: () => void;
   onNotificationsPress?: () => void;
   addressLabel?: string;
+  addressTag?: string;
   onLocationPress?: () => void;
   onUploadScanPress?: () => void;
 }
-
-const getGreeting = (): string => {
-  const hour = new Date().getHours();
-  if (hour < 12) return 'Good Morning';
-  if (hour < 17) return 'Good Afternoon';
-  return 'Good Evening';
-};
 
 const HomeHeader: React.FC<HomeHeaderProps> = ({
   searchQuery,
@@ -56,62 +40,92 @@ const HomeHeader: React.FC<HomeHeaderProps> = ({
   onAccountPress,
   onNotificationsPress,
   addressLabel = 'Add delivery address',
+  addressTag,
   onLocationPress,
   onUploadScanPress,
 }) => {
   const insets = useSafeAreaInsets();
-  const topInset = Platform.OS === 'ios' ? insets.top : STATUS_BAR_HEIGHT;
-  const greeting = useMemo(() => getGreeting(), []);
+  const topInset = Math.max(
+    insets.top,
+    Platform.OS === 'android' ? StatusBar.currentHeight ?? 0 : 0,
+  );
 
   return (
     <View style={styles.heroWrapper}>
-      <HeroBackground pauseAnimation={isScrolling} />
+      <View style={StyleSheet.absoluteFill} pointerEvents="none">
+        <HeroBackground pauseAnimation={isScrolling} />
+      </View>
 
-      <View style={[styles.heroContent, { paddingTop: topInset + spacing.md }]}>
+      <View style={[styles.heroContent, { paddingTop: topInset + spacing.sm }]}>
         <View style={styles.topRow}>
           <Animated.View
-            entering={FadeInDown.delay(80).duration(500).springify()}
-            style={styles.greetingBlock}
+            entering={FadeInDown.delay(60).duration(450).springify()}
+            style={styles.deliveryBlock}
           >
-            <Text style={styles.greeting}>{greeting}</Text>
-            <Text style={styles.userName} numberOfLines={1} adjustsFontSizeToFit>
-              Pranay Chepur
-            </Text>
+            <Text style={styles.deliveryLabel}>Sneheal in</Text>
+            <View style={styles.deliveryTimeRow}>
+              <Text style={styles.deliveryTime}>30 minutes</Text>
+              <View style={styles.deliveryBadge}>
+                <Ionicons
+                  name="medkit-outline"
+                  size={moderateScale(11)}
+                  color={colors.headerAccent}
+                />
+                <Text style={styles.deliveryBadgeText}>Pharmacy</Text>
+              </View>
+            </View>
           </Animated.View>
-          <View style={styles.topActions}>
+
+          <Animated.View
+            entering={FadeInDown.delay(100).duration(450).springify()}
+            style={styles.topActions}
+          >
             <TouchableOpacity
-              style={styles.glassBtn}
+              style={styles.actionBtn}
               activeOpacity={0.8}
               onPress={onNotificationsPress}
               hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
               accessibilityLabel="Open notifications"
               accessibilityRole="button"
             >
-              <Ionicons name="notifications-outline" size={20} color={colors.white} />
+              <Ionicons
+                name="notifications-outline"
+                size={moderateScale(20)}
+                color={colors.headerTextOnDark}
+              />
               <View style={styles.notifDot} />
             </TouchableOpacity>
             <TouchableOpacity
-              style={styles.avatarBtn}
+              style={styles.actionBtn}
               activeOpacity={0.75}
               onPress={onAccountPress}
               hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
               accessibilityLabel="Open account settings"
               accessibilityRole="button"
             >
-              <Ionicons name="person" size={18} color={colors.primary} />
+              <Ionicons
+                name="person-outline"
+                size={moderateScale(20)}
+                color={colors.headerTextOnDark}
+              />
             </TouchableOpacity>
-          </View>
+          </Animated.View>
         </View>
 
-        <View style={styles.locationWrap}>
-          <View style={styles.locationBar}>
-            <TouchableOpacity
-              style={styles.locationIconWrap}
-              onPress={onLocationPress}
-              activeOpacity={0.85}
-            >
-              <Ionicons name="location" size={moderateScale(14)} color={colors.accentGold} />
-            </TouchableOpacity>
+        <Animated.View entering={FadeInDown.delay(140).duration(450).springify()}>
+          <TouchableOpacity
+            style={styles.locationRow}
+            onPress={onLocationPress}
+            activeOpacity={0.75}
+            accessibilityRole="button"
+            accessibilityLabel="Change delivery location"
+          >
+            <Ionicons
+              name="location-sharp"
+              size={moderateScale(14)}
+              color={colors.headerAccent}
+              style={styles.locationPin}
+            />
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -120,70 +134,39 @@ const HomeHeader: React.FC<HomeHeaderProps> = ({
               nestedScrollEnabled
               directionalLockEnabled
             >
-              <TouchableOpacity onPress={onLocationPress} activeOpacity={0.85}>
-                <Text style={styles.addressText} numberOfLines={1}>
-                  {addressLabel}
-                </Text>
-              </TouchableOpacity>
+              <Text style={styles.locationText} numberOfLines={1}>
+                {addressTag ? (
+                  <>
+                    <Text style={styles.locationTag}>{addressTag}</Text>
+                    <Text style={styles.locationSeparator}> · </Text>
+                    <Text style={styles.locationAddress}>{addressLabel}</Text>
+                  </>
+                ) : (
+                  <Text style={styles.locationAddress}>{addressLabel}</Text>
+                )}
+              </Text>
             </ScrollView>
-            <TouchableOpacity onPress={onLocationPress} activeOpacity={0.85}>
-              <Ionicons
-                name="chevron-down"
-                size={moderateScale(16)}
-                color="rgba(255,255,255,0.7)"
-              />
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        <Animated.View entering={FadeInDown.delay(240).duration(500).springify()}>
-          <View style={styles.searchShell}>
-            <View style={styles.searchGlow} />
-            <SearchBar
-              value={searchQuery}
-              onChangeText={onSearchChange}
-              onMicPress={onMicPress}
-              isListening={isVoiceListening}
-              insideHeader
-              elevated
+            <Ionicons
+              name="chevron-down"
+              size={moderateScale(14)}
+              color={colors.headerTextMutedOnDark}
             />
-          </View>
+          </TouchableOpacity>
         </Animated.View>
 
         <Animated.View
-          entering={FadeInDown.delay(320).duration(500).springify()}
-          style={styles.uploadPanelWrap}
+          entering={FadeInDown.delay(200).duration(450).springify()}
+          style={styles.searchSection}
         >
-          <TouchableOpacity
-            style={styles.uploadPanel}
-            activeOpacity={0.85}
-            onPress={onUploadScanPress}
-            accessibilityRole="button"
-            accessibilityLabel={UPLOAD_ACTION.title}
-          >
-            <View style={styles.uploadRow}>
-              <View style={styles.uploadIconWrap}>
-                <Ionicons
-                  name={UPLOAD_ACTION.icon}
-                  size={moderateScale(18)}
-                  color={colors.white}
-                />
-              </View>
-              <View style={styles.uploadTextWrap}>
-                <Text style={styles.uploadLabel} numberOfLines={1}>
-                  {UPLOAD_ACTION.title}
-                </Text>
-                <Text style={styles.uploadSubtitle} numberOfLines={1}>
-                  {UPLOAD_ACTION.subtitle}
-                </Text>
-              </View>
-              <Ionicons
-                name="chevron-forward"
-                size={moderateScale(16)}
-                color="rgba(255,255,255,0.45)"
-              />
-            </View>
-          </TouchableOpacity>
+          <SearchBar
+            value={searchQuery}
+            onChangeText={onSearchChange}
+            onMicPress={onMicPress}
+            onDocumentPress={onUploadScanPress}
+            isListening={isVoiceListening}
+            insideHeader
+            elevated
+          />
         </Animated.View>
       </View>
 
@@ -195,54 +178,74 @@ const HomeHeader: React.FC<HomeHeaderProps> = ({
 const styles = StyleSheet.create({
   heroWrapper: {
     overflow: 'hidden',
-    marginBottom: -spacing.md,
-    paddingBottom: spacing.xxl + spacing.md,
+    paddingBottom: spacing.md,
   },
   heroContent: {
-    paddingHorizontal: spacing.xl,
+    paddingHorizontal: spacing.lg,
     zIndex: 2,
     width: '100%',
+    gap: spacing.xs,
   },
   topRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
-    marginBottom: spacing.lg,
-    gap: spacing.sm,
+    marginBottom: spacing.md,
+    gap: spacing.md,
   },
-  greetingBlock: {
+  deliveryBlock: {
     flex: 1,
     minWidth: 0,
   },
-  greeting: {
-    ...typography.caption,
-    fontSize: moderateScale(12),
-    color: 'rgba(255,255,255,0.65)',
+  deliveryLabel: {
+    fontSize: moderateScale(13),
     fontWeight: '600',
-    letterSpacing: 0.3,
-    marginBottom: 2,
+    color: colors.headerTextMutedOnDark,
+    letterSpacing: 0.2,
+    marginBottom: 1,
   },
-  userName: {
-    fontSize: moderateScale(22),
+  deliveryTimeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  deliveryTime: {
+    fontSize: moderateScale(26),
     fontWeight: '800',
-    color: colors.white,
-    letterSpacing: -0.4,
+    color: colors.headerTextOnDark,
+    letterSpacing: -0.8,
+    lineHeight: moderateScale(30),
+  },
+  deliveryBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: colors.headerBadgeBg,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+    borderRadius: borderRadius.full,
+    borderWidth: 1,
+    borderColor: colors.headerBadgeBorder,
+  },
+  deliveryBadgeText: {
+    fontSize: moderateScale(11),
+    fontWeight: '600',
+    color: colors.headerBadgeText,
   },
   topActions: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
     flexShrink: 0,
-    zIndex: 20,
-    elevation: 20,
   },
-  glassBtn: {
-    width: moderateScale(40),
-    height: moderateScale(40),
-    borderRadius: moderateScale(20),
-    backgroundColor: 'rgba(255,255,255,0.12)',
+  actionBtn: {
+    width: moderateScale(42),
+    height: moderateScale(42),
+    borderRadius: moderateScale(12),
+    backgroundColor: colors.headerGlass,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.18)',
+    borderColor: colors.headerGlassBorder,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -255,41 +258,16 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     backgroundColor: colors.error,
     borderWidth: 1.5,
-    borderColor: 'rgba(6,20,40,0.5)',
+    borderColor: colors.headerGradientMid,
   },
-  avatarBtn: {
-    width: moderateScale(40),
-    height: moderateScale(40),
-    borderRadius: moderateScale(20),
-    backgroundColor: colors.white,
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...shadows.sm,
-  },
-  locationWrap: {
-    width: '100%',
-    marginBottom: spacing.lg,
-  },
-  locationBar: {
+  locationRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    width: '100%',
-    minHeight: moderateScale(44),
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    borderRadius: borderRadius.lg,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    gap: spacing.sm,
+    marginBottom: spacing.lg,
+    gap: spacing.xs,
+    minHeight: moderateScale(24),
   },
-  locationIconWrap: {
-    width: moderateScale(28),
-    height: moderateScale(28),
-    borderRadius: moderateScale(14),
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
+  locationPin: {
     flexShrink: 0,
   },
   locationScroll: {
@@ -299,68 +277,25 @@ const styles = StyleSheet.create({
   locationScrollContent: {
     alignItems: 'center',
   },
-  addressText: {
+  locationText: {
     fontSize: moderateScale(13),
-    fontWeight: '700',
-    color: colors.white,
     lineHeight: moderateScale(18),
   },
-  searchShell: {
-    position: 'relative',
-    marginBottom: spacing.md,
-    width: '100%',
+  locationTag: {
+    fontWeight: '800',
+    color: colors.headerTextOnDark,
+    letterSpacing: 0.3,
   },
-  searchGlow: {
-    position: 'absolute',
-    top: 8,
-    left: 12,
-    right: 12,
-    height: 40,
-    borderRadius: borderRadius.xl,
-    backgroundColor: 'rgba(26,115,232,0.35)',
-    opacity: 0.5,
-  },
-  uploadPanelWrap: {
-    width: '100%',
-    marginBottom: spacing.lg,
-  },
-  uploadPanel: {
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    borderRadius: borderRadius.lg,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
-    overflow: 'hidden',
-  },
-  uploadRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: spacing.sm + 2,
-    paddingHorizontal: spacing.md,
-    gap: spacing.sm,
-  },
-  uploadTextWrap: {
-    flex: 1,
-    minWidth: 0,
-  },
-  uploadIconWrap: {
-    width: moderateScale(32),
-    height: moderateScale(32),
-    borderRadius: moderateScale(10),
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-  uploadLabel: {
-    fontSize: moderateScale(13),
-    fontWeight: '700',
-    color: colors.white,
-    marginBottom: 1,
-  },
-  uploadSubtitle: {
-    fontSize: moderateScale(11),
+  locationSeparator: {
     fontWeight: '500',
-    color: 'rgba(255,255,255,0.58)',
+    color: colors.headerTextMutedOnDark,
+  },
+  locationAddress: {
+    fontWeight: '500',
+    color: colors.headerTextMutedOnDark,
+  },
+  searchSection: {
+    marginBottom: 0,
   },
   waveFill: {
     position: 'absolute',

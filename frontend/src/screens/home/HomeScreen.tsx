@@ -7,6 +7,7 @@ import {
   Image,
   Dimensions,
 } from 'react-native';
+import { StatusBar as ExpoStatusBar } from 'expo-status-bar';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -53,6 +54,7 @@ const HomeScreen = () => {
   const [isScrolling, setIsScrolling] = useState(false);
   const [stickyHeaderActive, setStickyHeaderActive] = useState(false);
   const [addressLabel, setAddressLabel] = useState('Detecting location...');
+  const [addressTag, setAddressTag] = useState<string | undefined>();
   const scrollY = useSharedValue(0);
   const { tabBarOffset, tabBarHeight, lastScrollY } = useTabBarScrollState();
   const scrollEndTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -75,9 +77,12 @@ const HomeScreen = () => {
         if (cancelled) return;
 
         if (saved) {
+          setAddressTag(saved.label.toUpperCase());
           setAddressIfChanged(formatAddressDisplay(saved));
           return;
         }
+
+        setAddressTag(undefined);
 
         if (liveAddressCache.current) {
           setAddressIfChanged(sanitizeDisplayAddress(liveAddressCache.current));
@@ -165,10 +170,10 @@ const HomeScreen = () => {
     parent?.navigate('MedicineScan');
   }, [navigation]);
 
-  const STATUS_BAR_HEIGHT = Platform.OS === 'android'
-    ? StatusBar.currentHeight ?? 24
-    : 0;
-  const topInset = Platform.OS === 'ios' ? insets.top : STATUS_BAR_HEIGHT;
+  const contentTopInset = Math.max(
+    insets.top,
+    Platform.OS === 'android' ? StatusBar.currentHeight ?? 0 : 0,
+  );
 
   const scrollHandler = useAnimatedScrollHandler({
     onScroll: (event) => {
@@ -232,13 +237,29 @@ const HomeScreen = () => {
     }, 80);
   }, [clearScrollEndTimer]);
 
+  useFocusEffect(
+    useCallback(() => {
+      StatusBar.setBarStyle('light-content');
+      if (Platform.OS === 'android') {
+        StatusBar.setTranslucent(true);
+        StatusBar.setBackgroundColor(colors.headerGradientStart);
+      }
+      return () => {
+        if (Platform.OS === 'android') {
+          StatusBar.setBackgroundColor('transparent');
+        }
+      };
+    }, []),
+  );
+
   return (
     <SafeAreaView style={globalStyles.safeArea} edges={[]}>
+      <ExpoStatusBar style="light" translucent />
       <View style={styles.screen}>
         <Animated.View
           style={[
             styles.stickyHeader,
-            { paddingTop: topInset + spacing.sm },
+            { paddingTop: contentTopInset + spacing.sm },
             stickyStyle,
           ]}
           pointerEvents={stickyHeaderActive ? 'box-none' : 'none'}
@@ -247,6 +268,7 @@ const HomeScreen = () => {
             value={searchQuery}
             onChangeText={handleSearchChange}
             onMicPress={toggleListening}
+            onDocumentPress={handleUploadScan}
             isListening={isListening}
             compact
           />
@@ -282,6 +304,7 @@ const HomeScreen = () => {
             onAccountPress={handleOpenSettings}
             onNotificationsPress={handleOpenNotifications}
             addressLabel={addressLabel}
+            addressTag={addressTag}
             onLocationPress={handleOpenLocation}
             onUploadScanPress={handleUploadScan}
           />
@@ -322,7 +345,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {},
   contentSection: {
-    paddingTop: spacing.md,
+    paddingTop: spacing.sm,
     zIndex: 10,
     elevation: 10,
   },
@@ -342,10 +365,10 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 100,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.headerGradientMid,
     paddingBottom: spacing.sm,
     borderBottomWidth: 1,
-    borderBottomColor: colors.borderLight,
+    borderBottomColor: colors.headerGlassBorder,
     shadowColor: colors.black,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
