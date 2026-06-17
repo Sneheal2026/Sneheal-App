@@ -41,8 +41,8 @@ const colors = {
   headerGreenLight: '#1A7A52',
 
   // Home header — Blinkit-style yellow → white
-  headerGradientStart: '#FFE033',
-  headerGradientMid: '#FFF3BF',
+  headerGradientStart: '#0066ff',
+  headerGradientMid: '#e6f0ff',
   headerGradientEnd: '#FFFFFF',
   headerAccent: '#0D9488',
   headerAccentDark: '#0F766E',
