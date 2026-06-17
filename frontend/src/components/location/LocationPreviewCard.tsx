@@ -25,8 +25,10 @@ const LocationPreviewCard: React.FC<LocationPreviewCardProps> = ({
 }) => {
   const insets = useSafeAreaInsets();
 
+  const bottomPadding = Math.max(insets.bottom, spacing.md) + spacing.lg;
+
   return (
-    <View style={[styles.card, { paddingBottom: spacing.xxl + insets.bottom }]}>
+    <View style={[styles.card, { paddingBottom: bottomPadding }]}>
       <View style={styles.header}>
         <View style={styles.iconWrapper}>
           <Ionicons name="location" size={20} color={colors.accentGold} />

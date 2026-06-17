@@ -3,10 +3,17 @@ import * as Location from 'expo-location';
 
 export type PermissionStatus = 'granted' | 'denied' | 'undetermined' | 'loading';
 
+interface GetCurrentLocationOptions {
+  timeoutMs?: number;
+  accuracy?: Location.LocationAccuracy;
+  maxLastKnownAgeMs?: number;
+  maxLastKnownAccuracyM?: number;
+}
+
 interface UseLocationPermissionResult {
   status: PermissionStatus;
   requestPermission: () => Promise<boolean>;
-  getCurrentLocation: () => Promise<Location.LocationObject | null>;
+  getCurrentLocation: (options?: GetCurrentLocationOptions) => Promise<Location.LocationObject | null>;
 }
 
 export function useLocationPermission(): UseLocationPermissionResult {
@@ -49,16 +56,49 @@ export function useLocationPermission(): UseLocationPermissionResult {
     }
   }, []);
 
-  const getCurrentLocation = useCallback(async (): Promise<Location.LocationObject | null> => {
+  const getCurrentLocation = useCallback(async (options?: GetCurrentLocationOptions): Promise<Location.LocationObject | null> => {
+    const timeoutMs = options?.timeoutMs ?? 6000;
+    const accuracy = options?.accuracy ?? Location.Accuracy.Balanced;
+    const maxLastKnownAgeMs = options?.maxLastKnownAgeMs ?? 3 * 60 * 1000;
+    const maxLastKnownAccuracyM = options?.maxLastKnownAccuracyM ?? 120;
+
+    const isAcceptableLastKnown = (position: Location.LocationObject | null): position is Location.LocationObject => {
+      if (!position) return false;
+      const accuracyValue = position.coords.accuracy ?? Number.POSITIVE_INFINITY;
+      const ageMs = Date.now() - position.timestamp;
+      return accuracyValue <= maxLastKnownAccuracyM && ageMs <= maxLastKnownAgeMs;
+    };
+
     try {
       if (statusRef.current !== 'granted') {
         const granted = await requestPermission();
         if (!granted) return null;
       }
 
-      return await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Balanced,
+      const lastKnown = await Location.getLastKnownPositionAsync({
+        maxAge: maxLastKnownAgeMs,
+        requiredAccuracy: maxLastKnownAccuracyM,
       });
+
+      if (isAcceptableLastKnown(lastKnown)) {
+        return lastKnown;
+      }
+
+      const currentPosition = await Promise.race<Location.LocationObject | null>([
+        Location.getCurrentPositionAsync({
+          accuracy,
+          mayShowUserSettingsDialog: true,
+        }),
+        new Promise<Location.LocationObject | null>((resolve) =>
+          setTimeout(() => resolve(null), timeoutMs),
+        ),
+      ]);
+
+      if (currentPosition) {
+        return currentPosition;
+      }
+
+      return lastKnown ?? null;
     } catch (error) {
       console.error('Error getting current location:', error);
       return null;

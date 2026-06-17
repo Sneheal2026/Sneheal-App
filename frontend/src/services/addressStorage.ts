@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { DeliveryAddress } from '@/types/address';
+import { sanitizeDisplayAddress } from '@/utils/addressFormatting';
 
 const STORAGE_KEY = '@sneheal/delivery_address';
 
@@ -29,7 +30,9 @@ function normalizeAddress(raw: Partial<DeliveryAddress>): DeliveryAddress | null
 
 /** Full address string for header / summary display */
 export function formatAddressDisplay(address: DeliveryAddress): string {
-  const base = address.formattedAddress || address.areaName || address.locality;
+  const base = sanitizeDisplayAddress(
+    address.formattedAddress || address.areaName || address.locality,
+  );
   const parts: string[] = [];
 
   if (address.flatHouse?.trim()) {

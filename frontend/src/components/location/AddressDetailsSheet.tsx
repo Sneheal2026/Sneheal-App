@@ -55,6 +55,8 @@ const AddressDetailsSheet: React.FC<AddressDetailsSheetProps> = ({
   const [selectedLabel, setSelectedLabel] = useState<AddressLabel>('home');
   const [errors, setErrors] = useState<Partial<Record<keyof AddressFormData, string>>>({});
 
+  const bottomInset = Math.max(insets.bottom, spacing.sm);
+
   useEffect(() => {
     if (isVisible && detectedAreaName) {
       setAreaName(detectedAreaName);
@@ -113,152 +115,157 @@ const AddressDetailsSheet: React.FC<AddressDetailsSheetProps> = ({
       visible={isVisible}
       animationType="slide"
       transparent
+      statusBarTranslucent
       onRequestClose={handleClose}
     >
-      <KeyboardAvoidingView
-        style={styles.overlay}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
-        <Pressable style={styles.backdrop} onPress={handleClose} />
-        <View style={[styles.sheet, { paddingBottom: insets.bottom + spacing.lg }]}>
-          <View style={styles.handle} />
+      <View style={styles.overlay}>
+        <Pressable style={styles.backdrop} onPress={handleClose} accessibilityLabel="Close address form" />
 
-          <ScrollView
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-            contentContainerStyle={styles.content}
-          >
-            <View style={styles.header}>
-              <Text style={styles.title}>Enter complete address</Text>
-              <TouchableOpacity onPress={handleClose} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                <Ionicons name="close" size={24} color={colors.textSecondary} />
-              </TouchableOpacity>
-            </View>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={styles.sheetHost}
+        >
+          <View style={[styles.sheet, { paddingBottom: bottomInset }]}>
+            <View style={styles.handle} />
 
-            <View style={styles.form}>
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>
-                  Area / Locality name <Text style={styles.required}>*</Text>
-                </Text>
-                <TextInput
-                  style={[styles.input, errors.areaName && styles.inputError]}
-                  placeholder="e.g., Vimana Puri, Gachibowli"
-                  placeholderTextColor={colors.textMuted}
-                  value={areaName}
-                  onChangeText={(text) => {
-                    setAreaName(text);
-                    if (errors.areaName) setErrors({ ...errors, areaName: undefined });
-                  }}
-                />
-                {errors.areaName && <Text style={styles.errorText}>{errors.areaName}</Text>}
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              bounces={false}
+              contentContainerStyle={styles.content}
+            >
+              <View style={styles.header}>
+                <Text style={styles.title}>Enter complete address</Text>
+                <TouchableOpacity onPress={handleClose} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                  <Ionicons name="close" size={24} color={colors.textSecondary} />
+                </TouchableOpacity>
               </View>
 
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>
-                  Flat / House no. & Floor <Text style={styles.required}>*</Text>
-                </Text>
-                <TextInput
-                  style={[styles.input, errors.flatHouse && styles.inputError]}
-                  placeholder="e.g., 201, 2nd Floor"
-                  placeholderTextColor={colors.textMuted}
-                  value={flatHouse}
-                  onChangeText={(text) => {
-                    setFlatHouse(text);
-                    if (errors.flatHouse) setErrors({ ...errors, flatHouse: undefined });
-                  }}
-                />
-                {errors.flatHouse && <Text style={styles.errorText}>{errors.flatHouse}</Text>}
-              </View>
+              <View style={styles.form}>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>
+                    Area / Locality name <Text style={styles.required}>*</Text>
+                  </Text>
+                  <TextInput
+                    style={[styles.input, errors.areaName && styles.inputError]}
+                    placeholder="e.g., Vimana Puri, Gachibowli"
+                    placeholderTextColor={colors.textMuted}
+                    value={areaName}
+                    onChangeText={(text) => {
+                      setAreaName(text);
+                      if (errors.areaName) setErrors({ ...errors, areaName: undefined });
+                    }}
+                  />
+                  {errors.areaName && <Text style={styles.errorText}>{errors.areaName}</Text>}
+                </View>
 
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Building / Street / Landmark</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="e.g., Near KFC"
-                  placeholderTextColor={colors.textMuted}
-                  value={landmark}
-                  onChangeText={setLandmark}
-                />
-              </View>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>
+                    Flat / House no. & Floor <Text style={styles.required}>*</Text>
+                  </Text>
+                  <TextInput
+                    style={[styles.input, errors.flatHouse && styles.inputError]}
+                    placeholder="e.g., 201, 2nd Floor"
+                    placeholderTextColor={colors.textMuted}
+                    value={flatHouse}
+                    onChangeText={(text) => {
+                      setFlatHouse(text);
+                      if (errors.flatHouse) setErrors({ ...errors, flatHouse: undefined });
+                    }}
+                  />
+                  {errors.flatHouse && <Text style={styles.errorText}>{errors.flatHouse}</Text>}
+                </View>
 
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>
-                  Receiver name <Text style={styles.required}>*</Text>
-                </Text>
-                <TextInput
-                  style={[styles.input, errors.receiverName && styles.inputError]}
-                  placeholder="Enter receiver's name"
-                  placeholderTextColor={colors.textMuted}
-                  value={receiverName}
-                  onChangeText={(text) => {
-                    setReceiverName(text);
-                    if (errors.receiverName) setErrors({ ...errors, receiverName: undefined });
-                  }}
-                />
-                {errors.receiverName && <Text style={styles.errorText}>{errors.receiverName}</Text>}
-              </View>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Building / Street / Landmark</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="e.g., Near KFC"
+                    placeholderTextColor={colors.textMuted}
+                    value={landmark}
+                    onChangeText={setLandmark}
+                  />
+                </View>
 
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>
-                  Phone number to call <Text style={styles.required}>*</Text>
-                </Text>
-                <TextInput
-                  style={[styles.input, errors.phone && styles.inputError]}
-                  placeholder="10-digit mobile number"
-                  placeholderTextColor={colors.textMuted}
-                  keyboardType="phone-pad"
-                  maxLength={10}
-                  value={phone}
-                  onChangeText={(text) => {
-                    setPhone(text.replace(/[^0-9]/g, ''));
-                    if (errors.phone) setErrors({ ...errors, phone: undefined });
-                  }}
-                />
-                {errors.phone && <Text style={styles.errorText}>{errors.phone}</Text>}
-              </View>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>
+                    Receiver name <Text style={styles.required}>*</Text>
+                  </Text>
+                  <TextInput
+                    style={[styles.input, errors.receiverName && styles.inputError]}
+                    placeholder="Enter receiver's name"
+                    placeholderTextColor={colors.textMuted}
+                    value={receiverName}
+                    onChangeText={(text) => {
+                      setReceiverName(text);
+                      if (errors.receiverName) setErrors({ ...errors, receiverName: undefined });
+                    }}
+                  />
+                  {errors.receiverName && <Text style={styles.errorText}>{errors.receiverName}</Text>}
+                </View>
 
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Save as</Text>
-                <View style={styles.labelChips}>
-                  {LABEL_OPTIONS.map((option) => (
-                    <TouchableOpacity
-                      key={option.value}
-                      style={[
-                        styles.chip,
-                        selectedLabel === option.value && styles.chipSelected,
-                      ]}
-                      onPress={() => setSelectedLabel(option.value)}
-                      activeOpacity={0.7}
-                    >
-                      <Ionicons
-                        name={option.icon}
-                        size={16}
-                        color={selectedLabel === option.value ? colors.white : colors.textSecondary}
-                      />
-                      <Text
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>
+                    Phone number to call <Text style={styles.required}>*</Text>
+                  </Text>
+                  <TextInput
+                    style={[styles.input, errors.phone && styles.inputError]}
+                    placeholder="10-digit mobile number"
+                    placeholderTextColor={colors.textMuted}
+                    keyboardType="phone-pad"
+                    maxLength={10}
+                    value={phone}
+                    onChangeText={(text) => {
+                      setPhone(text.replace(/[^0-9]/g, ''));
+                      if (errors.phone) setErrors({ ...errors, phone: undefined });
+                    }}
+                  />
+                  {errors.phone && <Text style={styles.errorText}>{errors.phone}</Text>}
+                </View>
+
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Save as</Text>
+                  <View style={styles.labelChips}>
+                    {LABEL_OPTIONS.map((option) => (
+                      <TouchableOpacity
+                        key={option.value}
                         style={[
-                          styles.chipText,
-                          selectedLabel === option.value && styles.chipTextSelected,
+                          styles.chip,
+                          selectedLabel === option.value && styles.chipSelected,
                         ]}
+                        onPress={() => setSelectedLabel(option.value)}
+                        activeOpacity={0.7}
                       >
-                        {option.label}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
+                        <Ionicons
+                          name={option.icon}
+                          size={16}
+                          color={selectedLabel === option.value ? colors.white : colors.textSecondary}
+                        />
+                        <Text
+                          style={[
+                            styles.chipText,
+                            selectedLabel === option.value && styles.chipTextSelected,
+                          ]}
+                        >
+                          {option.label}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
                 </View>
               </View>
-            </View>
 
-            <TouchableOpacity
-              style={styles.saveButton}
-              onPress={handleSave}
-              activeOpacity={0.85}
-            >
-              <Text style={styles.saveButtonText}>Save address</Text>
-            </TouchableOpacity>
-          </ScrollView>
-        </View>
-      </KeyboardAvoidingView>
+              <TouchableOpacity
+                style={styles.saveButton}
+                onPress={handleSave}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.saveButtonText}>Save address</Text>
+              </TouchableOpacity>
+            </ScrollView>
+          </View>
+        </KeyboardAvoidingView>
+      </View>
     </Modal>
   );
 };
@@ -272,11 +279,16 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     backgroundColor: colors.overlay,
   },
+  sheetHost: {
+    width: '100%',
+    maxHeight: '92%',
+  },
   sheet: {
+    width: '100%',
     backgroundColor: colors.white,
     borderTopLeftRadius: borderRadius.xxl,
     borderTopRightRadius: borderRadius.xxl,
-    maxHeight: '88%',
+    overflow: 'hidden',
   },
   handle: {
     alignSelf: 'center',
@@ -289,7 +301,7 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: spacing.xl,
-    paddingBottom: spacing.lg,
+    paddingBottom: spacing.md,
   },
   header: {
     flexDirection: 'row',
@@ -302,6 +314,8 @@ const styles = StyleSheet.create({
     fontSize: moderateScale(20),
     fontWeight: '700',
     color: colors.textPrimary,
+    flex: 1,
+    marginRight: spacing.sm,
   },
   form: {
     gap: spacing.lg,

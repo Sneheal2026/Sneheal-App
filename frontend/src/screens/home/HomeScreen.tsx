@@ -34,6 +34,7 @@ import { getDeliveryAddress, formatAddressDisplay } from '@/services/addressStor
 import { useLocationPermission } from '@/hooks/useLocationPermission';
 import { useVoiceRecognition } from '@/hooks/useVoiceRecognition';
 import { reverseGeocodeCoordinates } from '@/hooks/useReverseGeocode';
+import { sanitizeDisplayAddress } from '@/utils/addressFormatting';
 import theme from '@/styles/theme';
 import globalStyles from '@/styles/globalStyles';
 import type { AuthStackParamList } from '@/navigation/types';
@@ -79,7 +80,7 @@ const HomeScreen = () => {
         }
 
         if (liveAddressCache.current) {
-          setAddressIfChanged(liveAddressCache.current);
+          setAddressIfChanged(sanitizeDisplayAddress(liveAddressCache.current));
           return;
         }
 
@@ -97,7 +98,7 @@ const HomeScreen = () => {
           const geocoded = await reverseGeocodeCoordinates(location.coords);
           if (!cancelled) {
             liveAddressCache.current = geocoded.formattedAddress;
-            setAddressIfChanged(geocoded.formattedAddress);
+            setAddressIfChanged(sanitizeDisplayAddress(geocoded.formattedAddress));
           }
         } catch {
           if (!cancelled) {
