@@ -35,6 +35,10 @@ const AnimatedPlaceholder: React.FC<AnimatedPlaceholderProps> = ({ terms, paused
   const opacity = useSharedValue(1);
   const translateY = useSharedValue(0);
 
+  const advanceIndex = useCallback(() => {
+    setIndex((prev) => (prev + 1) % terms.length);
+  }, [terms.length]);
+
   useEffect(() => {
     if (paused || terms.length <= 1) {
       return;
@@ -49,9 +53,10 @@ const AnimatedPlaceholder: React.FC<AnimatedPlaceholderProps> = ({ terms, paused
         duration: 200,
         easing: Easing.in(Easing.quad),
       }, (finished) => {
+        'worklet';
         if (!finished) return;
 
-        runOnJS(setIndex)((prev) => (prev + 1) % terms.length);
+        runOnJS(advanceIndex)();
         translateY.value = 14;
         opacity.value = 0;
 
@@ -68,7 +73,7 @@ const AnimatedPlaceholder: React.FC<AnimatedPlaceholderProps> = ({ terms, paused
 
     const timer = setInterval(advance, ROTATE_INTERVAL_MS);
     return () => clearInterval(timer);
-  }, [paused, terms.length, opacity, translateY]);
+  }, [paused, terms.length, opacity, translateY, advanceIndex]);
 
   const termStyle = useAnimatedStyle(() => ({
     opacity: opacity.value,
@@ -79,12 +84,11 @@ const AnimatedPlaceholder: React.FC<AnimatedPlaceholderProps> = ({ terms, paused
     <View style={styles.placeholderRow} pointerEvents="none">
       <Text style={styles.placeholderPrefix}>Search &quot;</Text>
       <View style={styles.termClip}>
-        <Animated.Text
-          style={[styles.placeholderTerm, termStyle]}
-          numberOfLines={1}
-        >
-          {terms[index]}
-        </Animated.Text>
+        <Animated.View style={termStyle}>
+          <Text style={styles.placeholderTerm} numberOfLines={1}>
+            {terms[index]}
+          </Text>
+        </Animated.View>
       </View>
       <Text style={styles.placeholderPrefix}>&quot;</Text>
     </View>
