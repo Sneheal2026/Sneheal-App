@@ -21,6 +21,8 @@ export type VerifyOtpResponse = {
   user: AuthUser;
 };
 
+export type RefreshSessionResponse = VerifyOtpResponse;
+
 export type ApiSuccessResponse<T> = {
   success: true;
   message: string;

@@ -9,6 +9,10 @@ const getDefaultBaseUrl = (): string => {
   return 'http://localhost:5000';
 };
 
+export const getApiBaseUrl = (): string => {
+  return process.env.EXPO_PUBLIC_API_URL ?? getDefaultBaseUrl();
+};
+
 export class ApiError extends Error {
   status: number;
 
@@ -45,7 +49,7 @@ export async function apiRequest<T>(
   path: string,
   options: RequestOptions = {},
 ): Promise<T> {
-  const baseUrl = process.env.EXPO_PUBLIC_API_URL ?? getDefaultBaseUrl();
+  const baseUrl = getApiBaseUrl();
   const { method = 'GET', body, token } = options;
   const url = `${baseUrl}${path}`;
 

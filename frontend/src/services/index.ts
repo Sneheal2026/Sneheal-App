@@ -1,6 +1,12 @@
 export { speechRecognitionService } from './speechRecognitionService';
-export { sendOtp, verifyOtp } from './authService';
-export { apiRequest, ApiError } from './apiClient';
+export { sendOtp, verifyOtp, refreshSession } from './authService';
+export { apiRequest, ApiError, getApiBaseUrl } from './apiClient';
+export {
+  getValidAccessToken,
+  refreshAuthSession,
+  authenticatedApiRequest,
+  authenticatedFetch,
+} from './authTokenManager';
 export {
   saveAuthSession,
   loadAuthSession,

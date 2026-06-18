@@ -30,6 +30,7 @@ import Animated, {
 import theme from '@/styles/theme';
 import { pickImageFromSource, type PickedImage } from '@/utils/imagePicker';
 import type { AuthScreenProps } from '@/navigation/types';
+import { scanPrescription } from '@/services/prescriptionService';
 
 const { colors, spacing, typography, borderRadius, shadows, moderateScale } = theme;
 
@@ -37,15 +38,14 @@ const PAGE_BG = '#F5F6F8';
 const ACCENT = colors.primary;
 const ACCENT_DARK = colors.primaryDark;
 const PERMISSION_MESSAGE =
-  'Allow camera or photo access to upload prescriptions and medicine images.';
+  'Allow camera or photo access to upload your prescription.';
 
 const SCAN_TIPS = [
   { icon: 'sunny-outline' as const, label: 'Good light' },
   { icon: 'scan-outline' as const, label: 'Full frame' },
-  { icon: 'eye-outline' as const, label: 'Clear text' },
+  { icon: 'document-text' as const, label: 'Doctor sign visible' },
 ];
 
-const SCAN_DURATION_MS = 2600;
 const SCAN_BEAM_DURATION_MS = 2800;
 const SCAN_ZONE_INSET = moderateScale(24);
 
@@ -156,7 +156,8 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
   const [pickedImage, setPickedImage] = useState<PickedImage | null>(null);
   const [isPicking, setIsPicking] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
-  const [scanComplete, setScanComplete] = useState(false);
+  const [medicineNames, setMedicineNames] = useState<string[]>([]);
+  const [scanError, setScanError] = useState<string | null>(null);
 
   const bracketPulse = useSharedValue(0.72);
 
@@ -179,7 +180,8 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
       if (isPicking || isScanning) return;
 
       setIsPicking(true);
-      setScanComplete(false);
+      setMedicineNames([]);
+      setScanError(null);
 
       try {
         const image = await pickImageFromSource(source, PERMISSION_MESSAGE);
@@ -196,21 +198,29 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
 
   const handleClearImage = useCallback(() => {
     setPickedImage(null);
-    setScanComplete(false);
+    setMedicineNames([]);
+    setScanError(null);
   }, []);
 
   const handleScan = useCallback(async () => {
     if (!pickedImage || isScanning) return;
 
     setIsScanning(true);
-    setScanComplete(false);
+    setMedicineNames([]);
+    setScanError(null);
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
-    await new Promise((resolve) => setTimeout(resolve, SCAN_DURATION_MS));
-
-    setIsScanning(false);
-    setScanComplete(true);
-    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    try {
+      const result = await scanPrescription(pickedImage.uri);
+      setMedicineNames(result.medicineNames);
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (error: any) {
+      const errorMessage = error?.message || 'Failed to scan prescription';
+      setScanError(errorMessage);
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    } finally {
+      setIsScanning(false);
+    }
   }, [isScanning, pickedImage]);
 
   const handleReplace = useCallback(() => {
@@ -234,7 +244,7 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
           >
             <Ionicons name="arrow-back" size={22} color={colors.textPrimary} />
           </Pressable>
-          <Text style={styles.topTitle}>Scan & Upload</Text>
+          <Text style={styles.topTitle}>Upload Prescription</Text>
           <Pressable
             onPress={handleClearImage}
             disabled={!pickedImage}
@@ -272,9 +282,9 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
               <Ionicons name="medkit-outline" size={18} color={colors.secondary} />
             </View>
           </View> */}
-          <Text style={styles.heroTitle}>Prescription or medicine photo</Text>
+          <Text style={styles.heroTitle}>Upload prescription</Text>
           <Text style={styles.heroSubtitle}>
-            Upload any clear image — we will scan and identify it for you.
+            Upload a clear photo of your prescription. Our AI will identify the medicines for you.
           </Text>
         </Animated.View>
 
@@ -374,16 +384,41 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
           ))}
         </Animated.View>
 
-        {scanComplete && (
-          <Animated.View entering={FadeInUp.duration(350)} style={styles.resultCard}>
-            <View style={styles.resultIcon}>
-              <Ionicons name="sparkles" size={18} color={colors.success} />
+        {medicineNames.length > 0 && (
+          <Animated.View entering={FadeInUp.duration(350)} style={styles.medicineBox}>
+            <View style={styles.medicineHeader}>
+              <View style={styles.medicineHeaderLeft}>
+                <Ionicons name="medical" size={20} color={colors.success} />
+                <Text style={styles.medicineTitle}>Medicines detected</Text>
+              </View>
+              <View style={styles.medicineBadge}>
+                <Text style={styles.medicineBadgeText}>{medicineNames.length}</Text>
+              </View>
             </View>
-            <View style={styles.resultCopy}>
-              <Text style={styles.resultTitle}>Scan complete</Text>
-              <Text style={styles.resultBody}>
-                Image processed successfully. Results will show here once analysis is connected.
-              </Text>
+            <View style={styles.medicineList}>
+              {medicineNames.map((name, index) => (
+                <View key={index} style={styles.medicineRow}>
+                  <View style={styles.medicineNumber}>
+                    <Text style={styles.medicineNumberText}>{index + 1}</Text>
+                  </View>
+                  <Text style={styles.medicineName}>{name}</Text>
+                </View>
+              ))}
+            </View>
+            <Text style={styles.medicineFooter}>
+              AI-detected names — please verify before ordering. Retake in good light if anything looks wrong.
+            </Text>
+          </Animated.View>
+        )}
+
+        {scanError && (
+          <Animated.View entering={FadeInUp.duration(350)} style={styles.errorCard}>
+            <View style={styles.errorIcon}>
+              <Ionicons name="alert-circle" size={20} color={colors.error} />
+            </View>
+            <View style={styles.errorCopy}>
+              <Text style={styles.errorTitle}>Scan failed</Text>
+              <Text style={styles.errorBody}>{scanError}</Text>
             </View>
           </Animated.View>
         )}
@@ -713,6 +748,114 @@ const styles = StyleSheet.create({
     ...typography.caption,
     fontWeight: '600',
     color: colors.textSecondary,
+  },
+  medicineBox: {
+    backgroundColor: colors.white,
+    borderRadius: borderRadius.xl,
+    padding: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.successLight,
+    ...shadows.sm,
+    marginBottom: spacing.md,
+  },
+  medicineHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.md,
+  },
+  medicineHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  medicineTitle: {
+    ...typography.body,
+    fontWeight: '800',
+    color: colors.textPrimary,
+  },
+  medicineBadge: {
+    backgroundColor: colors.successLight,
+    paddingHorizontal: spacing.sm + 2,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.full,
+    minWidth: moderateScale(28),
+    alignItems: 'center',
+  },
+  medicineBadgeText: {
+    ...typography.caption,
+    fontWeight: '800',
+    color: colors.success,
+  },
+  medicineList: {
+    gap: spacing.sm,
+  },
+  medicineRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  medicineNumber: {
+    width: moderateScale(26),
+    height: moderateScale(26),
+    borderRadius: moderateScale(13),
+    backgroundColor: colors.infoLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  medicineNumberText: {
+    ...typography.caption,
+    fontWeight: '800',
+    color: ACCENT,
+  },
+  medicineName: {
+    ...typography.body,
+    fontWeight: '600',
+    color: colors.textPrimary,
+    flex: 1,
+  },
+  medicineFooter: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    marginTop: spacing.md,
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.borderLight,
+    textAlign: 'center',
+  },
+  errorCard: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    backgroundColor: colors.white,
+    borderRadius: borderRadius.xl,
+    padding: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.errorLight,
+    ...shadows.sm,
+    marginBottom: spacing.md,
+  },
+  errorIcon: {
+    width: moderateScale(38),
+    height: moderateScale(38),
+    borderRadius: moderateScale(12),
+    backgroundColor: colors.errorLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  errorCopy: {
+    flex: 1,
+  },
+  errorTitle: {
+    ...typography.bodySmall,
+    fontWeight: '800',
+    color: colors.error,
+    marginBottom: spacing.xs,
+  },
+  errorBody: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    lineHeight: moderateScale(18),
   },
   resultCard: {
     flexDirection: 'row',

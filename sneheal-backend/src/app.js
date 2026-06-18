@@ -8,6 +8,7 @@ const swaggerUi = require('swagger-ui-express');
 const { validateEnv } = require('./utils/env');
 const swaggerSpec = require('./config/swagger');
 const authRoutes = require('./routes/auth.routes');
+const prescriptionRoutes = require('./routes/prescription.routes');
 const { authLimiter } = require('./middleware/rateLimiter');
 const errorHandler = require('./middleware/errorHandler');
 const { success } = require('./utils/response');
@@ -39,6 +40,7 @@ app.get('/health', (_req, res) => {
 });
 
 app.use('/api/auth', authLimiter, authRoutes);
+app.use('/api/prescriptions', prescriptionRoutes);
 
 app.use((_req, res) => {
   return res.status(404).json({ success: false, message: 'Route not found' });

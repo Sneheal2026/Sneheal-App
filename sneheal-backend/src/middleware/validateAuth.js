@@ -1,6 +1,35 @@
+const jwt = require('jsonwebtoken');
 const { validatePhone } = require('../utils/phone');
 const { OTP_LENGTH } = require('../utils/otp');
 const { fail } = require('../utils/response');
+const AppError = require('../utils/AppError');
+
+/**
+ * Middleware to verify JWT token from Authorization header
+ */
+const authenticateToken = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return fail(res, 401, 'Authentication required');
+  }
+
+  const token = authHeader.substring(7); // Remove 'Bearer ' prefix
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded; // Attach user data to request
+    next();
+  } catch (error) {
+    if (error.name === 'TokenExpiredError') {
+      return fail(res, 401, 'Token expired');
+    }
+    if (error.name === 'JsonWebTokenError') {
+      return fail(res, 401, 'Invalid token');
+    }
+    return fail(res, 401, 'Authentication failed');
+  }
+};
 
 const validateSendOtp = (req, res, next) => {
   const { phone } = req.body;
@@ -38,7 +67,20 @@ const validateVerifyOtp = (req, res, next) => {
   next();
 };
 
+const validateRefreshToken = (req, res, next) => {
+  const { refreshToken } = req.body;
+
+  if (!refreshToken || typeof refreshToken !== 'string' || !refreshToken.trim()) {
+    return fail(res, 400, 'Refresh token is required');
+  }
+
+  req.body.refreshToken = refreshToken.trim();
+  next();
+};
+
 module.exports = {
+  authenticateToken,
   validateSendOtp,
   validateVerifyOtp,
+  validateRefreshToken,
 };

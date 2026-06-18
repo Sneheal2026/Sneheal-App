@@ -1,5 +1,5 @@
 import { apiRequest } from './apiClient';
-import type { SendOtpResponse, VerifyOtpResponse } from '@/types/auth';
+import type { SendOtpResponse, VerifyOtpResponse, RefreshSessionResponse } from '@/types/auth';
 import { devLog } from '@/utils/devLogger';
 
 export const sendOtp = async (phone: string): Promise<SendOtpResponse> => {
@@ -18,5 +18,15 @@ export const verifyOtp = async (
   return apiRequest<VerifyOtpResponse>('/api/auth/verify-otp', {
     method: 'POST',
     body: { phone, otp },
+  });
+};
+
+export const refreshSession = async (
+  refreshToken: string,
+): Promise<RefreshSessionResponse> => {
+  devLog('Auth', 'refreshSession called');
+  return apiRequest<RefreshSessionResponse>('/api/auth/refresh', {
+    method: 'POST',
+    body: { refreshToken },
   });
 };

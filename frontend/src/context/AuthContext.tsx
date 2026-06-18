@@ -9,13 +9,15 @@ import React, {
 import type { NavigationState, PartialState } from '@react-navigation/native';
 import {
   clearAuthSession,
-  loadAuthSession,
   saveAuthSession,
   type AuthSession,
 } from '@/services/tokenStorage';
+import {
+  restoreSessionIfNeeded,
+  setAuthSessionListener,
+} from '@/services/authTokenManager';
 import { buildAuthInitialState } from '@/navigation/buildAuthInitialState';
 import { resolveAuthRoute } from '@/navigation/resolveAuthRoute';
-import { isTokenExpired } from '@/utils/jwt';
 import { devLog } from '@/utils/devLogger';
 import type { AuthUser, VerifyOtpResponse } from '@/types/auth';
 
@@ -56,27 +58,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     devLog('Auth', 'Bootstrapping session...');
 
     try {
-      const stored = await loadAuthSession();
+      const restored = await restoreSessionIfNeeded();
 
-      if (!stored) {
-        devLog('Auth', 'No stored session');
-        applySession(null);
-        return;
-      }
-
-      if (isTokenExpired(stored.accessToken)) {
-        devLog('Auth', 'Stored token expired, clearing session');
-        await clearAuthSession();
+      if (!restored) {
+        devLog('Auth', 'No valid session');
         applySession(null);
         return;
       }
 
       devLog('Auth', 'Restored session', {
-        userId: stored.user.id,
-        profileCompleted: stored.user.profileCompleted,
-        role: stored.user.role,
+        userId: restored.user.id,
+        profileCompleted: restored.user.profileCompleted,
+        role: restored.user.role,
       });
-      applySession(stored);
+      applySession(restored);
     } catch (error) {
       devLog('Auth', 'Bootstrap failed', error);
       await clearAuthSession();
@@ -84,6 +79,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     } finally {
       setIsBootstrapping(false);
     }
+  }, [applySession]);
+
+  useEffect(() => {
+    setAuthSessionListener((next) => {
+      applySession(next);
+    });
+
+    return () => setAuthSessionListener(null);
   }, [applySession]);
 
   useEffect(() => {

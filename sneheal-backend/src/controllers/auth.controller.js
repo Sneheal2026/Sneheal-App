@@ -11,7 +11,13 @@ const verifyOtp = async (req, res) => {
   return success(res, 'OTP verified', data);
 };
 
+const refreshSession = async (req, res) => {
+  const data = await authService.refreshSession(req.body.refreshToken);
+  return success(res, 'Session refreshed', data);
+};
+
 module.exports = {
   sendOtp,
   verifyOtp,
+  refreshSession,
 };
