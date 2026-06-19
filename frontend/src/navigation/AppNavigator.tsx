@@ -33,7 +33,7 @@ interface TabConfig {
 const TABS: TabConfig[] = [
   { name: 'Home', component: HomeScreen, title: 'Home', iconOutline: 'home-outline', iconFilled: 'home' },
   { name: 'Search', component: SearchScreen, title: 'Search', iconOutline: 'search-outline', iconFilled: 'search' },
-  { name: 'Scan', component: ScanPlaceholderScreen, title: '', iconOutline: 'scan-outline', iconFilled: 'scan', isScan: true },
+  { name: 'Scan', component: ScanPlaceholderScreen, title: 'Scan', iconOutline: 'scan-outline', iconFilled: 'scan', isScan: true },
   { name: 'Cart', component: CartScreen, title: 'Cart', iconOutline: 'cart-outline', iconFilled: 'cart' },
   { name: 'Orders', component: OrdersScreen, title: 'Orders', iconOutline: 'receipt-outline', iconFilled: 'receipt' },
 ];
