@@ -1,7 +1,6 @@
 import React from 'react';
 import { StyleSheet } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import HomeScreen from '@/screens/home/HomeScreen';
@@ -13,7 +12,7 @@ import AnimatedTabBar from '@/components/navigation/AnimatedTabBar';
 import ScanTabButton from '@/components/navigation/ScanTabButton';
 import { TabBarVisibilityProvider } from '@/context/TabBarVisibilityContext';
 import { getTabBarHeight } from '@/navigation/tabBarConfig';
-import type { AuthStackParamList, TabParamList } from './types';
+import type { TabParamList } from './types';
 import theme from '@/styles/theme';
 
 const Tab = createBottomTabNavigator<TabParamList>();
@@ -85,18 +84,6 @@ const AppNavigator = () => {
                   }
                 : {}),
             }}
-            listeners={
-              tab.isScan
-                ? ({ navigation }) => ({
-                    tabPress: (e) => {
-                      e.preventDefault();
-                      const parent =
-                        navigation.getParent<NativeStackNavigationProp<AuthStackParamList>>();
-                      parent?.navigate('MedicineScan');
-                    },
-                  })
-                : undefined
-            }
           />
         ))}
       </Tab.Navigator>

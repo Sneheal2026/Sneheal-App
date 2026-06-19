@@ -1,7 +1,10 @@
 import React from 'react';
-import { StyleSheet, TouchableOpacity, View, type GestureResponderEvent } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { BottomTabBarButtonProps } from '@react-navigation/bottom-tabs';
 import ScanIcon from './ScanIcon';
+import type { AuthStackParamList } from '@/navigation/types';
 import theme from '@/styles/theme';
 
 const { colors, spacing } = theme;
@@ -9,24 +12,26 @@ const { colors, spacing } = theme;
 const SCAN_BUTTON_SIZE = 58;
 const SCAN_ICON_SIZE = 43;
 
-const ScanTabButton = ({ onPress, accessibilityState, style }: BottomTabBarButtonProps) => {
-  const handlePress = (event: GestureResponderEvent) => {
-    onPress?.(event);
+const ScanTabButton = ({ style, accessibilityState }: BottomTabBarButtonProps) => {
+  const navigation = useNavigation();
+
+  const handlePress = () => {
+    const parent = navigation.getParent<NativeStackNavigationProp<AuthStackParamList>>();
+    parent?.navigate('MedicineScan');
   };
 
   return (
-    <TouchableOpacity
-      onPress={handlePress}
-      activeOpacity={0.85}
-      accessibilityRole="button"
-      accessibilityState={accessibilityState}
-      accessibilityLabel="Scan prescription"
-      style={[styles.wrapper, style]}
-    >
-      <View style={styles.button}>
+    <View style={[styles.wrapper, style]} pointerEvents="box-none">
+      <Pressable
+        onPress={handlePress}
+        accessibilityRole="button"
+        accessibilityState={accessibilityState}
+        accessibilityLabel="Scan prescription"
+        style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
+      >
         <ScanIcon size={SCAN_ICON_SIZE} color={colors.white} />
-      </View>
-    </TouchableOpacity>
+      </Pressable>
+    </View>
   );
 };
 
@@ -45,6 +50,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.primary,
+  },
+  buttonPressed: {
+    opacity: 0.85,
   },
 });
 
