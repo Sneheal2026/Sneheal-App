@@ -9,6 +9,7 @@ import AppNavigator from './AppNavigator';
 import SettingsScreen from '@/screens/settings/SettingsScreen';
 import NotificationsScreen from '@/screens/notifications/NotificationsScreen';
 import SavedAddressesScreen from '@/screens/settings/SavedAddressesScreen';
+import HelpAndSupportScreen from '@/screens/settings/HelpAndSupportScreen';
 import MedicineScanScreen from '@/screens/scan/MedicineScanScreen';
 import type { AuthStackParamList } from './types';
 import theme from '@/styles/theme';
@@ -32,6 +33,7 @@ const AuthNavigator = () => {
       <Stack.Screen name="Settings" component={SettingsScreen} />
       <Stack.Screen name="Notifications" component={NotificationsScreen} />
       <Stack.Screen name="SavedAddresses" component={SavedAddressesScreen} />
+      <Stack.Screen name="HelpAndSupport" component={HelpAndSupportScreen} />
       <Stack.Screen
         name="SelectLocation"
         getComponent={() => require('@/screens/location/SelectLocationScreen').default}
