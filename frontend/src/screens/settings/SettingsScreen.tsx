@@ -5,6 +5,7 @@ import {
   StyleSheet,
   ScrollView,
   Pressable,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -19,6 +20,7 @@ import theme from '@/styles/theme';
 const { colors, spacing, typography, borderRadius, shadows } = theme;
 
 const APP_VERSION = Constants.expoConfig?.version ?? '1.0.0';
+const ACCOUNT_AVATAR = require('../../../assets/images/Male_picture.webp');
 
 const QUICK_ACTIONS = [
   { id: 'orders', icon: 'receipt-outline' as const, label: 'My orders' },
@@ -86,9 +88,12 @@ const SettingsScreen = () => {
 
               <Animated.View entering={FadeInDown.duration(400)} style={styles.profileBlock}>
                 <View style={styles.avatarRing}>
-                  <View style={styles.avatar}>
-                    <Ionicons name="person" size={36} color={colors.textMuted} />
-                  </View>
+                  <Image
+                    source={ACCOUNT_AVATAR}
+                    style={styles.avatar}
+                    resizeMode="cover"
+                    accessibilityLabel="Account profile photo"
+                  />
                 </View>
                 <Text style={styles.accountTitle}>Your account</Text>
                 <Text style={styles.phoneText}>+91 98765 43210</Text>
@@ -247,8 +252,7 @@ const styles = StyleSheet.create({
     height: 88,
     borderRadius: 44,
     backgroundColor: colors.white,
-    alignItems: 'center',
-    justifyContent: 'center',
+    overflow: 'hidden',
     ...shadows.sm,
   },
   accountTitle: {

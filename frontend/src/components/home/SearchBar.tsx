@@ -142,6 +142,13 @@ const SearchBar: React.FC<SearchBarProps> = ({
     setIsFocused(false);
   }, []);
 
+  const handleClear = useCallback(() => {
+    onChangeText('');
+    inputRef.current?.focus();
+  }, [onChangeText]);
+
+  const showClearButton = value.length > 0;
+
   const searchField = (
     <View
       style={[
@@ -187,6 +194,22 @@ const SearchBar: React.FC<SearchBarProps> = ({
           </View>
         )}
       </View>
+      {showClearButton && (
+        <TouchableOpacity
+          style={styles.clearBtn}
+          activeOpacity={0.7}
+          onPress={handleClear}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityLabel="Clear search"
+          accessibilityRole="button"
+        >
+          <Ionicons
+            name="close-circle"
+            size={18}
+            color={colors.textMuted}
+          />
+        </TouchableOpacity>
+      )}
       <View style={styles.micDivider} />
       <TouchableOpacity
         style={[styles.micBtn, isListening && styles.micBtnActive]}
@@ -360,6 +383,11 @@ const styles = StyleSheet.create({
     ...typography.bodySmall,
     color: colors.primary,
     fontWeight: '500',
+  },
+  clearBtn: {
+    paddingHorizontal: spacing.xs,
+    paddingVertical: spacing.xs,
+    marginRight: spacing.xs,
   },
   micDivider: {
     width: 1,
