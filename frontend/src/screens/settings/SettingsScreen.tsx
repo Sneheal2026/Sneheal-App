@@ -6,6 +6,7 @@ import {
   ScrollView,
   Pressable,
   Image,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -55,7 +56,10 @@ const SettingsScreen = () => {
 
   const handleItemPress = (id: string) => {
     if (id === 'addresses') {
-      navigation.navigate('SavedAddresses' as never);
+      Alert.alert(
+        'Coming soon',
+        'Saved delivery addresses will be available in a future update.',
+      );
     } else if (id === 'help') {
       navigation.navigate('HelpAndSupport' as never);
     }

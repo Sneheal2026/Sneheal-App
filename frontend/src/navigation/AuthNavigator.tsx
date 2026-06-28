@@ -8,7 +8,6 @@ import DoctorHomeScreen from '@/screens/doctor/DoctorHomeScreen';
 import AppNavigator from './AppNavigator';
 import SettingsScreen from '@/screens/settings/SettingsScreen';
 import NotificationsScreen from '@/screens/notifications/NotificationsScreen';
-import SavedAddressesScreen from '@/screens/settings/SavedAddressesScreen';
 import HelpAndSupportScreen from '@/screens/settings/HelpAndSupportScreen';
 import MedicineScanScreen from '@/screens/scan/MedicineScanScreen';
 import type { AuthStackParamList } from './types';
@@ -32,16 +31,7 @@ const AuthNavigator = () => {
       <Stack.Screen name="Main" component={AppNavigator} />
       <Stack.Screen name="Settings" component={SettingsScreen} />
       <Stack.Screen name="Notifications" component={NotificationsScreen} />
-      <Stack.Screen name="SavedAddresses" component={SavedAddressesScreen} />
       <Stack.Screen name="HelpAndSupport" component={HelpAndSupportScreen} />
-      <Stack.Screen
-        name="SelectLocation"
-        getComponent={() => require('@/screens/location/SelectLocationScreen').default}
-        options={{
-          animation: 'slide_from_bottom',
-          presentation: 'modal',
-        }}
-      />
       <Stack.Screen name="MedicineScan" component={MedicineScanScreen} />
       <Stack.Screen name="DeliveryAgentMain" component={DeliveryAgentHomeScreen} />
       <Stack.Screen name="DoctorMain" component={DoctorHomeScreen} />

@@ -13,9 +13,7 @@ export type AuthStackParamList = {
   Main: undefined;
   Settings: undefined;
   Notifications: undefined;
-  SavedAddresses: undefined;
   HelpAndSupport: undefined;
-  SelectLocation: undefined;
   MedicineScan: undefined;
   DeliveryAgentMain: undefined;
   DoctorMain: undefined;

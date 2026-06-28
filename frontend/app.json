@@ -10,7 +10,6 @@
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "Sneheal needs your location to deliver medicines to your exact address.",
         "NSMicrophoneUsageDescription": "Allow Sneheal to use the microphone for voice search.",
         "NSSpeechRecognitionUsageDescription": "Allow Sneheal to use speech recognition for voice search."
       }
@@ -24,8 +23,6 @@
       },
       "edgeToEdgeEnabled": true,
       "permissions": [
-        "android.permission.ACCESS_FINE_LOCATION",
-        "android.permission.ACCESS_COARSE_LOCATION",
         "android.permission.RECORD_AUDIO"
       ]
     },
@@ -48,12 +45,6 @@
         {
           "photosPermission": "Allow Sneheal to access your photos to upload prescriptions and medicine images.",
           "cameraPermission": "Allow Sneheal to use your camera to photograph prescriptions and medicines."
-        }
-      ],
-      [
-        "expo-location",
-        {
-          "locationWhenInUsePermission": "Sneheal needs your location to deliver medicines to your exact address."
         }
       ],
       [

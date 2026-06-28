@@ -31,11 +31,7 @@ import { FEATURED_PRODUCTS } from '@/components/home/FeaturedProducts';
 import FloatingCartBar from '@/components/cart/FloatingCartBar';
 import { useTabBarScrollState } from '@/hooks/useTabBarScrollHandler';
 import { updateTabBarOnScroll } from '@/utils/tabBarScrollWorklet';
-import { getDeliveryAddress, formatAddressDisplay } from '@/services/addressStorage';
-import { useLocationPermission } from '@/hooks/useLocationPermission';
 import { useVoiceRecognition } from '@/hooks/useVoiceRecognition';
-import { reverseGeocodeCoordinates } from '@/hooks/useReverseGeocode';
-import { sanitizeDisplayAddress } from '@/utils/addressFormatting';
 import theme from '@/styles/theme';
 import globalStyles from '@/styles/globalStyles';
 import type { AuthStackParamList } from '@/navigation/types';
@@ -53,72 +49,10 @@ const HomeScreen = () => {
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [isScrolling, setIsScrolling] = useState(false);
   const [stickyHeaderActive, setStickyHeaderActive] = useState(false);
-  const [addressLabel, setAddressLabel] = useState('Detecting location...');
-  const [addressTag, setAddressTag] = useState<string | undefined>();
   const scrollY = useSharedValue(0);
   const { tabBarOffset, tabBarHeight, lastScrollY } = useTabBarScrollState();
   const scrollEndTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const liveAddressCache = useRef<string | null>(null);
   const insets = useSafeAreaInsets();
-  const { getCurrentLocation } = useLocationPermission();
-  const getCurrentLocationRef = useRef(getCurrentLocation);
-  getCurrentLocationRef.current = getCurrentLocation;
-
-  const setAddressIfChanged = useCallback((next: string) => {
-    setAddressLabel((prev) => (prev === next ? prev : next));
-  }, []);
-
-  useFocusEffect(
-    useCallback(() => {
-      let cancelled = false;
-
-      const loadAddress = async () => {
-        const saved = await getDeliveryAddress();
-        if (cancelled) return;
-
-        if (saved) {
-          setAddressTag(saved.label.toUpperCase());
-          setAddressIfChanged(formatAddressDisplay(saved));
-          return;
-        }
-
-        setAddressTag(undefined);
-
-        if (liveAddressCache.current) {
-          setAddressIfChanged(sanitizeDisplayAddress(liveAddressCache.current));
-          return;
-        }
-
-        setAddressIfChanged('Detecting location...');
-
-        const location = await getCurrentLocationRef.current();
-        if (cancelled) return;
-
-        if (!location) {
-          setAddressIfChanged('Add delivery address');
-          return;
-        }
-
-        try {
-          const geocoded = await reverseGeocodeCoordinates(location.coords);
-          if (!cancelled) {
-            liveAddressCache.current = geocoded.formattedAddress;
-            setAddressIfChanged(sanitizeDisplayAddress(geocoded.formattedAddress));
-          }
-        } catch {
-          if (!cancelled) {
-            setAddressIfChanged('Add delivery address');
-          }
-        }
-      };
-
-      void loadAddress();
-      return () => {
-        cancelled = true;
-      };
-    }, [setAddressIfChanged]),
-  );
-
   const handleIncrement = useCallback((id: string) => {
     setQuantities((prev) => ({
       ...prev,
@@ -159,10 +93,6 @@ const HomeScreen = () => {
 
   const handleOpenCart = useCallback(() => {
     navigation.navigate('Cart' as never);
-  }, [navigation]);
-
-  const handleOpenLocation = useCallback(() => {
-    navigation.getParent()?.navigate('SelectLocation' as never);
   }, [navigation]);
 
   const handleUploadScan = useCallback(() => {
@@ -303,9 +233,7 @@ const HomeScreen = () => {
             isScrolling={isScrolling}
             onAccountPress={handleOpenSettings}
             onNotificationsPress={handleOpenNotifications}
-            addressLabel={addressLabel}
-            addressTag={addressTag}
-            onLocationPress={handleOpenLocation}
+            addressLabel="Delivery address coming soon"
             onUploadScanPress={handleUploadScan}
           />
 

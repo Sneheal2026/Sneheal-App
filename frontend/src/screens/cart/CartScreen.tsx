@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import {
   View,
   Text,
@@ -8,7 +8,6 @@ import {
 } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import theme from '@/styles/theme';
@@ -17,20 +16,12 @@ import type { BillLine } from '@/components/cart';
 import type { TabScreenProps } from '@/navigation/types';
 import { useTabBarScrollHandler } from '@/hooks/useTabBarScrollHandler';
 import { getTabBarHeight } from '@/navigation/tabBarConfig';
-import { getDeliveryAddress, formatAddressDisplay } from '@/services/addressStorage';
-import type { DeliveryAddress, AddressLabel } from '@/types/address';
 
 const { colors, spacing, typography, borderRadius, moderateScale } = theme;
 
 const PAGE_BG = '#F5F6F8';
 const BLINKIT_GREEN = '#0C831F';
 const DELIVERY_FEE = 2.99;
-
-const LABEL_CONFIG: Record<AddressLabel, { text: string; icon: keyof typeof Ionicons.glyphMap }> = {
-  home: { text: 'Home', icon: 'home-outline' },
-  work: { text: 'Work', icon: 'briefcase-outline' },
-  other: { text: 'Other', icon: 'location-outline' },
-};
 
 const DUMMY_CART_ITEMS = [
   {
@@ -62,43 +53,10 @@ const DUMMY_CART_ITEMS = [
   },
 ];
 
-const CartScreen = ({ navigation }: TabScreenProps<'Cart'>) => {
+const CartScreen = (_props: TabScreenProps<'Cart'>) => {
   const insets = useSafeAreaInsets();
   const tabBarScrollHandler = useTabBarScrollHandler();
   const tabBarHeight = getTabBarHeight(insets.bottom);
-  const [savedAddress, setSavedAddress] = useState<DeliveryAddress | null>(null);
-
-  const loadAddress = useCallback(async () => {
-    const address = await getDeliveryAddress();
-    setSavedAddress(address);
-  }, []);
-
-  useFocusEffect(
-    useCallback(() => {
-      void loadAddress();
-    }, [loadAddress]),
-  );
-
-  const handleAddressPress = useCallback(() => {
-    const parent = navigation.getParent();
-    if (savedAddress) {
-      parent?.navigate('SavedAddresses' as never);
-      return;
-    }
-    parent?.navigate('SelectLocation' as never);
-  }, [navigation, savedAddress]);
-
-  const addressTitle = savedAddress
-    ? LABEL_CONFIG[savedAddress.label].text
-    : 'Add delivery address';
-
-  const addressSubtitle = savedAddress
-    ? formatAddressDisplay(savedAddress)
-    : 'Set your delivery location for checkout';
-
-  const addressIcon = savedAddress
-    ? LABEL_CONFIG[savedAddress.label].icon
-    : 'location-outline';
 
   const itemCount = DUMMY_CART_ITEMS.reduce((sum, item) => sum + item.quantity, 0);
 
@@ -158,32 +116,19 @@ const CartScreen = ({ navigation }: TabScreenProps<'Cart'>) => {
           </View>
         </View>
 
-        <Pressable
-          style={({ pressed }) => [styles.addressStrip, pressed && styles.addressStripPressed]}
-          onPress={handleAddressPress}
-          accessibilityRole="button"
-          accessibilityLabel={savedAddress ? 'Change delivery address' : 'Add delivery address'}
-        >
-          <View style={[styles.addressIcon, !savedAddress && styles.addressIconEmpty]}>
-            <Ionicons
-              name={addressIcon}
-              size={15}
-              color={savedAddress ? BLINKIT_GREEN : colors.textMuted}
-            />
+        <View style={styles.addressStrip}>
+          <View style={[styles.addressIcon, styles.addressIconEmpty]}>
+            <Ionicons name="location-outline" size={15} color={colors.textMuted} />
           </View>
           <View style={styles.addressTextBlock}>
-            <Text
-              style={[styles.addressTitle, !savedAddress && styles.addressTitleEmpty]}
-              numberOfLines={1}
-            >
-              {addressTitle}
+            <Text style={[styles.addressTitle, styles.addressTitleEmpty]} numberOfLines={1}>
+              Delivery address
             </Text>
             <Text style={styles.addressSub} numberOfLines={2}>
-              {addressSubtitle}
+              Address selection will be available in a future update
             </Text>
           </View>
-          <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
-        </Pressable>
+        </View>
       </SafeAreaView>
 
       <Animated.ScrollView

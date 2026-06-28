@@ -50,6 +50,44 @@ const HomeHeader: React.FC<HomeHeaderProps> = ({
     Platform.OS === 'android' ? StatusBar.currentHeight ?? 0 : 0,
   );
 
+  const renderLocationContent = () => (
+    <>
+      <Ionicons
+        name="location-sharp"
+        size={moderateScale(14)}
+        color={colors.headerAccent}
+        style={styles.locationPin}
+      />
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.locationScroll}
+        contentContainerStyle={styles.locationScrollContent}
+        nestedScrollEnabled
+        directionalLockEnabled
+      >
+        <Text style={styles.locationText} numberOfLines={1}>
+          {addressTag ? (
+            <>
+              <Text style={styles.locationTag}>{addressTag}</Text>
+              <Text style={styles.locationSeparator}> · </Text>
+              <Text style={styles.locationAddress}>{addressLabel}</Text>
+            </>
+          ) : (
+            <Text style={styles.locationAddress}>{addressLabel}</Text>
+          )}
+        </Text>
+      </ScrollView>
+      {onLocationPress ? (
+        <Ionicons
+          name="chevron-down"
+          size={moderateScale(14)}
+          color={colors.headerTextMutedOnDark}
+        />
+      ) : null}
+    </>
+  );
+
   return (
     <View style={styles.heroWrapper}>
       <View style={StyleSheet.absoluteFill} pointerEvents="none">
@@ -113,45 +151,21 @@ const HomeHeader: React.FC<HomeHeaderProps> = ({
         </View>
 
         <Animated.View entering={FadeInDown.delay(140).duration(450).springify()}>
-          <TouchableOpacity
-            style={styles.locationRow}
-            onPress={onLocationPress}
-            activeOpacity={0.75}
-            accessibilityRole="button"
-            accessibilityLabel="Change delivery location"
-          >
-            <Ionicons
-              name="location-sharp"
-              size={moderateScale(14)}
-              color={colors.headerAccent}
-              style={styles.locationPin}
-            />
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              style={styles.locationScroll}
-              contentContainerStyle={styles.locationScrollContent}
-              nestedScrollEnabled
-              directionalLockEnabled
+          {onLocationPress ? (
+            <TouchableOpacity
+              style={styles.locationRow}
+              onPress={onLocationPress}
+              activeOpacity={0.75}
+              accessibilityRole="button"
+              accessibilityLabel="Change delivery location"
             >
-              <Text style={styles.locationText} numberOfLines={1}>
-                {addressTag ? (
-                  <>
-                    <Text style={styles.locationTag}>{addressTag}</Text>
-                    <Text style={styles.locationSeparator}> · </Text>
-                    <Text style={styles.locationAddress}>{addressLabel}</Text>
-                  </>
-                ) : (
-                  <Text style={styles.locationAddress}>{addressLabel}</Text>
-                )}
-              </Text>
-            </ScrollView>
-            <Ionicons
-              name="chevron-down"
-              size={moderateScale(14)}
-              color={colors.headerTextMutedOnDark}
-            />
-          </TouchableOpacity>
+              {renderLocationContent()}
+            </TouchableOpacity>
+          ) : (
+            <View style={styles.locationRow} accessibilityRole="text">
+              {renderLocationContent()}
+            </View>
+          )}
         </Animated.View>
 
         <Animated.View
