@@ -16,7 +16,7 @@ import type { TabParamList } from './types';
 import theme from '@/styles/theme';
 
 const Tab = createBottomTabNavigator<TabParamList>();
-const { colors, spacing, typography, shadows } = theme;
+const { colors, spacing, typography } = theme;
 
 type TabIconName = keyof typeof Ionicons.glyphMap;
 
@@ -59,10 +59,12 @@ const AppNavigator = () => {
             ...typography.caption,
             fontWeight: 'bold',
             marginTop: spacing.xxs,
+            marginBottom: spacing.xxs,
           },
           tabBarStyle: {
             ...styles.tabBar,
             position: 'absolute',
+            paddingTop: spacing.sm,
             paddingBottom: insets.bottom + spacing.sm,
             height: tabBarHeight,
             overflow: 'visible',
@@ -81,6 +83,10 @@ const AppNavigator = () => {
                 ? {
                     tabBarLabel: () => null,
                     tabBarButton: (props) => <ScanTabButton {...props} />,
+                    tabBarItemStyle: {
+                      ...styles.tabItem,
+                      overflow: 'visible',
+                    },
                   }
                 : {}),
             }}
@@ -94,17 +100,12 @@ const AppNavigator = () => {
 const styles = StyleSheet.create({
   tabBar: {
     backgroundColor: colors.surface,
-    borderTopWidth: 0,
-    paddingTop: spacing.sm,
-    ...shadows.md,
-    shadowColor: colors.black,
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    elevation: 8,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
   },
   tabItem: {
-    paddingTop: spacing.xs,
+    paddingTop: spacing.xxs,
+    paddingBottom: spacing.xxs,
   },
 });
 

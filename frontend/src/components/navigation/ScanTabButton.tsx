@@ -5,12 +5,10 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { BottomTabBarButtonProps } from '@react-navigation/bottom-tabs';
 import ScanIcon from './ScanIcon';
 import type { AuthStackParamList } from '@/navigation/types';
+import { SCAN_BUTTON_SIZE, SCAN_ICON_SIZE } from '@/navigation/tabBarConfig';
 import theme from '@/styles/theme';
 
-const { colors, spacing } = theme;
-
-const SCAN_BUTTON_SIZE = 58;
-const SCAN_ICON_SIZE = 43;
+const { colors } = theme;
 
 const ScanTabButton = ({ style, accessibilityState }: BottomTabBarButtonProps) => {
   const navigation = useNavigation();
@@ -39,9 +37,8 @@ const styles = StyleSheet.create({
   wrapper: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'flex-start',
-    paddingTop: spacing.xs,
-    top: -10,
+    justifyContent: 'center',
+    overflow: 'visible',
   },
   button: {
     width: SCAN_BUTTON_SIZE,
