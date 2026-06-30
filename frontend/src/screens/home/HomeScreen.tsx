@@ -30,6 +30,7 @@ import {
 import { FEATURED_PRODUCTS } from '@/components/home/FeaturedProducts';
 import FloatingCartBar from '@/components/cart/FloatingCartBar';
 import { useTabBarScrollState } from '@/hooks/useTabBarScrollHandler';
+import { useLiveLocation } from '@/hooks/useLiveLocation';
 import { updateTabBarOnScroll } from '@/utils/tabBarScrollWorklet';
 import { useVoiceRecognition } from '@/hooks/useVoiceRecognition';
 import theme from '@/styles/theme';
@@ -99,6 +100,23 @@ const HomeScreen = () => {
     const parent = navigation.getParent<NativeStackNavigationProp<AuthStackParamList>>();
     parent?.navigate('MedicineScan');
   }, [navigation]);
+
+  const { status: locationStatus, location, refresh: refreshLocation } = useLiveLocation(true);
+
+  const addressLabel = useMemo(() => {
+    if (locationStatus === 'loading') return 'Fetching your location...';
+    if (locationStatus === 'error') return 'Tap to enable location';
+    return location?.addressLine ?? 'Add delivery address';
+  }, [locationStatus, location?.addressLine]);
+
+  const handleOpenMap = useCallback(() => {
+    if (locationStatus === 'error') {
+      void refreshLocation();
+      return;
+    }
+    const parent = navigation.getParent<NativeStackNavigationProp<AuthStackParamList>>();
+    parent?.navigate('LocationMap');
+  }, [navigation, locationStatus, refreshLocation]);
 
   const contentTopInset = Math.max(
     insets.top,
@@ -233,7 +251,9 @@ const HomeScreen = () => {
             isScrolling={isScrolling}
             onAccountPress={handleOpenSettings}
             onNotificationsPress={handleOpenNotifications}
-            addressLabel="Delivery address coming soon"
+            addressLabel={addressLabel}
+            addressTag={location?.shortLabel}
+            onLocationPress={handleOpenMap}
             onUploadScanPress={handleUploadScan}
           />
 

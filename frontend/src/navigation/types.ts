@@ -15,6 +15,7 @@ export type AuthStackParamList = {
   Notifications: undefined;
   HelpAndSupport: undefined;
   MedicineScan: undefined;
+  LocationMap: undefined;
   DeliveryAgentMain: undefined;
   DoctorMain: undefined;
 };

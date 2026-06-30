@@ -33,3 +33,5 @@ export type {
 } from './speech.types';
 
 export { mapSpeechError, mapPermissionError } from './speech.types';
+
+export type { LocationStatus, Coordinates, LiveLocation } from './location.types';

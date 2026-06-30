@@ -10,6 +10,7 @@ import SettingsScreen from '@/screens/settings/SettingsScreen';
 import NotificationsScreen from '@/screens/notifications/NotificationsScreen';
 import HelpAndSupportScreen from '@/screens/settings/HelpAndSupportScreen';
 import MedicineScanScreen from '@/screens/scan/MedicineScanScreen';
+import MapScreen from '@/screens/map/MapScreen';
 import type { AuthStackParamList } from './types';
 import theme from '@/styles/theme';
 
@@ -33,6 +34,7 @@ const AuthNavigator = () => {
       <Stack.Screen name="Notifications" component={NotificationsScreen} />
       <Stack.Screen name="HelpAndSupport" component={HelpAndSupportScreen} />
       <Stack.Screen name="MedicineScan" component={MedicineScanScreen} />
+      <Stack.Screen name="LocationMap" component={MapScreen} />
       <Stack.Screen name="DeliveryAgentMain" component={DeliveryAgentHomeScreen} />
       <Stack.Screen name="DoctorMain" component={DoctorHomeScreen} />
     </Stack.Navigator>

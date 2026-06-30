@@ -1,4 +1,5 @@
 export { speechRecognitionService } from './speechRecognitionService';
+export { fetchLiveLocation, ensureLocationPermission, getCurrentCoordinates } from './locationService';
 export { sendOtp, verifyOtp, refreshSession } from './authService';
 export { apiRequest, ApiError, getApiBaseUrl } from './apiClient';
 export {

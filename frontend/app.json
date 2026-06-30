@@ -11,7 +11,8 @@
       "supportsTablet": true,
       "infoPlist": {
         "NSMicrophoneUsageDescription": "Allow Sneheal to use the microphone for voice search.",
-        "NSSpeechRecognitionUsageDescription": "Allow Sneheal to use speech recognition for voice search."
+        "NSSpeechRecognitionUsageDescription": "Allow Sneheal to use speech recognition for voice search.",
+        "NSLocationWhenInUseUsageDescription": "Sneheal uses your location to show your delivery address and nearby pharmacies."
       }
     },
     "android": {
@@ -23,7 +24,9 @@
       },
       "edgeToEdgeEnabled": true,
       "permissions": [
-        "android.permission.RECORD_AUDIO"
+        "android.permission.RECORD_AUDIO",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION"
       ]
     },
     "web": {
@@ -52,6 +55,12 @@
         {
           "microphonePermission": "Allow Sneheal to use the microphone for voice search.",
           "speechRecognitionPermission": "Allow Sneheal to use speech recognition for voice search."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Allow Sneheal to use your location for delivery and map."
         }
       ]
     ],
