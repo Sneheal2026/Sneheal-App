@@ -4,11 +4,12 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { BottomTabBarButtonProps } from '@react-navigation/bottom-tabs';
 import ScanIcon from './ScanIcon';
+import ScanTabGlow from './ScanTabGlow';
 import type { AuthStackParamList } from '@/navigation/types';
 import { SCAN_BUTTON_SIZE, SCAN_ICON_SIZE } from '@/navigation/tabBarConfig';
 import theme from '@/styles/theme';
 
-const { colors } = theme;
+const { colors, shadows } = theme;
 
 const ScanTabButton = ({ style, accessibilityState }: BottomTabBarButtonProps) => {
   const navigation = useNavigation();
@@ -20,15 +21,18 @@ const ScanTabButton = ({ style, accessibilityState }: BottomTabBarButtonProps) =
 
   return (
     <View style={[styles.wrapper, style]} pointerEvents="box-none">
-      <Pressable
-        onPress={handlePress}
-        accessibilityRole="button"
-        accessibilityState={accessibilityState}
-        accessibilityLabel="Scan prescription"
-        style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
-      >
-        <ScanIcon size={SCAN_ICON_SIZE} color={colors.white} />
-      </Pressable>
+      <View style={styles.buttonSlot}>
+        <ScanTabGlow />
+        <Pressable
+          onPress={handlePress}
+          accessibilityRole="button"
+          accessibilityState={accessibilityState}
+          accessibilityLabel="Scan prescription"
+          style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
+        >
+          <ScanIcon size={SCAN_ICON_SIZE} color={colors.white} />
+        </Pressable>
+      </View>
     </View>
   );
 };
@@ -40,6 +44,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     overflow: 'visible',
   },
+  buttonSlot: {
+    width: SCAN_BUTTON_SIZE,
+    height: SCAN_BUTTON_SIZE,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'visible',
+  },
   button: {
     width: SCAN_BUTTON_SIZE,
     height: SCAN_BUTTON_SIZE,
@@ -47,6 +58,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.primary,
+    ...shadows.md,
+    shadowColor: colors.primary,
+    shadowOpacity: 0.35,
+    elevation: 6,
   },
   buttonPressed: {
     opacity: 0.85,
