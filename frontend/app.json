@@ -9,6 +9,10 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
+      "bundleIdentifier": "com.sneheal.app",
+      "config": {
+        "googleMapsApiKey": "AIzaSyCTXY9MZ9W1OgPtr8-zIV7suS9Z6IuGS1w"
+      },
       "infoPlist": {
         "NSMicrophoneUsageDescription": "Allow Sneheal to use the microphone for voice search.",
         "NSSpeechRecognitionUsageDescription": "Allow Sneheal to use speech recognition for voice search.",
@@ -27,7 +31,12 @@
         "android.permission.RECORD_AUDIO",
         "android.permission.ACCESS_FINE_LOCATION",
         "android.permission.ACCESS_COARSE_LOCATION"
-      ]
+      ],
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyCTXY9MZ9W1OgPtr8-zIV7suS9Z6IuGS1w"
+        }
+      }
     },
     "web": {
       "output": "static",

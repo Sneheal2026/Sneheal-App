@@ -1,5 +1,6 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
+import type { AddressDraft, SavedAddress } from '@/types/location.types';
 
 // ── Auth & Roles ────────────────────────────────────────────────
 export type AppLanguage = 'ENGLISH' | 'HINDI' | 'MARATHI';
@@ -15,7 +16,9 @@ export type AuthStackParamList = {
   Notifications: undefined;
   HelpAndSupport: undefined;
   MedicineScan: undefined;
-  LocationMap: undefined;
+  LocationMap: { editAddress?: SavedAddress } | undefined;
+  AddressDetails: { draft: AddressDraft; editAddress?: SavedAddress };
+  SavedAddresses: undefined;
   DeliveryAgentMain: undefined;
   DoctorMain: undefined;
 };

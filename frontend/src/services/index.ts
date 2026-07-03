@@ -1,5 +1,5 @@
 export { speechRecognitionService } from './speechRecognitionService';
-export { fetchLiveLocation, ensureLocationPermission, getCurrentCoordinates } from './locationService';
+export { fetchLiveLocation, ensureLocationPermission, getCurrentCoordinates, reverseGeocodeGoogle } from './locationService';
 export { sendOtp, verifyOtp, refreshSession } from './authService';
 export { apiRequest, ApiError, getApiBaseUrl } from './apiClient';
 export {
@@ -17,3 +17,12 @@ export {
   clearAuthSession,
 } from './tokenStorage';
 export type { AuthSession } from './tokenStorage';
+export {
+  getSavedAddresses,
+  saveAddress,
+  deleteAddress,
+  setDefaultAddress,
+  getSelectedAddressId,
+  setSelectedAddressId,
+  getSelectedAddress,
+} from './addressStorage';

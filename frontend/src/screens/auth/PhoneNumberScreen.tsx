@@ -7,11 +7,13 @@ import {
   View,
 } from 'react-native';
 import { AuthScreenLayout, AuthPrimaryButton } from '@/components/auth';
+import { useAuth } from '@/context/AuthContext';
 import theme from '@/styles/theme';
 import { APP_CONFIG } from '@/constants';
 import { sendOtp } from '@/services/authService';
 import { ApiError } from '@/services/apiClient';
 import { devLog } from '@/utils/devLogger';
+import { createPreviewSession, isSkipAuthEnabled } from '@/utils/previewAuth';
 import type { AuthScreenProps } from '@/navigation/types';
 
 const { colors, spacing, typography, borderRadius } = theme;
@@ -23,11 +25,15 @@ const formatPhoneDisplay = (digits: string): string => {
 };
 
 const PhoneNumberScreen = ({ navigation }: AuthScreenProps<'PhoneNumber'>) => {
+  const { signIn } = useAuth();
   const [phoneNumber, setPhoneNumber] = useState('');
   const [isFocused, setIsFocused] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSkipping, setIsSkipping] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
   const inputRef = useRef<TextInput>(null);
+
+  const showSkipAuth = isSkipAuthEnabled();
 
   const isValid = phoneNumber.length === 10;
   const showError = phoneNumber.length > 0 && !isValid;
@@ -66,6 +72,25 @@ const PhoneNumberScreen = ({ navigation }: AuthScreenProps<'PhoneNumber'>) => {
     }
   };
 
+  const handleSkipAuth = async () => {
+    if (isSkipping || isLoading) return;
+
+    setIsSkipping(true);
+    setApiError(null);
+
+    try {
+      await signIn(createPreviewSession());
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Main' }],
+      });
+    } catch {
+      setApiError('Unable to enter preview mode. Please try again.');
+    } finally {
+      setIsSkipping(false);
+    }
+  };
+
   return (
     <AuthScreenLayout
       footer={
@@ -76,6 +101,23 @@ const PhoneNumberScreen = ({ navigation }: AuthScreenProps<'PhoneNumber'>) => {
             disabled={!isValid}
             loading={isLoading}
           />
+          {showSkipAuth ? (
+            <Pressable
+              onPress={() => void handleSkipAuth()}
+              disabled={isSkipping || isLoading}
+              style={({ pressed }) => [
+                styles.skipButton,
+                pressed && styles.skipButtonPressed,
+                (isSkipping || isLoading) && styles.skipButtonDisabled,
+              ]}
+              accessibilityRole="button"
+              accessibilityLabel="Continue without login for preview testing"
+            >
+              <Text style={styles.skipButtonText}>
+                {isSkipping ? 'Opening home...' : 'Continue without login (preview)'}
+              </Text>
+            </Pressable>
+          ) : null}
           <Text style={styles.termsText}>
             By continuing, you agree to our{' '}
             <Text style={styles.termsLink}>Terms of Service</Text>
@@ -205,6 +247,27 @@ const styles = StyleSheet.create({
   termsLink: {
     color: colors.primary,
     fontWeight: '600',
+  },
+  skipButton: {
+    marginTop: spacing.md,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceSecondary,
+    alignItems: 'center',
+  },
+  skipButtonPressed: {
+    opacity: 0.85,
+  },
+  skipButtonDisabled: {
+    opacity: 0.5,
+  },
+  skipButtonText: {
+    ...typography.bodySmall,
+    fontWeight: '600',
+    color: colors.textSecondary,
   },
 });
 

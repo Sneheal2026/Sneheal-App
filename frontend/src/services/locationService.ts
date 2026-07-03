@@ -1,6 +1,8 @@
 import * as Location from 'expo-location';
 import type { Coordinates, LiveLocation } from '@/types/location.types';
 
+const GOOGLE_MAPS_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_KEY ?? '';
+
 export async function ensureLocationPermission(): Promise<boolean> {
   const { status } = await Location.requestForegroundPermissionsAsync();
   return status === 'granted';
@@ -22,6 +24,48 @@ export async function getCurrentCoordinates(): Promise<Coordinates> {
 
   return coords;
 }
+
+// ── Google Geocoding API (consistent on Android + iOS) ──────────
+
+export async function reverseGeocodeGoogle(
+  coords: Coordinates,
+): Promise<string> {
+  if (!GOOGLE_MAPS_KEY) {
+    console.warn('[Sneheal:Location] EXPO_PUBLIC_GOOGLE_MAPS_KEY is not set');
+    return fallbackReverseGeocode(coords);
+  }
+
+  const url =
+    `https://maps.googleapis.com/maps/api/geocode/json` +
+    `?latlng=${coords.latitude},${coords.longitude}` +
+    `&key=${GOOGLE_MAPS_KEY}`;
+
+  try {
+    const res = await fetch(url);
+    const json = await res.json();
+
+    if (json.status === 'OK' && json.results?.length) {
+      return json.results[0].formatted_address as string;
+    }
+
+    console.warn('[Sneheal:Location] Geocode response:', json.status, json.error_message);
+    return fallbackReverseGeocode(coords);
+  } catch (e) {
+    console.warn('[Sneheal:Location] Geocode fetch failed:', e);
+    return fallbackReverseGeocode(coords);
+  }
+}
+
+async function fallbackReverseGeocode(coords: Coordinates): Promise<string> {
+  try {
+    const results = await Location.reverseGeocodeAsync(coords);
+    return formatAddress(results);
+  } catch {
+    return 'Unknown location';
+  }
+}
+
+// ── Expo-based geocoding (fallback / initial load) ──────────────
 
 function isPlusCode(value: string): boolean {
   return /^[2-9A-Z]{4,}\+[2-9A-Z]{2,}$/i.test(value.trim());
@@ -69,11 +113,14 @@ export async function fetchLiveLocation(): Promise<LiveLocation> {
   }
 
   const coords = await getCurrentCoordinates();
-  const results = await Location.reverseGeocodeAsync(coords);
+
+  const addressLine = GOOGLE_MAPS_KEY
+    ? await reverseGeocodeGoogle(coords)
+    : formatAddress(await Location.reverseGeocodeAsync(coords));
 
   return {
     coords,
-    addressLine: formatAddress(results),
+    addressLine,
     shortLabel: 'Current',
   };
 }

@@ -31,6 +31,7 @@ import { FEATURED_PRODUCTS } from '@/components/home/FeaturedProducts';
 import FloatingCartBar from '@/components/cart/FloatingCartBar';
 import { useTabBarScrollState } from '@/hooks/useTabBarScrollHandler';
 import { useLiveLocation } from '@/hooks/useLiveLocation';
+import { useSavedAddresses } from '@/hooks/useSavedAddresses';
 import { updateTabBarOnScroll } from '@/utils/tabBarScrollWorklet';
 import { useVoiceRecognition } from '@/hooks/useVoiceRecognition';
 import theme from '@/styles/theme';
@@ -102,21 +103,37 @@ const HomeScreen = () => {
   }, [navigation]);
 
   const { status: locationStatus, location, refresh: refreshLocation } = useLiveLocation(true);
+  const { selectedAddress, refresh: refreshAddresses } = useSavedAddresses();
+
+  useFocusEffect(
+    useCallback(() => {
+      void refreshAddresses();
+    }, [refreshAddresses]),
+  );
 
   const addressLabel = useMemo(() => {
+    if (selectedAddress) return selectedAddress.addressLine;
     if (locationStatus === 'loading') return 'Fetching your location...';
     if (locationStatus === 'error') return 'Tap to enable location';
     return location?.addressLine ?? 'Add delivery address';
-  }, [locationStatus, location?.addressLine]);
+  }, [selectedAddress, locationStatus, location?.addressLine]);
+
+  const addressTag = useMemo(() => {
+    if (selectedAddress) {
+      if (selectedAddress.type === 'other') return selectedAddress.customTypeLabel || 'Other';
+      return selectedAddress.type.charAt(0).toUpperCase() + selectedAddress.type.slice(1);
+    }
+    return location?.shortLabel;
+  }, [selectedAddress, location?.shortLabel]);
 
   const handleOpenMap = useCallback(() => {
-    if (locationStatus === 'error') {
+    if (locationStatus === 'error' && !selectedAddress) {
       void refreshLocation();
       return;
     }
     const parent = navigation.getParent<NativeStackNavigationProp<AuthStackParamList>>();
     parent?.navigate('LocationMap');
-  }, [navigation, locationStatus, refreshLocation]);
+  }, [navigation, locationStatus, refreshLocation, selectedAddress]);
 
   const contentTopInset = Math.max(
     insets.top,
@@ -252,7 +269,7 @@ const HomeScreen = () => {
             onAccountPress={handleOpenSettings}
             onNotificationsPress={handleOpenNotifications}
             addressLabel={addressLabel}
-            addressTag={location?.shortLabel}
+            addressTag={addressTag}
             onLocationPress={handleOpenMap}
             onUploadScanPress={handleUploadScan}
           />

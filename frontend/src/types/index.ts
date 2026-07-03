@@ -34,4 +34,11 @@ export type {
 
 export { mapSpeechError, mapPermissionError } from './speech.types';
 
-export type { LocationStatus, Coordinates, LiveLocation } from './location.types';
+export type {
+  LocationStatus,
+  Coordinates,
+  LiveLocation,
+  AddressType,
+  AddressDraft,
+  SavedAddress,
+} from './location.types';
