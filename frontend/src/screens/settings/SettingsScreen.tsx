@@ -58,6 +58,10 @@ const SettingsScreen = () => {
       navigation.navigate('SavedAddresses' as never);
     } else if (id === 'help') {
       navigation.navigate('HelpAndSupport' as never);
+    } else if (id === 'share') {
+      navigation.navigate('ShareApp' as never);
+    } else if (id === 'about') {
+      navigation.navigate('AboutSneheal' as never);
     }
   };
 

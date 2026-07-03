@@ -16,7 +16,8 @@
       "infoPlist": {
         "NSMicrophoneUsageDescription": "Allow Sneheal to use the microphone for voice search.",
         "NSSpeechRecognitionUsageDescription": "Allow Sneheal to use speech recognition for voice search.",
-        "NSLocationWhenInUseUsageDescription": "Sneheal uses your location to show your delivery address and nearby pharmacies."
+        "NSLocationWhenInUseUsageDescription": "Sneheal uses your location to show your delivery address and nearby pharmacies.",
+        "LSApplicationQueriesSchemes": ["whatsapp"]
       }
     },
     "android": {

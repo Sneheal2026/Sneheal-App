@@ -9,6 +9,8 @@ import AppNavigator from './AppNavigator';
 import SettingsScreen from '@/screens/settings/SettingsScreen';
 import NotificationsScreen from '@/screens/notifications/NotificationsScreen';
 import HelpAndSupportScreen from '@/screens/settings/HelpAndSupportScreen';
+import ShareAppScreen from '@/screens/settings/ShareAppScreen';
+import AboutSnehealScreen from '@/screens/settings/AboutSnehealScreen';
 import MedicineScanScreen from '@/screens/scan/MedicineScanScreen';
 import MapScreen from '@/screens/map/MapScreen';
 import AddressDetailsScreen from '@/screens/address/AddressDetailsScreen';
@@ -35,6 +37,8 @@ const AuthNavigator = () => {
       <Stack.Screen name="Settings" component={SettingsScreen} />
       <Stack.Screen name="Notifications" component={NotificationsScreen} />
       <Stack.Screen name="HelpAndSupport" component={HelpAndSupportScreen} />
+      <Stack.Screen name="ShareApp" component={ShareAppScreen} />
+      <Stack.Screen name="AboutSneheal" component={AboutSnehealScreen} />
       <Stack.Screen name="MedicineScan" component={MedicineScanScreen} />
       <Stack.Screen name="LocationMap" component={MapScreen} />
       <Stack.Screen name="AddressDetails" component={AddressDetailsScreen} />
