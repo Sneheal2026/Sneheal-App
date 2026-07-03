@@ -1,11 +1,10 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useRef } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   Dimensions,
-  Image,
   Animated,
   ImageSourcePropType,
 } from 'react-native';
@@ -59,18 +58,17 @@ const CATEGORIES: CategoryItem[] = [
   {
     id: '6',
     name: 'Diaper & Wipes',
-    image: { uri: 'https://images.unsplash.com/photo-1584515933g487-779824d29309?w=400&h=400&fit=crop&q=80' },
+    image: CATEGORY_IMAGES.feverCold,
   },
   {
     id: '7',
     name: 'Feeding Essentials',
-    image: { uri: 'https://images.unsplash.com/photo-16068139072l91-d86efa9b94db?w=400&h=400&fit=crop&q=80' },
+    image: CATEGORY_IMAGES.feverCold,
   },
   {
     id: '8',
     name: 'Baby Skin & Bath',
-    image: { uri: 'https://images.unsplash.com/photo-15154880423f61-ee00e8170dc4?w=400&h=400&fit=crop&q=80' },
-   
+    image: CATEGORY_IMAGES.feminineHygiene,
   },
   { id: '9', name: 'Fitness Essentials', image: CATEGORY_IMAGES.fitness },
   { id: '10', name: 'Vitamins & Minerals', image: CATEGORY_IMAGES.vitaminsMinerals },
@@ -79,12 +77,12 @@ const CATEGORIES: CategoryItem[] = [
   {
     id: '13',
     name: 'Health Devices',
-    image: { uri: 'https://images.unsplash.com/photo-1579684272160-0ff8e7f458f1?w=400&h=400&fit=crop&q=80' },
+    image: CATEGORY_IMAGES.feverCold,
   },
   {
     id: '14',
     name: 'Home Essentials',
-    image: { uri: 'https://images.unsplash.com/photo-1563453393397-3414fa577d22?w=400&h=400&fit=crop&q=80' },
+    image: CATEGORY_IMAGES.feverCold,
   },
   { id: '15', name: 'Pain Relief', image: CATEGORY_IMAGES.painRelief },
   { id: '16', name: 'Fever & Cold', image: CATEGORY_IMAGES.feverCold },
@@ -133,26 +131,16 @@ const CategoryCard = React.memo(({ item }: { item: CategoryItem }) => (
 
 CategoryCard.displayName = 'CategoryCard';
 
-const CategoriesGrid = () => {
-  useEffect(() => {
-    CATEGORIES.forEach((item) => {
-      if (typeof item.image === 'object' && item.image !== null && 'uri' in item.image && item.image.uri) {
-        Image.prefetch(item.image.uri).catch(() => {});
-      }
-    });
-  }, []);
-
-  return (
-    <View style={styles.section}>
-      <Text style={styles.sectionTitle}>Categories</Text>
-      <View style={styles.grid}>
-        {CATEGORIES.map((item) => (
-          <CategoryCard key={item.id} item={item} />
-        ))}
-      </View>
+const CategoriesGrid = () => (
+  <View style={styles.section}>
+    <Text style={styles.sectionTitle}>Categories</Text>
+    <View style={styles.grid}>
+      {CATEGORIES.map((item) => (
+        <CategoryCard key={item.id} item={item} />
+      ))}
     </View>
-  );
-};
+  </View>
+);
 
 const styles = StyleSheet.create({
   section: {

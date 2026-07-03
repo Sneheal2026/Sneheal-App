@@ -6,6 +6,7 @@ import {
   Dimensions,
   TouchableOpacity,
   Image,
+  ImageSourcePropType,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
@@ -34,67 +35,93 @@ const SCROLL_DURATION = 1300;
 const SMOOTH_EASING = Easing.bezier(0.22, 1, 0.36, 1);
 const VELOCITY_THRESHOLD = 450;
 
+const PROMO_IMAGES = {
+  vitamins: require('../../../assets/images/Vitamins-Minerals.png'),
+  nutrition: require('../../../assets/images/Nutrition-Drinks.png'),
+  prescription: require('../../../assets/images/Sneheal-Pill-2.webp'),
+  fitness: require('../../../assets/images/Fitness.png'),
+  ayurveda: require('../../../assets/images/Ayurveda.png'),
+} as const;
+
 interface PromoSlide {
   id: string;
   code: string;
-  urgency: string;
+  eyebrow: string;
   title: string;
+  subtitle: string;
   cta: string;
-  imageUri: string;
-  overlay: [string, string];
-  decorImage: string;
+  image: ImageSourcePropType;
+  gradient: [string, string, string];
+  glowColor: string;
+  badgeTextColor: string;
+  accentSoft: string;
 }
 
 const PROMO_SLIDES: PromoSlide[] = [
   {
     id: '1',
     code: 'SNEHEAL40',
-    urgency: 'Hurry, offer ends soon!',
-    title: 'Get 40% off Your First Order!',
-    cta: 'Order Now',
-    imageUri: 'https://images.unsplash.com/photo-1587854692152-cfb097b3922a?w=800&q=80',
-    overlay: ['rgba(234, 88, 12, 0.9)', 'rgba(180, 55, 8, 0.93)'],
-    decorImage: 'https://cdn-icons-png.flaticon.com/512/2964/2964514.png',
+    eyebrow: 'New Customer Offer',
+    title: 'Save 40% on Your First Pharmacy Order',
+    subtitle: 'Verified medicines · Licensed pharmacists · Fast doorstep delivery',
+    cta: 'Shop Medicines',
+    image: PROMO_IMAGES.vitamins,
+    gradient: ['#0A2F6B', '#1A73E8', '#1247A8'],
+    glowColor: 'rgba(74, 156, 245, 0.45)',
+    badgeTextColor: '#1558B0',
+    accentSoft: 'rgba(255,255,255,0.14)',
   },
   {
     id: '2',
     code: 'FREEDEL',
-    urgency: 'Limited time delivery offer',
+    eyebrow: 'Delivery Benefit',
     title: 'Free Delivery on Orders Above ₹499',
-    cta: 'Shop Now',
-    imageUri: 'https://images.unsplash.com/photo-1631549916768-4119b2d16785?w=800&q=80',
-    overlay: ['rgba(13, 148, 136, 0.9)', 'rgba(15, 118, 110, 0.93)'],
-    decorImage: 'https://cdn-icons-png.flaticon.com/512/3174/3174780.png',
+    subtitle: 'Essential healthcare products delivered safely to your home',
+    cta: 'Browse Essentials',
+    image: PROMO_IMAGES.nutrition,
+    gradient: ['#064E45', '#0D9488', '#0F766E'],
+    glowColor: 'rgba(45, 212, 191, 0.4)',
+    badgeTextColor: '#0F766E',
+    accentSoft: 'rgba(255,255,255,0.12)',
   },
   {
     id: '3',
     code: 'RXEASY',
-    urgency: 'Upload & order in minutes',
-    title: 'Upload Rx & Get Medicines Fast',
-    cta: 'Upload Rx',
-    imageUri: 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800&q=80',
-    overlay: ['rgba(26, 115, 232, 0.9)', 'rgba(21, 88, 176, 0.93)'],
-    decorImage: 'https://cdn-icons-png.flaticon.com/512/2920/2920306.png',
+    eyebrow: 'Digital Prescription',
+    title: 'Upload Your Rx. We Dispense With Care.',
+    subtitle: 'Secure upload · Pharmacist review · Ready in minutes',
+    cta: 'Upload Prescription',
+    image: PROMO_IMAGES.prescription,
+    gradient: ['#0C4A6E', '#0369A1', '#1558B0'],
+    glowColor: 'rgba(56, 189, 248, 0.38)',
+    badgeTextColor: '#0369A1',
+    accentSoft: 'rgba(255,255,255,0.13)',
   },
   {
     id: '4',
     code: 'LAB20',
-    urgency: 'Book today, save more',
-    title: '20% Off on Full Body Checkups',
-    cta: 'Book Test',
-    imageUri: 'https://images.unsplash.com/photo-1579684272160-0ff8e7f458f1?w=800&q=80',
-    overlay: ['rgba(91, 46, 145, 0.9)', 'rgba(67, 32, 110, 0.93)'],
-    decorImage: 'https://cdn-icons-png.flaticon.com/512/2964/2964514.png',
+    eyebrow: 'Preventive Health',
+    title: '20% Off Full Body Health Checkups',
+    subtitle: 'Trusted diagnostic partners · Accurate reports · Home collection',
+    cta: 'Book Screening',
+    image: PROMO_IMAGES.fitness,
+    gradient: ['#3B0764', '#5B2E91', '#6D28D9'],
+    glowColor: 'rgba(167, 139, 250, 0.42)',
+    badgeTextColor: '#5B2E91',
+    accentSoft: 'rgba(255,255,255,0.11)',
   },
   {
     id: '5',
     code: 'SNEPLUS',
-    urgency: 'Exclusive member benefits',
-    title: 'Join Sneheal Plus & Save More',
-    cta: 'Join Now',
-    imageUri: 'https://images.unsplash.com/photo-1584308664894-6d09c1f84d07?w=800&q=80',
-    overlay: ['rgba(16, 185, 129, 0.9)', 'rgba(5, 150, 105, 0.93)'],
-    decorImage: 'https://cdn-icons-png.flaticon.com/512/3174/3174780.png',
+    eyebrow: 'Sneheal Plus Membership',
+    title: 'Priority Care & Exclusive Member Savings',
+    subtitle: 'Member-only pricing · Free delivery · Wellness rewards',
+    cta: 'View Benefits',
+    image: PROMO_IMAGES.ayurveda,
+    gradient: ['#064E3B', '#059669', '#047857'],
+    glowColor: 'rgba(52, 211, 153, 0.4)',
+    badgeTextColor: '#047857',
+    accentSoft: 'rgba(255,255,255,0.12)',
   },
 ];
 
@@ -103,234 +130,113 @@ const MAX_TRANSLATE = -(SLIDE_COUNT - 1) * ITEM_STRIDE;
 
 const LOOP_SLIDES: PromoSlide[] = [...PROMO_SLIDES, PROMO_SLIDES[0]];
 
-const styles = StyleSheet.create({
-  container: {
-    marginTop: spacing.xl,
-    marginBottom: spacing.md,
-  },
-  carouselViewport: {
-    width: BANNER_WIDTH,
-    height: BANNER_HEIGHT,
-    overflow: 'hidden',
-  },
-  carouselTrack: {
-    flexDirection: 'row',
-    height: BANNER_HEIGHT,
-    paddingLeft: SIDE_INSET,
-  },
-  slideWrapper: {
-    width: SLIDE_WIDTH,
-    height: BANNER_HEIGHT,
-    marginRight: SLIDE_GAP,
-  },
-  slide: {
-    flex: 1,
-    borderRadius: borderRadius.xl,
-    overflow: 'hidden',
-    backgroundColor: colors.primaryDark,
-    shadowColor: colors.black,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  patternWrap: {
-    ...StyleSheet.absoluteFillObject,
-    overflow: 'hidden',
-  },
-  patternLine: {
-    position: 'absolute',
-    top: -40,
-    width: 1,
-    height: '160%',
-    backgroundColor: colors.white,
-    transform: [{ rotate: '28deg' }],
-  },
-  patternDots: {
-    position: 'absolute',
-    top: 12,
-    right: 12,
-    width: 72,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
-    opacity: 0.9,
-  },
-  patternDot: {
-    width: 3,
-    height: 3,
-    borderRadius: 2,
-    backgroundColor: colors.white,
-  },
-  slideBody: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    paddingTop: spacing.md,
-    paddingLeft: spacing.lg,
-    paddingRight: spacing.sm,
-  },
-  textBlock: {
-    flex: 1,
-    paddingRight: spacing.xs,
-    zIndex: 2,
-  },
-  codeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: 4,
-  },
-  codePrefix: {
-    fontSize: moderateScale(10),
-    fontWeight: '600',
-    color: 'rgba(255,255,255,0.9)',
-  },
-  codeSuffix: {
-    fontSize: moderateScale(10),
-    fontWeight: '600',
-    color: 'rgba(255,255,255,0.9)',
-    marginTop: 2,
-  },
-  codeBadge: {
-    backgroundColor: colors.white,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
-    borderRadius: borderRadius.full,
-  },
-  codeText: {
-    fontSize: moderateScale(10),
-    fontWeight: '800',
-    color: '#C2410C',
-    letterSpacing: 0.3,
-  },
-  urgency: {
-    fontSize: moderateScale(10),
-    fontWeight: '500',
-    color: 'rgba(255,255,255,0.75)',
-    marginTop: spacing.xs,
-  },
-  title: {
-    fontSize: moderateScale(17),
-    fontWeight: '800',
-    color: colors.white,
-    lineHeight: moderateScale(22),
-    marginTop: spacing.xs,
-    letterSpacing: -0.3,
-  },
-  decorImage: {
-    width: moderateScale(88),
-    height: moderateScale(88),
-    marginTop: spacing.xs,
-    opacity: 0.95,
-  },
-  ctaButton: {
-    position: 'absolute',
-    right: spacing.md,
-    bottom: spacing.md,
-    backgroundColor: colors.black,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm + 2,
-    borderRadius: borderRadius.full,
-    zIndex: 3,
-    shadowColor: colors.black,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  ctaText: {
-    fontSize: moderateScale(12),
-    fontWeight: '800',
-    color: colors.accentGold,
-    letterSpacing: 0.2,
-  },
-  progressRow: {
-    alignItems: 'center',
-    marginTop: spacing.sm,
-    gap: spacing.sm,
-  },
-  dotsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-  },
-  dot: {
-    width: 5,
-    height: 5,
-    borderRadius: 3,
-    backgroundColor: colors.border,
-  },
-  dotActive: {
-    width: 16,
-    backgroundColor: colors.primary,
-  },
-});
+const SlideBackdrop = React.memo(({ slide }: { slide: PromoSlide }) => (
+  <View style={styles.backdropWrap} pointerEvents="none">
+    <LinearGradient
+      colors={slide.gradient}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={StyleSheet.absoluteFill}
+    />
 
-const PATTERN_OVERLAY = (
-  <View style={styles.patternWrap} pointerEvents="none">
-    {Array.from({ length: 10 }).map((_, i) => (
+    <View style={[styles.glowOrb, styles.glowOrbPrimary, { backgroundColor: slide.glowColor }]} />
+    <View style={[styles.glowOrb, styles.glowOrbSecondary, { backgroundColor: slide.accentSoft }]} />
+
+    {Array.from({ length: 8 }).map((_, i) => (
       <View
-        key={i}
+        key={`line-${i}`}
         style={[
-          styles.patternLine,
-          { left: i * 34 - 12, opacity: 0.05 + (i % 2) * 0.03 },
+          styles.meshLine,
+          {
+            left: i * 38 - 18,
+            opacity: 0.04 + (i % 2) * 0.025,
+          },
         ]}
       />
     ))}
-    <View style={styles.patternDots}>
-      {Array.from({ length: 24 }).map((_, i) => (
+
+    <View style={styles.crossGrid}>
+      {Array.from({ length: 6 }).map((_, i) => (
+        <View key={`cross-${i}`} style={[styles.medicalCross, { opacity: 0.06 + (i % 2) * 0.04 }]}>
+          <View style={styles.crossVertical} />
+          <View style={styles.crossHorizontal} />
+        </View>
+      ))}
+    </View>
+
+    <View style={styles.dotGrid}>
+      {Array.from({ length: 28 }).map((_, i) => (
         <View
-          key={i}
+          key={`dot-${i}`}
           style={[
-            styles.patternDot,
-            { opacity: i % 3 === 0 ? 0.14 : 0.07 },
+            styles.backdropDot,
+            { opacity: i % 4 === 0 ? 0.18 : 0.08 },
           ]}
         />
       ))}
     </View>
+
+    <LinearGradient
+      colors={['transparent', 'rgba(0,0,0,0.22)']}
+      start={{ x: 0.5, y: 0 }}
+      end={{ x: 0.5, y: 1 }}
+      style={styles.bottomVignette}
+    />
+    <View style={styles.shineStreak} />
   </View>
-);
+));
+
+SlideBackdrop.displayName = 'SlideBackdrop';
 
 const PromoSlideCard = React.memo(({ slide }: { slide: PromoSlide }) => (
   <View style={styles.slide}>
-    <Image
-      source={{ uri: slide.imageUri }}
-      style={StyleSheet.absoluteFill}
-      resizeMode="cover"
-    />
-    <LinearGradient
-      colors={slide.overlay}
-      start={{ x: 0, y: 0.2 }}
-      end={{ x: 1, y: 0.9 }}
-      style={StyleSheet.absoluteFill}
-    />
-    {PATTERN_OVERLAY}
+    <SlideBackdrop slide={slide} />
 
     <View style={styles.slideBody}>
       <View style={styles.textBlock}>
-        <View style={styles.codeRow}>
-          <Text style={styles.codePrefix}>Use code </Text>
-          <View style={styles.codeBadge}>
-            <Text style={styles.codeText}>{slide.code}</Text>
-          </View>
+        <View style={styles.eyebrowRow}>
+          <View style={styles.eyebrowDot} />
+          <Text style={styles.eyebrow}>{slide.eyebrow}</Text>
         </View>
-        <Text style={styles.codeSuffix}>at checkout</Text>
-        <Text style={styles.urgency}>{slide.urgency}</Text>
+
         <Text style={styles.title} numberOfLines={2}>
           {slide.title}
         </Text>
+
+        <Text style={styles.subtitle} numberOfLines={2}>
+          {slide.subtitle}
+        </Text>
+
+        <View style={styles.codeChip}>
+          <Text style={styles.codeChipLabel}>Promo code</Text>
+          <View style={styles.codeBadge}>
+            <Text style={[styles.codeText, { color: slide.badgeTextColor }]}>{slide.code}</Text>
+          </View>
+        </View>
       </View>
 
-      <Image
-        source={{ uri: slide.decorImage }}
-        style={styles.decorImage}
-        resizeMode="contain"
-      />
+      <View style={styles.heroWrap}>
+        <View style={[styles.heroAura, { backgroundColor: slide.glowColor }]} />
+        <View style={[styles.heroRing, { borderColor: slide.accentSoft }]} />
+        <View style={styles.heroPlate}>
+          <LinearGradient
+            colors={['rgba(255,255,255,0.28)', 'rgba(255,255,255,0.06)']}
+            style={styles.heroPlateSheen}
+          />
+          <Image source={slide.image} style={styles.heroImage} resizeMode="contain" />
+        </View>
+      </View>
     </View>
 
     <TouchableOpacity style={styles.ctaButton} activeOpacity={0.88}>
-      <Text style={styles.ctaText}>{slide.cta}</Text>
+      <LinearGradient
+        colors={['rgba(255,255,255,0.96)', 'rgba(255,255,255,0.88)']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.ctaGradient}
+      >
+        <Text style={[styles.ctaText, { color: slide.badgeTextColor }]}>{slide.cta}</Text>
+      </LinearGradient>
     </TouchableOpacity>
   </View>
 ));
@@ -514,6 +420,8 @@ const PromoBanner = ({ isScrolling = false }: PromoBannerProps) => {
     transform: [{ translateX: translateX.value }],
   }));
 
+  const activeAccent = PROMO_SLIDES[activeIndex]?.badgeTextColor ?? colors.primary;
+
   return (
     <View style={styles.container}>
       <GestureDetector gesture={panGesture}>
@@ -539,7 +447,7 @@ const PromoBanner = ({ isScrolling = false }: PromoBannerProps) => {
               <View
                 style={[
                   styles.dot,
-                  index === activeIndex && styles.dotActive,
+                  index === activeIndex && [styles.dotActive, { backgroundColor: activeAccent }],
                 ]}
               />
             </TouchableOpacity>
@@ -549,5 +457,282 @@ const PromoBanner = ({ isScrolling = false }: PromoBannerProps) => {
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    marginTop: spacing.xl,
+    marginBottom: spacing.md,
+  },
+  carouselViewport: {
+    width: BANNER_WIDTH,
+    height: BANNER_HEIGHT,
+    overflow: 'hidden',
+  },
+  carouselTrack: {
+    flexDirection: 'row',
+    height: BANNER_HEIGHT,
+    paddingLeft: SIDE_INSET,
+  },
+  slideWrapper: {
+    width: SLIDE_WIDTH,
+    height: BANNER_HEIGHT,
+    marginRight: SLIDE_GAP,
+  },
+  slide: {
+    flex: 1,
+    borderRadius: borderRadius.xl,
+    overflow: 'hidden',
+    backgroundColor: colors.primaryDark,
+    shadowColor: colors.black,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.16,
+    shadowRadius: 14,
+    elevation: 6,
+  },
+  backdropWrap: {
+    ...StyleSheet.absoluteFillObject,
+    overflow: 'hidden',
+  },
+  glowOrb: {
+    position: 'absolute',
+    borderRadius: 999,
+  },
+  glowOrbPrimary: {
+    width: moderateScale(160),
+    height: moderateScale(160),
+    top: -moderateScale(52),
+    right: -moderateScale(28),
+  },
+  glowOrbSecondary: {
+    width: moderateScale(96),
+    height: moderateScale(96),
+    bottom: -moderateScale(24),
+    left: -moderateScale(18),
+  },
+  meshLine: {
+    position: 'absolute',
+    top: -48,
+    width: 1,
+    height: '170%',
+    backgroundColor: colors.white,
+    transform: [{ rotate: '24deg' }],
+  },
+  crossGrid: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    width: 64,
+    gap: 10,
+  },
+  medicalCross: {
+    width: 14,
+    height: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  crossVertical: {
+    position: 'absolute',
+    width: 2,
+    height: 10,
+    borderRadius: 1,
+    backgroundColor: colors.white,
+  },
+  crossHorizontal: {
+    position: 'absolute',
+    width: 10,
+    height: 2,
+    borderRadius: 1,
+    backgroundColor: colors.white,
+  },
+  dotGrid: {
+    position: 'absolute',
+    bottom: 14,
+    left: 14,
+    width: 56,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 5,
+  },
+  backdropDot: {
+    width: 3,
+    height: 3,
+    borderRadius: 2,
+    backgroundColor: colors.white,
+  },
+  bottomVignette: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: '42%',
+  },
+  shineStreak: {
+    position: 'absolute',
+    top: -20,
+    left: '18%',
+    width: moderateScale(42),
+    height: '130%',
+    backgroundColor: 'rgba(255,255,255,0.07)',
+    transform: [{ rotate: '18deg' }],
+  },
+  slideBody: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingTop: spacing.md,
+    paddingBottom: spacing.lg + spacing.sm,
+    paddingLeft: spacing.lg,
+    paddingRight: spacing.sm,
+  },
+  textBlock: {
+    flex: 1,
+    paddingRight: spacing.xs,
+    zIndex: 2,
+  },
+  eyebrowRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    alignSelf: 'flex-start',
+    backgroundColor: 'rgba(255,255,255,0.14)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.18)',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 3,
+    borderRadius: borderRadius.full,
+  },
+  eyebrowDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: colors.white,
+  },
+  eyebrow: {
+    fontSize: moderateScale(9),
+    fontWeight: '700',
+    color: 'rgba(255,255,255,0.92)',
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+  },
+  title: {
+    fontSize: moderateScale(16),
+    fontWeight: '800',
+    color: colors.white,
+    lineHeight: moderateScale(20),
+    marginTop: spacing.sm,
+    letterSpacing: -0.35,
+  },
+  subtitle: {
+    fontSize: moderateScale(10),
+    fontWeight: '500',
+    color: 'rgba(255,255,255,0.78)',
+    lineHeight: moderateScale(14),
+    marginTop: spacing.xxs + 1,
+  },
+  codeChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginTop: spacing.sm,
+  },
+  codeChipLabel: {
+    fontSize: moderateScale(9),
+    fontWeight: '600',
+    color: 'rgba(255,255,255,0.72)',
+  },
+  codeBadge: {
+    backgroundColor: colors.white,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    borderRadius: borderRadius.full,
+  },
+  codeText: {
+    fontSize: moderateScale(9),
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  heroWrap: {
+    width: moderateScale(98),
+    height: moderateScale(98),
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: spacing.xxs,
+  },
+  heroAura: {
+    position: 'absolute',
+    width: moderateScale(92),
+    height: moderateScale(92),
+    borderRadius: moderateScale(46),
+  },
+  heroRing: {
+    position: 'absolute',
+    width: moderateScale(86),
+    height: moderateScale(86),
+    borderRadius: moderateScale(43),
+    borderWidth: 1.5,
+  },
+  heroPlate: {
+    width: moderateScale(78),
+    height: moderateScale(78),
+    borderRadius: moderateScale(20),
+    backgroundColor: 'rgba(255,255,255,0.16)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.28)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  heroPlateSheen: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  heroImage: {
+    width: '84%',
+    height: '84%',
+  },
+  ctaButton: {
+    position: 'absolute',
+    right: spacing.md,
+    bottom: spacing.md,
+    borderRadius: borderRadius.full,
+    overflow: 'hidden',
+    zIndex: 3,
+    shadowColor: colors.black,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  ctaGradient: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm + 1,
+  },
+  ctaText: {
+    fontSize: moderateScale(11),
+    fontWeight: '800',
+    letterSpacing: 0.15,
+  },
+  progressRow: {
+    alignItems: 'center',
+    marginTop: spacing.sm,
+    gap: spacing.sm,
+  },
+  dotsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  dot: {
+    width: 5,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: colors.border,
+  },
+  dotActive: {
+    width: 18,
+    backgroundColor: colors.primary,
+  },
+});
 
 export default React.memo(PromoBanner);
