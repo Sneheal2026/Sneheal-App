@@ -1,0 +1,21 @@
+/** Delivery agent UI tokens — distinct from customer blue, professional logistics look */
+export const deliveryTheme = {
+  primary: '#0F172A',
+  primarySoft: '#1E293B',
+  accent: '#D97706',
+  accentLight: '#FEF3C7',
+  accentMuted: '#FFFBEB',
+  surface: '#FFFFFF',
+  background: '#F1F5F9',
+  border: '#E2E8F0',
+  textOnDark: '#F8FAFC',
+  textMutedOnDark: '#94A3B8',
+  online: '#059669',
+  onlineBg: '#ECFDF5',
+  offline: '#64748B',
+  offlineBg: '#F8FAFC',
+  ready: '#2563EB',
+  readyBg: '#EFF6FF',
+  transit: '#7C3AED',
+  transitBg: '#F5F3FF',
+} as const;
