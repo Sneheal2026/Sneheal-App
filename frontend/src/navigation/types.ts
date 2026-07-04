@@ -18,6 +18,7 @@ export type AuthStackParamList = {
   ShareApp: undefined;
   AboutSneheal: undefined;
   MedicineScan: undefined;
+  ProductDetails: { productId: string };
   LocationMap: { editAddress?: SavedAddress } | undefined;
   AddressDetails: { draft: AddressDraft; editAddress?: SavedAddress };
   SavedAddresses: undefined;

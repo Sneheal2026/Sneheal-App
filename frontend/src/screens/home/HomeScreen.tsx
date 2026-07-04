@@ -102,6 +102,11 @@ const HomeScreen = () => {
     parent?.navigate('MedicineScan');
   }, [navigation]);
 
+  const handleOpenProduct = useCallback((id: string) => {
+    const parent = navigation.getParent<NativeStackNavigationProp<AuthStackParamList>>();
+    parent?.navigate('ProductDetails', { productId: id });
+  }, [navigation]);
+
   const { status: locationStatus, location, refresh: refreshLocation } = useLiveLocation(true);
   const { selectedAddress, refresh: refreshAddresses } = useSavedAddresses();
 
@@ -281,6 +286,7 @@ const HomeScreen = () => {
               quantities={quantities}
               onIncrement={handleIncrement}
               onDecrement={handleDecrement}
+              onPressItem={handleOpenProduct}
             />
           </View>
 

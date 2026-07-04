@@ -80,24 +80,24 @@ const CartScreen = (_props: TabScreenProps<'Cart'>) => {
   const billLines: BillLine[] = [
     {
       label: 'Item total',
-      value: `$${itemTotal.toFixed(2)}`,
-      strikethrough: mrpTotal > itemTotal ? `$${mrpTotal.toFixed(2)}` : undefined,
+      value: `₹${itemTotal.toFixed(2)}`,
+      strikethrough: mrpTotal > itemTotal ? `₹${mrpTotal.toFixed(2)}` : undefined,
     },
     {
       label: 'Delivery charge',
       value: 'FREE',
-      strikethrough: `$${DELIVERY_FEE.toFixed(2)}`,
+      strikethrough: `₹${DELIVERY_FEE.toFixed(2)}`,
       free: true,
     },
     {
       label: 'Handling charge',
       value: 'FREE',
-      strikethrough: '$1.00',
+      strikethrough: '₹1.00',
       free: true,
     },
     {
       label: 'Small cart fee',
-      value: '$0.00',
+      value: '₹0.00',
     },
   ];
 
@@ -185,7 +185,7 @@ const CartScreen = (_props: TabScreenProps<'Cart'>) => {
 
         <View style={styles.checkoutBar}>
           <View style={styles.checkoutLeft}>
-            <Text style={styles.checkoutTotal}>${grandTotal.toFixed(2)}</Text>
+            <Text style={styles.checkoutTotal}>₹{grandTotal.toFixed(2)}</Text>
             <Text style={styles.checkoutSub}>TOTAL</Text>
           </View>
 

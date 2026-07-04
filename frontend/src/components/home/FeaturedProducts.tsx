@@ -173,10 +173,11 @@ interface ProductCardProps {
   quantity: number;
   onIncrement: (id: string) => void;
   onDecrement: (id: string) => void;
+  onPress?: (id: string) => void;
 }
 
-const ProductCard = ({ item, quantity, onIncrement, onDecrement }: ProductCardProps) => (
-  <View style={styles.card}>
+const ProductCard = ({ item, quantity, onIncrement, onDecrement, onPress }: ProductCardProps) => (
+  <Pressable style={styles.card} onPress={() => onPress?.(item.id)}>
     <View style={styles.imageBox}>
       <Image source={item.image} style={styles.image} resizeMode="contain" />
     </View>
@@ -189,11 +190,11 @@ const ProductCard = ({ item, quantity, onIncrement, onDecrement }: ProductCardPr
       <View style={styles.footer}>
         <View style={styles.priceBox}>
           <Text style={styles.price} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>
-            ${item.price.toFixed(2)}
+            ₹{item.price.toFixed(2)}
           </Text>
           {item.originalPrice ? (
             <Text style={styles.oldPrice} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>
-              ${item.originalPrice.toFixed(2)}
+              ₹{item.originalPrice.toFixed(2)}
             </Text>
           ) : null}
         </View>
@@ -205,16 +206,17 @@ const ProductCard = ({ item, quantity, onIncrement, onDecrement }: ProductCardPr
         />
       </View>
     </View>
-  </View>
+  </Pressable>
 );
 
 interface FeaturedProductsProps {
   quantities: Record<string, number>;
   onIncrement: (id: string) => void;
   onDecrement: (id: string) => void;
+  onPressItem?: (id: string) => void;
 }
 
-const FeaturedProducts = ({ quantities, onIncrement, onDecrement }: FeaturedProductsProps) => {
+const FeaturedProducts = ({ quantities, onIncrement, onDecrement, onPressItem }: FeaturedProductsProps) => {
   const renderItem = useCallback(
     ({ item }: { item: Product }) => (
       <ProductCard
@@ -222,9 +224,10 @@ const FeaturedProducts = ({ quantities, onIncrement, onDecrement }: FeaturedProd
         quantity={quantities[item.id] ?? 0}
         onIncrement={onIncrement}
         onDecrement={onDecrement}
+        onPress={onPressItem}
       />
     ),
-    [quantities, onIncrement, onDecrement],
+    [quantities, onIncrement, onDecrement, onPressItem],
   );
 
   return (

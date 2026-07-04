@@ -31,7 +31,7 @@ const CartBilling = ({
   lines,
   savings,
   grandTotal,
-  currency = '$',
+  currency = '₹',
 }: CartBillingProps) => (
   <View style={styles.wrap}>
     <BillTicketEdge pageColor={PAGE_BG} cardColor={colors.white} />

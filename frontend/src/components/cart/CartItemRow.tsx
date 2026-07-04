@@ -51,9 +51,9 @@ const CartItemRow = ({
         <Text style={styles.unit}>{unit}</Text>
 
         <View style={styles.priceRow}>
-          <Text style={styles.price}>${lineTotal.toFixed(2)}</Text>
+          <Text style={styles.price}>₹{lineTotal.toFixed(2)}</Text>
           {originalPrice && originalPrice > price ? (
-            <Text style={styles.mrp}>${(originalPrice * quantity).toFixed(2)}</Text>
+            <Text style={styles.mrp}>₹{(originalPrice * quantity).toFixed(2)}</Text>
           ) : null}
         </View>
       </View>
