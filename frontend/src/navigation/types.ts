@@ -23,6 +23,11 @@ export type AuthStackParamList = {
   AddressDetails: { draft: AddressDraft; editAddress?: SavedAddress };
   SavedAddresses: undefined;
   DeliveryAgentMain: undefined;
+  DeliveryNavigation: {
+    orderId: string;
+    customerAddress: string;
+    customerCoords?: { latitude: number; longitude: number };
+  };
   DoctorMain: undefined;
 };
 

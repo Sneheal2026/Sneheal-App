@@ -1,7 +1,9 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, StatusBar, Platform, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { AuthStackParamList } from '@/navigation/types';
 import theme from '@/styles/theme';
 import {
   DeliveryHomeHeader,
@@ -42,8 +44,18 @@ const ACTIVE_ORDERS: DeliveryOrder[] = [
 
 const DeliveryAgentHomeScreen = () => {
   const insets = useSafeAreaInsets();
-  const navigation = useNavigation();
+  const navigation = useNavigation<NativeStackNavigationProp<AuthStackParamList>>();
   const [isOnline, setIsOnline] = useState(true);
+
+  const handleNavigateOrder = useCallback(
+    (order: DeliveryOrder) => {
+      navigation.navigate('DeliveryNavigation', {
+        orderId: order.orderId,
+        customerAddress: order.address,
+      });
+    },
+    [navigation],
+  );
 
   const greeting = useMemo(() => {
     const hour = new Date().getHours();
@@ -82,7 +94,11 @@ const DeliveryAgentHomeScreen = () => {
           <DeliveryEmptyState isOnline={isOnline} />
         ) : (
           ACTIVE_ORDERS.map((order) => (
-            <ActiveDeliveryCard key={order.id} order={order} />
+            <ActiveDeliveryCard
+              key={order.id}
+              order={order}
+              onNavigate={() => handleNavigateOrder(order)}
+            />
           ))
         )}
       </ScrollView>
