@@ -31,6 +31,7 @@ import theme from '@/styles/theme';
 import { pickImageFromSource, type PickedImage } from '@/utils/imagePicker';
 import type { AuthScreenProps } from '@/navigation/types';
 import { scanPrescription } from '@/services/prescriptionService';
+import type { ScannedMedicine, ImageType } from '@/types/prescription';
 
 const { colors, spacing, typography, borderRadius, shadows, moderateScale } = theme;
 
@@ -156,7 +157,8 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
   const [pickedImage, setPickedImage] = useState<PickedImage | null>(null);
   const [isPicking, setIsPicking] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
-  const [medicineNames, setMedicineNames] = useState<string[]>([]);
+  const [medicines, setMedicines] = useState<ScannedMedicine[]>([]);
+  const [imageType, setImageType] = useState<ImageType>('prescription');
   const [scanError, setScanError] = useState<string | null>(null);
 
   const bracketPulse = useSharedValue(0.72);
@@ -180,7 +182,7 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
       if (isPicking || isScanning) return;
 
       setIsPicking(true);
-      setMedicineNames([]);
+      setMedicines([]);
       setScanError(null);
 
       try {
@@ -198,24 +200,26 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
 
   const handleClearImage = useCallback(() => {
     setPickedImage(null);
-    setMedicineNames([]);
+    setMedicines([]);
     setScanError(null);
+    setImageType('prescription');
   }, []);
 
   const handleScan = useCallback(async () => {
     if (!pickedImage || isScanning) return;
 
     setIsScanning(true);
-    setMedicineNames([]);
+    setMedicines([]);
     setScanError(null);
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     try {
       const result = await scanPrescription(pickedImage.uri);
-      setMedicineNames(result.medicineNames);
+      setMedicines(result.medicines || []);
+      setImageType(result.imageType || 'prescription');
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (error: any) {
-      const errorMessage = error?.message || 'Failed to scan prescription';
+      const errorMessage = error?.message || 'Failed to scan image';
       setScanError(errorMessage);
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     } finally {
@@ -224,7 +228,7 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
   }, [isScanning, pickedImage]);
 
   const handleReplace = useCallback(() => {
-    Alert.alert('Replace photo?', 'Choose a new prescription or medicine image.', [
+    Alert.alert('Replace photo?', 'Choose a new prescription or medicine photo.', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Camera', onPress: () => void handlePick('camera') },
       { text: 'Gallery', onPress: () => void handlePick('gallery') },
@@ -244,7 +248,7 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
           >
             <Ionicons name="arrow-back" size={22} color={colors.textPrimary} />
           </Pressable>
-          <Text style={styles.topTitle}>Upload Prescription</Text>
+          <Text style={styles.topTitle}>Scan Medicine</Text>
           <Pressable
             onPress={handleClearImage}
             disabled={!pickedImage}
@@ -282,9 +286,9 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
               <Ionicons name="medkit-outline" size={18} color={colors.secondary} />
             </View>
           </View> */}
-          <Text style={styles.heroTitle}>Upload prescription</Text>
+          <Text style={styles.heroTitle}>Scan medicines</Text>
           <Text style={styles.heroSubtitle}>
-            Upload a clear photo of your prescription. Our AI will identify the medicines for you.
+            Upload a prescription or a medicine photo. Our AI will identify exact names, correct mistakes, and show you the details.
           </Text>
         </Animated.View>
 
@@ -384,29 +388,75 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
           ))}
         </Animated.View>
 
-        {medicineNames.length > 0 && (
+        {medicines.length > 0 && (
           <Animated.View entering={FadeInUp.duration(350)} style={styles.medicineBox}>
             <View style={styles.medicineHeader}>
               <View style={styles.medicineHeaderLeft}>
                 <Ionicons name="medical" size={20} color={colors.success} />
-                <Text style={styles.medicineTitle}>Medicines detected</Text>
+                <Text style={styles.medicineTitle}>
+                  {imageType === 'prescription'
+                    ? 'Medicines detected'
+                    : imageType === 'medicine_pack' || imageType === 'medicine_strip' || imageType === 'medicine_bottle'
+                      ? 'Medicine identified'
+                      : 'Medicines detected'}
+                </Text>
               </View>
               <View style={styles.medicineBadge}>
-                <Text style={styles.medicineBadgeText}>{medicineNames.length}</Text>
+                <Text style={styles.medicineBadgeText}>{medicines.length}</Text>
               </View>
             </View>
+
             <View style={styles.medicineList}>
-              {medicineNames.map((name, index) => (
-                <View key={index} style={styles.medicineRow}>
-                  <View style={styles.medicineNumber}>
-                    <Text style={styles.medicineNumberText}>{index + 1}</Text>
+              {medicines.map((med, index) => (
+                <View key={index} style={styles.medicineCard}>
+                  <View style={styles.medicineCardTop}>
+                    <View style={styles.medicineNumber}>
+                      <Text style={styles.medicineNumberText}>{index + 1}</Text>
+                    </View>
+                    <View style={styles.medicineCardInfo}>
+                      <Text style={styles.medicineName}>{med.correctedName}</Text>
+
+                      {med.hasSpellingError && med.detectedName !== med.correctedName && (
+                        <View style={styles.correctionRow}>
+                          <Ionicons name="sparkles" size={12} color={colors.warning} />
+                          <Text style={styles.correctionText}>
+                            Detected as "<Text style={styles.correctionStrike}>{med.detectedName}</Text>" — auto-corrected
+                          </Text>
+                        </View>
+                      )}
+
+                      {med.genericName ? (
+                        <View style={styles.genericRow}>
+                          <Ionicons name="flask-outline" size={12} color={colors.textMuted} />
+                          <Text style={styles.genericText}>{med.genericName}</Text>
+                        </View>
+                      ) : null}
+
+                      <View style={styles.tagRow}>
+                        {med.brandName ? (
+                          <View style={styles.brandTag}>
+                            <Text style={styles.brandTagText}>{med.brandName}</Text>
+                          </View>
+                        ) : null}
+                        {med.form ? (
+                          <View style={styles.formTag}>
+                            <Text style={styles.formTagText}>{med.form}</Text>
+                          </View>
+                        ) : null}
+                        {med.manufacturer ? (
+                          <View style={styles.mfgTag}>
+                            <Text style={styles.mfgTagText}>{med.manufacturer}</Text>
+                          </View>
+                        ) : null}
+                      </View>
+                    </View>
                   </View>
-                  <Text style={styles.medicineName}>{name}</Text>
                 </View>
               ))}
             </View>
+
             <Text style={styles.medicineFooter}>
-              AI-detected names — please verify before ordering. Retake in good light if anything looks wrong.
+              AI-powered detection — please verify with your pharmacist before use.
             </Text>
           </Animated.View>
         )}
@@ -443,7 +493,7 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
             style={styles.scanBtnInner}
           >
             <Ionicons name="scan" size={20} color={colors.white} />
-            <Text style={styles.scanBtnText}>{isScanning ? 'Scanning...' : 'Tap to Scan'}</Text>
+            <Text style={styles.scanBtnText}>{isScanning ? 'Analyzing...' : 'Tap to Scan'}</Text>
           </LinearGradient>
         </Pressable>
       </View>
@@ -788,12 +838,92 @@ const styles = StyleSheet.create({
     color: colors.success,
   },
   medicineList: {
-    gap: spacing.sm,
+    gap: spacing.md,
   },
-  medicineRow: {
+  medicineCard: {
+    backgroundColor: '#FAFBFC',
+    borderRadius: borderRadius.lg,
+    padding: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+  },
+  medicineCardTop: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  medicineCardInfo: {
+    flex: 1,
+    gap: spacing.xs,
+  },
+  correctionRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
+    gap: spacing.xs,
+    backgroundColor: '#FFF8E1',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.md,
+    alignSelf: 'flex-start',
+  },
+  correctionText: {
+    fontSize: moderateScale(11),
+    color: '#B45309',
+    fontWeight: '500',
+    flex: 1,
+  },
+  correctionStrike: {
+    textDecorationLine: 'line-through',
+    color: '#DC2626',
+  },
+  genericRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  genericText: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    fontWeight: '500',
+    flex: 1,
+  },
+  tagRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
+    marginTop: 2,
+  },
+  brandTag: {
+    backgroundColor: colors.infoLight,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    borderRadius: borderRadius.full,
+  },
+  brandTagText: {
+    fontSize: moderateScale(10),
+    fontWeight: '700',
+    color: ACCENT,
+  },
+  formTag: {
+    backgroundColor: '#F0FDF4',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    borderRadius: borderRadius.full,
+  },
+  formTagText: {
+    fontSize: moderateScale(10),
+    fontWeight: '600',
+    color: colors.success,
+  },
+  mfgTag: {
+    backgroundColor: '#F5F3FF',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    borderRadius: borderRadius.full,
+  },
+  mfgTagText: {
+    fontSize: moderateScale(10),
+    fontWeight: '600',
+    color: '#7C3AED',
   },
   medicineNumber: {
     width: moderateScale(26),
