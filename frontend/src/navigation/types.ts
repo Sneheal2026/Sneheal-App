@@ -28,6 +28,11 @@ export type AuthStackParamList = {
     customerAddress: string;
     customerCoords?: { latitude: number; longitude: number };
   };
+  CustomerTracking: {
+    orderId: string;
+    customerCoords: { latitude: number; longitude: number };
+    customerAddress: string;
+  };
   DoctorMain: undefined;
 };
 

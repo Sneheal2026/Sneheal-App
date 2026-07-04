@@ -115,6 +115,27 @@ function decodePolyline(encoded: string): Coords[] {
   return points;
 }
 
+// Stitch per-step polylines for road-accurate geometry (overview_polyline
+// is heavily simplified and cuts across buildings).
+function extractDetailedRoute(route: any): Coords[] {
+  const steps = route?.legs?.[0]?.steps;
+  if (!Array.isArray(steps) || steps.length === 0) {
+    return decodePolyline(route?.overview_polyline?.points ?? '');
+  }
+  const points: Coords[] = [];
+  for (const step of steps) {
+    const encoded = step?.polyline?.points;
+    if (!encoded) continue;
+    const decoded = decodePolyline(encoded);
+    // Avoid duplicating the shared vertex between consecutive steps
+    if (points.length > 0 && decoded.length > 0) decoded.shift();
+    points.push(...decoded);
+  }
+  return points.length > 1
+    ? points
+    : decodePolyline(route?.overview_polyline?.points ?? '');
+}
+
 // ── Constants ────────────────────────────────────────────────────
 const HUB_REACHED_DISTANCE = 60; // meters
 const ANIMATION_DURATION = 400; // ms
@@ -131,8 +152,8 @@ const DeliveryNavigationScreen = () => {
   const destination = useMemo<Coords>(
     () =>
       customerCoords ?? {
-        latitude: 18.5314,
-        longitude: 73.8446,
+        latitude: 18.6725,
+        longitude: 78.0941,
       },
     [customerCoords],
   );
@@ -183,7 +204,7 @@ const DeliveryNavigationScreen = () => {
 
         if (data.routes?.length > 0) {
           const leg = data.routes[0].legs[0];
-          const points = decodePolyline(data.routes[0].overview_polyline.points);
+          const points = extractDetailedRoute(data.routes[0]);
           routeRef.current = points;
           setRemainingPolyline(points);
           setEtaText(leg.duration.text);
@@ -229,9 +250,10 @@ const DeliveryNavigationScreen = () => {
       // Trim polyline — always starts exactly at agent position
       const fullRoute = routeRef.current;
       if (fullRoute.length >= 2) {
-        const { index } = snapToPolyline(newPos, fullRoute);
-        // Start from agent's real position, then follow remaining route points
-        const remaining = [newPos, ...fullRoute.slice(index + 1)];
+        const { index, snapped } = snapToPolyline(newPos, fullRoute);
+        // Start from the snapped on-road point so the line hugs the road
+        // instead of cutting straight across buildings from raw GPS.
+        const remaining = [snapped, ...fullRoute.slice(index + 1)];
         setRemainingPolyline(remaining);
 
         // Update remaining distance
@@ -272,7 +294,9 @@ const DeliveryNavigationScreen = () => {
         heading: newHeading,
         updatedAt: Date.now(),
         phase: phaseRef.current,
-      }).catch(() => {});
+      }).catch((err) => {
+        if (__DEV__) console.warn('[DeliveryNav] Firebase write failed:', err);
+      });
     },
     [animatedCoord, orderId, sheetAnim],
   );

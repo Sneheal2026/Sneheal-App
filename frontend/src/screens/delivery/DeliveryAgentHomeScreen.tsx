@@ -17,15 +17,20 @@ import type { DeliveryOrder } from '@/components/delivery';
 
 const { spacing } = theme;
 
+const DEMO_CUSTOMER = {
+  address: 'Nizamabad Bus Stop, Nizamabad, Telangana',
+  coords: { latitude: 18.6725, longitude: 78.0941 },
+};
+
 const ACTIVE_ORDERS: DeliveryOrder[] = [
   {
     id: '1',
     orderId: '#SNH-4821',
     customer: 'Priya Sharma',
-    address: '12, MG Road, Shivaji Nagar, Pune',
+    address: DEMO_CUSTOMER.address,
     items: 3,
-    distance: '2.4 km',
-    eta: '18 min',
+    distance: '1.2 km',
+    eta: '8 min',
     status: 'ready',
     statusLabel: 'Ready for pickup',
   },
@@ -33,10 +38,10 @@ const ACTIVE_ORDERS: DeliveryOrder[] = [
     id: '2',
     orderId: '#SNH-4819',
     customer: 'Rahul Mehta',
-    address: '45, FC Road, Deccan, Pune',
+    address: DEMO_CUSTOMER.address,
     items: 1,
-    distance: '4.1 km',
-    eta: '26 min',
+    distance: '1.5 km',
+    eta: '10 min',
     status: 'transit',
     statusLabel: 'In transit',
   },
@@ -52,6 +57,7 @@ const DeliveryAgentHomeScreen = () => {
       navigation.navigate('DeliveryNavigation', {
         orderId: order.orderId,
         customerAddress: order.address,
+        customerCoords: DEMO_CUSTOMER.coords,
       });
     },
     [navigation],
