@@ -18,7 +18,9 @@ export interface AgentTrackingState {
 }
 
 const STALE_THRESHOLD = 30_000;
-const INTERPOLATION_MS = 1200;
+// Agent publishes every ~3s — glide across (almost) the full gap so the
+// marker moves continuously instead of move-stop-move.
+const INTERPOLATION_MS = 2800;
 
 export function useAgentTracking(orderId: string): AgentTrackingState {
   const animatedCoord = useRef(

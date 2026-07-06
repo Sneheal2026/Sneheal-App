@@ -155,24 +155,15 @@ const CustomerTrackingScreen = () => {
     isActive,
     isWaiting,
     isStale,
+    animatedCoord,
   } = useAgentTracking(orderId);
 
   // Custom marker view must stay tracked until the image bitmap is snapshotted
   const [tracksAgent, setTracksAgent] = useState(true);
-  const agentImageReady = useRef(false);
 
   const onAgentImageLoad = useCallback(() => {
-    agentImageReady.current = true;
     setTimeout(() => setTracksAgent(false), Platform.OS === 'android' ? 700 : 350);
   }, []);
-
-  // Repaint when heading changes so rotation stays crisp
-  useEffect(() => {
-    if (!agentCoords || !agentImageReady.current) return;
-    setTracksAgent(true);
-    const t = setTimeout(() => setTracksAgent(false), 450);
-    return () => clearTimeout(t);
-  }, [heading, agentCoords]);
 
   const mapRef = useRef<MapView>(null);
   const fullRouteRef = useRef<Coords[]>([]);
@@ -266,7 +257,8 @@ const CustomerTrackingScreen = () => {
     [applyRemainingRoute],
   );
 
-  // Fetch route on first agent ping / phase change; trim on every move
+  // Fetch route on first agent ping / phase change (trimming is driven
+  // by the animated marker position below, not by raw GPS pings)
   useEffect(() => {
     if (!agentCoords) return;
 
@@ -278,21 +270,38 @@ const CustomerTrackingScreen = () => {
       routeFetchedForPhase.current = null;
     }
 
-    const hasRealRoute = routeFetchedForPhase.current === phase;
-
-    if (!hasRealRoute) {
+    if (routeFetchedForPhase.current !== phase) {
       // Retry at most every 4s to avoid hammering the Directions API
       const since = Date.now() - lastFetchAttempt.current;
       if (!fetchInFlight.current && (since > 4000 || fullRouteRef.current.length < 2)) {
         fetchRoute(agentCoords, currentDest, phase);
       }
-      // Still trim whatever route we have (straight fallback or none)
-      applyRemainingRoute(agentCoords);
-      return;
     }
+  }, [agentCoords, phase, currentDest, fetchRoute]);
 
-    applyRemainingRoute(agentCoords);
-  }, [agentCoords, phase, currentDest, fetchRoute, applyRemainingRoute]);
+  // ── Keep the polyline glued to the animated marker ───────────
+  // Trim the route from the marker's interpolated position (~6x/sec)
+  // so the scooter always sits exactly at the end of the line.
+  useEffect(() => {
+    const region = animatedCoord as any;
+    let lng: number = region.longitude?.__getValue?.() ?? 0;
+    let lastTrim = 0;
+
+    const lngId = region.longitude.addListener(({ value }: { value: number }) => {
+      lng = value;
+    });
+    const latId = region.latitude.addListener(({ value }: { value: number }) => {
+      const now = Date.now();
+      if ((!value && !lng) || now - lastTrim < 150) return; // skip (0,0) + throttle
+      lastTrim = now;
+      applyRemainingRoute({ latitude: value, longitude: lng });
+    });
+
+    return () => {
+      region.latitude.removeListener(latId);
+      region.longitude.removeListener(lngId);
+    };
+  }, [animatedCoord, applyRemainingRoute]);
 
   // ── Progress ratio for bar ───────────────────────────────────
   const progress = useMemo(() => {
@@ -304,18 +313,32 @@ const CustomerTrackingScreen = () => {
     return Math.max(0, Math.min(1, 1 - remainingMeters / totalDistance));
   }, [agentCoords, currentDest, totalDistance, remainingPolyline]);
 
-  // ── Camera follow ────────────────────────────────────────────
+  // ── Camera follow (zoom set once; user gestures win) ─────────
+  const cameraInitialized = useRef(false);
+  const userMovedMap = useRef(false);
+
   useEffect(() => {
     if (!agentCoords || !mapRef.current) return;
-    mapRef.current.animateCamera(
-      { center: agentCoords, zoom: 15.5, pitch: 0, heading: 0 },
-      { duration: 1000 },
-    );
+
+    if (!cameraInitialized.current) {
+      cameraInitialized.current = true;
+      mapRef.current.animateCamera(
+        { center: agentCoords, zoom: 16, pitch: 0, heading: 0 },
+        { duration: 800 },
+      );
+      return;
+    }
+
+    // Follow by panning only — never override the user's zoom/tilt
+    if (!userMovedMap.current) {
+      mapRef.current.animateCamera({ center: agentCoords }, { duration: 1000 });
+    }
   }, [agentCoords]);
 
-  // ── Fit markers on mount ─────────────────────────────────────
+  // ── Fit full route (locate button) ───────────────────────────
   const fitMap = useCallback(() => {
     if (!agentCoords || !mapRef.current) return;
+    userMovedMap.current = false; // resume auto-follow
     const points = [agentCoords, currentDest];
     if (phase === 'to_hub') points.push(MEDICINE_HUB);
     mapRef.current.fitToCoordinates(points, {
@@ -323,13 +346,6 @@ const CustomerTrackingScreen = () => {
       animated: true,
     });
   }, [agentCoords, currentDest, phase]);
-
-  useEffect(() => {
-    if (agentCoords) {
-      const timer = setTimeout(fitMap, 600);
-      return () => clearTimeout(timer);
-    }
-  }, [agentCoords !== null]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Delivery complete (only after we had live location) ──────
   useEffect(() => {
@@ -394,6 +410,9 @@ const CustomerTrackingScreen = () => {
           longitudeDelta: 0.05,
         }}
         mapPadding={{ top: insets.top + 70, bottom: 280, left: 0, right: 0 }}
+        onRegionChangeComplete={(_, details) => {
+          if (details?.isGesture) userMovedMap.current = true;
+        }}
       >
         {/* Customer destination marker */}
         <Marker coordinate={destination} anchor={{ x: 0.5, y: 1 }}>
@@ -423,10 +442,10 @@ const CustomerTrackingScreen = () => {
           </View>
         </Marker>
 
-        {/* Agent scooter — fixed size, no clipping, works on iOS + Android */}
+        {/* Agent scooter — animated between pings for smooth movement */}
         {agentCoords && (
-          <Marker
-            coordinate={agentCoords}
+          <Marker.Animated
+            coordinate={animatedCoord as any}
             anchor={{ x: 0.5, y: 0.5 }}
             flat
             rotation={heading}
@@ -434,13 +453,14 @@ const CustomerTrackingScreen = () => {
             zIndex={10}
           >
             <ScooterTopView size={AGENT_MARKER_SIZE} onLoad={onAgentImageLoad} />
-          </Marker>
+          </Marker.Animated>
         )}
 
-        {/* Route polyline — key forces native redraw on Android */}
+        {/* Route polyline — key remounts only when a vertex is passed;
+            the animated start point updates via the coordinates prop */}
         {remainingPolyline.length > 1 && (
           <Polyline
-            key={`route-${phase}-${remainingPolyline.length}-${remainingPolyline[0].latitude.toFixed(5)}-${remainingPolyline[0].longitude.toFixed(5)}`}
+            key={`route-${phase}-${remainingPolyline.length}`}
             coordinates={remainingPolyline}
             strokeColor={colors.primary}
             strokeWidth={5}
