@@ -5,6 +5,7 @@ import {
   Text,
   Pressable,
   StatusBar,
+  Platform,
   Animated as RNAnimated,
 } from 'react-native';
 import MapView, {
@@ -19,7 +20,7 @@ import type { RouteProp } from '@react-navigation/native';
 import type { AuthStackParamList } from '@/navigation/types';
 import { useAgentTracking } from '@/hooks/useAgentTracking';
 import TrackingProgressBar from '@/components/tracking/TrackingProgressBar';
-import ScooterTopView from '@/components/tracking/ScooterTopView';
+import ScooterTopView, { AGENT_MARKER_SIZE } from '@/components/tracking/ScooterTopView';
 import theme from '@/styles/theme';
 
 const { colors, spacing, typography, borderRadius, shadows } = theme;
@@ -157,14 +158,22 @@ const CustomerTrackingScreen = () => {
     isStale,
   } = useAgentTracking(orderId);
 
-  // Android needs tracksViewChanges briefly so custom marker views render
-  const [tracksBike, setTracksBike] = useState(true);
+  // Custom marker view must stay tracked until the image bitmap is snapshotted
+  const [tracksAgent, setTracksAgent] = useState(true);
+  const agentImageReady = useRef(false);
+
+  const onAgentImageLoad = useCallback(() => {
+    agentImageReady.current = true;
+    setTimeout(() => setTracksAgent(false), Platform.OS === 'android' ? 700 : 350);
+  }, []);
+
+  // Repaint when heading changes so rotation stays crisp
   useEffect(() => {
-    if (!agentCoords) return;
-    setTracksBike(true);
-    const t = setTimeout(() => setTracksBike(false), 800);
+    if (!agentCoords || !agentImageReady.current) return;
+    setTracksAgent(true);
+    const t = setTimeout(() => setTracksAgent(false), 450);
     return () => clearTimeout(t);
-  }, [agentCoords?.latitude, agentCoords?.longitude, heading]);
+  }, [heading, agentCoords]);
 
   const mapRef = useRef<MapView>(null);
   const fullRouteRef = useRef<Coords[]>([]);
@@ -415,19 +424,17 @@ const CustomerTrackingScreen = () => {
           </View>
         </Marker>
 
-        {/* Bike marker — plain Marker + live coords (reliable on Android) */}
+        {/* Agent scooter — fixed size, no clipping, works on iOS + Android */}
         {agentCoords && (
           <Marker
-            key={`agent-${agentCoords.latitude.toFixed(5)}-${agentCoords.longitude.toFixed(5)}`}
             coordinate={agentCoords}
             anchor={{ x: 0.5, y: 0.5 }}
             flat
             rotation={heading}
-            tracksViewChanges={tracksBike}
+            tracksViewChanges={tracksAgent}
+            zIndex={10}
           >
-            <View style={styles.agentMarkerWrap} pointerEvents="none">
-              <ScooterTopView size={80} />
-            </View>
+            <ScooterTopView size={AGENT_MARKER_SIZE} onLoad={onAgentImageLoad} />
           </Marker>
         )}
 
@@ -623,12 +630,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 1.5,
     borderColor: '#fff',
-  },
-  agentMarkerWrap: {
-    width: 80,
-    height: 80,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
 
   // Bottom card

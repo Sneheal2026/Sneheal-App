@@ -1,22 +1,37 @@
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
-import { Image } from 'expo-image';
+import { Image, StyleSheet, View } from 'react-native';
+import { moderateScale } from '@/styles/device';
+
+/** Shared asset */
+export const SCOOTER_ICON_IMAGE = require('../../../assets/images/Scooter-Icon.png');
+
+/** Map marker size — scales slightly per device, stays proportional to route line */
+export const AGENT_MARKER_SIZE = moderateScale(44);
 
 interface ScooterTopViewProps {
-  /** Marker width/height in px. Defaults to 80. */
   size?: number;
+  onLoad?: () => void;
 }
 
 /**
- * Top-view delivery scooter marker (Sneheal branded asset).
- * Front points up — rotate parent Marker with `rotation={heading}`.
+ * Top-view delivery scooter for MapView markers.
+ * Front points up — parent Marker uses `rotation={heading}` + `flat`.
  */
-const ScooterTopView: React.FC<ScooterTopViewProps> = ({ size = 80 }) => (
-  <View style={[styles.wrap, { width: size, height: size }]}>
+const ScooterTopView: React.FC<ScooterTopViewProps> = ({
+  size = AGENT_MARKER_SIZE,
+  onLoad,
+}) => (
+  <View
+    collapsable={false}
+    style={[styles.wrap, { width: size, height: size }]}
+    pointerEvents="none"
+  >
     <Image
-      source={require('../../../assets/images/Scooter-Icon.png')}
-      style={{ width: size, height: size }}
-      contentFit="contain"
+      source={SCOOTER_ICON_IMAGE}
+      style={styles.image}
+      resizeMode="contain"
+      fadeDuration={0}
+      onLoad={onLoad}
     />
   </View>
 );
@@ -25,6 +40,12 @@ const styles = StyleSheet.create({
   wrap: {
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'visible',
+    backgroundColor: 'transparent',
+  },
+  image: {
+    width: '100%',
+    height: '100%',
   },
 });
 
