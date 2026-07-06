@@ -207,6 +207,8 @@ const CustomerTrackingScreen = () => {
 
   const prevPhaseRef = useRef(phase);
   const routeFetchedForPhase = useRef<string | null>(null);
+  const fetchInFlight = useRef(false);
+  const lastFetchAttempt = useRef(0);
   const deliveredAnim = useRef(new RNAnimated.Value(0)).current;
   const [showDelivered, setShowDelivered] = useState(false);
 
@@ -239,9 +241,12 @@ const CustomerTrackingScreen = () => {
     setEtaText(etaMin > 1 ? `${etaMin} min` : '< 1 min');
   }, [currentDest]);
 
-  // ── Fetch full route (once per phase) ────────────────────────
+  // ── Fetch full road-accurate route (retries until it succeeds) ─
   const fetchRoute = useCallback(
     async (origin: Coords, dest: Coords, phaseKey: string) => {
+      if (fetchInFlight.current) return;
+      fetchInFlight.current = true;
+      lastFetchAttempt.current = Date.now();
       try {
         const url =
           `https://maps.googleapis.com/maps/api/directions/json` +
@@ -252,7 +257,7 @@ const CustomerTrackingScreen = () => {
         const res = await fetch(url);
         const data = await res.json();
 
-        if (__DEV__ && data.status !== 'OK') {
+        if (data.status !== 'OK') {
           console.warn('[Tracking] Directions API:', data.status, data.error_message);
         }
 
@@ -263,19 +268,24 @@ const CustomerTrackingScreen = () => {
           setTotalDistance(leg.distance.value);
           setEtaText(leg.duration.text);
           setDistText(leg.distance.text);
+          // Only lock the phase once we have a REAL road route
           routeFetchedForPhase.current = phaseKey;
           applyRemainingRoute(origin);
           return;
         }
       } catch (e) {
-        if (__DEV__) console.warn('[Tracking] Route fetch failed:', e);
+        console.warn('[Tracking] Route fetch failed:', e);
+      } finally {
+        fetchInFlight.current = false;
       }
 
-      // Fallback: straight line so something always shows
-      fullRouteRef.current = [origin, dest];
-      setTotalDistance(distanceBetween(origin, dest));
-      routeFetchedForPhase.current = phaseKey;
-      applyRemainingRoute(origin);
+      // Directions failed — show a temporary straight line but DO NOT lock
+      // the phase, so the next location update retries the real route.
+      if (fullRouteRef.current.length < 2) {
+        fullRouteRef.current = [origin, dest];
+        setTotalDistance(distanceBetween(origin, dest));
+        applyRemainingRoute(origin);
+      }
     },
     [applyRemainingRoute],
   );
@@ -292,9 +302,16 @@ const CustomerTrackingScreen = () => {
       routeFetchedForPhase.current = null;
     }
 
-    const needsFetch = routeFetchedForPhase.current !== phase;
-    if (needsFetch) {
-      fetchRoute(agentCoords, currentDest, phase);
+    const hasRealRoute = routeFetchedForPhase.current === phase;
+
+    if (!hasRealRoute) {
+      // Retry at most every 4s to avoid hammering the Directions API
+      const since = Date.now() - lastFetchAttempt.current;
+      if (!fetchInFlight.current && (since > 4000 || fullRouteRef.current.length < 2)) {
+        fetchRoute(agentCoords, currentDest, phase);
+      }
+      // Still trim whatever route we have (straight fallback or none)
+      applyRemainingRoute(agentCoords);
       return;
     }
 
