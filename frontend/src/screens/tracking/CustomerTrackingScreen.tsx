@@ -12,13 +12,6 @@ import MapView, {
   Polyline,
   PROVIDER_GOOGLE,
 } from 'react-native-maps';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withRepeat,
-  withTiming,
-  Easing,
-} from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -26,6 +19,7 @@ import type { RouteProp } from '@react-navigation/native';
 import type { AuthStackParamList } from '@/navigation/types';
 import { useAgentTracking } from '@/hooks/useAgentTracking';
 import TrackingProgressBar from '@/components/tracking/TrackingProgressBar';
+import ScooterTopView from '@/components/tracking/ScooterTopView';
 import theme from '@/styles/theme';
 
 const { colors, spacing, typography, borderRadius, shadows } = theme;
@@ -143,32 +137,6 @@ function extractDetailedRoute(route: any): Coords[] {
     ? points
     : decodePolyline(route?.overview_polyline?.points ?? '');
 }
-
-// ── Pulse ring component (Reanimated, UI-thread) ───────────────
-const PulseRing = () => {
-  const scale = useSharedValue(1);
-  const opacity = useSharedValue(0.6);
-
-  useEffect(() => {
-    scale.value = withRepeat(
-      withTiming(2.2, { duration: 1500, easing: Easing.out(Easing.quad) }),
-      -1,
-      false,
-    );
-    opacity.value = withRepeat(
-      withTiming(0, { duration: 1500, easing: Easing.out(Easing.quad) }),
-      -1,
-      false,
-    );
-  }, [scale, opacity]);
-
-  const ringStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-    opacity: opacity.value,
-  }));
-
-  return <Animated.View style={[styles.pulseRing, ringStyle]} />;
-};
 
 // ── Main Screen ────────────────────────────────────────────────
 
@@ -457,11 +425,8 @@ const CustomerTrackingScreen = () => {
             rotation={heading}
             tracksViewChanges={tracksBike}
           >
-            <View style={styles.bikeMarkerWrap} pointerEvents="none">
-              <PulseRing />
-              <View style={styles.bikeMarker}>
-                <Ionicons name="bicycle" size={18} color="#fff" />
-              </View>
+            <View style={styles.agentMarkerWrap} pointerEvents="none">
+              <ScooterTopView size={80} />
             </View>
           </Marker>
         )}
@@ -659,30 +624,11 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: '#fff',
   },
-  bikeMarkerWrap: {
-    width: 48,
-    height: 48,
+  agentMarkerWrap: {
+    width: 80,
+    height: 80,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  bikeMarker: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2.5,
-    borderColor: '#fff',
-    ...shadows.md,
-    zIndex: 2,
-  },
-  pulseRing: {
-    position: 'absolute',
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: colors.primary,
   },
 
   // Bottom card
