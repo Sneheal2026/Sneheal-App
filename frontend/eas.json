@@ -6,7 +6,11 @@
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal"
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_GOOGLE_MAPS_KEY": "AIzaSyCTXY9MZ9W1OgPtr8-zIV7suS9Z6IuGS1w",
+        "EXPO_PUBLIC_SKIP_AUTH": "true"
+      }
     },
     "preview": {
       "distribution": "internal",
@@ -14,11 +18,15 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_SKIP_AUTH": "true"
+        "EXPO_PUBLIC_SKIP_AUTH": "true",
+        "EXPO_PUBLIC_GOOGLE_MAPS_KEY": "AIzaSyCTXY9MZ9W1OgPtr8-zIV7suS9Z6IuGS1w"
       }
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_GOOGLE_MAPS_KEY": "AIzaSyCTXY9MZ9W1OgPtr8-zIV7suS9Z6IuGS1w"
+      }
     }
   },
   "submit": {

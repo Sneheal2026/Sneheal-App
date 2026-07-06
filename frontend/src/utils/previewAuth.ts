@@ -1,7 +1,7 @@
 import type { VerifyOtpResponse } from '@/types/auth';
 
 export const isSkipAuthEnabled = (): boolean =>
-  process.env.EXPO_PUBLIC_SKIP_AUTH === 'true';
+  __DEV__ || process.env.EXPO_PUBLIC_SKIP_AUTH === 'true';
 
 /** Long-lived mock JWTs so session restore skips refresh calls. */
 const PREVIEW_ACCESS_TOKEN =

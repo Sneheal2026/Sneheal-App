@@ -22,10 +22,9 @@ import { useAgentTracking } from '@/hooks/useAgentTracking';
 import TrackingProgressBar from '@/components/tracking/TrackingProgressBar';
 import ScooterTopView, { AGENT_MARKER_SIZE } from '@/components/tracking/ScooterTopView';
 import theme from '@/styles/theme';
+import { GOOGLE_MAPS_KEY } from '@/constants/googleMaps';
 
 const { colors, spacing, typography, borderRadius, shadows } = theme;
-
-const GOOGLE_MAPS_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_KEY ?? '';
 
 const MEDICINE_HUB = {
   latitude: 18.6729,

@@ -22,6 +22,7 @@ export type AuthStackParamList = {
   LocationMap: { editAddress?: SavedAddress } | undefined;
   AddressDetails: { draft: AddressDraft; editAddress?: SavedAddress };
   SavedAddresses: undefined;
+  MedicineReminders: undefined;
   DeliveryAgentMain: undefined;
   DeliveryNavigation: {
     orderId: string;

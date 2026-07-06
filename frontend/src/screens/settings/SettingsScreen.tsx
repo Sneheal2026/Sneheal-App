@@ -56,6 +56,8 @@ const SettingsScreen = () => {
   const handleItemPress = (id: string) => {
     if (id === 'addresses') {
       navigation.navigate('SavedAddresses' as never);
+    } else if (id === 'reminders') {
+      navigation.navigate('MedicineReminders' as never);
     } else if (id === 'help') {
       navigation.navigate('HelpAndSupport' as never);
     } else if (id === 'share') {

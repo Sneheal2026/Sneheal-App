@@ -1,7 +1,6 @@
 import * as Location from 'expo-location';
 import type { Coordinates, LiveLocation } from '@/types/location.types';
-
-const GOOGLE_MAPS_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_KEY ?? '';
+import { GOOGLE_MAPS_KEY } from '@/constants/googleMaps';
 
 export async function ensureLocationPermission(): Promise<boolean> {
   const { status } = await Location.requestForegroundPermissionsAsync();
@@ -31,7 +30,7 @@ export async function reverseGeocodeGoogle(
   coords: Coordinates,
 ): Promise<string> {
   if (!GOOGLE_MAPS_KEY) {
-    console.warn('[Sneheal:Location] EXPO_PUBLIC_GOOGLE_MAPS_KEY is not set');
+    console.warn('[Sneheal:Location] Google Maps API key is not set');
     return fallbackReverseGeocode(coords);
   }
 

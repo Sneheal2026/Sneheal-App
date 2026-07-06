@@ -24,10 +24,9 @@ import type { AuthStackParamList } from '@/navigation/types';
 import { deliveryTheme } from '@/components/delivery/deliveryTheme';
 import { updateAgentLocation, clearOrderTracking } from '@/services/firebase';
 import theme from '@/styles/theme';
+import { GOOGLE_MAPS_KEY } from '@/constants/googleMaps';
 
 const { spacing, typography, borderRadius, shadows } = theme;
-
-const GOOGLE_MAPS_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_KEY ?? '';
 
 // ── Fixed medicine hub (Pune) ────────────────────────────────────
 const MEDICINE_HUB = {

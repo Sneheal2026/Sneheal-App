@@ -18,6 +18,7 @@ import ProductDetailsScreen from '@/screens/product/ProductDetailsScreen';
 import MapScreen from '@/screens/map/MapScreen';
 import AddressDetailsScreen from '@/screens/address/AddressDetailsScreen';
 import SavedAddressesScreen from '@/screens/address/SavedAddressesScreen';
+import MedicineRemindersScreen from '@/screens/reminders/MedicineRemindersScreen';
 import type { AuthStackParamList } from './types';
 import theme from '@/styles/theme';
 
@@ -47,6 +48,7 @@ const AuthNavigator = () => {
       <Stack.Screen name="LocationMap" component={MapScreen} />
       <Stack.Screen name="AddressDetails" component={AddressDetailsScreen} />
       <Stack.Screen name="SavedAddresses" component={SavedAddressesScreen} />
+      <Stack.Screen name="MedicineReminders" component={MedicineRemindersScreen} />
       <Stack.Screen name="CustomerTracking" component={CustomerTrackingScreen} />
       <Stack.Screen name="DeliveryAgentMain" component={DeliveryAgentHomeScreen} />
       <Stack.Screen name="DeliveryNavigation" component={DeliveryNavigationScreen} />

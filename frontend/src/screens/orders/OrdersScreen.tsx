@@ -33,16 +33,29 @@ const DotPattern = () => (
   </View>
 );
 
+const DEMO_ORDER = {
+  orderId: '#SNH-4821',
+  customerAddress: 'Nizamabad Bus Stop, Nizamabad, Telangana',
+  customerCoords: { latitude: 18.6725, longitude: 78.0941 },
+} as const;
+
 const OrdersScreen = () => {
   const navigation =
     useNavigation<NativeStackNavigationProp<AuthStackParamList>>();
 
-  const handleTrackDemo = useCallback(() => {
-    // Must match agent orderId in DeliveryAgentHomeScreen (Firebase path key)
+  const handleTrackAsCustomer = useCallback(() => {
     navigation.navigate('CustomerTracking', {
-      orderId: '#SNH-4821',
-      customerCoords: { latitude: 18.6725, longitude: 78.0941 },
-      customerAddress: 'Nizamabad Bus Stop, Nizamabad, Telangana',
+      orderId: DEMO_ORDER.orderId,
+      customerCoords: DEMO_ORDER.customerCoords,
+      customerAddress: DEMO_ORDER.customerAddress,
+    });
+  }, [navigation]);
+
+  const handleOpenDeliveryMap = useCallback(() => {
+    navigation.navigate('DeliveryNavigation', {
+      orderId: DEMO_ORDER.orderId,
+      customerAddress: DEMO_ORDER.customerAddress,
+      customerCoords: DEMO_ORDER.customerCoords,
     });
   }, [navigation]);
 
@@ -56,11 +69,18 @@ const OrdersScreen = () => {
         </View>
         <Text style={styles.emptyText}>No orders placed yet</Text>
 
-        {/* Temporary test button — remove when real orders are wired */}
-        <Pressable onPress={handleTrackDemo} style={styles.trackDemoBtn}>
-          <Ionicons name="bicycle" size={18} color="#fff" />
-          <Text style={styles.trackDemoBtnText}>Track Demo Order</Text>
-        </Pressable>
+        {/* Dev shortcuts — remove when real orders + auth are wired */}
+        <View style={styles.devActions}>
+          <Pressable onPress={handleTrackAsCustomer} style={styles.trackDemoBtn}>
+            <Ionicons name="bicycle" size={18} color="#fff" />
+            <Text style={styles.trackDemoBtnText}>Customer Tracking Map</Text>
+          </Pressable>
+
+          <Pressable onPress={handleOpenDeliveryMap} style={styles.deliveryMapBtn}>
+            <Ionicons name="navigate" size={18} color={colors.primary} />
+            <Text style={styles.deliveryMapBtnText}>Delivery Agent Map</Text>
+          </Pressable>
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -102,11 +122,17 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     textAlign: 'center',
   },
+  devActions: {
+    marginTop: spacing.xxl,
+    gap: spacing.md,
+    width: '100%',
+    maxWidth: 320,
+  },
   trackDemoBtn: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: spacing.sm,
-    marginTop: spacing.xxl,
     backgroundColor: colors.primary,
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.md,
@@ -116,6 +142,24 @@ const styles = StyleSheet.create({
   trackDemoBtnText: {
     ...typography.button,
     color: '#fff',
+    fontSize: 14,
+  },
+  deliveryMapBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.surface,
+    borderWidth: 1.5,
+    borderColor: colors.primary,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.lg,
+    ...shadows.sm,
+  },
+  deliveryMapBtnText: {
+    ...typography.button,
+    color: colors.primary,
     fontSize: 14,
   },
 });
