@@ -18,11 +18,20 @@ export {
 } from './tokenStorage';
 export type { AuthSession } from './tokenStorage';
 export {
+  fetchAddressesFromApi,
+  createAddressOnApi,
+  updateAddressOnApi,
+  deleteAddressOnApi,
+} from './addressApiService';
+export {
   getSavedAddresses,
+  getCachedAddresses,
   saveAddress,
   deleteAddress,
   setDefaultAddress,
   getSelectedAddressId,
   setSelectedAddressId,
   getSelectedAddress,
+  loadAddressSnapshot,
+  readAddressSnapshotFromCache,
 } from './addressStorage';

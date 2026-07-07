@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   View,
   Text,
@@ -6,12 +6,14 @@ import {
   FlatList,
   TouchableOpacity,
   Alert,
+  ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
-import { deleteAddress } from '@/services/addressStorage';
+import Loader from '@/components/common/Loader';
 import { useSavedAddresses } from '@/hooks/useSavedAddresses';
 import type { SavedAddress } from '@/types/location.types';
 import type { AuthStackParamList } from '@/navigation/types';
@@ -29,23 +31,53 @@ const SavedAddressesScreen = () => {
   const navigation =
     useNavigation<NativeStackNavigationProp<AuthStackParamList, 'SavedAddresses'>>();
 
-  const { addresses, selectedAddress, loading, refresh, selectAddress } = useSavedAddresses();
+  const { addresses, selectedAddress, loading, error, refresh, selectAddress, removeAddress } =
+    useSavedAddresses();
+  const [selectingId, setSelectingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
-      void refresh();
+      void refresh(false);
     }, [refresh]),
   );
 
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await refresh(true);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [refresh]);
+
   const handleSelect = useCallback(
     async (address: SavedAddress) => {
-      await selectAddress(address.id);
-      navigation.reset({
-        index: 0,
-        routes: [{ name: 'Main' }],
-      });
+      if (selectingId) return;
+
+      if (selectedAddress?.id === address.id) {
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'Main' }],
+        });
+        return;
+      }
+
+      setSelectingId(address.id);
+      try {
+        await selectAddress(address.id);
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'Main' }],
+        });
+      } catch {
+        Alert.alert('Error', 'Could not update delivery address. Please try again.');
+      } finally {
+        setSelectingId(null);
+      }
     },
-    [selectAddress, navigation],
+    [selectAddress, navigation, selectingId, selectedAddress?.id],
   );
 
   const handleEdit = useCallback(
@@ -70,14 +102,20 @@ const SavedAddressesScreen = () => {
             text: 'Delete',
             style: 'destructive',
             onPress: async () => {
-              await deleteAddress(address.id);
-              void refresh();
+              setDeletingId(address.id);
+              try {
+                await removeAddress(address.id);
+              } catch {
+                Alert.alert('Error', 'Could not delete address. Please try again.');
+              } finally {
+                setDeletingId(null);
+              }
             },
           },
         ],
       );
     },
-    [refresh],
+    [removeAddress, deletingId],
   );
 
   const handleAddNew = useCallback(() => {
@@ -87,6 +125,8 @@ const SavedAddressesScreen = () => {
   const renderItem = useCallback(
     ({ item }: { item: SavedAddress }) => {
       const isSelected = selectedAddress?.id === item.id;
+      const isSelecting = selectingId === item.id;
+      const isDeleting = deletingId === item.id;
       const typeLabel = item.type === 'other'
         ? item.customTypeLabel || 'Other'
         : item.type.charAt(0).toUpperCase() + item.type.slice(1);
@@ -97,6 +137,7 @@ const SavedAddressesScreen = () => {
           style={[styles.card, isSelected && styles.cardSelected]}
           onPress={() => handleSelect(item)}
           activeOpacity={0.8}
+          disabled={Boolean(selectingId) || Boolean(deletingId)}
           accessibilityRole="button"
           accessibilityLabel={`Select ${typeLabel} address`}
         >
@@ -131,9 +172,13 @@ const SavedAddressesScreen = () => {
           </View>
 
           <View style={styles.cardActions}>
+            {isSelecting ? (
+              <ActivityIndicator size="small" color={colors.primary} />
+            ) : null}
             <TouchableOpacity
               onPress={() => handleEdit(item)}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              disabled={Boolean(selectingId) || Boolean(deletingId)}
               accessibilityLabel="Edit address"
             >
               <Ionicons name="create-outline" size={moderateScale(18)} color={colors.textMuted} />
@@ -141,16 +186,41 @@ const SavedAddressesScreen = () => {
             <TouchableOpacity
               onPress={() => handleDelete(item)}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              disabled={Boolean(selectingId) || isDeleting}
               accessibilityLabel="Delete address"
             >
-              <Ionicons name="trash-outline" size={moderateScale(18)} color={colors.error} />
+              {isDeleting ? (
+                <ActivityIndicator size="small" color={colors.error} />
+              ) : (
+                <Ionicons name="trash-outline" size={moderateScale(18)} color={colors.error} />
+              )}
             </TouchableOpacity>
           </View>
         </TouchableOpacity>
       );
     },
-    [selectedAddress, handleSelect, handleEdit, handleDelete],
+    [selectedAddress, handleSelect, handleEdit, handleDelete, selectingId, deletingId],
   );
+
+  if (loading && addresses.length === 0) {
+    return (
+      <SafeAreaView style={styles.safe} edges={['top']}>
+        <View style={styles.header}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
+          >
+            <Ionicons name="arrow-back" size={moderateScale(20)} color={colors.textPrimary} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Saved addresses</Text>
+          <View style={styles.headerSpacer} />
+        </View>
+        <Loader message="Loading your addresses..." fullScreen={false} />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -174,6 +244,22 @@ const SavedAddressesScreen = () => {
         renderItem={renderItem}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={colors.primary}
+            colors={[colors.primary]}
+          />
+        }
+        ListHeaderComponent={
+          error ? (
+            <View style={styles.errorBanner}>
+              <Ionicons name="cloud-offline-outline" size={moderateScale(16)} color={colors.error} />
+              <Text style={styles.errorText}>{error}</Text>
+            </View>
+          ) : null
+        }
         ListEmptyComponent={
           loading ? null : (
             <View style={styles.emptyContainer}>
@@ -245,6 +331,23 @@ const styles = StyleSheet.create({
     paddingTop: spacing.sm,
     paddingBottom: spacing.xxxl,
     gap: spacing.sm,
+    flexGrow: 1,
+  },
+  errorBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    backgroundColor: '#FFF5F5',
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    marginBottom: spacing.sm,
+    borderWidth: 1,
+    borderColor: '#FED7D7',
+  },
+  errorText: {
+    ...typography.caption,
+    color: colors.error,
+    flex: 1,
   },
 
   // ── Card ──

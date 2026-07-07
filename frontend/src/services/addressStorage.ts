@@ -1,8 +1,18 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { SavedAddress } from '@/types/location.types';
+import { ApiError } from './apiClient';
+import {
+  createAddressOnApi,
+  deleteAddressOnApi,
+  fetchAddressesFromApi,
+  updateAddressOnApi,
+} from './addressApiService';
+import { getValidAccessToken } from './authTokenManager';
 
 const ADDRESSES_KEY = '@sneheal/savedAddresses';
 const SELECTED_ID_KEY = '@sneheal/selectedAddressId';
+
+let syncInFlight: Promise<SavedAddress[]> | null = null;
 
 const parseAddresses = (raw: string | null): SavedAddress[] => {
   if (!raw) return [];
@@ -14,62 +24,233 @@ const parseAddresses = (raw: string | null): SavedAddress[] => {
   }
 };
 
-export const getSavedAddresses = async (): Promise<SavedAddress[]> => {
+const pickSelectedAddress = (addresses: SavedAddress[]): SavedAddress | null =>
+  addresses.find((address) => address.isDefault) ?? null;
+
+const cacheAddresses = async (addresses: SavedAddress[]): Promise<void> => {
+  await AsyncStorage.setItem(ADDRESSES_KEY, JSON.stringify(addresses));
+
+  const selected = pickSelectedAddress(addresses);
+  await AsyncStorage.setItem(SELECTED_ID_KEY, selected?.id ?? '');
+};
+
+const readCachedAddresses = async (): Promise<SavedAddress[]> => {
   const raw = await AsyncStorage.getItem(ADDRESSES_KEY);
   return parseAddresses(raw);
 };
 
-export const saveAddress = async (address: SavedAddress): Promise<void> => {
-  const existing = await getSavedAddresses();
-  const index = existing.findIndex((a) => a.id === address.id);
+const isServerAddressId = (id: string): boolean => /^\d+$/.test(id);
 
-  if (index >= 0) {
-    existing[index] = address;
-  } else {
-    if (existing.length === 0) {
-      address.isDefault = true;
-    }
-    existing.push(address);
+const mergeSavedAddress = (
+  addresses: SavedAddress[],
+  saved: SavedAddress,
+): SavedAddress[] => {
+  const index = addresses.findIndex((address) => address.id === saved.id);
+  const next =
+    index >= 0
+      ? addresses.map((address, itemIndex) => (itemIndex === index ? saved : address))
+      : [...addresses, saved];
+
+  if (saved.isDefault) {
+    return next.map((address) => ({
+      ...address,
+      isDefault: address.id === saved.id,
+    }));
   }
 
-  await AsyncStorage.setItem(ADDRESSES_KEY, JSON.stringify(existing));
+  return next;
 };
 
-export const deleteAddress = async (id: string): Promise<void> => {
-  const existing = await getSavedAddresses();
-  const filtered = existing.filter((a) => a.id !== id);
+const applySelectedId = (addresses: SavedAddress[], id: string): SavedAddress[] =>
+  addresses.map((address) => ({
+    ...address,
+    isDefault: address.id === id,
+  }));
 
-  if (filtered.length > 0 && !filtered.some((a) => a.isDefault)) {
+const syncAddressesFromApi = async (): Promise<SavedAddress[]> => {
+  const token = await getValidAccessToken();
+
+  if (!token) {
+    return readCachedAddresses();
+  }
+
+  if (syncInFlight) {
+    return syncInFlight;
+  }
+
+  syncInFlight = (async () => {
+    try {
+      const addresses = await fetchAddressesFromApi();
+      await cacheAddresses(addresses);
+      return addresses;
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 401) {
+        throw error;
+      }
+
+      return readCachedAddresses();
+    } finally {
+      syncInFlight = null;
+    }
+  })();
+
+  return syncInFlight;
+};
+
+export const getCachedAddresses = async (): Promise<SavedAddress[]> => {
+  return readCachedAddresses();
+};
+
+export const getSavedAddresses = async (): Promise<SavedAddress[]> => {
+  return syncAddressesFromApi();
+};
+
+export const saveAddress = async (
+  address: Omit<SavedAddress, 'id' | 'createdAt'> & { id?: string },
+): Promise<SavedAddress> => {
+  const token = await getValidAccessToken();
+
+  if (token) {
+    const saved =
+      address.id && isServerAddressId(address.id)
+        ? await updateAddressOnApi(address.id, address as SavedAddress)
+        : await createAddressOnApi(address);
+
+    const cached = await readCachedAddresses();
+    const merged = mergeSavedAddress(cached, saved);
+    await cacheAddresses(merged);
+    return saved;
+  }
+
+  const localAddress: SavedAddress = {
+    id: address.id ?? Date.now().toString(),
+    coords: address.coords,
+    addressLine: address.addressLine,
+    flatNumber: address.flatNumber,
+    landmark: address.landmark,
+    receiverName: address.receiverName,
+    mobile: address.mobile,
+    type: address.type,
+    customTypeLabel: address.customTypeLabel,
+    isDefault: address.isDefault,
+    createdAt: new Date().toISOString(),
+  };
+
+  const existing = await readCachedAddresses();
+  const merged = mergeSavedAddress(existing, localAddress);
+  await cacheAddresses(merged);
+  return localAddress;
+};
+
+export const deleteAddress = async (id: string): Promise<SavedAddress[]> => {
+  const token = await getValidAccessToken();
+
+  if (token && isServerAddressId(id)) {
+    await deleteAddressOnApi(id);
+    return syncAddressesFromApi();
+  }
+
+  const existing = await readCachedAddresses();
+  const filtered = existing.filter((address) => address.id !== id);
+
+  if (filtered.length > 0 && !filtered.some((address) => address.isDefault)) {
     filtered[0].isDefault = true;
   }
 
-  await AsyncStorage.setItem(ADDRESSES_KEY, JSON.stringify(filtered));
-
-  const selectedId = await AsyncStorage.getItem(SELECTED_ID_KEY);
-  if (selectedId === id) {
-    const newDefault = filtered.find((a) => a.isDefault);
-    await AsyncStorage.setItem(SELECTED_ID_KEY, newDefault?.id ?? '');
-  }
+  await cacheAddresses(filtered);
+  return filtered;
 };
 
-export const setDefaultAddress = async (id: string): Promise<void> => {
-  const existing = await getSavedAddresses();
-  const updated = existing.map((a) => ({ ...a, isDefault: a.id === id }));
-  await AsyncStorage.setItem(ADDRESSES_KEY, JSON.stringify(updated));
+export const setDefaultAddress = async (id: string): Promise<SavedAddress | null> => {
+  return setSelectedAddressId(id);
 };
 
 export const getSelectedAddressId = async (): Promise<string | null> => {
+  const addresses = await readCachedAddresses();
+  const selected = pickSelectedAddress(addresses);
+  if (selected) {
+    return selected.id;
+  }
+
   return AsyncStorage.getItem(SELECTED_ID_KEY);
 };
 
-export const setSelectedAddressId = async (id: string): Promise<void> => {
-  await AsyncStorage.setItem(SELECTED_ID_KEY, id);
+export const setSelectedAddressId = async (id: string): Promise<SavedAddress | null> => {
+  const token = await getValidAccessToken();
+  let addresses = await readCachedAddresses();
+  let target = addresses.find((address) => address.id === id);
+
+  if (!target && token) {
+    addresses = await syncAddressesFromApi();
+    target = addresses.find((address) => address.id === id);
+  }
+
+  if (!target) {
+    throw new Error('Address not found');
+  }
+
+  if (token && isServerAddressId(id)) {
+    if (target.isDefault) {
+      return target;
+    }
+
+    const saved = await updateAddressOnApi(id, { ...target, isDefault: true });
+    const updated = applySelectedId(
+      addresses.some((address) => address.id === saved.id)
+        ? addresses.map((address) => (address.id === saved.id ? saved : address))
+        : [...addresses, saved],
+      id,
+    );
+    await cacheAddresses(updated);
+    return saved;
+  }
+
+  const updated = applySelectedId(addresses, id);
+  await cacheAddresses(updated);
+  return updated.find((address) => address.id === id) ?? null;
 };
 
 export const getSelectedAddress = async (): Promise<SavedAddress | null> => {
-  const selectedId = await AsyncStorage.getItem(SELECTED_ID_KEY);
-  if (!selectedId) return null;
+  const addresses = await readCachedAddresses();
+  const selected = pickSelectedAddress(addresses);
+  if (selected) {
+    return selected;
+  }
 
-  const addresses = await getSavedAddresses();
-  return addresses.find((a) => a.id === selectedId) ?? null;
+  const synced = await syncAddressesFromApi();
+  return pickSelectedAddress(synced);
+};
+
+export type AddressSnapshot = {
+  addresses: SavedAddress[];
+  selectedAddress: SavedAddress | null;
+};
+
+export const loadAddressSnapshot = async (force = false): Promise<AddressSnapshot> => {
+  const token = await getValidAccessToken();
+
+  if (!force) {
+    const cached = await readCachedAddresses();
+    if (cached.length > 0 || !token) {
+      return {
+        addresses: cached,
+        selectedAddress: pickSelectedAddress(cached),
+      };
+    }
+  }
+
+  const addresses = token ? await syncAddressesFromApi() : await readCachedAddresses();
+
+  return {
+    addresses,
+    selectedAddress: pickSelectedAddress(addresses),
+  };
+};
+
+export const readAddressSnapshotFromCache = async (): Promise<AddressSnapshot> => {
+  const addresses = await readCachedAddresses();
+  return {
+    addresses,
+    selectedAddress: pickSelectedAddress(addresses),
+  };
 };

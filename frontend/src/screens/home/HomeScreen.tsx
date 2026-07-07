@@ -112,7 +112,7 @@ const HomeScreen = () => {
 
   useFocusEffect(
     useCallback(() => {
-      void refreshAddresses();
+      void refreshAddresses(false);
     }, [refreshAddresses]),
   );
 

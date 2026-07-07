@@ -9,14 +9,15 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { saveAddress, setSelectedAddressId } from '@/services/addressStorage';
-import type { AddressType, SavedAddress } from '@/types/location.types';
+import { saveAddress } from '@/services/addressStorage';
+import type { AddressType } from '@/types/location.types';
 import type { AuthStackParamList } from '@/navigation/types';
 import theme from '@/styles/theme';
 
@@ -58,8 +59,8 @@ const AddressDetailsScreen = () => {
     setSaving(true);
 
     try {
-      const address: SavedAddress = {
-        id: editAddress?.id ?? Date.now().toString(),
+      const address = {
+        id: editAddress?.id,
         coords: draft.coords,
         addressLine: draft.addressLine,
         flatNumber: flatNumber.trim(),
@@ -68,12 +69,10 @@ const AddressDetailsScreen = () => {
         mobile: mobile.trim(),
         type: addressType,
         customTypeLabel: addressType === 'other' ? customLabel.trim() : '',
-        isDefault: editAddress?.isDefault ?? false,
-        createdAt: editAddress?.createdAt ?? new Date().toISOString(),
+        isDefault: editAddress?.isDefault ?? returnTo === 'Main',
       };
 
       await saveAddress(address);
-      await setSelectedAddressId(address.id);
 
       if (returnTo === 'Main') {
         navigation.reset({
@@ -238,16 +237,20 @@ const AddressDetailsScreen = () => {
         {/* ── Save button ── */}
         <SafeAreaView edges={['bottom']} style={styles.bottomSafe}>
           <TouchableOpacity
-            style={[styles.saveButton, !isValid && styles.saveDisabled]}
+            style={[styles.saveButton, (!isValid || saving) && styles.saveDisabled]}
             onPress={handleSave}
             disabled={!isValid || saving}
             activeOpacity={0.85}
             accessibilityRole="button"
             accessibilityLabel="Save address"
           >
-            <Text style={styles.saveText}>
-              {saving ? 'Saving...' : isEditing ? 'Update address' : 'Save address'}
-            </Text>
+            {saving ? (
+              <ActivityIndicator color={colors.textInverse} />
+            ) : (
+              <Text style={styles.saveText}>
+                {isEditing ? 'Update address' : 'Save address'}
+              </Text>
+            )}
           </TouchableOpacity>
         </SafeAreaView>
       </KeyboardAvoidingView>

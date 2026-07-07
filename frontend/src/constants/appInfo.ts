@@ -1,4 +1,4 @@
-export const APP_SHARE_URL = 'https://sneheal.com/app';
+export const APP_SHARE_URL = 'https://sneheal.com';
 
 export const APP_QR_IMAGE_URI = `https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin=14&data=${encodeURIComponent(APP_SHARE_URL)}`;
 
