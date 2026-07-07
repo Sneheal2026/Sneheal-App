@@ -19,8 +19,12 @@ export type AuthStackParamList = {
   AboutSneheal: undefined;
   MedicineScan: undefined;
   ProductDetails: { productId: string };
-  LocationMap: { editAddress?: SavedAddress } | undefined;
-  AddressDetails: { draft: AddressDraft; editAddress?: SavedAddress };
+  LocationMap: { editAddress?: SavedAddress; returnTo?: 'Main' | 'SavedAddresses' } | undefined;
+  AddressDetails: {
+    draft: AddressDraft;
+    editAddress?: SavedAddress;
+    returnTo?: 'Main' | 'SavedAddresses';
+  };
   SavedAddresses: undefined;
   MedicineReminders: undefined;
   DeliveryAgentMain: undefined;

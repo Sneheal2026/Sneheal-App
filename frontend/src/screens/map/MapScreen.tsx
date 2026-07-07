@@ -30,6 +30,7 @@ const MapScreen = () => {
   const route = useRoute<RouteProp<AuthStackParamList, 'LocationMap'>>();
 
   const editAddress = route.params?.editAddress;
+  const returnTo = route.params?.returnTo ?? 'Main';
 
   const mapRef = useRef<MapView>(null);
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -115,8 +116,9 @@ const MapScreen = () => {
     navigation.navigate('AddressDetails', {
       draft: { coords: pinCoords, addressLine },
       editAddress: editAddress ?? undefined,
+      returnTo,
     });
-  }, [navigation, pinCoords, addressLine, isGeocoding, editAddress]);
+  }, [navigation, pinCoords, addressLine, isGeocoding, editAddress, returnTo]);
 
   if (loading) {
     return <Loader message="Fetching your location..." />;

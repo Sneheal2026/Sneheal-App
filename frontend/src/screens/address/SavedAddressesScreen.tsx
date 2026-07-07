@@ -40,14 +40,17 @@ const SavedAddressesScreen = () => {
   const handleSelect = useCallback(
     async (address: SavedAddress) => {
       await selectAddress(address.id);
-      navigation.navigate('Main');
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Main' }],
+      });
     },
     [selectAddress, navigation],
   );
 
   const handleEdit = useCallback(
     (address: SavedAddress) => {
-      navigation.navigate('LocationMap', { editAddress: address });
+      navigation.navigate('LocationMap', { editAddress: address, returnTo: 'SavedAddresses' });
     },
     [navigation],
   );
@@ -78,7 +81,7 @@ const SavedAddressesScreen = () => {
   );
 
   const handleAddNew = useCallback(() => {
-    navigation.navigate('LocationMap');
+    navigation.navigate('LocationMap', { returnTo: 'SavedAddresses' });
   }, [navigation]);
 
   const renderItem = useCallback(

@@ -56,12 +56,21 @@ function distanceBetween(a: Coords, b: Coords): number {
   return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
 }
 
-function snapToPolyline(point: Coords, polyline: Coords[]): { index: number; snapped: Coords } {
-  let minDist = Infinity;
-  let bestIdx = 0;
-  let bestPoint: Coords = polyline[0];
+/** Snap only near the current route progress — prevents jumping to an earlier parallel segment */
+function snapToPolylineForward(
+  point: Coords,
+  polyline: Coords[],
+  fromIndex: number,
+  lookback = 1,
+): { index: number; snapped: Coords } {
+  if (polyline.length < 2) return { index: 0, snapped: point };
 
-  for (let i = 0; i < polyline.length - 1; i++) {
+  const startIdx = Math.max(0, fromIndex - lookback);
+  let minDist = Infinity;
+  let bestIdx = startIdx;
+  let bestPoint: Coords = polyline[startIdx];
+
+  for (let i = startIdx; i < polyline.length - 1; i++) {
     const a = polyline[i];
     const b = polyline[i + 1];
     const proj = projectOnSegment(point, a, b);
@@ -135,9 +144,32 @@ function extractDetailedRoute(route: any): Coords[] {
     : decodePolyline(route?.overview_polyline?.points ?? '');
 }
 
+function bearingBetween(a: Coords, b: Coords): number {
+  const lat1 = (a.latitude * Math.PI) / 180;
+  const lat2 = (b.latitude * Math.PI) / 180;
+  const dLng = ((b.longitude - a.longitude) * Math.PI) / 180;
+  const y = Math.sin(dLng) * Math.cos(lat2);
+  const x =
+    Math.cos(lat1) * Math.sin(lat2) -
+    Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng);
+  return ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360;
+}
+
+/** Meters travelled from the route start to a snapped point on segment `index` */
+function progressAlongRoute(route: Coords[], index: number, snapped: Coords): number {
+  let d = 0;
+  for (let i = 0; i < index; i++) d += distanceBetween(route[i], route[i + 1]);
+  return d + distanceBetween(route[index], snapped);
+}
+
 // ── Constants ────────────────────────────────────────────────────
 const HUB_REACHED_DISTANCE = 60; // meters
-const ANIMATION_DURATION = 400; // ms
+const MAX_ACCURACY_M = 30; // drop GPS fixes noisier than this
+const MIN_MOVE_M = 2; // ignore micro-jitter between ticks
+// GPS ticks arrive every ~3s while moving — glide across most of the gap
+const ANIMATION_DURATION = 2800; // ms
+const NAV_ZOOM = 18;
+const NAV_PITCH = 48;
 
 // ── Main Screen ──────────────────────────────────────────────────
 
@@ -177,6 +209,17 @@ const DeliveryNavigationScreen = () => {
   const phaseRef = useRef<Phase>('to_hub');
   const hubSheetShownRef = useRef(false);
   const headingRef = useRef(0);
+  const lastProgressRef = useRef(0);
+  const lastRouteIndexRef = useRef(0);
+  const lastDisplayPosRef = useRef<Coords | null>(null);
+  const cameraInitialized = useRef(false);
+
+  const resetRouteProgress = useCallback(() => {
+    lastProgressRef.current = 0;
+    lastRouteIndexRef.current = 0;
+    lastDisplayPosRef.current = null;
+    cameraInitialized.current = false;
+  }, []);
 
   const currentDestination = useMemo(
     () => (phase === 'to_hub' ? MEDICINE_HUB : destination),
@@ -205,6 +248,7 @@ const DeliveryNavigationScreen = () => {
           const leg = data.routes[0].legs[0];
           const points = extractDetailedRoute(data.routes[0]);
           routeRef.current = points;
+          resetRouteProgress();
           setRemainingPolyline(points);
           setEtaText(leg.duration.text);
           setDistText(leg.distance.text);
@@ -213,26 +257,136 @@ const DeliveryNavigationScreen = () => {
         if (__DEV__) console.warn('[DeliveryNav] Route fetch failed:', e);
       }
     },
-    [],
+    [resetRouteProgress],
   );
+
+  const followCamera = useCallback((center: Coords, camHeading: number) => {
+    if (!mapRef.current) return;
+
+    if (!cameraInitialized.current) {
+      cameraInitialized.current = true;
+      mapRef.current.animateCamera(
+        { center, heading: camHeading, zoom: NAV_ZOOM, pitch: NAV_PITCH },
+        { duration: 700 },
+      );
+      return;
+    }
+
+    // Navigation follow — pan + rotate only; never reset zoom/pitch mid-ride
+    mapRef.current.animateCamera(
+      { center, heading: camHeading },
+      { duration: ANIMATION_DURATION },
+    );
+  }, []);
+
+  // ── Trim polyline + ETA from a given position ──────────────────
+  const trimRoute = useCallback((pos: Coords) => {
+    const fullRoute = routeRef.current;
+    if (fullRoute.length < 2) return;
+
+    const { index, snapped } = snapToPolylineForward(
+      pos,
+      fullRoute,
+      lastRouteIndexRef.current,
+      2,
+    );
+    const remaining = [snapped, ...fullRoute.slice(index + 1)];
+    setRemainingPolyline(remaining);
+
+    let totalDist = 0;
+    for (let i = 0; i < remaining.length - 1; i++) {
+      totalDist += distanceBetween(remaining[i], remaining[i + 1]);
+    }
+    setDistText(
+      totalDist > 1000
+        ? `${(totalDist / 1000).toFixed(1)} km`
+        : `${Math.round(totalDist)} m`,
+    );
+    // Estimate ETA (assume ~25 km/h avg for city delivery)
+    const etaMin = Math.ceil(totalDist / (25000 / 60));
+    setEtaText(etaMin > 1 ? `${etaMin} min` : '< 1 min');
+  }, []);
+
+  // Keep the polyline glued to the gliding marker (~5x/sec)
+  useEffect(() => {
+    const region = animatedCoord as any;
+    let lng: number = region.longitude?.__getValue?.() ?? 0;
+    let lastTrim = 0;
+
+    const lngId = region.longitude.addListener(({ value }: { value: number }) => {
+      lng = value;
+    });
+    const latId = region.latitude.addListener(({ value }: { value: number }) => {
+      const now = Date.now();
+      if ((!value && !lng) || now - lastTrim < 180) return; // skip (0,0) + throttle
+      lastTrim = now;
+      trimRoute({ latitude: value, longitude: lng });
+    });
+
+    return () => {
+      region.latitude.removeListener(latId);
+      region.longitude.removeListener(lngId);
+    };
+  }, [animatedCoord, trimRoute]);
 
   // ── Core: called on every GPS tick (reads refs, never stale) ───
   const handleLocationUpdate = useCallback(
     (loc: Location.LocationObject) => {
-      const newPos: Coords = {
+      // Drop noisy fixes — main cause of back-and-forth jumping
+      if ((loc.coords.accuracy ?? 0) > MAX_ACCURACY_M) return;
+
+      const rawPos: Coords = {
         latitude: loc.coords.latitude,
         longitude: loc.coords.longitude,
       };
-      const newHeading = loc.coords.heading ?? 0;
-      headingRef.current = newHeading;
 
-      setAgentPosition(newPos);
+      const last = lastDisplayPosRef.current;
+      if (last && distanceBetween(last, rawPos) < MIN_MOVE_M) return;
+
+      const fullRoute = routeRef.current;
+      let displayPos = rawPos;
+      let newHeading = headingRef.current;
+
+      if (fullRoute.length >= 2) {
+        const { index, snapped } = snapToPolylineForward(
+          rawPos,
+          fullRoute,
+          lastRouteIndexRef.current,
+        );
+
+        if (distanceBetween(rawPos, snapped) <= 50) {
+          const progress = progressAlongRoute(fullRoute, index, snapped);
+
+          // Never move backwards along the route — kills the snap-back glitch
+          if (progress < lastProgressRef.current) return;
+
+          lastProgressRef.current = progress;
+          lastRouteIndexRef.current = index;
+          displayPos = snapped;
+
+          const segEnd = fullRoute[Math.min(index + 1, fullRoute.length - 1)];
+          if (distanceBetween(snapped, segEnd) > 1) {
+            newHeading = bearingBetween(snapped, segEnd);
+          }
+        } else {
+          // Off-route: raw GPS + movement bearing
+          if (last && distanceBetween(last, rawPos) > 3) {
+            newHeading = bearingBetween(last, rawPos);
+          }
+        }
+      } else if (last && distanceBetween(last, rawPos) > 3) {
+        newHeading = bearingBetween(last, rawPos);
+      }
+
+      lastDisplayPosRef.current = displayPos;
+      headingRef.current = newHeading;
+      setAgentPosition(displayPos);
       setHeading(newHeading);
 
-      // Animate marker
+      // Glide from current animated position → next on-road point
       (animatedCoord as any)
         .timing({
-          ...newPos,
+          ...displayPos,
           latitudeDelta: 0.001,
           longitudeDelta: 0.001,
           duration: ANIMATION_DURATION,
@@ -241,40 +395,11 @@ const DeliveryNavigationScreen = () => {
         })
         .start();
 
-      mapRef.current?.animateCamera(
-        { center: newPos, heading: newHeading, zoom: 17, pitch: 20 },
-        { duration: ANIMATION_DURATION },
-      );
+      followCamera(displayPos, newHeading);
 
-      // Trim polyline — always starts exactly at agent position
-      const fullRoute = routeRef.current;
-      if (fullRoute.length >= 2) {
-        const { index, snapped } = snapToPolyline(newPos, fullRoute);
-        // Start from the snapped on-road point so the line hugs the road
-        // instead of cutting straight across buildings from raw GPS.
-        const remaining = [snapped, ...fullRoute.slice(index + 1)];
-        setRemainingPolyline(remaining);
-
-        // Update remaining distance
-        let totalDist = 0;
-        for (let i = 0; i < remaining.length - 1; i++) {
-          totalDist += distanceBetween(remaining[i], remaining[i + 1]);
-        }
-        setDistText(
-          totalDist > 1000
-            ? `${(totalDist / 1000).toFixed(1)} km`
-            : `${Math.round(totalDist)} m`,
-        );
-
-        // Estimate ETA (assume ~25 km/h avg for city delivery)
-        const etaMin = Math.ceil(totalDist / (25000 / 60));
-        setEtaText(etaMin > 1 ? `${etaMin} min` : '< 1 min');
-      }
-
-      // Check hub arrival
+      // Hub arrival uses raw GPS — physical distance matters here
       if (phaseRef.current === 'to_hub' && !hubSheetShownRef.current) {
-        const distToHub = distanceBetween(newPos, MEDICINE_HUB);
-        if (distToHub <= HUB_REACHED_DISTANCE) {
+        if (distanceBetween(rawPos, MEDICINE_HUB) <= HUB_REACHED_DISTANCE) {
           hubSheetShownRef.current = true;
           setShowHubSheet(true);
           RNAnimated.spring(sheetAnim, {
@@ -286,10 +411,9 @@ const DeliveryNavigationScreen = () => {
         }
       }
 
-      // Firebase write (fire-and-forget)
       updateAgentLocation(orderId, {
-        lat: newPos.latitude,
-        lng: newPos.longitude,
+        lat: displayPos.latitude,
+        lng: displayPos.longitude,
         heading: newHeading,
         updatedAt: Date.now(),
         phase: phaseRef.current,
@@ -297,7 +421,7 @@ const DeliveryNavigationScreen = () => {
         if (__DEV__) console.warn('[DeliveryNav] Firebase write failed:', err);
       });
     },
-    [animatedCoord, orderId, sheetAnim],
+    [animatedCoord, followCamera, orderId, sheetAnim],
   );
 
   // Keep a ref so the watcher always calls the latest version
@@ -322,11 +446,14 @@ const DeliveryNavigationScreen = () => {
         longitude: current.coords.longitude,
       };
       setAgentPosition(pos);
+      lastDisplayPosRef.current = pos;
       animatedCoord.setValue({ ...pos, latitudeDelta: 0.001, longitudeDelta: 0.001 });
 
       await fetchRoute(pos, MEDICINE_HUB);
 
       if (!mounted) return;
+
+      followCamera(pos, headingRef.current);
 
       locationSub.current = await Location.watchPositionAsync(
         {
@@ -361,11 +488,12 @@ const DeliveryNavigationScreen = () => {
     setPhase('to_customer');
     routeRef.current = [];
     setRemainingPolyline([]);
+    resetRouteProgress();
 
     if (agentPosition) {
       await fetchRoute(agentPosition, destination);
     }
-  }, [agentPosition, destination, fetchRoute, sheetAnim]);
+  }, [agentPosition, destination, fetchRoute, resetRouteProgress, sheetAnim]);
 
   // ── Open Google Maps for turn-by-turn ──────────────────────────
   const openGoogleMaps = useCallback(() => {
@@ -453,7 +581,7 @@ const DeliveryNavigationScreen = () => {
         {/* Route polyline — key forces native redraw on Android */}
         {remainingPolyline.length > 1 && (
           <Polyline
-            key={`route-${remainingPolyline.length}-${remainingPolyline[0].latitude.toFixed(6)}`}
+            key={`route-${phase}-${remainingPolyline.length}`}
             coordinates={remainingPolyline}
             strokeColor={deliveryTheme.accent}
             strokeWidth={5}

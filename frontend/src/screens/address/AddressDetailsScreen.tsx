@@ -33,7 +33,7 @@ const AddressDetailsScreen = () => {
     useNavigation<NativeStackNavigationProp<AuthStackParamList, 'AddressDetails'>>();
   const route = useRoute<RouteProp<AuthStackParamList, 'AddressDetails'>>();
 
-  const { draft, editAddress } = route.params;
+  const { draft, editAddress, returnTo = 'Main' } = route.params;
 
   const [flatNumber, setFlatNumber] = useState(editAddress?.flatNumber ?? '');
   const [landmark, setLandmark] = useState(editAddress?.landmark ?? '');
@@ -75,7 +75,14 @@ const AddressDetailsScreen = () => {
       await saveAddress(address);
       await setSelectedAddressId(address.id);
 
-      navigation.navigate('SavedAddresses');
+      if (returnTo === 'Main') {
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'Main' }],
+        });
+      } else {
+        navigation.navigate('SavedAddresses');
+      }
     } catch {
       Alert.alert('Error', 'Could not save address. Please try again.');
     } finally {
@@ -83,7 +90,7 @@ const AddressDetailsScreen = () => {
     }
   }, [
     isValid, saving, editAddress, draft, flatNumber, landmark,
-    receiverName, mobile, addressType, customLabel, navigation,
+    receiverName, mobile, addressType, customLabel, navigation, returnTo,
   ]);
 
   return (

@@ -108,7 +108,7 @@ const HomeScreen = () => {
   }, [navigation]);
 
   const { status: locationStatus, location, refresh: refreshLocation } = useLiveLocation(true);
-  const { selectedAddress, refresh: refreshAddresses } = useSavedAddresses();
+  const { addresses, selectedAddress, refresh: refreshAddresses } = useSavedAddresses();
 
   useFocusEffect(
     useCallback(() => {
@@ -131,14 +131,21 @@ const HomeScreen = () => {
     return location?.shortLabel;
   }, [selectedAddress, location?.shortLabel]);
 
-  const handleOpenMap = useCallback(() => {
-    if (locationStatus === 'error' && !selectedAddress) {
+  const handleLocationPress = useCallback(() => {
+    if (locationStatus === 'error' && addresses.length === 0 && !selectedAddress) {
       void refreshLocation();
       return;
     }
+
     const parent = navigation.getParent<NativeStackNavigationProp<AuthStackParamList>>();
-    parent?.navigate('LocationMap');
-  }, [navigation, locationStatus, refreshLocation, selectedAddress]);
+
+    if (addresses.length > 0) {
+      parent?.navigate('SavedAddresses');
+      return;
+    }
+
+    parent?.navigate('LocationMap', { returnTo: 'Main' });
+  }, [navigation, locationStatus, refreshLocation, selectedAddress, addresses.length]);
 
   const contentTopInset = Math.max(
     insets.top,
@@ -275,7 +282,7 @@ const HomeScreen = () => {
             onNotificationsPress={handleOpenNotifications}
             addressLabel={addressLabel}
             addressTag={addressTag}
-            onLocationPress={handleOpenMap}
+            onLocationPress={handleLocationPress}
             onUploadScanPress={handleUploadScan}
           />
 
