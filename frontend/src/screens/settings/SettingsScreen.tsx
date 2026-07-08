@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   View,
   Text,
@@ -8,7 +8,8 @@ import {
   Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -16,6 +17,9 @@ import Constants from 'expo-constants';
 import SettingsListItem from '@/components/settings/SettingsListItem';
 import SettingsQuickAction from '@/components/settings/SettingsQuickAction';
 import theme from '@/styles/theme';
+import type { AuthStackParamList } from '@/navigation/types';
+import { getLanguageLabel } from '@/constants/languages';
+import { getAppLanguage } from '@/services/languageStorage';
 
 const { colors, spacing, typography, borderRadius, shadows } = theme;
 
@@ -45,13 +49,38 @@ const HEALTH_ITEMS = [
 const ACCOUNT_ITEMS = [
   { id: 'share', icon: 'share-outline' as const, label: 'Share the app' },
   { id: 'about', icon: 'information-circle-outline' as const, label: 'About Sneheal' },
-  { id: 'privacy', icon: 'lock-closed-outline' as const, label: 'Account privacy' },
-  { id: 'notifications', icon: 'notifications-outline' as const, label: 'Notification preferences' },
+  { id: 'language', icon: 'language-outline' as const, label: 'Language settings' },
   { id: 'logout', icon: 'log-out-outline' as const, label: 'Log out', destructive: true },
 ];
 
+const DEMO_ORDER = {
+  orderId: '#SNH-4821',
+  customerAddress: 'Nizamabad Bus Stop, Nizamabad, Telangana',
+  customerCoords: { latitude: 18.6725, longitude: 78.0941 },
+} as const;
+
 const SettingsScreen = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NativeStackNavigationProp<AuthStackParamList>>();
+  const [currentLanguageLabel, setCurrentLanguageLabel] = useState('English');
+
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+
+      const loadLanguage = async () => {
+        const language = await getAppLanguage();
+        if (active) {
+          setCurrentLanguageLabel(getLanguageLabel(language));
+        }
+      };
+
+      void loadLanguage();
+
+      return () => {
+        active = false;
+      };
+    }, []),
+  );
 
   const handleItemPress = (id: string) => {
     if (id === 'addresses') {
@@ -64,7 +93,25 @@ const SettingsScreen = () => {
       navigation.navigate('ShareApp' as never);
     } else if (id === 'about') {
       navigation.navigate('AboutSneheal' as never);
+    } else if (id === 'language') {
+      navigation.navigate('LanguageSettings');
     }
+  };
+
+  const demoNavigateCustomer = () => {
+    navigation.navigate('CustomerTracking', {
+      orderId: DEMO_ORDER.orderId,
+      customerCoords: DEMO_ORDER.customerCoords,
+      customerAddress: DEMO_ORDER.customerAddress,
+    });
+  };
+
+  const demoNavigateDelivery = () => {
+    navigation.navigate('DeliveryNavigation', {
+      orderId: DEMO_ORDER.orderId,
+      customerAddress: DEMO_ORDER.customerAddress,
+      customerCoords: DEMO_ORDER.customerCoords,
+    });
   };
 
   return (
@@ -141,22 +188,6 @@ const SettingsScreen = () => {
             ))}
           </Animated.View>
 
-          <Animated.View entering={FadeInDown.delay(140).duration(400)}>
-            <Pressable
-              onPress={() => handleItemPress('appearance')}
-              style={({ pressed }) => [styles.appearanceCard, pressed && styles.cardPressed]}
-            >
-              <View style={styles.appearanceLeft}>
-                <Ionicons name="sunny-outline" size={18} color={colors.textPrimary} />
-                <Text style={styles.appearanceLabel}>Appearance</Text>
-              </View>
-              <View style={styles.appearanceRight}>
-                <Text style={styles.appearanceValue}>LIGHT</Text>
-                <Ionicons name="chevron-down" size={14} color={colors.textMuted} />
-              </View>
-            </Pressable>
-          </Animated.View>
-
           <Animated.View entering={FadeInDown.delay(180).duration(400)}>
             <Text style={styles.sectionHeading}>Your information</Text>
             <View style={styles.card}>
@@ -198,8 +229,35 @@ const SettingsScreen = () => {
                   onPress={() => handleItemPress(item.id)}
                   showDivider={index < ACCOUNT_ITEMS.length - 1}
                   destructive={'destructive' in item && item.destructive}
+                  trailing={
+                    item.id === 'language' ? (
+                      <View style={styles.languageTrailing}>
+                        <Text style={styles.languageTrailingText}>{currentLanguageLabel}</Text>
+                        <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+                      </View>
+                    ) : undefined
+                  }
                 />
               ))}
+
+              <View style={styles.demoActionsBlock}>
+                <View style={styles.demoActions}>
+                  <Pressable onPress={demoNavigateCustomer} style={styles.demoCustomerBtn}>
+                    <Ionicons name="bicycle" size={18} color="#fff" />
+                    <Text style={styles.demoBtnText}>Customer</Text>
+                  </Pressable>
+
+                  <Pressable
+                    onPress={demoNavigateDelivery}
+                    style={styles.demoDeliveryBtn}
+                  >
+                    <Ionicons name="navigate" size={18} color={colors.primary} />
+                    <Text style={[styles.demoBtnText, { color: colors.primary }]}>
+                      Delivery Agent
+                    </Text>
+                  </Pressable>
+                </View>
+              </View>
             </View>
           </Animated.View>
 
@@ -321,40 +379,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.sm,
   },
-  appearanceCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: colors.white,
-    borderRadius: borderRadius.lg,
-    paddingVertical: spacing.md + 2,
-    paddingHorizontal: spacing.lg,
-    ...shadows.sm,
-  },
-  cardPressed: {
-    opacity: 0.75,
-  },
-  appearanceLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-  },
-  appearanceLabel: {
-    ...typography.bodySmall,
-    fontWeight: '500',
-    color: colors.textPrimary,
-  },
-  appearanceRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  appearanceValue: {
-    ...typography.caption,
-    fontWeight: '700',
-    color: colors.textSecondary,
-    letterSpacing: 0.5,
-  },
   sectionHeading: {
     ...typography.bodySmall,
     fontWeight: '700',
@@ -390,6 +414,59 @@ const styles = StyleSheet.create({
   versionText: {
     ...typography.caption,
     color: colors.textMuted,
+  },
+  languageTrailing: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  languageTrailingText: {
+    ...typography.caption,
+    fontWeight: '600',
+    color: colors.textSecondary,
+  },
+
+  demoActionsBlock: {
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.lg,
+    borderTopWidth: 1,
+    borderTopColor: colors.borderLight,
+    marginTop: spacing.lg,
+  },
+  demoActions: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  demoCustomerBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.primary,
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.lg,
+    ...shadows.sm,
+  },
+  demoDeliveryBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.surface,
+    borderWidth: 1.5,
+    borderColor: colors.primary,
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.lg,
+    ...shadows.sm,
+  },
+  demoBtnText: {
+    ...typography.button,
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#fff',
   },
 });
 
