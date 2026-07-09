@@ -14,6 +14,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import {
   COLOR_THEME_OPTIONS,
+  getColorThemeSwatch,
   type ColorThemeId,
 } from '@/constants/colorThemes';
 import { useTheme } from '@/hooks/useTheme';
@@ -289,7 +290,7 @@ const ColorSettingsScreen = () => {
                     accessibilityState={{ selected: isSelected }}
                     accessibilityLabel={`${option.label}, ${option.primary}`}
                   >
-                    <View style={[styles.swatch, { backgroundColor: option.primary }]}>
+                    <View style={[styles.swatch, { backgroundColor: getColorThemeSwatch(option) }]}>
                       {isSelected ? (
                         <Ionicons name="checkmark" size={20} color={colors.white} />
                       ) : null}

@@ -19,7 +19,7 @@ import SettingsQuickAction from '@/components/settings/SettingsQuickAction';
 import theme from '@/styles/theme';
 import type { AuthStackParamList } from '@/navigation/types';
 import { getLanguageLabel } from '@/constants/languages';
-import { getColorThemeOption } from '@/constants/colorThemes';
+import { getColorThemeOption, getColorThemeSwatch } from '@/constants/colorThemes';
 import { getAppLanguage } from '@/services/languageStorage';
 import { useTheme } from '@/hooks/useTheme';
 
@@ -247,7 +247,7 @@ const SettingsScreen = () => {
                         <View
                           style={[
                             styles.colorSwatch,
-                            { backgroundColor: getColorThemeOption(colorThemeId).primary },
+                            { backgroundColor: getColorThemeSwatch(getColorThemeOption(colorThemeId)) },
                           ]}
                         />
                         <Text style={styles.languageTrailingText}>{currentColorLabel}</Text>

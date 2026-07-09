@@ -64,3 +64,25 @@ export const mixWithWhite = (hex: string, weight: number): string => {
     b: mix(b, 255, weight),
   });
 };
+
+export const getRelativeLuminance = (hex: string): number => {
+  const { r, g, b } = parseHex(hex);
+  const toLinear = (channel: number) => {
+    const normalized = channel / 255;
+    return normalized <= 0.03928
+      ? normalized / 12.92
+      : ((normalized + 0.055) / 1.055) ** 2.4;
+  };
+
+  const red = toLinear(r);
+  const green = toLinear(g);
+  const blue = toLinear(b);
+
+  return 0.2126 * red + 0.7152 * green + 0.0722 * blue;
+};
+
+export const isPastelColor = (hex: string): boolean => getRelativeLuminance(hex) > 0.62;
+
+/** Darkens very light pastels so buttons and labels stay readable. */
+export const ensureReadablePrimary = (hex: string): string =>
+  isPastelColor(hex) ? darken(hex, 42) : hex;
