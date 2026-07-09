@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   View,
   Text,
@@ -7,13 +7,7 @@ import {
   ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import theme from '@/styles/theme';
-
-const { colors, spacing, typography, moderateScale } = theme;
-
-const HEADER_BLUE = colors.primary;
-const HEADER_BLUE_SOFT = '#5B8FD9';
-const HEADER_BLUE_BORDER = 'rgba(26, 115, 232, 0.14)';
+import { useTheme } from '@/hooks/useTheme';
 
 export interface ScreenHeaderProps {
   title: string;
@@ -32,6 +26,59 @@ const ScreenHeader: React.FC<ScreenHeaderProps> = ({
   style,
   containerStyle,
 }) => {
+  const { colors, spacing, typography, moderateScale } = useTheme();
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        container: {
+          backgroundColor: colors.white,
+          borderBottomWidth: 1,
+          borderBottomColor: colors.primaryMutedMedium,
+        },
+        header: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          paddingHorizontal: spacing.xl,
+          paddingTop: spacing.md,
+          paddingBottom: spacing.md,
+          backgroundColor: colors.white,
+        },
+        textBlock: {
+          flex: 1,
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: spacing.sm,
+        },
+        accentBar: {
+          width: 4,
+          height: moderateScale(36, 0.35),
+          borderRadius: 4,
+          backgroundColor: colors.primary,
+        },
+        textContent: {
+          flex: 1,
+        },
+        title: {
+          fontSize: moderateScale(22, 0.35),
+          fontWeight: '800',
+          color: colors.primaryDark,
+          letterSpacing: -0.3,
+        },
+        subtitle: {
+          ...typography.caption,
+          color: colors.primaryLight,
+          marginTop: 2,
+          fontWeight: '500',
+        },
+        right: {
+          marginLeft: spacing.md,
+        },
+      }),
+    [colors, moderateScale, spacing, typography],
+  );
+
   const header = (
     <View style={[styles.header, style]}>
       <View style={styles.textBlock}>
@@ -55,52 +102,5 @@ const ScreenHeader: React.FC<ScreenHeaderProps> = ({
     </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: colors.white,
-    borderBottomWidth: 1,
-    borderBottomColor: HEADER_BLUE_BORDER,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.md,
-    backgroundColor: colors.white,
-  },
-  textBlock: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  accentBar: {
-    width: 4,
-    height: moderateScale(36, 0.35),
-    borderRadius: 4,
-    backgroundColor: HEADER_BLUE,
-  },
-  textContent: {
-    flex: 1,
-  },
-  title: {
-    fontSize: moderateScale(22, 0.35),
-    fontWeight: '800',
-    color: colors.primaryDark,
-    letterSpacing: -0.3,
-  },
-  subtitle: {
-    ...typography.caption,
-    color: HEADER_BLUE_SOFT,
-    marginTop: 2,
-    fontWeight: '500',
-  },
-  right: {
-    marginLeft: spacing.md,
-  },
-});
 
 export default ScreenHeader;

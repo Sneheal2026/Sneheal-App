@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   View,
   Text,
@@ -13,9 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import Constants from 'expo-constants';
-import theme from '@/styles/theme';
-
-const { colors, spacing, typography, borderRadius, shadows, moderateScale } = theme;
+import { useTheme } from '@/hooks/useTheme';
 
 const APP_VERSION = Constants.expoConfig?.version ?? '1.0.0';
 const APP_ICON = require('../../../assets/images/icon.png');
@@ -26,34 +24,34 @@ const STATS = [
   { value: 'Fast', label: 'Delivery' },
 ];
 
-const HIGHLIGHTS = [
+const HIGHLIGHTS_BASE = [
   {
     icon: 'flash' as const,
     title: 'Lightning delivery',
     desc: 'Medicines at your doorstep, often within hours.',
     gradient: ['#FEF3C7', '#FFFBEB'] as const,
-    accent: colors.warning,
+    accentKey: 'warning' as const,
   },
   {
     icon: 'scan' as const,
     title: 'Smart Rx scan',
     desc: 'Upload prescriptions and order in a few taps.',
     gradient: ['#DBEAFE', '#EFF6FF'] as const,
-    accent: colors.primary,
+    accentKey: 'primary' as const,
   },
   {
     icon: 'shield-checkmark' as const,
     title: 'Trusted & safe',
     desc: 'Genuine medicines from verified pharmacies.',
     gradient: ['#D1FAE5', '#ECFDF5'] as const,
-    accent: colors.success,
+    accentKey: 'success' as const,
   },
   {
     icon: 'heart' as const,
     title: 'Care first',
     desc: 'Built around your health, not just orders.',
     gradient: ['#F3E8FF', '#FAF5FF'] as const,
-    accent: colors.accentPurple,
+    accentKey: 'accentPurple' as const,
   },
 ];
 
@@ -65,6 +63,305 @@ const VALUES = [
 
 const AboutSnehealScreen = () => {
   const navigation = useNavigation();
+  const { colors, spacing, typography, borderRadius, shadows, moderateScale } = useTheme();
+
+  const highlights = useMemo(
+    () =>
+      HIGHLIGHTS_BASE.map((item) => ({
+        ...item,
+        gradient:
+          item.accentKey === 'primary'
+            ? ([colors.infoLight, colors.primarySurface] as const)
+            : item.gradient,
+        accent: colors[item.accentKey],
+      })),
+    [colors],
+  );
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        root: {
+          flex: 1,
+          backgroundColor: colors.surfaceSecondary,
+        },
+        scroll: {
+          flex: 1,
+        },
+        scrollContent: {
+          paddingBottom: spacing.xxxxxl,
+        },
+        heroGradient: {
+          paddingBottom: spacing.xxxl,
+          borderBottomLeftRadius: borderRadius.xxl,
+          borderBottomRightRadius: borderRadius.xxl,
+          overflow: 'hidden',
+        },
+        heroOrb1: {
+          position: 'absolute',
+          top: -30,
+          right: -20,
+          width: 140,
+          height: 140,
+          borderRadius: 70,
+          backgroundColor: 'rgba(255,255,255,0.1)',
+        },
+        heroOrb2: {
+          position: 'absolute',
+          bottom: 20,
+          left: -40,
+          width: 120,
+          height: 120,
+          borderRadius: 60,
+          backgroundColor: 'rgba(255,255,255,0.08)',
+        },
+        header: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          paddingHorizontal: spacing.lg,
+          paddingVertical: spacing.md,
+        },
+        backBtn: {
+          width: 40,
+          height: 40,
+          borderRadius: 20,
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: 'rgba(255,255,255,0.2)',
+          borderWidth: 1,
+          borderColor: 'rgba(255,255,255,0.25)',
+        },
+        headerTitle: {
+          flex: 1,
+          textAlign: 'center',
+          fontSize: moderateScale(17),
+          fontWeight: '700',
+          color: colors.white,
+        },
+        headerSpacer: {
+          width: 40,
+        },
+        brandBlock: {
+          alignItems: 'center',
+          paddingHorizontal: spacing.xl,
+          paddingTop: spacing.md,
+          gap: spacing.sm,
+        },
+        iconGlow: {
+          padding: 8,
+          borderRadius: borderRadius.xxl,
+          backgroundColor: 'rgba(255,255,255,0.12)',
+          marginBottom: spacing.xs,
+        },
+        iconRing: {
+          padding: 6,
+          borderRadius: borderRadius.xl,
+          backgroundColor: colors.white,
+          ...shadows.lg,
+        },
+        appIcon: {
+          width: 76,
+          height: 76,
+          borderRadius: 18,
+        },
+        brandName: {
+          fontSize: moderateScale(32),
+          fontWeight: '800',
+          color: colors.white,
+          letterSpacing: -1.2,
+        },
+        brandTagline: {
+          ...typography.bodySmall,
+          color: 'rgba(255,255,255,0.9)',
+          fontWeight: '500',
+        },
+        versionPill: {
+          marginTop: spacing.xs,
+          paddingHorizontal: spacing.md,
+          paddingVertical: spacing.xs,
+          borderRadius: borderRadius.full,
+          backgroundColor: 'rgba(255,255,255,0.18)',
+          borderWidth: 1,
+          borderColor: 'rgba(255,255,255,0.25)',
+        },
+        versionPillText: {
+          ...typography.caption,
+          fontWeight: '700',
+          color: colors.white,
+          letterSpacing: 0.5,
+        },
+        body: {
+          paddingHorizontal: spacing.xl,
+          marginTop: -spacing.lg,
+          gap: spacing.xl,
+        },
+        statsRow: {
+          flexDirection: 'row',
+          gap: spacing.sm,
+        },
+        statCard: {
+          flex: 1,
+          alignItems: 'center',
+          backgroundColor: colors.white,
+          borderRadius: borderRadius.lg,
+          paddingVertical: spacing.md,
+          paddingHorizontal: spacing.xs,
+          ...shadows.md,
+        },
+        statValue: {
+          fontSize: moderateScale(16),
+          fontWeight: '800',
+          color: colors.primary,
+          letterSpacing: -0.3,
+        },
+        statLabel: {
+          ...typography.caption,
+          color: colors.textSecondary,
+          fontWeight: '600',
+          marginTop: 2,
+          textAlign: 'center',
+        },
+        missionCard: {
+          backgroundColor: colors.white,
+          borderRadius: borderRadius.xl,
+          padding: spacing.xl,
+          overflow: 'hidden',
+          ...shadows.sm,
+        },
+        missionAccent: {
+          position: 'absolute',
+          left: 0,
+          top: 0,
+          bottom: 0,
+          width: 4,
+          backgroundColor: colors.secondary,
+          borderTopLeftRadius: borderRadius.xl,
+          borderBottomLeftRadius: borderRadius.xl,
+        },
+        missionQuoteMark: {
+          fontSize: 48,
+          fontWeight: '800',
+          color: colors.primaryMuted,
+          lineHeight: 48,
+          marginBottom: -spacing.md,
+        },
+        missionTitle: {
+          ...typography.bodySmall,
+          fontWeight: '800',
+          color: colors.textPrimary,
+          marginBottom: spacing.sm,
+          letterSpacing: -0.2,
+        },
+        missionText: {
+          ...typography.bodySmall,
+          color: colors.textSecondary,
+          lineHeight: 23,
+          fontWeight: '500',
+        },
+        sectionLabel: {
+          fontSize: moderateScale(13),
+          fontWeight: '800',
+          color: colors.textMuted,
+          letterSpacing: 1.2,
+          textTransform: 'uppercase',
+          marginBottom: spacing.sm,
+        },
+        highlightsGrid: {
+          flexDirection: 'row',
+          flexWrap: 'wrap',
+          gap: spacing.sm,
+        },
+        highlightCard: {
+          width: '48%',
+          flexGrow: 1,
+          borderRadius: borderRadius.xl,
+          overflow: 'hidden',
+          minHeight: 140,
+          ...shadows.sm,
+        },
+        highlightContent: {
+          padding: spacing.md,
+          gap: spacing.xs,
+          flex: 1,
+        },
+        highlightIcon: {
+          width: 44,
+          height: 44,
+          borderRadius: 14,
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginBottom: spacing.xxs,
+        },
+        highlightTitle: {
+          ...typography.bodySmall,
+          fontWeight: '800',
+          color: colors.textPrimary,
+          letterSpacing: -0.2,
+        },
+        highlightDesc: {
+          ...typography.caption,
+          color: colors.textSecondary,
+          lineHeight: 17,
+          fontWeight: '500',
+        },
+        valuesCard: {
+          backgroundColor: colors.white,
+          borderRadius: borderRadius.xl,
+          padding: spacing.lg,
+          gap: spacing.md,
+          ...shadows.sm,
+        },
+        valuesTitle: {
+          ...typography.bodySmall,
+          fontWeight: '800',
+          color: colors.textPrimary,
+          letterSpacing: -0.2,
+        },
+        valueRow: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: spacing.md,
+        },
+        valueIconWrap: {
+          width: 36,
+          height: 36,
+          borderRadius: 12,
+          alignItems: 'center',
+          justifyContent: 'center',
+        },
+        valueText: {
+          flex: 1,
+          ...typography.bodySmall,
+          color: colors.textSecondary,
+          lineHeight: 22,
+          fontWeight: '600',
+        },
+        footer: {
+          alignItems: 'center',
+          gap: spacing.xs,
+          paddingTop: spacing.sm,
+          paddingBottom: spacing.lg,
+        },
+        footerHeart: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: spacing.xs,
+        },
+        footerBrand: {
+          ...typography.caption,
+          fontWeight: '700',
+          color: colors.textSecondary,
+        },
+        footerCopy: {
+          ...typography.caption,
+          color: colors.textMuted,
+        },
+        pressed: {
+          opacity: 0.7,
+        },
+      }),
+    [borderRadius, colors, moderateScale, shadows, spacing, typography],
+  );
 
   return (
     <View style={styles.root}>
@@ -74,7 +371,7 @@ const AboutSnehealScreen = () => {
         showsVerticalScrollIndicator={false}
       >
         <LinearGradient
-          colors={['#0F766E', '#1A73E8', '#4A9CF5']}
+          colors={[colors.secondary, colors.primary, colors.primaryLight]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.heroGradient}
@@ -135,7 +432,7 @@ const AboutSnehealScreen = () => {
           <Animated.View entering={FadeInDown.delay(140).duration(450)}>
             <Text style={styles.sectionLabel}>What we offer</Text>
             <View style={styles.highlightsGrid}>
-              {HIGHLIGHTS.map((item, index) => (
+              {highlights.map((item, index) => (
                 <Animated.View
                   key={item.title}
                   entering={FadeIn.delay(180 + index * 50).duration(350)}
@@ -186,286 +483,5 @@ const AboutSnehealScreen = () => {
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: colors.surfaceSecondary,
-  },
-  scroll: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingBottom: spacing.xxxxxl,
-  },
-  heroGradient: {
-    paddingBottom: spacing.xxxl,
-    borderBottomLeftRadius: borderRadius.xxl,
-    borderBottomRightRadius: borderRadius.xxl,
-    overflow: 'hidden',
-  },
-  heroOrb1: {
-    position: 'absolute',
-    top: -30,
-    right: -20,
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-  },
-  heroOrb2: {
-    position: 'absolute',
-    bottom: 20,
-    left: -40,
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-  },
-  backBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.25)',
-  },
-  headerTitle: {
-    flex: 1,
-    textAlign: 'center',
-    fontSize: moderateScale(17),
-    fontWeight: '700',
-    color: colors.white,
-  },
-  headerSpacer: {
-    width: 40,
-  },
-  brandBlock: {
-    alignItems: 'center',
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.md,
-    gap: spacing.sm,
-  },
-  iconGlow: {
-    padding: 8,
-    borderRadius: borderRadius.xxl,
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    marginBottom: spacing.xs,
-  },
-  iconRing: {
-    padding: 6,
-    borderRadius: borderRadius.xl,
-    backgroundColor: colors.white,
-    ...shadows.lg,
-  },
-  appIcon: {
-    width: 76,
-    height: 76,
-    borderRadius: 18,
-  },
-  brandName: {
-    fontSize: moderateScale(32),
-    fontWeight: '800',
-    color: colors.white,
-    letterSpacing: -1.2,
-  },
-  brandTagline: {
-    ...typography.bodySmall,
-    color: 'rgba(255,255,255,0.9)',
-    fontWeight: '500',
-  },
-  versionPill: {
-    marginTop: spacing.xs,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    borderRadius: borderRadius.full,
-    backgroundColor: 'rgba(255,255,255,0.18)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.25)',
-  },
-  versionPillText: {
-    ...typography.caption,
-    fontWeight: '700',
-    color: colors.white,
-    letterSpacing: 0.5,
-  },
-  body: {
-    paddingHorizontal: spacing.xl,
-    marginTop: -spacing.lg,
-    gap: spacing.xl,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  statCard: {
-    flex: 1,
-    alignItems: 'center',
-    backgroundColor: colors.white,
-    borderRadius: borderRadius.lg,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.xs,
-    ...shadows.md,
-  },
-  statValue: {
-    fontSize: moderateScale(16),
-    fontWeight: '800',
-    color: colors.primary,
-    letterSpacing: -0.3,
-  },
-  statLabel: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    fontWeight: '600',
-    marginTop: 2,
-    textAlign: 'center',
-  },
-  missionCard: {
-    backgroundColor: colors.white,
-    borderRadius: borderRadius.xl,
-    padding: spacing.xl,
-    overflow: 'hidden',
-    ...shadows.sm,
-  },
-  missionAccent: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    bottom: 0,
-    width: 4,
-    backgroundColor: colors.secondary,
-    borderTopLeftRadius: borderRadius.xl,
-    borderBottomLeftRadius: borderRadius.xl,
-  },
-  missionQuoteMark: {
-    fontSize: 48,
-    fontWeight: '800',
-    color: `${colors.primary}18`,
-    lineHeight: 48,
-    marginBottom: -spacing.md,
-  },
-  missionTitle: {
-    ...typography.bodySmall,
-    fontWeight: '800',
-    color: colors.textPrimary,
-    marginBottom: spacing.sm,
-    letterSpacing: -0.2,
-  },
-  missionText: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
-    lineHeight: 23,
-    fontWeight: '500',
-  },
-  sectionLabel: {
-    fontSize: moderateScale(13),
-    fontWeight: '800',
-    color: colors.textMuted,
-    letterSpacing: 1.2,
-    textTransform: 'uppercase',
-    marginBottom: spacing.sm,
-  },
-  highlightsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-  },
-  highlightCard: {
-    width: '48%',
-    flexGrow: 1,
-    borderRadius: borderRadius.xl,
-    overflow: 'hidden',
-    minHeight: 140,
-    ...shadows.sm,
-  },
-  highlightContent: {
-    padding: spacing.md,
-    gap: spacing.xs,
-    flex: 1,
-  },
-  highlightIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.xxs,
-  },
-  highlightTitle: {
-    ...typography.bodySmall,
-    fontWeight: '800',
-    color: colors.textPrimary,
-    letterSpacing: -0.2,
-  },
-  highlightDesc: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    lineHeight: 17,
-    fontWeight: '500',
-  },
-  valuesCard: {
-    backgroundColor: colors.white,
-    borderRadius: borderRadius.xl,
-    padding: spacing.lg,
-    gap: spacing.md,
-    ...shadows.sm,
-  },
-  valuesTitle: {
-    ...typography.bodySmall,
-    fontWeight: '800',
-    color: colors.textPrimary,
-    letterSpacing: -0.2,
-  },
-  valueRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-  },
-  valueIconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  valueText: {
-    flex: 1,
-    ...typography.bodySmall,
-    color: colors.textSecondary,
-    lineHeight: 22,
-    fontWeight: '600',
-  },
-  footer: {
-    alignItems: 'center',
-    gap: spacing.xs,
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.lg,
-  },
-  footerHeart: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  footerBrand: {
-    ...typography.caption,
-    fontWeight: '700',
-    color: colors.textSecondary,
-  },
-  footerCopy: {
-    ...typography.caption,
-    color: colors.textMuted,
-  },
-  pressed: {
-    opacity: 0.7,
-  },
-});
 
 export default AboutSnehealScreen;

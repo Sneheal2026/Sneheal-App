@@ -12,51 +12,19 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import type { AppLanguage } from '@/navigation/types';
-import { LANGUAGE_OPTIONS } from '@/constants/languages';
-import { getAppLanguage, saveAppLanguage } from '@/services/languageStorage';
+import {
+  COLOR_THEME_OPTIONS,
+  type ColorThemeId,
+} from '@/constants/colorThemes';
 import { useTheme } from '@/hooks/useTheme';
 
-const LanguageSettingsScreen = () => {
+const ColorSettingsScreen = () => {
   const navigation = useNavigation();
-  const { colors, spacing, typography, borderRadius, shadows, moderateScale, gradients } = useTheme();
-  const [selected, setSelected] = useState<AppLanguage | null>(null);
+  const { colors, spacing, typography, borderRadius, shadows, moderateScale, gradients, colorThemeId, setColorTheme } =
+    useTheme();
+  const [selected, setSelected] = useState<ColorThemeId | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-
-  useFocusEffect(
-    useCallback(() => {
-      let active = true;
-
-      const loadLanguage = async () => {
-        setLoading(true);
-        const language = await getAppLanguage();
-        if (active) {
-          setSelected(language);
-          setLoading(false);
-        }
-      };
-
-      void loadLanguage();
-
-      return () => {
-        active = false;
-      };
-    }, []),
-  );
-
-  const handleSelect = async (language: AppLanguage) => {
-    if (saving || selected === language) return;
-
-    setSaving(true);
-    setSelected(language);
-
-    try {
-      await saveAppLanguage(language);
-    } finally {
-      setSaving(false);
-    }
-  };
 
   const styles = useMemo(
     () =>
@@ -165,47 +133,39 @@ const LanguageSettingsScreen = () => {
           backgroundColor: colors.primarySurface,
           ...shadows.md,
         },
-        scriptBadge: {
+        swatch: {
           width: moderateScale(48),
           height: moderateScale(48),
           borderRadius: moderateScale(14),
-          backgroundColor: colors.surfaceSecondary,
           alignItems: 'center',
           justifyContent: 'center',
-        },
-        scriptBadgeSelected: {
-          backgroundColor: colors.infoLight,
-        },
-        scriptText: {
-          fontSize: moderateScale(20),
-          fontWeight: '800',
-          color: colors.textSecondary,
-        },
-        scriptTextSelected: {
-          color: colors.primary,
+          borderWidth: 2,
+          borderColor: colors.white,
+          ...shadows.sm,
         },
         optionTextBlock: {
           flex: 1,
           minWidth: 0,
           gap: 2,
         },
-        nativeLabel: {
-          fontSize: moderateScale(18),
+        optionLabel: {
+          fontSize: moderateScale(17),
           fontWeight: '800',
           color: colors.textPrimary,
           letterSpacing: -0.2,
         },
-        nativeLabelSelected: {
+        optionLabelSelected: {
           color: colors.primary,
-        },
-        englishLabel: {
-          ...typography.bodySmall,
-          fontWeight: '600',
-          color: colors.textSecondary,
         },
         optionDescription: {
           ...typography.caption,
           color: colors.textMuted,
+          marginTop: 2,
+        },
+        colorCode: {
+          ...typography.caption,
+          fontWeight: '600',
+          color: colors.textSecondary,
           marginTop: 2,
         },
         radioOuter: {
@@ -242,6 +202,26 @@ const LanguageSettingsScreen = () => {
     [borderRadius, colors, moderateScale, shadows, spacing, typography],
   );
 
+  useFocusEffect(
+    useCallback(() => {
+      setSelected(colorThemeId);
+      setLoading(false);
+    }, [colorThemeId]),
+  );
+
+  const handleSelect = async (themeId: ColorThemeId) => {
+    if (saving || selected === themeId) return;
+
+    setSaving(true);
+    setSelected(themeId);
+
+    try {
+      await setColorTheme(themeId);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <View style={styles.root}>
       <LinearGradient
@@ -260,18 +240,18 @@ const LanguageSettingsScreen = () => {
             >
               <Ionicons name="arrow-back" size={20} color={colors.textPrimary} />
             </Pressable>
-            <Text style={styles.headerTitle}>Language settings</Text>
+            <Text style={styles.headerTitle}>Color theme</Text>
             <View style={styles.headerSpacer} />
           </View>
 
           <Animated.View entering={FadeInDown.duration(400)} style={styles.heroCard}>
             <View style={styles.heroIconWrap}>
-              <Ionicons name="language" size={26} color={colors.primary} />
+              <Ionicons name="color-palette" size={26} color={colors.primary} />
             </View>
             <View style={styles.heroTextBlock}>
-              <Text style={styles.heroTitle}>Choose your language</Text>
+              <Text style={styles.heroTitle}>Personalize Sneheal</Text>
               <Text style={styles.heroSubtitle}>
-                Select how you want Sneheal to appear across the app.
+                Pick an accent color. It updates buttons, headers, and highlights across the app.
               </Text>
             </View>
           </Animated.View>
@@ -289,16 +269,16 @@ const LanguageSettingsScreen = () => {
           </View>
         ) : (
           <Animated.View entering={FadeInDown.delay(80).duration(400)} style={styles.optionsList}>
-            {LANGUAGE_OPTIONS.map((option, index) => {
-              const isSelected = selected === option.value;
+            {COLOR_THEME_OPTIONS.map((option, index) => {
+              const isSelected = selected === option.id;
 
               return (
                 <Animated.View
-                  key={option.value}
+                  key={option.id}
                   entering={FadeInDown.delay(100 + index * 60).duration(400)}
                 >
                   <Pressable
-                    onPress={() => void handleSelect(option.value)}
+                    onPress={() => void handleSelect(option.id)}
                     disabled={saving}
                     style={({ pressed }) => [
                       styles.optionCard,
@@ -307,22 +287,22 @@ const LanguageSettingsScreen = () => {
                     ]}
                     accessibilityRole="radio"
                     accessibilityState={{ selected: isSelected }}
-                    accessibilityLabel={`${option.label}, ${option.nativeLabel}`}
+                    accessibilityLabel={`${option.label}, ${option.primary}`}
                   >
-                    <View style={[styles.scriptBadge, isSelected && styles.scriptBadgeSelected]}>
-                      <Text
-                        style={[styles.scriptText, isSelected && styles.scriptTextSelected]}
-                      >
-                        {option.scriptSample}
-                      </Text>
+                    <View style={[styles.swatch, { backgroundColor: option.primary }]}>
+                      {isSelected ? (
+                        <Ionicons name="checkmark" size={20} color={colors.white} />
+                      ) : null}
                     </View>
 
                     <View style={styles.optionTextBlock}>
-                      <Text style={[styles.nativeLabel, isSelected && styles.nativeLabelSelected]}>
-                        {option.nativeLabel}
+                      <Text
+                        style={[styles.optionLabel, isSelected && styles.optionLabelSelected]}
+                      >
+                        {option.label}
                       </Text>
-                      <Text style={styles.englishLabel}>{option.label}</Text>
                       <Text style={styles.optionDescription}>{option.description}</Text>
+                      <Text style={styles.colorCode}>{option.primary}</Text>
                     </View>
 
                     <View
@@ -342,7 +322,8 @@ const LanguageSettingsScreen = () => {
         <Animated.View entering={FadeInDown.delay(320).duration(400)} style={styles.footerNote}>
           <Ionicons name="information-circle-outline" size={18} color={colors.textMuted} />
           <Text style={styles.footerText}>
-            Your language preference is saved on this device and can be changed anytime.
+            Your color choice is saved on this device and applied automatically next time you open
+            Sneheal.
           </Text>
         </Animated.View>
       </ScrollView>
@@ -350,4 +331,4 @@ const LanguageSettingsScreen = () => {
   );
 };
 
-export default LanguageSettingsScreen;
+export default ColorSettingsScreen;

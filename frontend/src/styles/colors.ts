@@ -1,3 +1,5 @@
+// Base palette — primary brand tokens are overridden at runtime by ThemeProvider.
+// Use `useTheme()` from '@/hooks/useTheme' for dynamic primary colors.
 const colors = {
   // Brand Colors — clear healthcare blue (not violet)
   primary: '#1A73E8',

@@ -11,14 +11,16 @@ import Animated, {
   cancelAnimation,
 } from 'react-native-reanimated';
 import theme from '@/styles/theme';
+import { useTheme } from '@/hooks/useTheme';
 
-const { colors } = theme;
+const { colors: staticColors } = theme;
 
 interface HeroBackgroundProps {
   pauseAnimation?: boolean;
 }
 
 const HeroBackground: React.FC<HeroBackgroundProps> = ({ pauseAnimation = false }) => {
+  const { colors } = useTheme();
   const shimmer = useSharedValue(0);
 
   useEffect(() => {

@@ -36,6 +36,7 @@ import { updateTabBarOnScroll } from '@/utils/tabBarScrollWorklet';
 import { useVoiceRecognition } from '@/hooks/useVoiceRecognition';
 import theme from '@/styles/theme';
 import globalStyles from '@/styles/globalStyles';
+import { useTheme } from '@/hooks/useTheme';
 import type { AuthStackParamList } from '@/navigation/types';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -47,6 +48,7 @@ const STICKY_THRESHOLD = 140;
 
 const HomeScreen = () => {
   const navigation = useNavigation();
+  const { colors } = useTheme();
   const [searchQuery, setSearchQuery] = useState('');
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [isScrolling, setIsScrolling] = useState(false);
@@ -226,7 +228,7 @@ const HomeScreen = () => {
           StatusBar.setBackgroundColor('transparent');
         }
       };
-    }, []),
+    }, [colors.headerGradientStart]),
   );
 
   return (
@@ -236,7 +238,10 @@ const HomeScreen = () => {
         <Animated.View
           style={[
             styles.stickyHeader,
-            { paddingTop: contentTopInset + spacing.sm },
+            {
+              paddingTop: contentTopInset + spacing.sm,
+              backgroundColor: colors.headerGradientMid,
+            },
             stickyStyle,
           ]}
           pointerEvents={stickyHeaderActive ? 'box-none' : 'none'}
@@ -343,7 +348,6 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 100,
-    backgroundColor: colors.headerGradientMid,
     paddingBottom: spacing.sm,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(0,0,0,0.05)',

@@ -7,12 +7,11 @@ import ScanIcon from './ScanIcon';
 import ScanTabGlow from './ScanTabGlow';
 import type { AuthStackParamList } from '@/navigation/types';
 import { SCAN_BUTTON_SIZE, SCAN_ICON_SIZE } from '@/navigation/tabBarConfig';
-import theme from '@/styles/theme';
-
-const { colors, shadows } = theme;
+import { useTheme } from '@/hooks/useTheme';
 
 const ScanTabButton = ({ style, accessibilityState }: BottomTabBarButtonProps) => {
   const navigation = useNavigation();
+  const { colors, shadows } = useTheme();
 
   const handlePress = () => {
     const parent = navigation.getParent<NativeStackNavigationProp<AuthStackParamList>>();
@@ -28,7 +27,15 @@ const ScanTabButton = ({ style, accessibilityState }: BottomTabBarButtonProps) =
           accessibilityRole="button"
           accessibilityState={accessibilityState}
           accessibilityLabel="Scan prescription"
-          style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
+          style={({ pressed }) => [
+            styles.button,
+            {
+              backgroundColor: colors.primary,
+              shadowColor: colors.primary,
+            },
+            shadows.md,
+            pressed && styles.buttonPressed,
+          ]}
         >
           <ScanIcon size={SCAN_ICON_SIZE} color={colors.white} />
         </Pressable>
@@ -57,9 +64,6 @@ const styles = StyleSheet.create({
     borderRadius: SCAN_BUTTON_SIZE / 2,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.primary,
-    ...shadows.md,
-    shadowColor: colors.primary,
     shadowOpacity: 0.35,
     elevation: 6,
   },

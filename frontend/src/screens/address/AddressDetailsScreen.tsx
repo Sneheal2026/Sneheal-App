@@ -19,9 +19,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { saveAddress } from '@/services/addressStorage';
 import type { AddressType } from '@/types/location.types';
 import type { AuthStackParamList } from '@/navigation/types';
-import theme from '@/styles/theme';
-
-const { colors, spacing, typography, moderateScale, borderRadius, shadows } = theme;
+import { useTheme } from '@/hooks/useTheme';
 
 const ADDRESS_TYPES: { key: AddressType; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
   { key: 'home', label: 'Home', icon: 'home-outline' },
@@ -33,6 +31,158 @@ const AddressDetailsScreen = () => {
   const navigation =
     useNavigation<NativeStackNavigationProp<AuthStackParamList, 'AddressDetails'>>();
   const route = useRoute<RouteProp<AuthStackParamList, 'AddressDetails'>>();
+  const { colors, spacing, typography, moderateScale, borderRadius } = useTheme();
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        safe: {
+          flex: 1,
+          backgroundColor: colors.background,
+        },
+        flex: {
+          flex: 1,
+        },
+        header: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          paddingHorizontal: spacing.lg,
+          paddingVertical: spacing.sm,
+          gap: spacing.sm,
+        },
+        backButton: {
+          width: moderateScale(38),
+          height: moderateScale(38),
+          borderRadius: moderateScale(19),
+          backgroundColor: colors.surfaceSecondary,
+          alignItems: 'center',
+          justifyContent: 'center',
+        },
+        headerTitle: {
+          ...typography.h4,
+          flex: 1,
+          fontSize: moderateScale(18),
+        },
+        headerSpacer: {
+          width: moderateScale(38),
+        },
+        addressPreview: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: spacing.sm,
+          marginHorizontal: spacing.xl,
+          marginBottom: spacing.lg,
+          paddingVertical: spacing.md,
+          paddingHorizontal: spacing.md,
+          backgroundColor: colors.surfaceSecondary,
+          borderRadius: borderRadius.md,
+        },
+        addressPreviewText: {
+          ...typography.caption,
+          flex: 1,
+          color: colors.textSecondary,
+        },
+        changeText: {
+          ...typography.caption,
+          fontWeight: '700',
+          color: colors.primary,
+        },
+        formContent: {
+          paddingHorizontal: spacing.xl,
+          paddingBottom: spacing.xxxl,
+          gap: spacing.xs,
+        },
+        label: {
+          ...typography.caption,
+          fontWeight: '600',
+          color: colors.textSecondary,
+          marginTop: spacing.md,
+          marginBottom: spacing.xs,
+        },
+        input: {
+          ...typography.body,
+          backgroundColor: colors.white,
+          borderWidth: 1,
+          borderColor: colors.border,
+          borderRadius: borderRadius.md,
+          paddingHorizontal: spacing.md,
+          paddingVertical: Platform.select({ ios: spacing.md, android: spacing.sm }),
+          color: colors.textPrimary,
+        },
+        phoneRow: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: spacing.sm,
+        },
+        phonePrefix: {
+          backgroundColor: colors.surfaceSecondary,
+          borderWidth: 1,
+          borderColor: colors.border,
+          borderRadius: borderRadius.md,
+          paddingHorizontal: spacing.md,
+          paddingVertical: Platform.select({ ios: spacing.md, android: spacing.sm }),
+          justifyContent: 'center',
+        },
+        phonePrefixText: {
+          ...typography.body,
+          fontWeight: '600',
+          color: colors.textPrimary,
+        },
+        phoneInput: {
+          flex: 1,
+        },
+        typeRow: {
+          flexDirection: 'row',
+          gap: spacing.sm,
+        },
+        typeChip: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: spacing.xs,
+          paddingHorizontal: spacing.lg,
+          paddingVertical: spacing.sm + 2,
+          borderRadius: borderRadius.full,
+          borderWidth: 1,
+          borderColor: colors.border,
+          backgroundColor: colors.white,
+        },
+        typeChipActive: {
+          backgroundColor: colors.primary,
+          borderColor: colors.primary,
+        },
+        typeLabel: {
+          ...typography.caption,
+          fontWeight: '600',
+          color: colors.textSecondary,
+        },
+        typeLabelActive: {
+          color: colors.white,
+        },
+        bottomSafe: {
+          paddingHorizontal: spacing.xl,
+          paddingTop: spacing.sm,
+          backgroundColor: colors.background,
+          borderTopWidth: 1,
+          borderTopColor: colors.borderLight,
+        },
+        saveButton: {
+          backgroundColor: colors.primary,
+          borderRadius: borderRadius.lg,
+          paddingVertical: spacing.md + 2,
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginBottom: spacing.sm,
+        },
+        saveDisabled: {
+          opacity: 0.45,
+        },
+        saveText: {
+          ...typography.button,
+          color: colors.textInverse,
+        },
+      }),
+    [borderRadius, colors, moderateScale, spacing, typography],
+  );
 
   const { draft, editAddress, returnTo = 'Main' } = route.params;
 
@@ -257,162 +407,5 @@ const AddressDetailsScreen = () => {
     </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  flex: {
-    flex: 1,
-  },
-
-  // ── Header ──
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-    gap: spacing.sm,
-  },
-  backButton: {
-    width: moderateScale(38),
-    height: moderateScale(38),
-    borderRadius: moderateScale(19),
-    backgroundColor: colors.surfaceSecondary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerTitle: {
-    ...typography.h4,
-    flex: 1,
-    fontSize: moderateScale(18),
-  },
-  headerSpacer: {
-    width: moderateScale(38),
-  },
-
-  // ── Address preview ──
-  addressPreview: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    marginHorizontal: spacing.xl,
-    marginBottom: spacing.lg,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.md,
-    backgroundColor: colors.surfaceSecondary,
-    borderRadius: borderRadius.md,
-  },
-  addressPreviewText: {
-    ...typography.caption,
-    flex: 1,
-    color: colors.textSecondary,
-  },
-  changeText: {
-    ...typography.caption,
-    fontWeight: '700',
-    color: colors.primary,
-  },
-
-  // ── Form ──
-  formContent: {
-    paddingHorizontal: spacing.xl,
-    paddingBottom: spacing.xxxl,
-    gap: spacing.xs,
-  },
-  label: {
-    ...typography.caption,
-    fontWeight: '600',
-    color: colors.textSecondary,
-    marginTop: spacing.md,
-    marginBottom: spacing.xs,
-  },
-  input: {
-    ...typography.body,
-    backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: borderRadius.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: Platform.select({ ios: spacing.md, android: spacing.sm }),
-    color: colors.textPrimary,
-  },
-  phoneRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  phonePrefix: {
-    backgroundColor: colors.surfaceSecondary,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: borderRadius.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: Platform.select({ ios: spacing.md, android: spacing.sm }),
-    justifyContent: 'center',
-  },
-  phonePrefixText: {
-    ...typography.body,
-    fontWeight: '600',
-    color: colors.textPrimary,
-  },
-  phoneInput: {
-    flex: 1,
-  },
-
-  // ── Type chips ──
-  typeRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  typeChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm + 2,
-    borderRadius: borderRadius.full,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.white,
-  },
-  typeChipActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  typeLabel: {
-    ...typography.caption,
-    fontWeight: '600',
-    color: colors.textSecondary,
-  },
-  typeLabelActive: {
-    color: colors.white,
-  },
-
-  // ── Save ──
-  bottomSafe: {
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.sm,
-    backgroundColor: colors.background,
-    borderTopWidth: 1,
-    borderTopColor: colors.borderLight,
-  },
-  saveButton: {
-    backgroundColor: colors.primary,
-    borderRadius: borderRadius.lg,
-    paddingVertical: spacing.md + 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.sm,
-  },
-  saveDisabled: {
-    opacity: 0.45,
-  },
-  saveText: {
-    ...typography.button,
-    color: colors.textInverse,
-  },
-});
 
 export default AddressDetailsScreen;

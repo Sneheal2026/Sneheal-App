@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -16,10 +16,8 @@ import { Ionicons } from '@expo/vector-icons';
 import Loader from '@/components/common/Loader';
 import { useSavedAddresses } from '@/hooks/useSavedAddresses';
 import type { SavedAddress } from '@/types/location.types';
+import { useTheme } from '@/hooks/useTheme';
 import type { AuthStackParamList } from '@/navigation/types';
-import theme from '@/styles/theme';
-
-const { colors, spacing, typography, moderateScale, borderRadius, shadows } = theme;
 
 const TYPE_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
   home: 'home',
@@ -30,6 +28,168 @@ const TYPE_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
 const SavedAddressesScreen = () => {
   const navigation =
     useNavigation<NativeStackNavigationProp<AuthStackParamList, 'SavedAddresses'>>();
+  const { colors, spacing, typography, moderateScale, borderRadius } = useTheme();
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        safe: {
+          flex: 1,
+          backgroundColor: colors.background,
+        },
+        header: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          paddingHorizontal: spacing.lg,
+          paddingVertical: spacing.sm,
+          gap: spacing.sm,
+        },
+        backButton: {
+          width: moderateScale(38),
+          height: moderateScale(38),
+          borderRadius: moderateScale(19),
+          backgroundColor: colors.surfaceSecondary,
+          alignItems: 'center',
+          justifyContent: 'center',
+        },
+        headerTitle: {
+          ...typography.h4,
+          flex: 1,
+          fontSize: moderateScale(18),
+        },
+        headerSpacer: {
+          width: moderateScale(38),
+        },
+        listContent: {
+          paddingHorizontal: spacing.lg,
+          paddingTop: spacing.sm,
+          paddingBottom: spacing.xxxl,
+          gap: spacing.sm,
+          flexGrow: 1,
+        },
+        errorBanner: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: spacing.sm,
+          backgroundColor: '#FFF5F5',
+          borderRadius: borderRadius.md,
+          padding: spacing.md,
+          marginBottom: spacing.sm,
+          borderWidth: 1,
+          borderColor: '#FED7D7',
+        },
+        errorText: {
+          ...typography.caption,
+          color: colors.error,
+          flex: 1,
+        },
+        card: {
+          flexDirection: 'row',
+          alignItems: 'flex-start',
+          backgroundColor: colors.white,
+          borderRadius: borderRadius.lg,
+          padding: spacing.lg,
+          borderWidth: 1.5,
+          borderColor: colors.border,
+          gap: spacing.md,
+        },
+        cardSelected: {
+          borderColor: colors.primary,
+          backgroundColor: colors.primarySurface,
+        },
+        iconCircle: {
+          width: moderateScale(40),
+          height: moderateScale(40),
+          borderRadius: moderateScale(20),
+          backgroundColor: colors.infoLight,
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
+        },
+        iconCircleSelected: {
+          backgroundColor: colors.primary,
+        },
+        cardContent: {
+          flex: 1,
+          gap: spacing.xxs,
+        },
+        cardTopRow: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: spacing.sm,
+        },
+        typeLabel: {
+          ...typography.bodySmall,
+          fontWeight: '700',
+          color: colors.textPrimary,
+        },
+        defaultBadge: {
+          backgroundColor: colors.successLight,
+          paddingHorizontal: spacing.sm,
+          paddingVertical: 2,
+          borderRadius: borderRadius.full,
+        },
+        defaultText: {
+          ...typography.caption,
+          fontSize: 10,
+          fontWeight: '700',
+          color: colors.success,
+        },
+        flatText: {
+          ...typography.bodySmall,
+          color: colors.textPrimary,
+        },
+        addressLine: {
+          ...typography.caption,
+          color: colors.textSecondary,
+        },
+        receiverText: {
+          ...typography.caption,
+          color: colors.textMuted,
+          marginTop: spacing.xxs,
+        },
+        cardActions: {
+          gap: spacing.md,
+          paddingTop: spacing.xxs,
+        },
+        emptyContainer: {
+          alignItems: 'center',
+          paddingTop: spacing.xxxxxl + spacing.xxxl,
+          gap: spacing.sm,
+        },
+        emptyTitle: {
+          ...typography.h4,
+          color: colors.textPrimary,
+        },
+        emptySubtitle: {
+          ...typography.bodySmall,
+          color: colors.textSecondary,
+          textAlign: 'center',
+        },
+        bottomSafe: {
+          paddingHorizontal: spacing.xl,
+          paddingTop: spacing.sm,
+          backgroundColor: colors.background,
+          borderTopWidth: 1,
+          borderTopColor: colors.borderLight,
+        },
+        addButton: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: spacing.sm,
+          backgroundColor: colors.primary,
+          borderRadius: borderRadius.lg,
+          paddingVertical: spacing.md + 2,
+          marginBottom: spacing.sm,
+        },
+        addButtonText: {
+          ...typography.button,
+          color: colors.textInverse,
+        },
+      }),
+    [borderRadius, colors, moderateScale, spacing, typography],
+  );
 
   const { addresses, selectedAddress, loading, error, refresh, selectAddress, removeAddress } =
     useSavedAddresses();
@@ -199,7 +359,7 @@ const SavedAddressesScreen = () => {
         </TouchableOpacity>
       );
     },
-    [selectedAddress, handleSelect, handleEdit, handleDelete, selectingId, deletingId],
+    [selectedAddress, handleSelect, handleEdit, handleDelete, selectingId, deletingId, colors, styles],
   );
 
   if (loading && addresses.length === 0) {
@@ -293,172 +453,5 @@ const SavedAddressesScreen = () => {
     </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-
-  // ── Header ──
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-    gap: spacing.sm,
-  },
-  backButton: {
-    width: moderateScale(38),
-    height: moderateScale(38),
-    borderRadius: moderateScale(19),
-    backgroundColor: colors.surfaceSecondary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerTitle: {
-    ...typography.h4,
-    flex: 1,
-    fontSize: moderateScale(18),
-  },
-  headerSpacer: {
-    width: moderateScale(38),
-  },
-
-  // ── List ──
-  listContent: {
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.xxxl,
-    gap: spacing.sm,
-    flexGrow: 1,
-  },
-  errorBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    backgroundColor: '#FFF5F5',
-    borderRadius: borderRadius.md,
-    padding: spacing.md,
-    marginBottom: spacing.sm,
-    borderWidth: 1,
-    borderColor: '#FED7D7',
-  },
-  errorText: {
-    ...typography.caption,
-    color: colors.error,
-    flex: 1,
-  },
-
-  // ── Card ──
-  card: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    backgroundColor: colors.white,
-    borderRadius: borderRadius.lg,
-    padding: spacing.lg,
-    borderWidth: 1.5,
-    borderColor: colors.border,
-    gap: spacing.md,
-  },
-  cardSelected: {
-    borderColor: colors.primary,
-    backgroundColor: '#F0F7FF',
-  },
-  iconCircle: {
-    width: moderateScale(40),
-    height: moderateScale(40),
-    borderRadius: moderateScale(20),
-    backgroundColor: '#E8F0FE',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-  iconCircleSelected: {
-    backgroundColor: colors.primary,
-  },
-  cardContent: {
-    flex: 1,
-    gap: spacing.xxs,
-  },
-  cardTopRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  typeLabel: {
-    ...typography.bodySmall,
-    fontWeight: '700',
-    color: colors.textPrimary,
-  },
-  defaultBadge: {
-    backgroundColor: colors.successLight,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
-    borderRadius: borderRadius.full,
-  },
-  defaultText: {
-    ...typography.caption,
-    fontSize: 10,
-    fontWeight: '700',
-    color: colors.success,
-  },
-  flatText: {
-    ...typography.bodySmall,
-    color: colors.textPrimary,
-  },
-  addressLine: {
-    ...typography.caption,
-    color: colors.textSecondary,
-  },
-  receiverText: {
-    ...typography.caption,
-    color: colors.textMuted,
-    marginTop: spacing.xxs,
-  },
-  cardActions: {
-    gap: spacing.md,
-    paddingTop: spacing.xxs,
-  },
-
-  // ── Empty ──
-  emptyContainer: {
-    alignItems: 'center',
-    paddingTop: spacing.xxxxxl + spacing.xxxl,
-    gap: spacing.sm,
-  },
-  emptyTitle: {
-    ...typography.h4,
-    color: colors.textPrimary,
-  },
-  emptySubtitle: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
-    textAlign: 'center',
-  },
-
-  // ── Bottom ──
-  bottomSafe: {
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.sm,
-    backgroundColor: colors.background,
-    borderTopWidth: 1,
-    borderTopColor: colors.borderLight,
-  },
-  addButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-    backgroundColor: colors.primary,
-    borderRadius: borderRadius.lg,
-    paddingVertical: spacing.md + 2,
-    marginBottom: spacing.sm,
-  },
-  addButtonText: {
-    ...typography.button,
-    color: colors.textInverse,
-  },
-});
 
 export default SavedAddressesScreen;

@@ -8,9 +8,7 @@ import Animated, {
   Easing,
   runOnJS,
 } from 'react-native-reanimated';
-import theme from '@/styles/theme';
-
-const { colors, spacing, typography, borderRadius, shadows } = theme;
+import { useTheme } from '@/hooks/useTheme';
 
 const SEARCH_SUGGESTIONS = [
   'Medicines',
@@ -31,6 +29,7 @@ interface AnimatedPlaceholderProps {
 }
 
 const AnimatedPlaceholder: React.FC<AnimatedPlaceholderProps> = ({ terms, paused }) => {
+  const { colors, typography } = useTheme();
   const [index, setIndex] = useState(0);
   const opacity = useSharedValue(1);
   const translateY = useSharedValue(0);
@@ -82,15 +81,22 @@ const AnimatedPlaceholder: React.FC<AnimatedPlaceholderProps> = ({ terms, paused
 
   return (
     <View style={styles.placeholderRow} pointerEvents="none">
-      <Text style={styles.placeholderPrefix}>Search &quot;</Text>
+      <Text style={[styles.placeholderPrefix, typography.bodySmall, { color: colors.textMuted, fontWeight: '500' }]}>
+        Search &quot;
+      </Text>
       <View style={styles.termClip}>
         <Animated.View style={termStyle}>
-          <Text style={styles.placeholderTerm} numberOfLines={1}>
+          <Text
+            style={[styles.placeholderTerm, typography.bodySmall, { color: colors.primary, fontWeight: '600' }]}
+            numberOfLines={1}
+          >
             {terms[index]}
           </Text>
         </Animated.View>
       </View>
-      <Text style={styles.placeholderPrefix}>&quot;</Text>
+      <Text style={[styles.placeholderPrefix, typography.bodySmall, { color: colors.textMuted, fontWeight: '500' }]}>
+        &quot;
+      </Text>
     </View>
   );
 };
@@ -122,6 +128,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
   searchSuggestions = SEARCH_SUGGESTIONS,
   placeholder = 'Search "medicines"',
 }) => {
+  const { colors, spacing, typography, borderRadius, shadows } = useTheme();
   const inputRef = useRef<TextInput>(null);
   const [isFocused, setIsFocused] = useState(false);
 
@@ -153,9 +160,34 @@ const SearchBar: React.FC<SearchBarProps> = ({
     <View
       style={[
         styles.searchContainer,
+        {
+          backgroundColor: colors.surface,
+          borderRadius: borderRadius.xl,
+          paddingLeft: spacing.lg,
+          paddingRight: spacing.sm,
+          borderColor: colors.borderLight,
+          gap: 0,
+        },
         compact && styles.searchContainerCompact,
+        compact && { borderRadius: borderRadius.lg },
         insideHeader && styles.searchContainerInsideHeader,
         elevated && styles.searchContainerElevated,
+        elevated && {
+          ...shadows.md,
+          shadowColor: colors.black,
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.15,
+          shadowRadius: 14,
+          elevation: 6,
+        },
+        !insideHeader && !elevated && {
+          ...shadows.md,
+          shadowColor: colors.black,
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.08,
+          shadowRadius: 12,
+          elevation: 4,
+        },
         onDocumentPress != null && styles.searchContainerWithAction,
       ]}
     >
@@ -168,7 +200,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
       <View style={styles.inputWrap}>
         <TextInput
           ref={inputRef}
-          style={styles.searchInput}
+          style={[styles.searchInput, typography.bodySmall, { color: colors.textPrimary }]}
           placeholder={showStaticPlaceholder ? placeholder : ''}
           placeholderTextColor={colors.textMuted}
           value={value}
@@ -190,7 +222,9 @@ const SearchBar: React.FC<SearchBarProps> = ({
         )}
         {showListeningPlaceholder && (
           <View style={styles.placeholderRow} pointerEvents="none">
-            <Text style={styles.listeningText}>Listening...</Text>
+            <Text style={[typography.bodySmall, { color: colors.primary, fontWeight: '500' }]}>
+              Listening...
+            </Text>
           </View>
         )}
       </View>
@@ -210,9 +244,12 @@ const SearchBar: React.FC<SearchBarProps> = ({
           />
         </TouchableOpacity>
       )}
-      <View style={styles.micDivider} />
+      <View style={[styles.micDivider, { backgroundColor: colors.border }]} />
       <TouchableOpacity
-        style={[styles.micBtn, isListening && styles.micBtnActive]}
+        style={[
+          styles.micBtn,
+          isListening && { backgroundColor: colors.primaryMuted },
+        ]}
         activeOpacity={0.7}
         onPress={() => {
           void onMicPress?.();
@@ -234,12 +271,23 @@ const SearchBar: React.FC<SearchBarProps> = ({
   }
 
   return (
-    <View style={[styles.searchRow, compact && styles.searchRowCompact]}>
+    <View style={[styles.searchRow, { gap: spacing.sm, marginBottom: spacing.xxl }, compact && styles.searchRowCompact, compact && { marginHorizontal: spacing.xl, marginBottom: spacing.sm }]}>
       <View style={styles.searchFlex}>{searchField}</View>
       <TouchableOpacity
         style={[
           styles.documentBtn,
+          {
+            borderRadius: borderRadius.xl,
+            backgroundColor: colors.surface,
+            ...shadows.md,
+            shadowColor: colors.black,
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.15,
+            shadowRadius: 14,
+            elevation: 6,
+          },
           compact && styles.documentBtnCompact,
+          compact && { borderRadius: borderRadius.lg },
           elevated && styles.documentBtnElevated,
         ]}
         activeOpacity={0.8}
@@ -261,13 +309,8 @@ const styles = StyleSheet.create({
   searchRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
-    marginBottom: spacing.xxl,
   },
-  searchRowCompact: {
-    marginHorizontal: spacing.xl,
-    marginBottom: spacing.sm,
-  },
+  searchRowCompact: {},
   searchFlex: {
     flex: 1,
     minWidth: 0,
@@ -275,21 +318,12 @@ const styles = StyleSheet.create({
   documentBtn: {
     width: 48,
     height: 48,
-    borderRadius: borderRadius.xl,
-    backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
-    ...shadows.md,
-    shadowColor: colors.black,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 14,
-    elevation: 6,
   },
   documentBtnCompact: {
     width: 46,
     height: 46,
-    borderRadius: borderRadius.lg,
   },
   documentBtnElevated: {
     borderWidth: 0,
@@ -297,27 +331,15 @@ const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.xl,
-    paddingLeft: spacing.lg,
-    paddingRight: spacing.sm,
     height: 50,
-    marginHorizontal: spacing.xl,
-    marginTop: -spacing.md,
+    marginTop: -12,
+    marginHorizontal: 20,
     borderWidth: 1,
-    borderColor: colors.borderLight,
-    ...shadows.md,
-    shadowColor: colors.black,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 4,
   },
   searchContainerCompact: {
     marginTop: 0,
     marginHorizontal: 0,
     height: 46,
-    borderRadius: borderRadius.lg,
     marginBottom: 0,
   },
   searchContainerWithAction: {
@@ -332,17 +354,9 @@ const styles = StyleSheet.create({
   },
   searchContainerElevated: {
     height: 48,
-    borderRadius: borderRadius.xl,
-    backgroundColor: colors.surface,
-    ...shadows.md,
-    shadowColor: colors.black,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 14,
-    elevation: 6,
   },
   searchIcon: {
-    marginRight: spacing.sm,
+    marginRight: 8,
   },
   inputWrap: {
     flex: 1,
@@ -351,8 +365,6 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   searchInput: {
-    ...typography.bodySmall,
-    color: colors.textPrimary,
     paddingVertical: 0,
     fontWeight: '500',
     width: '100%',
@@ -364,44 +376,27 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  placeholderPrefix: {
-    ...typography.bodySmall,
-    color: colors.textMuted,
-    fontWeight: '500',
-  },
+  placeholderPrefix: {},
   termClip: {
     overflow: 'hidden',
     justifyContent: 'center',
     maxWidth: '72%',
   },
-  placeholderTerm: {
-    ...typography.bodySmall,
-    color: colors.primary,
-    fontWeight: '600',
-  },
-  listeningText: {
-    ...typography.bodySmall,
-    color: colors.primary,
-    fontWeight: '500',
-  },
+  placeholderTerm: {},
   clearBtn: {
-    paddingHorizontal: spacing.xs,
-    paddingVertical: spacing.xs,
-    marginRight: spacing.xs,
+    paddingHorizontal: 4,
+    paddingVertical: 4,
+    marginRight: 4,
   },
   micDivider: {
     width: 1,
     height: 22,
-    backgroundColor: colors.border,
-    marginHorizontal: spacing.xs,
+    marginHorizontal: 4,
   },
   micBtn: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-    borderRadius: borderRadius.full,
-  },
-  micBtnActive: {
-    backgroundColor: colors.primary + '18',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 9999,
   },
 });
 

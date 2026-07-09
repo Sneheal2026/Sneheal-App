@@ -14,6 +14,7 @@ import HelpAndSupportScreen from '@/screens/settings/HelpAndSupportScreen';
 import ShareAppScreen from '@/screens/settings/ShareAppScreen';
 import AboutSnehealScreen from '@/screens/settings/AboutSnehealScreen';
 import LanguageSettingsScreen from '@/screens/settings/LanguageSettingsScreen';
+import ColorSettingsScreen from '@/screens/settings/ColorSettingsScreen';
 import MedicineScanScreen from '@/screens/scan/MedicineScanScreen';
 import ProductDetailsScreen from '@/screens/product/ProductDetailsScreen';
 import MapScreen from '@/screens/map/MapScreen';
@@ -45,6 +46,7 @@ const AuthNavigator = () => {
       <Stack.Screen name="ShareApp" component={ShareAppScreen} />
       <Stack.Screen name="AboutSneheal" component={AboutSnehealScreen} />
       <Stack.Screen name="LanguageSettings" component={LanguageSettingsScreen} />
+      <Stack.Screen name="ColorSettings" component={ColorSettingsScreen} />
       <Stack.Screen name="MedicineScan" component={MedicineScanScreen} />
       <Stack.Screen name="ProductDetails" component={ProductDetailsScreen} />
       <Stack.Screen name="LocationMap" component={MapScreen} />

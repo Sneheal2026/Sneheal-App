@@ -19,7 +19,9 @@ import SettingsQuickAction from '@/components/settings/SettingsQuickAction';
 import theme from '@/styles/theme';
 import type { AuthStackParamList } from '@/navigation/types';
 import { getLanguageLabel } from '@/constants/languages';
+import { getColorThemeOption } from '@/constants/colorThemes';
 import { getAppLanguage } from '@/services/languageStorage';
+import { useTheme } from '@/hooks/useTheme';
 
 const { colors, spacing, typography, borderRadius, shadows } = theme;
 
@@ -50,6 +52,7 @@ const ACCOUNT_ITEMS = [
   { id: 'share', icon: 'share-outline' as const, label: 'Share the app' },
   { id: 'about', icon: 'information-circle-outline' as const, label: 'About Sneheal' },
   { id: 'language', icon: 'language-outline' as const, label: 'Language settings' },
+  { id: 'color', icon: 'color-palette-outline' as const, label: 'Color theme' },
   { id: 'logout', icon: 'log-out-outline' as const, label: 'Log out', destructive: true },
 ];
 
@@ -61,7 +64,9 @@ const DEMO_ORDER = {
 
 const SettingsScreen = () => {
   const navigation = useNavigation<NativeStackNavigationProp<AuthStackParamList>>();
+  const { colors: themeColors, gradients, colorThemeId } = useTheme();
   const [currentLanguageLabel, setCurrentLanguageLabel] = useState('English');
+  const currentColorLabel = getColorThemeOption(colorThemeId).label;
 
   useFocusEffect(
     useCallback(() => {
@@ -95,6 +100,8 @@ const SettingsScreen = () => {
       navigation.navigate('AboutSneheal' as never);
     } else if (id === 'language') {
       navigation.navigate('LanguageSettings');
+    } else if (id === 'color') {
+      navigation.navigate('ColorSettings');
     }
   };
 
@@ -123,7 +130,7 @@ const SettingsScreen = () => {
         bounces
       >
         <LinearGradient
-          colors={['#1A73E8', '#6495ED', colors.surfaceSecondary]}
+          colors={gradients.settingsHero}
           locations={[0, 0.45, 1]}
           style={styles.heroGradient}
         >
@@ -168,8 +175,8 @@ const SettingsScreen = () => {
                   <Ionicons name="arrow-forward" size={14} color={colors.secondary} />
                 </View>
               </View>
-              <View style={styles.promoIconWrap}>
-                <Ionicons name="heart-outline" size={28} color={colors.primary} />
+              <View style={[styles.promoIconWrap, { backgroundColor: themeColors.primaryMuted }]}>
+                <Ionicons name="heart-outline" size={28} color={themeColors.primary} />
               </View>
             </Pressable>
           </Animated.View>
@@ -235,6 +242,17 @@ const SettingsScreen = () => {
                         <Text style={styles.languageTrailingText}>{currentLanguageLabel}</Text>
                         <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
                       </View>
+                    ) : item.id === 'color' ? (
+                      <View style={styles.languageTrailing}>
+                        <View
+                          style={[
+                            styles.colorSwatch,
+                            { backgroundColor: getColorThemeOption(colorThemeId).primary },
+                          ]}
+                        />
+                        <Text style={styles.languageTrailingText}>{currentColorLabel}</Text>
+                        <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+                      </View>
                     ) : undefined
                   }
                 />
@@ -242,17 +260,17 @@ const SettingsScreen = () => {
 
               <View style={styles.demoActionsBlock}>
                 <View style={styles.demoActions}>
-                  <Pressable onPress={demoNavigateCustomer} style={styles.demoCustomerBtn}>
+                  <Pressable onPress={demoNavigateCustomer} style={[styles.demoCustomerBtn, { backgroundColor: themeColors.primary }]}>
                     <Ionicons name="bicycle" size={18} color="#fff" />
                     <Text style={styles.demoBtnText}>Customer</Text>
                   </Pressable>
 
                   <Pressable
                     onPress={demoNavigateDelivery}
-                    style={styles.demoDeliveryBtn}
+                    style={[styles.demoDeliveryBtn, { borderColor: themeColors.primary }]}
                   >
-                    <Ionicons name="navigate" size={18} color={colors.primary} />
-                    <Text style={[styles.demoBtnText, { color: colors.primary }]}>
+                    <Ionicons name="navigate" size={18} color={themeColors.primary} />
+                    <Text style={[styles.demoBtnText, { color: themeColors.primary }]}>
                       Delivery Agent
                     </Text>
                   </Pressable>
@@ -370,7 +388,6 @@ const styles = StyleSheet.create({
     width: 52,
     height: 52,
     borderRadius: 26,
-    backgroundColor: 'rgba(26, 115, 232, 0.1)',
     alignItems: 'center',
     justifyContent: 'center',
     marginLeft: spacing.sm,
@@ -425,6 +442,13 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.textSecondary,
   },
+  colorSwatch: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
 
   demoActionsBlock: {
     paddingHorizontal: spacing.lg,
@@ -444,7 +468,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
-    backgroundColor: colors.primary,
     paddingVertical: spacing.md,
     borderRadius: borderRadius.lg,
     ...shadows.sm,
@@ -457,7 +480,6 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     backgroundColor: colors.surface,
     borderWidth: 1.5,
-    borderColor: colors.primary,
     paddingVertical: spacing.md,
     borderRadius: borderRadius.lg,
     ...shadows.sm,

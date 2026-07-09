@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -24,9 +24,7 @@ import {
   sortTimes,
   timeStringFromDate,
 } from '@/utils/reminderTime';
-import theme from '@/styles/theme';
-
-const { colors, spacing, typography, borderRadius, shadows, moderateScale } = theme;
+import { useTheme } from '@/hooks/useTheme';
 
 interface ReminderFormSheetProps {
   visible: boolean;
@@ -51,6 +49,7 @@ const ReminderFormSheet = ({
   onSubmit,
 }: ReminderFormSheetProps) => {
   const insets = useSafeAreaInsets();
+  const { colors, spacing, typography, borderRadius, shadows, moderateScale } = useTheme();
   const [form, setForm] = useState<ReminderFormData>(DEFAULT_FORM);
   const [nameError, setNameError] = useState('');
   const [timesError, setTimesError] = useState('');
@@ -140,6 +139,223 @@ const ReminderFormSheet = ({
       onClose();
     }
   }, [form, onClose, onSubmit]);
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        flex: { flex: 1 },
+        container: {
+          flex: 1,
+          backgroundColor: colors.background,
+          paddingHorizontal: spacing.lg,
+        },
+        handle: {
+          alignSelf: 'center',
+          width: 40,
+          height: 4,
+          borderRadius: borderRadius.full,
+          backgroundColor: colors.border,
+          marginTop: spacing.sm,
+          marginBottom: spacing.md,
+        },
+        sheetHeader: {
+          flexDirection: 'row',
+          alignItems: 'flex-start',
+          justifyContent: 'space-between',
+          marginBottom: spacing.lg,
+        },
+        sheetTitle: {
+          ...typography.h3,
+          color: colors.textPrimary,
+          fontWeight: '700',
+        },
+        sheetSubtitle: {
+          ...typography.bodySmall,
+          color: colors.textSecondary,
+          marginTop: spacing.xxs,
+        },
+        closeBtn: {
+          width: moderateScale(36),
+          height: moderateScale(36),
+          borderRadius: borderRadius.full,
+          backgroundColor: colors.surfaceSecondary,
+          alignItems: 'center',
+          justifyContent: 'center',
+        },
+        closeBtnPressed: { opacity: 0.7 },
+        formContent: {
+          paddingBottom: spacing.xl,
+        },
+        label: {
+          ...typography.bodySmall,
+          color: colors.textPrimary,
+          fontWeight: '700',
+          marginBottom: spacing.sm,
+          marginTop: spacing.md,
+        },
+        inputWrap: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: spacing.sm,
+          backgroundColor: colors.surfaceSecondary,
+          borderRadius: borderRadius.lg,
+          borderWidth: 1,
+          borderColor: colors.border,
+          paddingHorizontal: spacing.md,
+          paddingVertical: Platform.OS === 'ios' ? spacing.md : spacing.xs,
+        },
+        inputError: {
+          borderColor: colors.error,
+          backgroundColor: colors.errorLight,
+        },
+        textInput: {
+          flex: 1,
+          ...typography.body,
+          color: colors.textPrimary,
+          paddingVertical: spacing.sm,
+        },
+        errorText: {
+          ...typography.caption,
+          color: colors.error,
+          marginTop: spacing.xs,
+        },
+        presetRow: {
+          flexDirection: 'row',
+          flexWrap: 'wrap',
+          gap: spacing.sm,
+        },
+        presetChip: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: spacing.xs,
+          paddingHorizontal: spacing.md,
+          paddingVertical: spacing.sm,
+          borderRadius: borderRadius.full,
+          backgroundColor: colors.infoLight,
+          borderWidth: 1,
+          borderColor: colors.border,
+        },
+        presetChipSelected: {
+          backgroundColor: colors.primary,
+          borderColor: colors.primary,
+        },
+        presetChipPressed: { opacity: 0.85 },
+        presetLabel: {
+          ...typography.caption,
+          color: colors.primaryDark,
+          fontWeight: '600',
+        },
+        presetLabelSelected: {
+          color: colors.white,
+        },
+        customTimeBtn: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: spacing.sm,
+          marginTop: spacing.md,
+          paddingVertical: spacing.sm,
+        },
+        customTimeBtnPressed: { opacity: 0.7 },
+        customTimeText: {
+          ...typography.bodySmall,
+          color: colors.primary,
+          fontWeight: '600',
+        },
+        pickerWrap: {
+          marginTop: spacing.sm,
+          backgroundColor: colors.surfaceSecondary,
+          borderRadius: borderRadius.lg,
+          overflow: 'hidden',
+        },
+        pickerDoneBtn: {
+          alignItems: 'center',
+          paddingVertical: spacing.sm,
+          borderTopWidth: 1,
+          borderTopColor: colors.border,
+        },
+        pickerDoneText: {
+          ...typography.bodySmall,
+          color: colors.primary,
+          fontWeight: '700',
+        },
+        selectedTimesWrap: {
+          flexDirection: 'row',
+          flexWrap: 'wrap',
+          gap: spacing.sm,
+          marginTop: spacing.md,
+        },
+        selectedTimeChip: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: spacing.xs,
+          backgroundColor: colors.white,
+          borderWidth: 1,
+          borderColor: colors.primaryLight,
+          paddingHorizontal: spacing.md,
+          paddingVertical: spacing.xs + 2,
+          borderRadius: borderRadius.full,
+        },
+        selectedTimeText: {
+          ...typography.caption,
+          color: colors.primaryDark,
+          fontWeight: '600',
+        },
+        stepperRow: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: spacing.xl,
+          backgroundColor: colors.surfaceSecondary,
+          borderRadius: borderRadius.lg,
+          paddingVertical: spacing.md,
+          borderWidth: 1,
+          borderColor: colors.borderLight,
+        },
+        stepperBtn: {
+          width: moderateScale(40),
+          height: moderateScale(40),
+          borderRadius: borderRadius.full,
+          backgroundColor: colors.white,
+          alignItems: 'center',
+          justifyContent: 'center',
+          borderWidth: 1,
+          borderColor: colors.border,
+          ...shadows.sm,
+        },
+        stepperBtnPressed: { opacity: 0.75 },
+        stepperValue: {
+          ...typography.h3,
+          color: colors.textPrimary,
+          fontWeight: '700',
+          minWidth: 48,
+          textAlign: 'center',
+        },
+        hintText: {
+          ...typography.caption,
+          color: colors.textMuted,
+          marginTop: spacing.sm,
+          textAlign: 'center',
+        },
+        saveBtn: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: spacing.sm,
+          backgroundColor: colors.primary,
+          paddingVertical: spacing.md + 2,
+          borderRadius: borderRadius.xl,
+          ...shadows.md,
+        },
+        saveBtnDisabled: { opacity: 0.7 },
+        saveBtnPressed: { opacity: 0.9 },
+        saveBtnText: {
+          ...typography.body,
+          color: colors.white,
+          fontWeight: '700',
+        },
+      }),
+    [borderRadius, colors, moderateScale, shadows, spacing, typography],
+  );
 
   return (
     <Modal
@@ -337,218 +553,5 @@ const ReminderFormSheet = ({
     </Modal>
   );
 };
-
-const styles = StyleSheet.create({
-  flex: { flex: 1 },
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-    paddingHorizontal: spacing.lg,
-  },
-  handle: {
-    alignSelf: 'center',
-    width: 40,
-    height: 4,
-    borderRadius: borderRadius.full,
-    backgroundColor: colors.border,
-    marginTop: spacing.sm,
-    marginBottom: spacing.md,
-  },
-  sheetHeader: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    marginBottom: spacing.lg,
-  },
-  sheetTitle: {
-    ...typography.h3,
-    color: colors.textPrimary,
-    fontWeight: '700',
-  },
-  sheetSubtitle: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
-    marginTop: spacing.xxs,
-  },
-  closeBtn: {
-    width: moderateScale(36),
-    height: moderateScale(36),
-    borderRadius: borderRadius.full,
-    backgroundColor: colors.surfaceSecondary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  closeBtnPressed: { opacity: 0.7 },
-  formContent: {
-    paddingBottom: spacing.xl,
-  },
-  label: {
-    ...typography.bodySmall,
-    color: colors.textPrimary,
-    fontWeight: '700',
-    marginBottom: spacing.sm,
-    marginTop: spacing.md,
-  },
-  inputWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    backgroundColor: colors.surfaceSecondary,
-    borderRadius: borderRadius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: spacing.md,
-    paddingVertical: Platform.OS === 'ios' ? spacing.md : spacing.xs,
-  },
-  inputError: {
-    borderColor: colors.error,
-    backgroundColor: colors.errorLight,
-  },
-  textInput: {
-    flex: 1,
-    ...typography.body,
-    color: colors.textPrimary,
-    paddingVertical: spacing.sm,
-  },
-  errorText: {
-    ...typography.caption,
-    color: colors.error,
-    marginTop: spacing.xs,
-  },
-  presetRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-  },
-  presetChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: borderRadius.full,
-    backgroundColor: colors.infoLight,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  presetChipSelected: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  presetChipPressed: { opacity: 0.85 },
-  presetLabel: {
-    ...typography.caption,
-    color: colors.primaryDark,
-    fontWeight: '600',
-  },
-  presetLabelSelected: {
-    color: colors.white,
-  },
-  customTimeBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    marginTop: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  customTimeBtnPressed: { opacity: 0.7 },
-  customTimeText: {
-    ...typography.bodySmall,
-    color: colors.primary,
-    fontWeight: '600',
-  },
-  pickerWrap: {
-    marginTop: spacing.sm,
-    backgroundColor: colors.surfaceSecondary,
-    borderRadius: borderRadius.lg,
-    overflow: 'hidden',
-  },
-  pickerDoneBtn: {
-    alignItems: 'center',
-    paddingVertical: spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  pickerDoneText: {
-    ...typography.bodySmall,
-    color: colors.primary,
-    fontWeight: '700',
-  },
-  selectedTimesWrap: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-    marginTop: spacing.md,
-  },
-  selectedTimeChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: colors.primaryLight,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs + 2,
-    borderRadius: borderRadius.full,
-  },
-  selectedTimeText: {
-    ...typography.caption,
-    color: colors.primaryDark,
-    fontWeight: '600',
-  },
-  stepperRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.xl,
-    backgroundColor: colors.surfaceSecondary,
-    borderRadius: borderRadius.lg,
-    paddingVertical: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.borderLight,
-  },
-  stepperBtn: {
-    width: moderateScale(40),
-    height: moderateScale(40),
-    borderRadius: borderRadius.full,
-    backgroundColor: colors.white,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
-    ...shadows.sm,
-  },
-  stepperBtnPressed: { opacity: 0.75 },
-  stepperValue: {
-    ...typography.h3,
-    color: colors.textPrimary,
-    fontWeight: '700',
-    minWidth: 48,
-    textAlign: 'center',
-  },
-  hintText: {
-    ...typography.caption,
-    color: colors.textMuted,
-    marginTop: spacing.sm,
-    textAlign: 'center',
-  },
-  saveBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-    backgroundColor: colors.primary,
-    paddingVertical: spacing.md + 2,
-    borderRadius: borderRadius.xl,
-    ...shadows.md,
-  },
-  saveBtnDisabled: { opacity: 0.7 },
-  saveBtnPressed: { opacity: 0.9 },
-  saveBtnText: {
-    ...typography.body,
-    color: colors.white,
-    fontWeight: '700',
-  },
-});
 
 export default ReminderFormSheet;

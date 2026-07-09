@@ -1,9 +1,7 @@
 import React from 'react';
 import { Pressable, View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import theme from '@/styles/theme';
-
-const { colors, spacing, typography, borderRadius, shadows } = theme;
+import { useTheme } from '@/hooks/useTheme';
 
 interface SettingsQuickActionProps {
   icon: keyof typeof Ionicons.glyphMap;
@@ -15,32 +13,41 @@ const SettingsQuickAction: React.FC<SettingsQuickActionProps> = ({
   icon,
   label,
   onPress,
-}) => (
-  <Pressable
-    onPress={onPress}
-    style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
-    accessibilityRole="button"
-    accessibilityLabel={label}
-  >
-    <View style={styles.iconCircle}>
-      <Ionicons name={icon} size={22} color={colors.primary} />
-    </View>
-    <Text style={styles.label} numberOfLines={2}>
-      {label}
-    </Text>
-  </Pressable>
-);
+}) => {
+  const { colors, spacing, typography, borderRadius, shadows } = useTheme();
+
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.card,
+        {
+          backgroundColor: colors.white,
+          borderRadius: borderRadius.lg,
+          paddingVertical: spacing.lg,
+          paddingHorizontal: spacing.sm,
+          gap: spacing.sm,
+        },
+        shadows.sm,
+        pressed && styles.cardPressed,
+      ]}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+    >
+      <View style={[styles.iconCircle, { backgroundColor: colors.infoLight }]}>
+        <Ionicons name={icon} size={22} color={colors.primary} />
+      </View>
+      <Text style={[styles.label, typography.caption, { color: colors.textPrimary }]} numberOfLines={2}>
+        {label}
+      </Text>
+    </Pressable>
+  );
+};
 
 const styles = StyleSheet.create({
   card: {
     flex: 1,
-    backgroundColor: colors.white,
-    borderRadius: borderRadius.lg,
-    paddingVertical: spacing.lg,
-    paddingHorizontal: spacing.sm,
     alignItems: 'center',
-    gap: spacing.sm,
-    ...shadows.sm,
   },
   cardPressed: {
     opacity: 0.75,
@@ -50,14 +57,11 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: colors.infoLight,
     alignItems: 'center',
     justifyContent: 'center',
   },
   label: {
-    ...typography.caption,
     fontWeight: '600',
-    color: colors.textPrimary,
     textAlign: 'center',
     lineHeight: 16,
   },

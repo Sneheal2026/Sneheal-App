@@ -7,9 +7,7 @@ import {
   ViewStyle,
   TextStyle,
 } from 'react-native';
-import theme from '@/styles/theme';
-
-const { colors, spacing, borderRadius, typography } = theme;
+import { useTheme } from '@/hooks/useTheme';
 
 export interface CustomButtonProps {
   title: string;
@@ -32,6 +30,7 @@ const CustomButton: React.FC<CustomButtonProps> = ({
   style,
   textStyle,
 }) => {
+  const { colors, spacing, borderRadius, typography } = useTheme();
   const isOutline = variant === 'outline';
   const isSecondary = variant === 'secondary';
 
@@ -47,8 +46,16 @@ const CustomButton: React.FC<CustomButtonProps> = ({
     <TouchableOpacity
       style={[
         styles.button,
-        { backgroundColor: buttonBg },
-        isOutline && styles.outline,
+        {
+          borderRadius: borderRadius.xl,
+          paddingHorizontal: spacing.xxl,
+          backgroundColor: buttonBg,
+        },
+        isOutline && {
+          borderWidth: 2,
+          borderColor: colors.primary,
+          backgroundColor: colors.transparent,
+        },
         fullWidth && styles.fullWidth,
         (disabled || loading) && styles.disabled,
         style,
@@ -63,7 +70,7 @@ const CustomButton: React.FC<CustomButtonProps> = ({
           size="small"
         />
       ) : (
-        <Text style={[styles.text, { color: textColor }, textStyle]}>
+        <Text style={[styles.text, typography.button, { color: textColor }, textStyle]}>
           {title}
         </Text>
       )}
@@ -74,16 +81,9 @@ const CustomButton: React.FC<CustomButtonProps> = ({
 const styles = StyleSheet.create({
   button: {
     height: 54,
-    borderRadius: borderRadius.xl,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: spacing.xxl,
-  },
-  outline: {
-    borderWidth: 2,
-    borderColor: colors.primary,
-    backgroundColor: colors.transparent,
   },
   fullWidth: {
     width: '100%',
@@ -92,7 +92,6 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   text: {
-    ...typography.button,
     letterSpacing: 0.5,
   },
 });

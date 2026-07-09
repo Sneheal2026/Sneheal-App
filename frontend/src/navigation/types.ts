@@ -18,6 +18,7 @@ export type AuthStackParamList = {
   ShareApp: undefined;
   AboutSneheal: undefined;
   LanguageSettings: undefined;
+  ColorSettings: undefined;
   MedicineScan: undefined;
   ProductDetails: { productId: string };
   LocationMap: { editAddress?: SavedAddress; returnTo?: 'Main' | 'SavedAddresses' } | undefined;

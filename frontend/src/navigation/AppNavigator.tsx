@@ -11,12 +11,13 @@ import ScanPlaceholderScreen from '@/screens/scan/ScanPlaceholderScreen';
 import AnimatedTabBar from '@/components/navigation/AnimatedTabBar';
 import ScanTabButton from '@/components/navigation/ScanTabButton';
 import { TabBarVisibilityProvider } from '@/context/TabBarVisibilityContext';
+import { useTheme } from '@/hooks/useTheme';
 import { getTabBarHeight } from '@/navigation/tabBarConfig';
 import type { TabParamList } from './types';
 import theme from '@/styles/theme';
 
 const Tab = createBottomTabNavigator<TabParamList>();
-const { colors, spacing, typography } = theme;
+const { spacing, typography } = theme;
 
 type TabIconName = keyof typeof Ionicons.glyphMap;
 
@@ -39,6 +40,7 @@ const TABS: TabConfig[] = [
 
 const AppNavigator = () => {
   const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
   const tabBarHeight = getTabBarHeight(insets.bottom);
 
   return (
@@ -62,7 +64,9 @@ const AppNavigator = () => {
             marginBottom: spacing.xxs,
           },
           tabBarStyle: {
-            ...styles.tabBar,
+            backgroundColor: colors.surface,
+            borderTopWidth: 1,
+            borderTopColor: colors.border,
             position: 'absolute',
             paddingTop: spacing.sm,
             paddingBottom: insets.bottom + spacing.sm,
@@ -98,11 +102,6 @@ const AppNavigator = () => {
 };
 
 const styles = StyleSheet.create({
-  tabBar: {
-    backgroundColor: colors.surface,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
   tabItem: {
     paddingTop: spacing.xxs,
     paddingBottom: spacing.xxs,

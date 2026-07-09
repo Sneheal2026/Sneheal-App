@@ -4,7 +4,9 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer } from '@react-navigation/native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import NetworkGate from './src/components/common/NetworkGate';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
+import { ThemeProvider } from './src/context/ThemeContext';
 import RootNavigator from './src/navigation/RootNavigator';
 import AuthBootScreen from './src/screens/auth/AuthBootScreen';
 import {
@@ -57,9 +59,13 @@ export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <AuthProvider>
-          <AppNavigation />
-        </AuthProvider>
+        <ThemeProvider>
+          <NetworkGate>
+            <AuthProvider>
+              <AppNavigation />
+            </AuthProvider>
+          </NetworkGate>
+        </ThemeProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

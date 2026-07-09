@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -24,12 +24,11 @@ import {
   openExactAlarmPermissionSettings,
 } from '@/utils/androidReminderSetup';
 import type { MedicineReminder, ReminderFormData } from '@/types/reminder.types';
-import theme from '@/styles/theme';
-
-const { colors, spacing, typography, borderRadius, shadows, moderateScale } = theme;
+import { useTheme } from '@/hooks/useTheme';
 
 const MedicineRemindersScreen = () => {
   const navigation = useNavigation();
+  const { colors, spacing, typography, borderRadius, shadows, moderateScale, gradients } = useTheme();
   const {
     reminders,
     loading,
@@ -46,6 +45,212 @@ const MedicineRemindersScreen = () => {
   const [sheetVisible, setSheetVisible] = useState(false);
   const [editingReminder, setEditingReminder] = useState<MedicineReminder | null>(null);
   const [saving, setSaving] = useState(false);
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        root: {
+          flex: 1,
+          backgroundColor: colors.surfaceSecondary,
+        },
+        hero: {
+          paddingBottom: spacing.lg,
+        },
+        headerRow: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          paddingHorizontal: spacing.lg,
+          paddingTop: spacing.sm,
+        },
+        backBtn: {
+          width: moderateScale(40),
+          height: moderateScale(40),
+          borderRadius: borderRadius.full,
+          backgroundColor: colors.white,
+          alignItems: 'center',
+          justifyContent: 'center',
+          ...shadows.sm,
+        },
+        backBtnPressed: { opacity: 0.8 },
+        headerTextBlock: {
+          flex: 1,
+          alignItems: 'center',
+        },
+        headerTitle: {
+          ...typography.h4,
+          color: colors.white,
+          fontWeight: '700',
+        },
+        headerSubtitle: {
+          ...typography.caption,
+          color: 'rgba(255,255,255,0.85)',
+          marginTop: 2,
+        },
+        headerSpacer: {
+          width: moderateScale(40),
+        },
+        body: {
+          flex: 1,
+          marginTop: -spacing.sm,
+          borderTopLeftRadius: borderRadius.xxl,
+          borderTopRightRadius: borderRadius.xxl,
+          backgroundColor: colors.surfaceSecondary,
+          paddingTop: spacing.lg,
+          paddingHorizontal: spacing.lg,
+        },
+        permissionBanner: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: spacing.md,
+          backgroundColor: colors.warningLight,
+          borderRadius: borderRadius.lg,
+          padding: spacing.md,
+          marginBottom: spacing.md,
+          borderWidth: 1,
+          borderColor: 'rgba(245,158,11,0.25)',
+        },
+        bannerPressed: { opacity: 0.9 },
+        permissionText: { flex: 1 },
+        permissionTitle: {
+          ...typography.bodySmall,
+          color: colors.textPrimary,
+          fontWeight: '700',
+        },
+        permissionSubtitle: {
+          ...typography.caption,
+          color: colors.textSecondary,
+          marginTop: 2,
+        },
+        androidSetupCard: {
+          backgroundColor: colors.white,
+          borderRadius: borderRadius.xl,
+          padding: spacing.lg,
+          marginBottom: spacing.md,
+          borderWidth: 1,
+          borderColor: colors.primaryLight,
+          ...shadows.sm,
+        },
+        androidSetupHeader: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: spacing.sm,
+          marginBottom: spacing.sm,
+        },
+        androidSetupTitle: {
+          ...typography.bodySmall,
+          color: colors.textPrimary,
+          fontWeight: '700',
+          flex: 1,
+        },
+        androidSetupBody: {
+          ...typography.caption,
+          color: colors.textSecondary,
+          lineHeight: 18,
+          marginBottom: spacing.md,
+        },
+        androidSetupActions: {
+          flexDirection: 'row',
+          gap: spacing.sm,
+        },
+        androidSetupBtn: {
+          flex: 1,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: spacing.xs,
+          paddingVertical: spacing.sm + 2,
+          borderRadius: borderRadius.lg,
+        },
+        androidSetupBtnPrimary: {
+          backgroundColor: colors.primary,
+        },
+        androidSetupBtnPrimaryText: {
+          ...typography.caption,
+          color: colors.white,
+          fontWeight: '700',
+        },
+        androidSetupBtnSecondary: {
+          backgroundColor: colors.infoLight,
+          borderWidth: 1,
+          borderColor: colors.border,
+        },
+        androidSetupBtnSecondaryText: {
+          ...typography.caption,
+          color: colors.primary,
+          fontWeight: '700',
+        },
+        loadingWrap: {
+          flex: 1,
+          alignItems: 'center',
+          justifyContent: 'center',
+        },
+        listContent: {
+          paddingBottom: spacing.xxl * 2,
+        },
+        listContentEmpty: {
+          flexGrow: 1,
+          justifyContent: 'center',
+        },
+        emptyWrap: {
+          alignItems: 'center',
+          paddingHorizontal: spacing.xl,
+          paddingVertical: spacing.xxl,
+        },
+        emptyIconCircle: {
+          width: moderateScale(100),
+          height: moderateScale(100),
+          borderRadius: moderateScale(50),
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginBottom: spacing.lg,
+        },
+        emptyTitle: {
+          ...typography.h3,
+          color: colors.textPrimary,
+          fontWeight: '700',
+          textAlign: 'center',
+        },
+        emptySubtitle: {
+          ...typography.bodySmall,
+          color: colors.textSecondary,
+          textAlign: 'center',
+          marginTop: spacing.sm,
+          lineHeight: 22,
+        },
+        emptyCta: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: spacing.sm,
+          backgroundColor: colors.primary,
+          paddingHorizontal: spacing.xl,
+          paddingVertical: spacing.md,
+          borderRadius: borderRadius.full,
+          marginTop: spacing.xl,
+          ...shadows.md,
+        },
+        emptyCtaPressed: { opacity: 0.9 },
+        emptyCtaText: {
+          ...typography.bodySmall,
+          color: colors.white,
+          fontWeight: '700',
+        },
+        fab: {
+          position: 'absolute',
+          right: spacing.xl,
+          bottom: spacing.xl,
+          ...shadows.lg,
+        },
+        fabPressed: { opacity: 0.9, transform: [{ scale: 0.96 }] },
+        fabGradient: {
+          width: moderateScale(56),
+          height: moderateScale(56),
+          borderRadius: moderateScale(28),
+          alignItems: 'center',
+          justifyContent: 'center',
+        },
+      }),
+    [borderRadius, colors, moderateScale, shadows, spacing, typography],
+  );
 
   useFocusEffect(
     useCallback(() => {
@@ -147,7 +352,7 @@ const MedicineRemindersScreen = () => {
   return (
     <View style={styles.root}>
       <LinearGradient
-        colors={['#1A73E8', '#4A9CF5', colors.surfaceSecondary]}
+        colors={gradients.settingsHero}
         locations={[0, 0.35, 1]}
         style={styles.hero}
       >
@@ -277,222 +482,5 @@ const MedicineRemindersScreen = () => {
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: colors.surfaceSecondary,
-  },
-  hero: {
-    paddingBottom: spacing.lg,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.sm,
-  },
-  backBtn: {
-    width: moderateScale(40),
-    height: moderateScale(40),
-    borderRadius: borderRadius.full,
-    backgroundColor: colors.white,
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...shadows.sm,
-  },
-  backBtnPressed: { opacity: 0.8 },
-  headerTextBlock: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  headerTitle: {
-    ...typography.h4,
-    color: colors.white,
-    fontWeight: '700',
-  },
-  headerSubtitle: {
-    ...typography.caption,
-    color: 'rgba(255,255,255,0.85)',
-    marginTop: 2,
-  },
-  headerSpacer: {
-    width: moderateScale(40),
-  },
-  body: {
-    flex: 1,
-    marginTop: -spacing.sm,
-    borderTopLeftRadius: borderRadius.xxl,
-    borderTopRightRadius: borderRadius.xxl,
-    backgroundColor: colors.surfaceSecondary,
-    paddingTop: spacing.lg,
-    paddingHorizontal: spacing.lg,
-  },
-  permissionBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    backgroundColor: colors.warningLight,
-    borderRadius: borderRadius.lg,
-    padding: spacing.md,
-    marginBottom: spacing.md,
-    borderWidth: 1,
-    borderColor: 'rgba(245,158,11,0.25)',
-  },
-  bannerPressed: { opacity: 0.9 },
-  permissionText: { flex: 1 },
-  permissionTitle: {
-    ...typography.bodySmall,
-    color: colors.textPrimary,
-    fontWeight: '700',
-  },
-  permissionSubtitle: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    marginTop: 2,
-  },
-  tipBanner: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.sm,
-    backgroundColor: colors.infoLight,
-    borderRadius: borderRadius.lg,
-    padding: spacing.md,
-    marginBottom: spacing.md,
-  },
-  tipText: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    flex: 1,
-    lineHeight: 18,
-  },
-  androidSetupCard: {
-    backgroundColor: colors.white,
-    borderRadius: borderRadius.xl,
-    padding: spacing.lg,
-    marginBottom: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.primaryLight,
-    ...shadows.sm,
-  },
-  androidSetupHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    marginBottom: spacing.sm,
-  },
-  androidSetupTitle: {
-    ...typography.bodySmall,
-    color: colors.textPrimary,
-    fontWeight: '700',
-    flex: 1,
-  },
-  androidSetupBody: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    lineHeight: 18,
-    marginBottom: spacing.md,
-  },
-  androidSetupActions: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  androidSetupBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.xs,
-    paddingVertical: spacing.sm + 2,
-    borderRadius: borderRadius.lg,
-  },
-  androidSetupBtnPrimary: {
-    backgroundColor: colors.primary,
-  },
-  androidSetupBtnPrimaryText: {
-    ...typography.caption,
-    color: colors.white,
-    fontWeight: '700',
-  },
-  androidSetupBtnSecondary: {
-    backgroundColor: colors.infoLight,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  androidSetupBtnSecondaryText: {
-    ...typography.caption,
-    color: colors.primary,
-    fontWeight: '700',
-  },
-  loadingWrap: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  listContent: {
-    paddingBottom: spacing.xxl * 2,
-  },
-  listContentEmpty: {
-    flexGrow: 1,
-    justifyContent: 'center',
-  },
-  emptyWrap: {
-    alignItems: 'center',
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.xxl,
-  },
-  emptyIconCircle: {
-    width: moderateScale(100),
-    height: moderateScale(100),
-    borderRadius: moderateScale(50),
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.lg,
-  },
-  emptyTitle: {
-    ...typography.h3,
-    color: colors.textPrimary,
-    fontWeight: '700',
-    textAlign: 'center',
-  },
-  emptySubtitle: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    marginTop: spacing.sm,
-    lineHeight: 22,
-  },
-  emptyCta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    backgroundColor: colors.primary,
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.md,
-    borderRadius: borderRadius.full,
-    marginTop: spacing.xl,
-    ...shadows.md,
-  },
-  emptyCtaPressed: { opacity: 0.9 },
-  emptyCtaText: {
-    ...typography.bodySmall,
-    color: colors.white,
-    fontWeight: '700',
-  },
-  fab: {
-    position: 'absolute',
-    right: spacing.xl,
-    bottom: spacing.xl,
-    ...shadows.lg,
-  },
-  fabPressed: { opacity: 0.9, transform: [{ scale: 0.96 }] },
-  fabGradient: {
-    width: moderateScale(56),
-    height: moderateScale(56),
-    borderRadius: moderateScale(28),
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
 
 export default MedicineRemindersScreen;

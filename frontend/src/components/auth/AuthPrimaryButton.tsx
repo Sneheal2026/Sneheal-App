@@ -6,9 +6,7 @@ import {
   ActivityIndicator,
   ViewStyle,
 } from 'react-native';
-import theme from '@/styles/theme';
-
-const { colors, spacing, borderRadius, typography } = theme;
+import { useTheme } from '@/hooks/useTheme';
 
 interface AuthPrimaryButtonProps {
   title: string;
@@ -24,27 +22,39 @@ const AuthPrimaryButton: React.FC<AuthPrimaryButtonProps> = ({
   disabled = false,
   loading = false,
   style,
-}) => (
-  <TouchableOpacity
-    style={[styles.button, (disabled || loading) && styles.disabled, style]}
-    onPress={onPress}
-    disabled={disabled || loading}
-    activeOpacity={0.85}
-    accessibilityRole="button"
-  >
-    {loading ? (
-      <ActivityIndicator color={colors.textInverse} size="small" />
-    ) : (
-      <Text style={styles.text}>{title}</Text>
-    )}
-  </TouchableOpacity>
-);
+}) => {
+  const { colors, borderRadius, typography } = useTheme();
+
+  return (
+    <TouchableOpacity
+      style={[
+        styles.button,
+        {
+          borderRadius: borderRadius.xl,
+          backgroundColor: colors.primary,
+        },
+        (disabled || loading) && styles.disabled,
+        style,
+      ]}
+      onPress={onPress}
+      disabled={disabled || loading}
+      activeOpacity={0.85}
+      accessibilityRole="button"
+    >
+      {loading ? (
+        <ActivityIndicator color={colors.textInverse} size="small" />
+      ) : (
+        <Text style={[styles.text, typography.button, { color: colors.textInverse }]}>
+          {title}
+        </Text>
+      )}
+    </TouchableOpacity>
+  );
+};
 
 const styles = StyleSheet.create({
   button: {
     height: 52,
-    borderRadius: borderRadius.xl,
-    backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
     width: '100%',
@@ -53,8 +63,6 @@ const styles = StyleSheet.create({
     opacity: 0.45,
   },
   text: {
-    ...typography.button,
-    color: colors.textInverse,
     fontSize: 15,
     letterSpacing: 0.3,
   },

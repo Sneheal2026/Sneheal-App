@@ -1,12 +1,10 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, Switch, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import type { MedicineReminder } from '@/types/reminder.types';
 import { formatTimeDisplay } from '@/utils/reminderTime';
-import theme from '@/styles/theme';
-
-const { colors, spacing, typography, borderRadius, shadows, moderateScale } = theme;
+import { useTheme } from '@/hooks/useTheme';
 
 interface ReminderCardProps {
   reminder: MedicineReminder;
@@ -23,6 +21,7 @@ const ReminderCard = ({
   onDelete,
   onMarkTaken,
 }: ReminderCardProps) => {
+  const { colors, spacing, typography, borderRadius, shadows, moderateScale } = useTheme();
   const stockPercent =
     reminder.totalTablets > 0
       ? Math.round((reminder.remainingTablets / reminder.totalTablets) * 100)
@@ -31,6 +30,152 @@ const ReminderCard = ({
     reminder.remainingTablets > 0 &&
     reminder.remainingTablets <= reminder.dosePerTime * reminder.times.length * 3;
   const isEmpty = reminder.remainingTablets === 0;
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        card: {
+          backgroundColor: colors.surface,
+          borderRadius: borderRadius.xl,
+          padding: spacing.lg,
+          marginBottom: spacing.md,
+          borderWidth: 1,
+          borderColor: colors.borderLight,
+          ...shadows.md,
+        },
+        cardDisabled: {
+          opacity: 0.72,
+        },
+        cardHeader: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: spacing.md,
+        },
+        iconBadge: {
+          width: moderateScale(44),
+          height: moderateScale(44),
+          borderRadius: borderRadius.lg,
+          alignItems: 'center',
+          justifyContent: 'center',
+        },
+        headerText: {
+          flex: 1,
+          minWidth: 0,
+        },
+        medicineName: {
+          ...typography.h4,
+          color: colors.textPrimary,
+          fontWeight: '700',
+        },
+        doseText: {
+          ...typography.caption,
+          color: colors.textSecondary,
+          marginTop: 2,
+        },
+        timesRow: {
+          flexDirection: 'row',
+          flexWrap: 'wrap',
+          gap: spacing.sm,
+          marginTop: spacing.md,
+        },
+        timeChip: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: spacing.xs,
+          backgroundColor: colors.infoLight,
+          paddingHorizontal: spacing.md,
+          paddingVertical: spacing.xs + 2,
+          borderRadius: borderRadius.full,
+        },
+        timeChipText: {
+          ...typography.caption,
+          color: colors.primaryDark,
+          fontWeight: '600',
+        },
+        stockSection: {
+          marginTop: spacing.md,
+        },
+        stockHeader: {
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: spacing.xs,
+        },
+        stockLabel: {
+          ...typography.caption,
+          color: colors.textSecondary,
+        },
+        stockValue: {
+          ...typography.caption,
+          color: colors.textPrimary,
+          fontWeight: '700',
+        },
+        stockLow: {
+          color: colors.warning,
+        },
+        stockEmpty: {
+          color: colors.error,
+        },
+        progressTrack: {
+          height: 6,
+          backgroundColor: colors.borderLight,
+          borderRadius: borderRadius.full,
+          overflow: 'hidden',
+        },
+        progressFill: {
+          height: '100%',
+          backgroundColor: colors.secondary,
+          borderRadius: borderRadius.full,
+        },
+        progressLow: {
+          backgroundColor: colors.warning,
+        },
+        progressEmpty: {
+          backgroundColor: colors.error,
+        },
+        actionsRow: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: spacing.sm,
+          marginTop: spacing.lg,
+        },
+        takenBtn: {
+          flex: 1,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: spacing.xs,
+          backgroundColor: colors.secondary,
+          paddingVertical: spacing.sm + 2,
+          borderRadius: borderRadius.lg,
+        },
+        takenBtnDisabled: {
+          backgroundColor: colors.border,
+        },
+        takenBtnPressed: {
+          opacity: 0.88,
+        },
+        takenBtnText: {
+          ...typography.bodySmall,
+          color: colors.white,
+          fontWeight: '700',
+        },
+        iconBtn: {
+          width: moderateScale(44),
+          height: moderateScale(44),
+          borderRadius: borderRadius.lg,
+          backgroundColor: colors.surfaceSecondary,
+          alignItems: 'center',
+          justifyContent: 'center',
+          borderWidth: 1,
+          borderColor: colors.borderLight,
+        },
+        iconBtnPressed: {
+          opacity: 0.75,
+        },
+      }),
+    [borderRadius, colors, moderateScale, shadows, spacing, typography],
+  );
 
   return (
     <View style={[styles.card, !reminder.enabled && styles.cardDisabled]}>
@@ -133,147 +278,5 @@ const ReminderCard = ({
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.xl,
-    padding: spacing.lg,
-    marginBottom: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.borderLight,
-    ...shadows.md,
-  },
-  cardDisabled: {
-    opacity: 0.72,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-  },
-  iconBadge: {
-    width: moderateScale(44),
-    height: moderateScale(44),
-    borderRadius: borderRadius.lg,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerText: {
-    flex: 1,
-    minWidth: 0,
-  },
-  medicineName: {
-    ...typography.h4,
-    color: colors.textPrimary,
-    fontWeight: '700',
-  },
-  doseText: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    marginTop: 2,
-  },
-  timesRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-    marginTop: spacing.md,
-  },
-  timeChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    backgroundColor: colors.infoLight,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs + 2,
-    borderRadius: borderRadius.full,
-  },
-  timeChipText: {
-    ...typography.caption,
-    color: colors.primaryDark,
-    fontWeight: '600',
-  },
-  stockSection: {
-    marginTop: spacing.md,
-  },
-  stockHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.xs,
-  },
-  stockLabel: {
-    ...typography.caption,
-    color: colors.textSecondary,
-  },
-  stockValue: {
-    ...typography.caption,
-    color: colors.textPrimary,
-    fontWeight: '700',
-  },
-  stockLow: {
-    color: colors.warning,
-  },
-  stockEmpty: {
-    color: colors.error,
-  },
-  progressTrack: {
-    height: 6,
-    backgroundColor: colors.borderLight,
-    borderRadius: borderRadius.full,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: colors.secondary,
-    borderRadius: borderRadius.full,
-  },
-  progressLow: {
-    backgroundColor: colors.warning,
-  },
-  progressEmpty: {
-    backgroundColor: colors.error,
-  },
-  actionsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    marginTop: spacing.lg,
-  },
-  takenBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.xs,
-    backgroundColor: colors.secondary,
-    paddingVertical: spacing.sm + 2,
-    borderRadius: borderRadius.lg,
-  },
-  takenBtnDisabled: {
-    backgroundColor: colors.border,
-  },
-  takenBtnPressed: {
-    opacity: 0.88,
-  },
-  takenBtnText: {
-    ...typography.bodySmall,
-    color: colors.white,
-    fontWeight: '700',
-  },
-  iconBtn: {
-    width: moderateScale(44),
-    height: moderateScale(44),
-    borderRadius: borderRadius.lg,
-    backgroundColor: colors.surfaceSecondary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: colors.borderLight,
-  },
-  iconBtnPressed: {
-    opacity: 0.75,
-  },
-});
 
 export default ReminderCard;

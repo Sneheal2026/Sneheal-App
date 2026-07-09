@@ -20,6 +20,7 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated';
 import theme from '@/styles/theme';
+import { useTheme } from '@/hooks/useTheme';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -70,7 +71,6 @@ export const FEATURED_PRODUCTS: Product[] = [
 const ADD_GREEN = '#1F9D55';
 const ADD_GREEN_LIGHT = '#E8F7EE';
 const ADD_GREEN_DARK = '#188A47';
-const PRICE_BLUE = '#0A74DA';
 const BTN_SIZE = INNER_BTN;
 
 interface ScalePressableProps {
@@ -176,7 +176,10 @@ interface ProductCardProps {
   onPress?: (id: string) => void;
 }
 
-const ProductCard = ({ item, quantity, onIncrement, onDecrement, onPress }: ProductCardProps) => (
+const ProductCard = ({ item, quantity, onIncrement, onDecrement, onPress }: ProductCardProps) => {
+  const { colors } = useTheme();
+
+  return (
   <Pressable style={styles.card} onPress={() => onPress?.(item.id)}>
     <View style={styles.imageBox}>
       <Image source={item.image} style={styles.image} resizeMode="contain" />
@@ -189,7 +192,12 @@ const ProductCard = ({ item, quantity, onIncrement, onDecrement, onPress }: Prod
 
       <View style={styles.footer}>
         <View style={styles.priceBox}>
-          <Text style={styles.price} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>
+          <Text
+            style={[styles.price, { color: colors.primary }]}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.85}
+          >
             ₹{item.price.toFixed(2)}
           </Text>
           {item.originalPrice ? (
@@ -207,7 +215,8 @@ const ProductCard = ({ item, quantity, onIncrement, onDecrement, onPress }: Prod
       </View>
     </View>
   </Pressable>
-);
+  );
+};
 
 interface FeaturedProductsProps {
   quantities: Record<string, number>;
@@ -217,6 +226,8 @@ interface FeaturedProductsProps {
 }
 
 const FeaturedProducts = ({ quantities, onIncrement, onDecrement, onPressItem }: FeaturedProductsProps) => {
+  const { colors } = useTheme();
+
   const renderItem = useCallback(
     ({ item }: { item: Product }) => (
       <ProductCard
@@ -235,7 +246,7 @@ const FeaturedProducts = ({ quantities, onIncrement, onDecrement, onPressItem }:
       <View style={styles.header}>
         <Text style={styles.title}>Featured Products</Text>
         <Pressable>
-          <Text style={styles.viewAll}>View All</Text>
+          <Text style={[styles.viewAll, { color: colors.primary }]}>View All</Text>
         </Pressable>
       </View>
 
@@ -276,7 +287,6 @@ const styles = StyleSheet.create({
   viewAll: {
     fontSize: moderateScale(14),
     fontWeight: '600',
-    color: PRICE_BLUE,
   },
   list: {
     paddingHorizontal: spacing.lg,
@@ -345,7 +355,6 @@ const styles = StyleSheet.create({
   price: {
     fontSize: moderateScale(18, 0.35),
     fontWeight: '700',
-    color: PRICE_BLUE,
     lineHeight: moderateScale(22, 0.35),
   },
   oldPrice: {

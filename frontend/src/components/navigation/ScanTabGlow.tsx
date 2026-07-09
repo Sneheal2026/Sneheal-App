@@ -10,18 +10,17 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { SCAN_BUTTON_SIZE } from '@/navigation/tabBarConfig';
-import theme from '@/styles/theme';
-
-const { colors } = theme;
+import { useTheme } from '@/hooks/useTheme';
 
 const PULSE_DURATION = 2400;
 const HALO_DURATION = 3200;
 
 interface PulseRingProps {
   delay?: number;
+  color: string;
 }
 
-const PulseRing = ({ delay = 0 }: PulseRingProps) => {
+const PulseRing = ({ delay = 0, color }: PulseRingProps) => {
   const progress = useSharedValue(0);
 
   useEffect(() => {
@@ -40,10 +39,15 @@ const PulseRing = ({ delay = 0 }: PulseRingProps) => {
     opacity: interpolate(progress.value, [0, 0.2, 1], [0.5, 0.3, 0]),
   }));
 
-  return <Animated.View style={[styles.ring, ringStyle]} pointerEvents="none" />;
+  return (
+    <Animated.View
+      style={[styles.ring, { borderColor: color }, ringStyle]}
+      pointerEvents="none"
+    />
+  );
 };
 
-const AmbientHalo = () => {
+const AmbientHalo = ({ color }: { color: string }) => {
   const breath = useSharedValue(0);
 
   useEffect(() => {
@@ -59,16 +63,25 @@ const AmbientHalo = () => {
     opacity: interpolate(breath.value, [0, 1], [0.22, 0.38]),
   }));
 
-  return <Animated.View style={[styles.halo, haloStyle]} pointerEvents="none" />;
+  return (
+    <Animated.View
+      style={[styles.halo, { backgroundColor: color }, haloStyle]}
+      pointerEvents="none"
+    />
+  );
 };
 
-const ScanTabGlow = () => (
-  <>
-    <AmbientHalo />
-    <PulseRing delay={0} />
-    <PulseRing delay={PULSE_DURATION / 2} />
-  </>
-);
+const ScanTabGlow = () => {
+  const { colors } = useTheme();
+
+  return (
+    <>
+      <AmbientHalo color={colors.primaryLight} />
+      <PulseRing delay={0} color={colors.primaryLight} />
+      <PulseRing delay={PULSE_DURATION / 2} color={colors.primaryLight} />
+    </>
+  );
+};
 
 const styles = StyleSheet.create({
   halo: {
@@ -76,7 +89,6 @@ const styles = StyleSheet.create({
     width: SCAN_BUTTON_SIZE,
     height: SCAN_BUTTON_SIZE,
     borderRadius: SCAN_BUTTON_SIZE / 2,
-    backgroundColor: colors.primaryLight,
   },
   ring: {
     position: 'absolute',
@@ -84,7 +96,6 @@ const styles = StyleSheet.create({
     height: SCAN_BUTTON_SIZE,
     borderRadius: SCAN_BUTTON_SIZE / 2,
     borderWidth: 1.5,
-    borderColor: colors.primaryLight,
   },
 });
 
