@@ -17,6 +17,7 @@ export type AuthStackParamList = {
   HelpAndSupport: undefined;
   ShareApp: undefined;
   AboutSneheal: undefined;
+  DevStorageInspector: undefined;
   LanguageSettings: undefined;
   ColorSettings: undefined;
   MedicineScan: undefined;
