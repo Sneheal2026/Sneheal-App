@@ -23,6 +23,34 @@ export type VerifyOtpResponse = {
 
 export type RefreshSessionResponse = VerifyOtpResponse;
 
+export type CompleteRegistrationResponse = VerifyOtpResponse;
+
+export type ImageDocument = {
+  mimeType: string;
+  base64: string;
+};
+
+export type DoctorClinic = {
+  addressLine: string;
+  city: string;
+  state: string;
+  pincode: string;
+  landmark?: string;
+};
+
+export type DeliveryDocuments = {
+  aadhar: ImageDocument;
+  license: ImageDocument;
+};
+
+export type CompleteRegistrationPayload = {
+  username: string;
+  language: 'ENGLISH' | 'HINDI' | 'MARATHI';
+  role: 'customer' | 'doctor' | 'delivery_agent';
+  clinic?: DoctorClinic;
+  documents?: DeliveryDocuments;
+};
+
 export type ApiSuccessResponse<T> = {
   success: true;
   message: string;

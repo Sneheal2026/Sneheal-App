@@ -6,6 +6,7 @@ import {
   TextInput,
   Pressable,
   Image,
+  Alert,
 } from 'react-native';
 import Animated, {
   FadeIn,
@@ -15,12 +16,18 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system/legacy';
 import {
   AuthScreenLayout,
   AuthPrimaryButton,
 } from '@/components/auth';
 import { useTheme } from '@/hooks/useTheme';
+import { useAuth } from '@/context/AuthContext';
+import { completeRegistration } from '@/services/authService';
+import { devLog } from '@/utils/devLogger';
+import { resolveAuthRoute } from '@/navigation/resolveAuthRoute';
 import type { AuthScreenProps, AppLanguage, UserRole } from '@/navigation/types';
+import type { CompleteRegistrationPayload, ImageDocument } from '@/types/auth';
 
 const LANGUAGES: { value: AppLanguage; label: string }[] = [
   { value: 'ENGLISH', label: 'English' },
@@ -35,6 +42,9 @@ const ROLES: { value: UserRole; label: string; icon: keyof typeof Ionicons.glyph
 ];
 
 type DocumentKey = 'aadhar' | 'license';
+
+const MAX_IMAGE_SIZE_BYTES = 1 * 1024 * 1024; // 1 MB
+const MAX_IMAGE_SIZE_MB = 1;
 
 async function pickDocumentImage(
   source: 'camera' | 'gallery',
@@ -68,7 +78,49 @@ async function pickDocumentImage(
         });
 
   if (!result.canceled && result.assets[0]?.uri) {
-    onPicked(result.assets[0].uri);
+    const asset = result.assets[0];
+
+    let fileSize = asset.fileSize;
+    if (!fileSize) {
+      try {
+        const info = await FileSystem.getInfoAsync(asset.uri);
+        if (info.exists && 'size' in info) {
+          fileSize = info.size;
+        }
+      } catch {
+        devLog('Registration', 'Could not get file size', { uri: asset.uri });
+      }
+    }
+
+    if (fileSize && fileSize > MAX_IMAGE_SIZE_BYTES) {
+      const sizeMB = (fileSize / (1024 * 1024)).toFixed(2);
+      onDenied(
+        `${documentLabel} is ${sizeMB} MB. Please choose an image smaller than ${MAX_IMAGE_SIZE_MB} MB.`,
+      );
+      return;
+    }
+
+    onPicked(asset.uri);
+  }
+}
+
+async function readImageAsBase64(uri: string): Promise<ImageDocument | null> {
+  try {
+    const base64 = await FileSystem.readAsStringAsync(uri, {
+      encoding: 'base64',
+    });
+
+    let mimeType = 'image/jpeg';
+    if (uri.toLowerCase().endsWith('.png')) {
+      mimeType = 'image/png';
+    } else if (uri.toLowerCase().endsWith('.jpg') || uri.toLowerCase().endsWith('.jpeg')) {
+      mimeType = 'image/jpeg';
+    }
+
+    return { base64, mimeType };
+  } catch (error) {
+    devLog('Registration', 'Failed to read image as base64', error);
+    return null;
   }
 }
 
@@ -303,6 +355,7 @@ const RegistrationScreen = ({
 }: AuthScreenProps<'Registration'>) => {
   const { phoneNumber } = route.params;
   const { colors, spacing, typography, borderRadius, shadows } = useTheme();
+  const { accessToken, signIn } = useAuth();
 
   const [username, setUsername] = useState('');
   const [language, setLanguage] = useState<AppLanguage | null>(null);
@@ -372,27 +425,97 @@ const RegistrationScreen = ({
     [],
   );
 
-  const handleContinue = useCallback(() => {
-    if (!canContinue || !role) return;
+  const handleContinue = useCallback(async () => {
+    if (!canContinue || !role || !language || isSubmitting) return;
+
+    if (!accessToken) {
+      Alert.alert('Session expired', 'Please verify your phone number again.');
+      navigation.reset({ index: 0, routes: [{ name: 'PhoneNumber' }] });
+      return;
+    }
 
     setIsSubmitting(true);
+    await Promise.resolve();
 
-    setTimeout(() => {
-      setIsSubmitting(false);
+    try {
+      const payload: CompleteRegistrationPayload = {
+        username: username.trim(),
+        language,
+        role,
+      };
 
-      const destination =
-        role === 'customer'
-          ? 'Main'
-          : role === 'delivery_agent'
-            ? 'DeliveryAgentMain'
-            : 'DoctorMain';
+      if (role === 'doctor') {
+        payload.clinic = {
+          addressLine: addressLine.trim(),
+          city: city.trim(),
+          state: state.trim(),
+          pincode: pincode.trim(),
+          landmark: landmark.trim() || undefined,
+        };
+      }
 
+      if (role === 'delivery_agent') {
+        if (!aadharUri || !licenseUri) {
+          Alert.alert('Error', 'Please upload both Aadhar card and driving license');
+          return;
+        }
+
+        const aadharDoc = await readImageAsBase64(aadharUri);
+        const licenseDoc = await readImageAsBase64(licenseUri);
+
+        if (!aadharDoc || !licenseDoc) {
+          Alert.alert('Error', 'Failed to read document images. Please try again.');
+          return;
+        }
+
+        payload.documents = {
+          aadhar: aadharDoc,
+          license: licenseDoc,
+        };
+      }
+
+      devLog('Registration', 'Submitting registration', { role, username: payload.username });
+
+      const response = await completeRegistration(payload, accessToken);
+
+      devLog('Registration', 'Registration successful', {
+        userId: response.user.id,
+        profileCompleted: response.user.profileCompleted,
+      });
+
+      await signIn(response);
+
+      const { route: nextRoute, params } = resolveAuthRoute(response.user);
       navigation.reset({
         index: 0,
-        routes: [{ name: destination }],
+        routes: params ? [{ name: nextRoute, params }] : [{ name: nextRoute }],
       });
-    }, 800);
-  }, [canContinue, role, navigation]);
+    } catch (error) {
+      devLog('Registration', 'Registration failed', error);
+
+      const message =
+        error instanceof Error ? error.message : 'Registration failed. Please try again.';
+      Alert.alert('Registration Failed', message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [
+    canContinue,
+    role,
+    language,
+    accessToken,
+    isSubmitting,
+    username,
+    addressLine,
+    city,
+    state,
+    pincode,
+    landmark,
+    aadharUri,
+    licenseUri,
+    signIn,
+    navigation,
+  ]);
 
   const styles = StyleSheet.create({
     title: {
@@ -605,7 +728,7 @@ const RegistrationScreen = ({
         <AuthPrimaryButton
           title="Continue"
           onPress={handleContinue}
-          disabled={!canContinue}
+          disabled={!canContinue || isSubmitting}
           loading={isSubmitting}
         />
       }
@@ -728,7 +851,7 @@ const RegistrationScreen = ({
 
             <DocumentUploadField
               label="Aadhar Card"
-              hint="Clear photo of your Aadhar for identity verification"
+              hint="Clear photo of your Aadhar for identity verification (JPEG/PNG, max 1 MB)"
               icon="card-outline"
               uri={aadharUri}
               error={permissionErrors.aadhar}
@@ -742,7 +865,7 @@ const RegistrationScreen = ({
 
             <DocumentUploadField
               label="Driving License"
-              hint="Valid driving license required for delivery partners"
+              hint="Valid driving license required for delivery partners (JPEG/PNG, max 1 MB)"
               icon="car-outline"
               uri={licenseUri}
               error={permissionErrors.license}

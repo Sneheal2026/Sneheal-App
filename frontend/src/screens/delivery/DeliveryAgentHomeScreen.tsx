@@ -13,6 +13,7 @@ import {
   DeliveryEmptyState,
   deliveryTheme,
 } from '@/components/delivery';
+import DevResetStorageButton from '@/components/common/DevResetStorageButton';
 import type { DeliveryOrder } from '@/components/delivery';
 
 const { spacing } = theme;
@@ -107,6 +108,8 @@ const DeliveryAgentHomeScreen = () => {
             />
           ))
         )}
+
+        <DevResetStorageButton />
       </ScrollView>
     </View>
   );

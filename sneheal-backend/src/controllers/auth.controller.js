@@ -1,4 +1,5 @@
 const authService = require('../services/auth.service');
+const registrationService = require('../services/registration.service');
 const { success } = require('../utils/response');
 
 const sendOtp = async (req, res) => {
@@ -16,8 +17,15 @@ const refreshSession = async (req, res) => {
   return success(res, 'Session refreshed', data);
 };
 
+const completeRegistration = async (req, res) => {
+  const userId = req.user.sub;
+  const data = await registrationService.completeRegistration(userId, req.body);
+  return success(res, 'Profile completed', data);
+};
+
 module.exports = {
   sendOtp,
   verifyOtp,
   refreshSession,
+  completeRegistration,
 };

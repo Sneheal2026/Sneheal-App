@@ -44,7 +44,6 @@ const YOUR_INFO_ITEMS = [
 const HEALTH_ITEMS = [
   { id: 'order-history', icon: 'time-outline' as const, label: 'Order history' },
   { id: 'upload-rx', icon: 'cloud-upload-outline' as const, label: 'Upload prescription' },
-  { id: 'health-wallet', icon: 'wallet-outline' as const, label: 'Sneheal wallet' },
   { id: 'emergency', icon: 'medkit-outline' as const, label: 'Emergency contacts' },
 ];
 

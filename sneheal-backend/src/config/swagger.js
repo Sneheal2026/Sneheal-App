@@ -78,6 +78,65 @@ const options = {
             user: { $ref: '#/components/schemas/AuthUser' },
           },
         },
+        ImageDocument: {
+          type: 'object',
+          required: ['base64'],
+          properties: {
+            mimeType: {
+              type: 'string',
+              enum: ['image/jpeg', 'image/png'],
+              example: 'image/jpeg',
+            },
+            base64: {
+              type: 'string',
+              description: 'Base64 encoded image (max 1MB decoded)',
+            },
+          },
+        },
+        DoctorClinic: {
+          type: 'object',
+          required: ['addressLine', 'city', 'state', 'pincode'],
+          properties: {
+            addressLine: { type: 'string', example: '123 MG Road' },
+            city: { type: 'string', example: 'Pune' },
+            state: { type: 'string', example: 'Maharashtra' },
+            pincode: { type: 'string', example: '411001', pattern: '^\\d{6}$' },
+            landmark: { type: 'string', example: 'Near City Mall' },
+          },
+        },
+        DeliveryDocuments: {
+          type: 'object',
+          required: ['aadhar', 'license'],
+          properties: {
+            aadhar: { $ref: '#/components/schemas/ImageDocument' },
+            license: { $ref: '#/components/schemas/ImageDocument' },
+          },
+        },
+        CompleteRegistrationRequest: {
+          type: 'object',
+          required: ['username', 'language', 'role'],
+          properties: {
+            username: { type: 'string', minLength: 2, example: 'Rahul Kumar' },
+            language: {
+              type: 'string',
+              enum: ['ENGLISH', 'HINDI', 'MARATHI'],
+              example: 'ENGLISH',
+            },
+            role: {
+              type: 'string',
+              enum: ['customer', 'doctor', 'delivery_agent'],
+              example: 'customer',
+            },
+            clinic: {
+              $ref: '#/components/schemas/DoctorClinic',
+              description: 'Required only for doctor role',
+            },
+            documents: {
+              $ref: '#/components/schemas/DeliveryDocuments',
+              description: 'Required only for delivery_agent role',
+            },
+          },
+        },
         SuccessResponse: {
           type: 'object',
           properties: {
@@ -91,6 +150,13 @@ const options = {
             success: { type: 'boolean', example: false },
             message: { type: 'string' },
           },
+        },
+      },
+      securitySchemes: {
+        BearerAuth: {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
         },
       },
     },
@@ -202,6 +268,104 @@ const options = {
             },
             401: {
               description: 'Invalid or expired OTP',
+              content: {
+                'application/json': {
+                  schema: { $ref: '#/components/schemas/ErrorResponse' },
+                },
+              },
+            },
+          },
+        },
+      },
+      '/api/auth/complete-registration': {
+        post: {
+          tags: ['Auth'],
+          summary: 'Complete user registration after OTP verification',
+          description:
+            'Complete profile for new users. Role determines required fields: customer (basic only), doctor (+ clinic), delivery_agent (+ documents). Images must be < 1MB each.',
+          security: [{ BearerAuth: [] }],
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/CompleteRegistrationRequest' },
+                examples: {
+                  customer: {
+                    summary: 'Customer registration',
+                    value: {
+                      username: 'Rahul Kumar',
+                      language: 'ENGLISH',
+                      role: 'customer',
+                    },
+                  },
+                  doctor: {
+                    summary: 'Doctor registration',
+                    value: {
+                      username: 'Dr. Sharma',
+                      language: 'HINDI',
+                      role: 'doctor',
+                      clinic: {
+                        addressLine: '123 MG Road',
+                        city: 'Pune',
+                        state: 'Maharashtra',
+                        pincode: '411001',
+                        landmark: 'Near City Mall',
+                      },
+                    },
+                  },
+                  deliveryAgent: {
+                    summary: 'Delivery agent registration',
+                    value: {
+                      username: 'Amit Singh',
+                      language: 'MARATHI',
+                      role: 'delivery_agent',
+                      documents: {
+                        aadhar: { mimeType: 'image/jpeg', base64: '<base64-string>' },
+                        license: { mimeType: 'image/png', base64: '<base64-string>' },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          responses: {
+            200: {
+              description: 'Profile completed, new tokens issued',
+              content: {
+                'application/json': {
+                  schema: {
+                    allOf: [
+                      { $ref: '#/components/schemas/SuccessResponse' },
+                      {
+                        type: 'object',
+                        properties: {
+                          data: { $ref: '#/components/schemas/VerifyOtpData' },
+                        },
+                      },
+                    ],
+                  },
+                },
+              },
+            },
+            400: {
+              description: 'Validation error (missing fields, invalid data, image too large)',
+              content: {
+                'application/json': {
+                  schema: { $ref: '#/components/schemas/ErrorResponse' },
+                },
+              },
+            },
+            401: {
+              description: 'Unauthorized (missing or invalid token)',
+              content: {
+                'application/json': {
+                  schema: { $ref: '#/components/schemas/ErrorResponse' },
+                },
+              },
+            },
+            409: {
+              description: 'Profile already completed or role conflict',
               content: {
                 'application/json': {
                   schema: { $ref: '#/components/schemas/ErrorResponse' },

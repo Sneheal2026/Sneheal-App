@@ -37,9 +37,29 @@ const createByPhone = async (phone, connection = db) => {
   return findById(result.insertId, connection);
 };
 
+const completeProfile = async (userId, { username, language, role }, connection = db) => {
+  await connection.execute(
+    `UPDATE users 
+     SET username = ?, language = ?, role = ?, profile_completed = TRUE 
+     WHERE id = ?`,
+    [username, language, role, userId]
+  );
+  return findById(userId, connection);
+};
+
+const findByIdForUpdate = async (id, connection) => {
+  const [rows] = await connection.execute(
+    'SELECT id, phone, username, language, role, profile_completed, created_at FROM users WHERE id = ? FOR UPDATE',
+    [id]
+  );
+  return mapUser(rows[0]);
+};
+
 module.exports = {
   findByPhone,
   findById,
+  findByIdForUpdate,
   createByPhone,
+  completeProfile,
   mapUser,
 };

@@ -9,6 +9,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import DevResetStorageButton from '@/components/common/DevResetStorageButton';
 import theme from '@/styles/theme';
 import globalStyles from '@/styles/globalStyles';
 
@@ -148,6 +149,8 @@ const DoctorHomeScreen = () => {
             <Text style={styles.quickLabel}>Reports</Text>
           </TouchableOpacity>
         </View>
+
+        <DevResetStorageButton />
       </ScrollView>
     </SafeAreaView>
   );

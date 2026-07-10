@@ -1,5 +1,11 @@
 import { apiRequest } from './apiClient';
-import type { SendOtpResponse, VerifyOtpResponse, RefreshSessionResponse } from '@/types/auth';
+import type {
+  SendOtpResponse,
+  VerifyOtpResponse,
+  RefreshSessionResponse,
+  CompleteRegistrationPayload,
+  CompleteRegistrationResponse,
+} from '@/types/auth';
 import { devLog } from '@/utils/devLogger';
 
 export const sendOtp = async (phone: string): Promise<SendOtpResponse> => {
@@ -28,5 +34,21 @@ export const refreshSession = async (
   return apiRequest<RefreshSessionResponse>('/api/auth/refresh', {
     method: 'POST',
     body: { refreshToken },
+  });
+};
+
+export const completeRegistration = async (
+  payload: CompleteRegistrationPayload,
+  accessToken: string,
+): Promise<CompleteRegistrationResponse> => {
+  devLog('Auth', 'completeRegistration called', {
+    username: payload.username,
+    role: payload.role,
+    language: payload.language,
+  });
+  return apiRequest<CompleteRegistrationResponse>('/api/auth/complete-registration', {
+    method: 'POST',
+    body: payload,
+    token: accessToken,
   });
 };

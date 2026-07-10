@@ -29,6 +29,7 @@ import {
 } from '@/components/home';
 import { FEATURED_PRODUCTS } from '@/components/home/FeaturedProducts';
 import FloatingCartBar from '@/components/cart/FloatingCartBar';
+import DevResetStorageButton from '@/components/common/DevResetStorageButton';
 import { useTabBarScrollState } from '@/hooks/useTabBarScrollHandler';
 import { useLiveLocation } from '@/hooks/useLiveLocation';
 import { useSavedAddresses } from '@/hooks/useSavedAddresses';
@@ -300,6 +301,7 @@ const HomeScreen = () => {
               onDecrement={handleDecrement}
               onPressItem={handleOpenProduct}
             />
+            <DevResetStorageButton />
           </View>
 
           <View style={styles.pillImageWrap} pointerEvents="none">

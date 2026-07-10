@@ -78,9 +78,49 @@ const validateRefreshToken = (req, res, next) => {
   next();
 };
 
+const VALID_ROLES = new Set(['customer', 'doctor', 'delivery_agent']);
+const VALID_LANGUAGES = new Set(['ENGLISH', 'HINDI', 'MARATHI']);
+
+const validateCompleteRegistration = (req, res, next) => {
+  const { username, language, role, clinic, documents } = req.body;
+
+  if (!username || typeof username !== 'string' || username.trim().length < 2) {
+    return fail(res, 400, 'Username must be at least 2 characters');
+  }
+
+  if (!language || !VALID_LANGUAGES.has(language)) {
+    return fail(res, 400, 'Language must be ENGLISH, HINDI, or MARATHI');
+  }
+
+  if (!role || !VALID_ROLES.has(role)) {
+    return fail(res, 400, 'Role must be customer, doctor, or delivery_agent');
+  }
+
+  if (role === 'doctor' && (!clinic || typeof clinic !== 'object')) {
+    return fail(res, 400, 'Clinic information is required for doctors');
+  }
+
+  if (role === 'delivery_agent' && (!documents || typeof documents !== 'object')) {
+    return fail(res, 400, 'Documents are required for delivery agents');
+  }
+
+  if (role === 'delivery_agent') {
+    const { aadhar, license } = documents;
+    if (!aadhar || !aadhar.base64) {
+      return fail(res, 400, 'Aadhar card image is required');
+    }
+    if (!license || !license.base64) {
+      return fail(res, 400, 'Driving license image is required');
+    }
+  }
+
+  next();
+};
+
 module.exports = {
   authenticateToken,
   validateSendOtp,
   validateVerifyOtp,
   validateRefreshToken,
+  validateCompleteRegistration,
 };
