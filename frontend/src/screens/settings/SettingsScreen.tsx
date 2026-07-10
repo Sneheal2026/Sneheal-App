@@ -63,9 +63,13 @@ const DEMO_ORDER = {
 
 const SettingsScreen = () => {
   const navigation = useNavigation<NativeStackNavigationProp<AuthStackParamList>>();
-  const { colors: themeColors, gradients, colorThemeId } = useTheme();
+  const { colors: themeColors, gradients, colorThemeId, customPrimary } = useTheme();
   const [currentLanguageLabel, setCurrentLanguageLabel] = useState('English');
   const currentColorLabel = getColorThemeOption(colorThemeId).label;
+  const currentColorSwatch = getColorThemeSwatch(
+    getColorThemeOption(colorThemeId),
+    customPrimary,
+  );
 
   useFocusEffect(
     useCallback(() => {
@@ -246,7 +250,7 @@ const SettingsScreen = () => {
                         <View
                           style={[
                             styles.colorSwatch,
-                            { backgroundColor: getColorThemeSwatch(getColorThemeOption(colorThemeId)) },
+                            { backgroundColor: currentColorSwatch },
                           ]}
                         />
                         <Text style={styles.languageTrailingText}>{currentColorLabel}</Text>

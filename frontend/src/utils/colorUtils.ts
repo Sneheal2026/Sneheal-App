@@ -86,3 +86,72 @@ export const isPastelColor = (hex: string): boolean => getRelativeLuminance(hex)
 /** Darkens very light pastels so buttons and labels stay readable. */
 export const ensureReadablePrimary = (hex: string): string =>
   isPastelColor(hex) ? darken(hex, 42) : hex;
+
+/** Convert HSL (h: 0–360, s/l: 0–100) to hex. */
+export const hslToHex = (h: number, s: number, l: number): string => {
+  const saturation = clamp(s, 0, 100) / 100;
+  const lightness = clamp(l, 0, 100) / 100;
+  const chroma = (1 - Math.abs(2 * lightness - 1)) * saturation;
+  const huePrime = (((h % 360) + 360) % 360) / 60;
+  const x = chroma * (1 - Math.abs((huePrime % 2) - 1));
+  const m = lightness - chroma / 2;
+
+  let r = 0;
+  let g = 0;
+  let b = 0;
+
+  if (huePrime < 1) {
+    r = chroma;
+    g = x;
+  } else if (huePrime < 2) {
+    r = x;
+    g = chroma;
+  } else if (huePrime < 3) {
+    g = chroma;
+    b = x;
+  } else if (huePrime < 4) {
+    g = x;
+    b = chroma;
+  } else if (huePrime < 5) {
+    r = x;
+    b = chroma;
+  } else {
+    r = chroma;
+    b = x;
+  }
+
+  return toHex({
+    r: Math.round((r + m) * 255),
+    g: Math.round((g + m) * 255),
+    b: Math.round((b + m) * 255),
+  });
+};
+
+/** Extract hue (0–360) from a hex color. */
+export const hexToHue = (hex: string): number => {
+  const { r, g, b } = parseHex(hex);
+  const red = r / 255;
+  const green = g / 255;
+  const blue = b / 255;
+  const max = Math.max(red, green, blue);
+  const min = Math.min(red, green, blue);
+  const delta = max - min;
+
+  if (delta === 0) return 0;
+
+  let hue = 0;
+  if (max === red) {
+    hue = ((green - blue) / delta) % 6;
+  } else if (max === green) {
+    hue = (blue - red) / delta + 2;
+  } else {
+    hue = (red - green) / delta + 4;
+  }
+
+  hue *= 60;
+  if (hue < 0) hue += 360;
+  return Math.round(hue);
+};
+
+/** Saturated accent from a hue — readable on buttons and headers. */
+export const hueToBrandHex = (hue: number): string => hslToHex(hue, 72, 46);

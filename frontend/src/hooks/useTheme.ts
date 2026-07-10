@@ -3,7 +3,14 @@ import { useThemeContext } from '@/context/ThemeContext';
 import staticTheme from '@/styles/theme';
 
 export const useTheme = () => {
-  const { colors, gradients, colorThemeId, setColorTheme, isThemeReady } = useThemeContext();
+  const {
+    colors,
+    gradients,
+    colorThemeId,
+    customPrimary,
+    setColorTheme,
+    isThemeReady,
+  } = useThemeContext();
 
   return useMemo(
     () => ({
@@ -11,9 +18,10 @@ export const useTheme = () => {
       colors,
       gradients,
       colorThemeId,
+      customPrimary,
       setColorTheme,
       isThemeReady,
     }),
-    [colorThemeId, colors, gradients, isThemeReady, setColorTheme],
+    [colorThemeId, colors, customPrimary, gradients, isThemeReady, setColorTheme],
   );
 };

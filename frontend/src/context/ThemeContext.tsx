@@ -8,7 +8,8 @@ import React, {
 } from 'react';
 import {
   DEFAULT_COLOR_THEME_ID,
-  getColorThemeOption,
+  DEFAULT_CUSTOM_PRIMARY,
+  getThemePrimary,
   type ColorThemeId,
 } from '@/constants/colorThemes';
 import {
@@ -18,17 +19,32 @@ import {
   type ThemeGradients,
 } from '@/styles/brandColors';
 import staticColors from '@/styles/colors';
-import { getColorThemeId, saveColorThemeId } from '@/services/themeStorage';
+import {
+  getColorThemeId,
+  getCustomPrimary,
+  saveColorThemeId,
+  saveCustomPrimary,
+} from '@/services/themeStorage';
 
 export type ThemeColors = Omit<typeof staticColors, keyof BrandPalette> & BrandPalette;
 
+export type SetColorThemeOptions = {
+  /** When false, updates in-memory theme only (no AsyncStorage). Default true. */
+  persist?: boolean;
+};
+
 type ThemeContextValue = {
   colorThemeId: ColorThemeId;
+  customPrimary: string;
   colors: ThemeColors;
   brand: BrandPalette;
   gradients: ThemeGradients;
   isThemeReady: boolean;
-  setColorTheme: (themeId: ColorThemeId) => Promise<void>;
+  setColorTheme: (
+    themeId: ColorThemeId,
+    customHex?: string,
+    options?: SetColorThemeOptions,
+  ) => Promise<void>;
 };
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
@@ -40,11 +56,12 @@ const buildThemeColors = (brand: BrandPalette): ThemeColors => ({
 
 export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
   const [colorThemeId, setColorThemeId] = useState<ColorThemeId>(DEFAULT_COLOR_THEME_ID);
+  const [customPrimary, setCustomPrimary] = useState(DEFAULT_CUSTOM_PRIMARY);
   const [isThemeReady, setIsThemeReady] = useState(false);
 
   const brand = useMemo(
-    () => buildBrandPalette(getColorThemeOption(colorThemeId).primary),
-    [colorThemeId],
+    () => buildBrandPalette(getThemePrimary(colorThemeId, customPrimary)),
+    [colorThemeId, customPrimary],
   );
 
   const gradients = useMemo(() => buildThemeGradients(brand.primary), [brand.primary]);
@@ -54,9 +71,13 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
     let active = true;
 
     const loadTheme = async () => {
-      const storedThemeId = await getColorThemeId();
+      const [storedThemeId, storedCustomPrimary] = await Promise.all([
+        getColorThemeId(),
+        getCustomPrimary(),
+      ]);
       if (active) {
         setColorThemeId(storedThemeId);
+        setCustomPrimary(storedCustomPrimary);
         setIsThemeReady(true);
       }
     };
@@ -68,21 +89,44 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
     };
   }, []);
 
-  const setColorTheme = useCallback(async (themeId: ColorThemeId) => {
-    setColorThemeId(themeId);
-    await saveColorThemeId(themeId);
-  }, []);
+  const setColorTheme = useCallback(
+    async (
+      themeId: ColorThemeId,
+      customHex?: string,
+      options?: SetColorThemeOptions,
+    ) => {
+      const shouldPersist = options?.persist !== false;
+
+      setColorThemeId(themeId);
+
+      if (themeId === 'custom' && customHex) {
+        setCustomPrimary(customHex.toUpperCase());
+      }
+
+      if (!shouldPersist) {
+        return;
+      }
+
+      await saveColorThemeId(themeId);
+
+      if (themeId === 'custom' && customHex) {
+        await saveCustomPrimary(customHex.toUpperCase());
+      }
+    },
+    [],
+  );
 
   const value = useMemo(
     () => ({
       colorThemeId,
+      customPrimary,
       colors,
       brand,
       gradients,
       isThemeReady,
       setColorTheme,
     }),
-    [brand, colorThemeId, colors, gradients, isThemeReady, setColorTheme],
+    [brand, colorThemeId, colors, customPrimary, gradients, isThemeReady, setColorTheme],
   );
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;

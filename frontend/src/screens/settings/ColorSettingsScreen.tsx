@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -6,26 +6,247 @@ import {
   ScrollView,
   Pressable,
   ActivityIndicator,
+  type LayoutChangeEvent,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import Animated, {
+  FadeInDown,
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+} from 'react-native-reanimated';
 import {
   COLOR_THEME_OPTIONS,
   getColorThemeSwatch,
   type ColorThemeId,
 } from '@/constants/colorThemes';
 import { useTheme } from '@/hooks/useTheme';
+import { hexToHue, hueToBrandHex } from '@/utils/colorUtils';
+
+const HUE_RAINBOW = [
+  '#FF0000',
+  '#FFFF00',
+  '#00FF00',
+  '#00FFFF',
+  '#0000FF',
+  '#FF00FF',
+  '#FF0000',
+] as const;
+
+const THUMB_SIZE = 28;
+const TRACK_HEIGHT = 16;
+const CUSTOM_PERSIST_DELAY_MS = 1000;
+
+const PRESET_OPTIONS = COLOR_THEME_OPTIONS.filter((option) => option.id !== 'custom');
+const CUSTOM_OPTION = COLOR_THEME_OPTIONS.find((option) => option.id === 'custom')!;
+
+type HuePickerProps = {
+  hue: number;
+  color: string;
+  onChange: (hue: number) => void;
+  onDragEnd: () => void;
+};
+
+const HuePicker = ({ hue, color, onChange, onDragEnd }: HuePickerProps) => {
+  const widthSv = useSharedValue(0);
+  const thumbX = useSharedValue(0);
+  const isDragging = useSharedValue(false);
+  const draggingRef = useRef(false);
+  const [thumbColor, setThumbColor] = useState(color);
+
+  const emitHue = useCallback(
+    (x: number, width: number) => {
+      if (width <= 0) return;
+      const clamped = Math.max(0, Math.min(width, x));
+      const nextHue = Math.round((clamped / width) * 360);
+      onChange(nextHue);
+      setThumbColor(hueToBrandHex(nextHue));
+    },
+    [onChange],
+  );
+
+  const markDragging = useCallback((value: boolean) => {
+    draggingRef.current = value;
+  }, []);
+
+  useEffect(() => {
+    if (!draggingRef.current && widthSv.value > 0) {
+      thumbX.value = (hue / 360) * widthSv.value;
+    }
+    if (!draggingRef.current) {
+      setThumbColor(color);
+    }
+  }, [color, hue, thumbX, widthSv]);
+
+  const handleLayout = useCallback(
+    (event: LayoutChangeEvent) => {
+      const width = event.nativeEvent.layout.width;
+      widthSv.value = width;
+      if (!draggingRef.current) {
+        thumbX.value = (hue / 360) * width;
+      }
+    },
+    [hue, thumbX, widthSv],
+  );
+
+  const panGesture = useMemo(
+    () =>
+      Gesture.Pan()
+        .minDistance(0)
+        .failOffsetY([-18, 18])
+        .onBegin((event) => {
+          'worklet';
+          if (widthSv.value <= 0) return;
+          isDragging.value = true;
+          runOnJS(markDragging)(true);
+          const x = Math.max(0, Math.min(widthSv.value, event.x));
+          thumbX.value = x;
+          runOnJS(emitHue)(x, widthSv.value);
+        })
+        .onUpdate((event) => {
+          'worklet';
+          if (widthSv.value <= 0) return;
+          const x = Math.max(0, Math.min(widthSv.value, event.x));
+          thumbX.value = x;
+          runOnJS(emitHue)(x, widthSv.value);
+        })
+        .onFinalize(() => {
+          'worklet';
+          isDragging.value = false;
+          runOnJS(markDragging)(false);
+          runOnJS(onDragEnd)();
+        }),
+    [emitHue, isDragging, markDragging, onDragEnd, thumbX, widthSv],
+  );
+
+  const thumbStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: thumbX.value - THUMB_SIZE / 2 }],
+  }));
+
+  return (
+    <GestureDetector gesture={panGesture}>
+      <Animated.View
+        onLayout={handleLayout}
+        style={huePickerStyles.hitArea}
+        accessibilityRole="adjustable"
+        accessibilityLabel="Custom color hue"
+        accessibilityValue={{ now: hue, min: 0, max: 360 }}
+      >
+        <LinearGradient
+          colors={[...HUE_RAINBOW]}
+          start={{ x: 0, y: 0.5 }}
+          end={{ x: 1, y: 0.5 }}
+          style={huePickerStyles.track}
+        />
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            huePickerStyles.thumb,
+            thumbStyle,
+            { backgroundColor: thumbColor },
+          ]}
+        />
+      </Animated.View>
+    </GestureDetector>
+  );
+};
+
+const huePickerStyles = StyleSheet.create({
+  hitArea: {
+    height: THUMB_SIZE + 12,
+    justifyContent: 'center',
+    overflow: 'visible',
+  },
+  track: {
+    height: TRACK_HEIGHT,
+    borderRadius: TRACK_HEIGHT / 2,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.08)',
+  },
+  thumb: {
+    position: 'absolute',
+    top: 6,
+    left: 0,
+    width: THUMB_SIZE,
+    height: THUMB_SIZE,
+    borderRadius: THUMB_SIZE / 2,
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.22,
+    shadowRadius: 2.5,
+    elevation: 4,
+  },
+});
 
 const ColorSettingsScreen = () => {
   const navigation = useNavigation();
-  const { colors, spacing, typography, borderRadius, shadows, moderateScale, gradients, colorThemeId, setColorTheme } =
-    useTheme();
+  const {
+    colors,
+    spacing,
+    typography,
+    borderRadius,
+    shadows,
+    moderateScale,
+    gradients,
+    colorThemeId,
+    customPrimary,
+    setColorTheme,
+  } = useTheme();
   const [selected, setSelected] = useState<ColorThemeId | null>(null);
+  const [hue, setHue] = useState(hexToHue(customPrimary));
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const hueRef = useRef(hue);
+  const colorThemeIdRef = useRef(colorThemeId);
+  const customPrimaryRef = useRef(customPrimary);
+  const persistTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const themePreviewTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const customPreview = useMemo(() => hueToBrandHex(hue), [hue]);
+
+  useEffect(() => {
+    hueRef.current = hue;
+  }, [hue]);
+
+  useEffect(() => {
+    colorThemeIdRef.current = colorThemeId;
+    customPrimaryRef.current = customPrimary;
+  }, [colorThemeId, customPrimary]);
+
+  const clearPersistTimer = useCallback(() => {
+    if (persistTimerRef.current) {
+      clearTimeout(persistTimerRef.current);
+      persistTimerRef.current = null;
+    }
+  }, []);
+
+  const clearThemePreviewTimer = useCallback(() => {
+    if (themePreviewTimerRef.current) {
+      clearTimeout(themePreviewTimerRef.current);
+      themePreviewTimerRef.current = null;
+    }
+  }, []);
+
+  const persistCustomColor = useCallback(
+    async (nextHue: number = hueRef.current) => {
+      await setColorTheme('custom', hueToBrandHex(nextHue), { persist: true });
+    },
+    [setColorTheme],
+  );
+
+  const scheduleCustomPersist = useCallback(() => {
+    clearPersistTimer();
+    persistTimerRef.current = setTimeout(() => {
+      persistTimerRef.current = null;
+      void persistCustomColor();
+    }, CUSTOM_PERSIST_DELAY_MS);
+  }, [clearPersistTimer, persistCustomColor]);
 
   const styles = useMemo(
     () =>
@@ -134,6 +355,16 @@ const ColorSettingsScreen = () => {
           backgroundColor: colors.primarySurface,
           ...shadows.md,
         },
+        optionCardColumn: {
+          flexDirection: 'column',
+          alignItems: 'stretch',
+          gap: spacing.md,
+        },
+        optionRow: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: spacing.md,
+        },
         swatch: {
           width: moderateScale(48),
           height: moderateScale(48),
@@ -182,6 +413,27 @@ const ColorSettingsScreen = () => {
           borderColor: colors.primary,
           backgroundColor: colors.primary,
         },
+        pickerBlock: {
+          gap: spacing.sm,
+          paddingTop: spacing.md,
+          borderTopWidth: StyleSheet.hairlineWidth,
+          borderTopColor: colors.borderLight,
+        },
+        pickerLabelRow: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        },
+        pickerLabel: {
+          ...typography.caption,
+          fontWeight: '700',
+          color: colors.textSecondary,
+        },
+        pickerHex: {
+          ...typography.caption,
+          fontWeight: '700',
+          color: colors.textPrimary,
+        },
         footerNote: {
           flexDirection: 'row',
           alignItems: 'flex-start',
@@ -205,23 +457,62 @@ const ColorSettingsScreen = () => {
 
   useFocusEffect(
     useCallback(() => {
-      setSelected(colorThemeId);
+      setSelected(colorThemeIdRef.current);
+      setHue(hexToHue(customPrimaryRef.current));
       setLoading(false);
-    }, [colorThemeId]),
+
+      return () => {
+        clearThemePreviewTimer();
+        if (persistTimerRef.current) {
+          clearTimeout(persistTimerRef.current);
+          persistTimerRef.current = null;
+          void setColorTheme('custom', hueToBrandHex(hueRef.current), { persist: true });
+        }
+      };
+    }, [clearThemePreviewTimer, setColorTheme]),
   );
 
   const handleSelect = async (themeId: ColorThemeId) => {
     if (saving || selected === themeId) return;
 
+    clearPersistTimer();
+    clearThemePreviewTimer();
     setSaving(true);
     setSelected(themeId);
 
     try {
-      await setColorTheme(themeId);
+      if (themeId === 'custom') {
+        await setColorTheme('custom', hueToBrandHex(hue), { persist: true });
+      } else {
+        await setColorTheme(themeId, undefined, { persist: true });
+      }
     } finally {
       setSaving(false);
     }
   };
+
+  const handleHueChange = (nextHue: number) => {
+    const rounded = Math.round(nextHue);
+    hueRef.current = rounded;
+    setHue(rounded);
+    setSelected('custom');
+
+    // Preview theme in memory only; throttle to keep the drag smooth.
+    clearThemePreviewTimer();
+    themePreviewTimerRef.current = setTimeout(() => {
+      themePreviewTimerRef.current = null;
+      void setColorTheme('custom', hueToBrandHex(hueRef.current), { persist: false });
+    }, 40);
+  };
+
+  const handleHueDragEnd = () => {
+    clearThemePreviewTimer();
+    // Apply final preview immediately, then save after 1s of rest.
+    void setColorTheme('custom', hueToBrandHex(hueRef.current), { persist: false });
+    scheduleCustomPersist();
+  };
+
+  const isCustomSelected = selected === 'custom';
 
   return (
     <View style={styles.root}>
@@ -270,7 +561,7 @@ const ColorSettingsScreen = () => {
           </View>
         ) : (
           <Animated.View entering={FadeInDown.delay(80).duration(400)} style={styles.optionsList}>
-            {COLOR_THEME_OPTIONS.map((option, index) => {
+            {PRESET_OPTIONS.map((option, index) => {
               const isSelected = selected === option.id;
 
               return (
@@ -317,6 +608,64 @@ const ColorSettingsScreen = () => {
                 </Animated.View>
               );
             })}
+
+            <Animated.View
+              entering={FadeInDown.delay(100 + PRESET_OPTIONS.length * 60).duration(400)}
+              style={[
+                styles.optionCard,
+                styles.optionCardColumn,
+                isCustomSelected && styles.optionCardSelected,
+              ]}
+            >
+              <Pressable
+                onPress={() => void handleSelect('custom')}
+                disabled={saving}
+                style={({ pressed }) => [styles.optionRow, pressed && styles.pressed]}
+                accessibilityRole="radio"
+                accessibilityState={{ selected: isCustomSelected }}
+                accessibilityLabel={`Custom, ${customPreview}`}
+              >
+                <View style={[styles.swatch, { backgroundColor: customPreview }]}>
+                  {isCustomSelected ? (
+                    <Ionicons name="checkmark" size={20} color={colors.white} />
+                  ) : null}
+                </View>
+
+                <View style={styles.optionTextBlock}>
+                  <Text
+                    style={[
+                      styles.optionLabel,
+                      isCustomSelected && styles.optionLabelSelected,
+                    ]}
+                  >
+                    {CUSTOM_OPTION.label}
+                  </Text>
+                  <Text style={styles.optionDescription}>{CUSTOM_OPTION.description}</Text>
+                  <Text style={styles.colorCode}>{customPreview}</Text>
+                </View>
+
+                <View
+                  style={[styles.radioOuter, isCustomSelected && styles.radioOuterSelected]}
+                >
+                  {isCustomSelected ? (
+                    <Ionicons name="checkmark" size={14} color={colors.white} />
+                  ) : null}
+                </View>
+              </Pressable>
+
+              <View style={styles.pickerBlock}>
+                <View style={styles.pickerLabelRow}>
+                  <Text style={styles.pickerLabel}>Slide to pick a color</Text>
+                  <Text style={styles.pickerHex}>{customPreview}</Text>
+                </View>
+                <HuePicker
+                  hue={hue}
+                  color={customPreview}
+                  onChange={handleHueChange}
+                  onDragEnd={handleHueDragEnd}
+                />
+              </View>
+            </Animated.View>
           </Animated.View>
         )}
 
