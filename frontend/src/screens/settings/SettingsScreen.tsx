@@ -107,6 +107,8 @@ const SettingsScreen = () => {
       navigation.navigate('FamilyMembers');
     } else if (id === 'emergency') {
       navigation.navigate('EmergencyContacts');
+    } else if (id === 'prescriptions' || id === 'upload-rx') {
+      navigation.navigate('Prescriptions');
     } else if (id === 'help') {
       navigation.navigate('HelpAndSupport' as never);
     } else if (id === 'share') {

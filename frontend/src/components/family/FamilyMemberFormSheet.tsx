@@ -48,6 +48,8 @@ const DEFAULT_FORM: FamilyMemberFormData = {
   currentMedicines: '',
 };
 
+const COMMON_ALLERGY_SET = new Set<string>(COMMON_ALLERGIES);
+
 const toggleExclusiveChip = (
   current: string[],
   value: string,
@@ -76,6 +78,7 @@ const FamilyMemberFormSheet = ({
   const [form, setForm] = useState<FamilyMemberFormData>(DEFAULT_FORM);
   const [nameError, setNameError] = useState('');
   const [ageText, setAgeText] = useState('');
+  const [allergyInput, setAllergyInput] = useState('');
 
   useEffect(() => {
     if (!visible) return;
@@ -98,28 +101,34 @@ const FamilyMemberFormSheet = ({
       setForm(DEFAULT_FORM);
       setAgeText('');
     }
+    setAllergyInput('');
     setNameError('');
   }, [visible, editingMember]);
+
+  const customAllergies = useMemo(
+    () => form.allergies.filter((item) => !COMMON_ALLERGY_SET.has(item)),
+    [form.allergies],
+  );
 
   const styles = useMemo(
     () =>
       StyleSheet.create({
         overlay: {
           flex: 1,
-          backgroundColor: 'rgba(15, 23, 42, 0.45)',
+          backgroundColor: 'rgba(15, 23, 42, 0.4)',
           justifyContent: 'flex-end',
         },
         sheet: {
-          backgroundColor: colors.white,
+          backgroundColor: colors.surfaceSecondary,
           borderTopLeftRadius: borderRadius.xxl,
           borderTopRightRadius: borderRadius.xxl,
-          maxHeight: '92%',
+          maxHeight: '94%',
           paddingBottom: Math.max(insets.bottom, spacing.md),
           ...shadows.lg,
         },
         handle: {
           alignSelf: 'center',
-          width: 40,
+          width: 36,
           height: 4,
           borderRadius: 2,
           backgroundColor: colors.border,
@@ -131,8 +140,6 @@ const FamilyMemberFormSheet = ({
           alignItems: 'center',
           paddingHorizontal: spacing.lg,
           paddingBottom: spacing.md,
-          borderBottomWidth: 1,
-          borderBottomColor: colors.borderLight,
         },
         headerTitle: {
           ...typography.h4,
@@ -140,42 +147,51 @@ const FamilyMemberFormSheet = ({
           color: colors.textPrimary,
         },
         closeBtn: {
-          width: moderateScale(34),
-          height: moderateScale(34),
-          borderRadius: moderateScale(17),
-          backgroundColor: colors.surfaceSecondary,
+          width: moderateScale(36),
+          height: moderateScale(36),
+          borderRadius: moderateScale(18),
+          backgroundColor: colors.white,
           alignItems: 'center',
           justifyContent: 'center',
         },
         scroll: {
           paddingHorizontal: spacing.lg,
-          paddingTop: spacing.lg,
         },
         scrollContent: {
           paddingBottom: spacing.xl,
           gap: spacing.md,
         },
-        sectionTitle: {
+        fieldCard: {
+          backgroundColor: colors.white,
+          borderRadius: borderRadius.lg,
+          padding: spacing.lg,
+          gap: spacing.md,
+        },
+        sectionLabel: {
           ...typography.bodySmall,
           fontWeight: '700',
           color: colors.textPrimary,
-          marginTop: spacing.xs,
+          letterSpacing: 0.2,
         },
         label: {
-          ...typography.caption,
+          ...typography.bodySmall,
           fontWeight: '600',
           color: colors.textSecondary,
           marginBottom: spacing.xs,
         },
+        fieldBlock: {
+          gap: spacing.xs,
+        },
         input: {
-          ...typography.bodySmall,
+          ...typography.body,
           borderWidth: 1.5,
-          borderColor: colors.border,
+          borderColor: colors.borderLight,
           borderRadius: borderRadius.md,
-          paddingHorizontal: spacing.md,
-          paddingVertical: Platform.OS === 'ios' ? spacing.md : spacing.sm,
+          paddingHorizontal: spacing.md + 2,
+          paddingVertical: Platform.OS === 'ios' ? spacing.md + 2 : spacing.md,
           color: colors.textPrimary,
-          backgroundColor: colors.surface,
+          backgroundColor: colors.surfaceSecondary,
+          minHeight: moderateScale(52),
         },
         inputError: {
           borderColor: colors.error,
@@ -183,44 +199,71 @@ const FamilyMemberFormSheet = ({
         errorText: {
           ...typography.caption,
           color: colors.error,
-          marginTop: -spacing.xs,
         },
         hint: {
           ...typography.caption,
           color: colors.textMuted,
-          marginTop: -spacing.xs,
+          lineHeight: 18,
         },
         chipsWrap: {
           flexDirection: 'row',
           flexWrap: 'wrap',
-          gap: spacing.xs,
+          gap: spacing.sm,
         },
         chip: {
-          paddingHorizontal: spacing.md,
-          paddingVertical: spacing.sm,
+          paddingHorizontal: spacing.md + 2,
+          paddingVertical: spacing.sm + 4,
           borderRadius: borderRadius.full,
           borderWidth: 1.5,
-          borderColor: colors.border,
-          backgroundColor: colors.white,
+          borderColor: colors.borderLight,
+          backgroundColor: colors.surfaceSecondary,
+          minHeight: moderateScale(42),
+          justifyContent: 'center',
         },
         chipSelected: {
           borderColor: colors.primary,
           backgroundColor: colors.primarySurface,
         },
         chipLabel: {
-          ...typography.caption,
+          ...typography.bodySmall,
           fontWeight: '600',
           color: colors.textSecondary,
         },
         chipLabelSelected: {
           color: colors.primary,
         },
+        allergyRow: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: spacing.sm,
+        },
+        allergyInput: {
+          flex: 1,
+        },
+        addAllergyBtn: {
+          width: moderateScale(52),
+          height: moderateScale(52),
+          borderRadius: borderRadius.md,
+          backgroundColor: colors.primary,
+          alignItems: 'center',
+          justifyContent: 'center',
+        },
+        addAllergyBtnDisabled: {
+          opacity: 0.4,
+        },
+        customChip: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: spacing.xs,
+          paddingRight: spacing.sm,
+        },
         saveBtn: {
           marginHorizontal: spacing.lg,
           marginTop: spacing.sm,
           backgroundColor: colors.primary,
           borderRadius: borderRadius.lg,
-          paddingVertical: spacing.md + 2,
+          paddingVertical: spacing.md + 4,
+          minHeight: moderateScale(54),
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'center',
@@ -254,6 +297,28 @@ const FamilyMemberFormSheet = ({
     }));
   }, []);
 
+  const addCustomAllergy = useCallback(() => {
+    const trimmed = allergyInput.trim();
+    if (!trimmed) return;
+
+    setForm((prev) => {
+      const withoutNone = prev.allergies.filter((item) => item !== 'None');
+      const exists = withoutNone.some(
+        (item) => item.toLowerCase() === trimmed.toLowerCase(),
+      );
+      if (exists) return prev;
+      return { ...prev, allergies: [...withoutNone, trimmed] };
+    });
+    setAllergyInput('');
+  }, [allergyInput]);
+
+  const removeAllergy = useCallback((value: string) => {
+    setForm((prev) => ({
+      ...prev,
+      allergies: prev.allergies.filter((item) => item !== value),
+    }));
+  }, []);
+
   const handleSubmit = useCallback(async () => {
     const trimmed = form.name.trim();
     if (trimmed.length < 2) {
@@ -281,6 +346,8 @@ const FamilyMemberFormSheet = ({
     </Pressable>
   );
 
+  const canAddAllergy = allergyInput.trim().length > 0;
+
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <KeyboardAvoidingView
@@ -295,7 +362,7 @@ const FamilyMemberFormSheet = ({
               {editingMember ? 'Edit member' : 'Add family member'}
             </Text>
             <Pressable onPress={onClose} style={styles.closeBtn} accessibilityLabel="Close">
-              <Ionicons name="close" size={18} color={colors.textSecondary} />
+              <Ionicons name="close" size={20} color={colors.textSecondary} />
             </Pressable>
           </View>
 
@@ -305,140 +372,200 @@ const FamilyMemberFormSheet = ({
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
-            <View>
-              <Text style={styles.label}>Full name</Text>
-              <TextInput
-                style={[styles.input, nameError ? styles.inputError : null]}
-                placeholder="e.g. Priya Sharma"
-                placeholderTextColor={colors.textMuted}
-                value={form.name}
-                onChangeText={(name) => {
-                  setForm((prev) => ({ ...prev, name }));
-                  if (nameError) setNameError('');
-                }}
-                autoCapitalize="words"
-                accessibilityLabel="Full name"
-              />
-            </View>
-            {nameError ? <Text style={styles.errorText}>{nameError}</Text> : null}
+            <View style={styles.fieldCard}>
+              <Text style={styles.sectionLabel}>Profile</Text>
 
-            <Text style={styles.sectionTitle}>Relationship</Text>
-            <View style={styles.chipsWrap}>
-              {FAMILY_RELATIONSHIPS.map((item) =>
-                renderChip(
-                  item.id,
-                  item.label,
-                  form.relationship === item.id,
-                  () =>
-                    setForm((prev) => ({
-                      ...prev,
-                      relationship: item.id as FamilyRelationship,
-                    })),
-                ),
-              )}
-            </View>
+              <View style={styles.fieldBlock}>
+                <Text style={styles.label}>Full name</Text>
+                <TextInput
+                  style={[styles.input, nameError ? styles.inputError : null]}
+                  placeholder="e.g. Priya Sharma"
+                  placeholderTextColor={colors.textMuted}
+                  value={form.name}
+                  onChangeText={(name) => {
+                    setForm((prev) => ({ ...prev, name }));
+                    if (nameError) setNameError('');
+                  }}
+                  autoCapitalize="words"
+                  accessibilityLabel="Full name"
+                />
+                {nameError ? <Text style={styles.errorText}>{nameError}</Text> : null}
+              </View>
 
-            <Text style={styles.sectionTitle}>Basics</Text>
-            <Text style={styles.label}>Gender</Text>
-            <View style={styles.chipsWrap}>
-              {FAMILY_GENDERS.map((item) =>
-                renderChip(
-                  item.id,
-                  item.label,
-                  form.gender === item.id,
-                  () =>
-                    setForm((prev) => ({
-                      ...prev,
-                      gender:
-                        prev.gender === item.id
-                          ? null
-                          : (item.id as FamilyGender),
-                    })),
-                ),
-              )}
-            </View>
+              <View style={styles.fieldBlock}>
+                <Text style={styles.label}>Relationship</Text>
+                <View style={styles.chipsWrap}>
+                  {FAMILY_RELATIONSHIPS.map((item) =>
+                    renderChip(
+                      item.id,
+                      item.label,
+                      form.relationship === item.id,
+                      () =>
+                        setForm((prev) => ({
+                          ...prev,
+                          relationship: item.id as FamilyRelationship,
+                        })),
+                    ),
+                  )}
+                </View>
+              </View>
 
-            <View>
-              <Text style={styles.label}>Age (years)</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="e.g. 34"
-                placeholderTextColor={colors.textMuted}
-                value={ageText}
-                onChangeText={handleAgeChange}
-                keyboardType="number-pad"
-                accessibilityLabel="Age in years"
-              />
-            </View>
+              <View style={styles.fieldBlock}>
+                <Text style={styles.label}>Gender</Text>
+                <View style={styles.chipsWrap}>
+                  {FAMILY_GENDERS.map((item) =>
+                    renderChip(
+                      item.id,
+                      item.label,
+                      form.gender === item.id,
+                      () =>
+                        setForm((prev) => ({
+                          ...prev,
+                          gender:
+                            prev.gender === item.id
+                              ? null
+                              : (item.id as FamilyGender),
+                        })),
+                    ),
+                  )}
+                </View>
+              </View>
 
-            <Text style={styles.label}>Blood group</Text>
-            <View style={styles.chipsWrap}>
-              {BLOOD_GROUPS.map((group) =>
-                renderChip(
-                  group,
-                  group === 'unknown' ? 'Unknown' : group,
-                  form.bloodGroup === group,
-                  () =>
-                    setForm((prev) => ({
-                      ...prev,
-                      bloodGroup:
-                        prev.bloodGroup === group
-                          ? null
-                          : (group as BloodGroup),
-                    })),
-                ),
-              )}
-            </View>
+              <View style={styles.fieldBlock}>
+                <Text style={styles.label}>Age (years)</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="e.g. 34"
+                  placeholderTextColor={colors.textMuted}
+                  value={ageText}
+                  onChangeText={handleAgeChange}
+                  keyboardType="number-pad"
+                  accessibilityLabel="Age in years"
+                />
+              </View>
 
-            <Text style={styles.sectionTitle}>Health safety</Text>
-            <Text style={styles.label}>Allergies</Text>
-            <View style={styles.chipsWrap}>
-              {COMMON_ALLERGIES.map((item) =>
-                renderChip(
-                  item,
-                  item,
-                  form.allergies.includes(item),
-                  () =>
-                    setForm((prev) => ({
-                      ...prev,
-                      allergies: toggleExclusiveChip(prev.allergies, item),
-                    })),
-                ),
-              )}
+              <View style={styles.fieldBlock}>
+                <Text style={styles.label}>Blood group</Text>
+                <View style={styles.chipsWrap}>
+                  {BLOOD_GROUPS.map((group) =>
+                    renderChip(
+                      group,
+                      group === 'unknown' ? 'Unknown' : group,
+                      form.bloodGroup === group,
+                      () =>
+                        setForm((prev) => ({
+                          ...prev,
+                          bloodGroup:
+                            prev.bloodGroup === group
+                              ? null
+                              : (group as BloodGroup),
+                        })),
+                    ),
+                  )}
+                </View>
+              </View>
             </View>
 
-            <Text style={styles.label}>Chronic conditions</Text>
-            <View style={styles.chipsWrap}>
-              {COMMON_CONDITIONS.map((item) =>
-                renderChip(
-                  item,
-                  item,
-                  form.conditions.includes(item),
-                  () =>
-                    setForm((prev) => ({
-                      ...prev,
-                      conditions: toggleExclusiveChip(prev.conditions, item),
-                    })),
-                ),
-              )}
-            </View>
+            <View style={styles.fieldCard}>
+              <Text style={styles.sectionLabel}>Health safety</Text>
 
-            <View>
-              <Text style={styles.label}>Current medicines (optional)</Text>
-              <TextInput
-                style={[styles.input, { minHeight: 72, textAlignVertical: 'top' }]}
-                placeholder="e.g. Metformin 500mg, Amlodipine"
-                placeholderTextColor={colors.textMuted}
-                value={form.currentMedicines}
-                onChangeText={(currentMedicines) =>
-                  setForm((prev) => ({ ...prev, currentMedicines }))
-                }
-                multiline
-                accessibilityLabel="Current medicines"
-              />
-              <Text style={styles.hint}>
-                Helps avoid unsafe medicine combinations when ordering
-              </Text>
+              <View style={styles.fieldBlock}>
+                <Text style={styles.label}>Allergies</Text>
+                <View style={styles.chipsWrap}>
+                  {COMMON_ALLERGIES.filter((item) => item !== 'Other').map((item) =>
+                    renderChip(
+                      item,
+                      item,
+                      form.allergies.includes(item),
+                      () =>
+                        setForm((prev) => ({
+                          ...prev,
+                          allergies: toggleExclusiveChip(prev.allergies, item),
+                        })),
+                    ),
+                  )}
+                  {customAllergies.map((item) => (
+                    <Pressable
+                      key={item}
+                      onPress={() => removeAllergy(item)}
+                      style={[styles.chip, styles.chipSelected, styles.customChip]}
+                      accessibilityLabel={`Remove ${item}`}
+                    >
+                      <Text style={[styles.chipLabel, styles.chipLabelSelected]}>
+                        {item}
+                      </Text>
+                      <Ionicons name="close" size={14} color={colors.primary} />
+                    </Pressable>
+                  ))}
+                </View>
+
+                <View style={styles.allergyRow}>
+                  <TextInput
+                    style={[styles.input, styles.allergyInput]}
+                    placeholder="Type another allergy"
+                    placeholderTextColor={colors.textMuted}
+                    value={allergyInput}
+                    onChangeText={setAllergyInput}
+                    onSubmitEditing={addCustomAllergy}
+                    returnKeyType="done"
+                    autoCapitalize="sentences"
+                    accessibilityLabel="Add custom allergy"
+                  />
+                  <Pressable
+                    onPress={addCustomAllergy}
+                    disabled={!canAddAllergy}
+                    style={[
+                      styles.addAllergyBtn,
+                      !canAddAllergy && styles.addAllergyBtnDisabled,
+                    ]}
+                    accessibilityLabel="Add allergy"
+                  >
+                    <Ionicons name="add" size={24} color={colors.white} />
+                  </Pressable>
+                </View>
+                <Text style={styles.hint}>
+                  Tap a chip or type your own allergy above
+                </Text>
+              </View>
+
+              <View style={styles.fieldBlock}>
+                <Text style={styles.label}>Chronic conditions</Text>
+                <View style={styles.chipsWrap}>
+                  {COMMON_CONDITIONS.map((item) =>
+                    renderChip(
+                      item,
+                      item,
+                      form.conditions.includes(item),
+                      () =>
+                        setForm((prev) => ({
+                          ...prev,
+                          conditions: toggleExclusiveChip(prev.conditions, item),
+                        })),
+                    ),
+                  )}
+                </View>
+              </View>
+
+              <View style={styles.fieldBlock}>
+                <Text style={styles.label}>Current medicines (optional)</Text>
+                <TextInput
+                  style={[
+                    styles.input,
+                    { minHeight: moderateScale(88), textAlignVertical: 'top' },
+                  ]}
+                  placeholder="e.g. Metformin 500mg, Amlodipine"
+                  placeholderTextColor={colors.textMuted}
+                  value={form.currentMedicines}
+                  onChangeText={(currentMedicines) =>
+                    setForm((prev) => ({ ...prev, currentMedicines }))
+                  }
+                  multiline
+                  accessibilityLabel="Current medicines"
+                />
+                <Text style={styles.hint}>
+                  Helps avoid unsafe medicine combinations when ordering
+                </Text>
+              </View>
             </View>
           </ScrollView>
 
@@ -455,7 +582,7 @@ const FamilyMemberFormSheet = ({
               <ActivityIndicator color={colors.white} />
             ) : (
               <>
-                <Ionicons name="checkmark-circle" size={20} color={colors.white} />
+                <Ionicons name="checkmark-circle" size={22} color={colors.white} />
                 <Text style={styles.saveBtnText}>
                   {editingMember ? 'Save changes' : 'Add member'}
                 </Text>

@@ -32,6 +32,7 @@ export type AuthStackParamList = {
   MedicineReminders: undefined;
   FamilyMembers: undefined;
   EmergencyContacts: undefined;
+  Prescriptions: undefined;
   DeliveryAgentMain: undefined;
   DeliveryNavigation: {
     orderId: string;
