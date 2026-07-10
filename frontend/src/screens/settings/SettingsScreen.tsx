@@ -22,6 +22,9 @@ import { getLanguageLabel } from '@/constants/languages';
 import { getColorThemeOption, getColorThemeSwatch } from '@/constants/colorThemes';
 import { getAppLanguage } from '@/services/languageStorage';
 import { useTheme } from '@/hooks/useTheme';
+import { useAuth } from '@/context/AuthContext';
+import { formatPhoneNumber } from '@/utils';
+import { toLocalPhone } from '@/utils/phone';
 
 const { colors, spacing, typography, borderRadius, shadows } = theme;
 
@@ -63,6 +66,7 @@ const DEMO_ORDER = {
 
 const SettingsScreen = () => {
   const navigation = useNavigation<NativeStackNavigationProp<AuthStackParamList>>();
+  const { user } = useAuth();
   const { colors: themeColors, gradients, colorThemeId, customPrimary } = useTheme();
   const [currentLanguageLabel, setCurrentLanguageLabel] = useState('English');
   const currentColorLabel = getColorThemeOption(colorThemeId).label;
@@ -70,6 +74,10 @@ const SettingsScreen = () => {
     getColorThemeOption(colorThemeId),
     customPrimary,
   );
+  const displayName = user?.username?.trim() || 'Your account';
+  const displayPhone = user?.phone
+    ? formatPhoneNumber(toLocalPhone(user.phone))
+    : null;
 
   useFocusEffect(
     useCallback(() => {
@@ -95,6 +103,10 @@ const SettingsScreen = () => {
       navigation.navigate('SavedAddresses' as never);
     } else if (id === 'reminders') {
       navigation.navigate('MedicineReminders' as never);
+    } else if (id === 'family') {
+      navigation.navigate('FamilyMembers');
+    } else if (id === 'emergency') {
+      navigation.navigate('EmergencyContacts');
     } else if (id === 'help') {
       navigation.navigate('HelpAndSupport' as never);
     } else if (id === 'share') {
@@ -158,34 +170,18 @@ const SettingsScreen = () => {
                     accessibilityLabel="Account profile photo"
                   />
                 </View>
-                <Text style={styles.accountTitle}>Your account</Text>
-                <Text style={styles.phoneText}>+91 98765 43210</Text>
+                <Text style={styles.accountTitle}>{displayName}</Text>
+                {displayPhone ? (
+                  <Text style={styles.phoneText}>{displayPhone}</Text>
+                ) : null}
               </Animated.View>
             </View>
           </SafeAreaView>
         </LinearGradient>
 
         <View style={styles.body}>
-          <Animated.View entering={FadeInDown.delay(60).duration(400)}>
-            <Pressable
-              onPress={() => handleItemPress('health-profile')}
-              style={({ pressed }) => [styles.promoBanner, pressed && styles.promoPressed]}
-            >
-              <View style={styles.promoTextBlock}>
-                <Text style={styles.promoTitle}>Complete your health profile</Text>
-                <View style={styles.promoLinkRow}>
-                  <Text style={styles.promoLink}>Add details</Text>
-                  <Ionicons name="arrow-forward" size={14} color={colors.secondary} />
-                </View>
-              </View>
-              <View style={[styles.promoIconWrap, { backgroundColor: themeColors.primaryMuted }]}>
-                <Ionicons name="heart-outline" size={28} color={themeColors.primary} />
-              </View>
-            </Pressable>
-          </Animated.View>
-
           <Animated.View
-            entering={FadeInDown.delay(100).duration(400)}
+            entering={FadeInDown.delay(60).duration(400)}
             style={styles.quickActionsRow}
           >
             {QUICK_ACTIONS.map((action) => (
@@ -354,46 +350,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xl,
     marginTop: -spacing.md,
     gap: spacing.lg,
-  },
-  promoBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#E8F5E9',
-    borderRadius: borderRadius.lg,
-    paddingVertical: spacing.lg,
-    paddingHorizontal: spacing.lg,
-    borderWidth: 1,
-    borderColor: 'rgba(13, 148, 136, 0.12)',
-  },
-  promoPressed: {
-    opacity: 0.85,
-  },
-  promoTextBlock: {
-    flex: 1,
-    gap: spacing.xs,
-  },
-  promoTitle: {
-    ...typography.bodySmall,
-    fontWeight: '700',
-    color: colors.textPrimary,
-  },
-  promoLinkRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xxs,
-  },
-  promoLink: {
-    ...typography.caption,
-    fontWeight: '600',
-    color: colors.secondary,
-  },
-  promoIconWrap: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginLeft: spacing.sm,
   },
   quickActionsRow: {
     flexDirection: 'row',

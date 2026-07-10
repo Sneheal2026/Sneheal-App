@@ -29,6 +29,8 @@ export type AuthStackParamList = {
   };
   SavedAddresses: undefined;
   MedicineReminders: undefined;
+  FamilyMembers: undefined;
+  EmergencyContacts: undefined;
   DeliveryAgentMain: undefined;
   DeliveryNavigation: {
     orderId: string;
