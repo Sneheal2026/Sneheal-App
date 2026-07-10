@@ -22,7 +22,10 @@ export function useSavedAddresses() {
   );
 
   const refresh = useCallback(async (force = true) => {
-    setLoading(true);
+    // Avoid a loading flash on cache-only Home focus refreshes.
+    if (force) {
+      setLoading(true);
+    }
     setError(null);
 
     try {

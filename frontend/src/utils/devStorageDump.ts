@@ -42,6 +42,8 @@ const KNOWN_SECTIONS: KnownSectionDef[] = [
     title: 'Addresses',
     keys: [
       { key: '@sneheal/savedAddresses', label: 'Saved addresses' },
+      { key: '@sneheal/selectedAddressId', label: 'Selected address id' },
+      { key: '@sneheal/addressesLastSyncAt', label: 'Addresses last sync' },
       { key: '@sneheal/selectedAddressId', label: 'Selected address ID' },
     ],
   },

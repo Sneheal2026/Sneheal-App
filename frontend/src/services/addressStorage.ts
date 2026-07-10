@@ -11,6 +11,9 @@ import { getValidAccessToken } from './authTokenManager';
 
 const ADDRESSES_KEY = '@sneheal/savedAddresses';
 const SELECTED_ID_KEY = '@sneheal/selectedAddressId';
+const ADDRESSES_LAST_SYNC_KEY = '@sneheal/addressesLastSyncAt';
+/** Soft TTL: Home/focus loads stay cache-first; force refresh bypasses this. */
+const ADDRESS_SYNC_TTL_MS = 10 * 60 * 1000;
 
 let syncInFlight: Promise<SavedAddress[]> | null = null;
 
@@ -26,6 +29,20 @@ const parseAddresses = (raw: string | null): SavedAddress[] => {
 
 const pickSelectedAddress = (addresses: SavedAddress[]): SavedAddress | null =>
   addresses.find((address) => address.isDefault) ?? null;
+
+const markAddressesSynced = async (): Promise<void> => {
+  await AsyncStorage.setItem(ADDRESSES_LAST_SYNC_KEY, String(Date.now()));
+};
+
+const isAddressCacheFresh = async (): Promise<boolean> => {
+  const raw = await AsyncStorage.getItem(ADDRESSES_LAST_SYNC_KEY);
+  if (!raw) return false;
+
+  const syncedAt = Number(raw);
+  if (!Number.isFinite(syncedAt)) return false;
+
+  return Date.now() - syncedAt < ADDRESS_SYNC_TTL_MS;
+};
 
 const cacheAddresses = async (addresses: SavedAddress[]): Promise<void> => {
   await AsyncStorage.setItem(ADDRESSES_KEY, JSON.stringify(addresses));
@@ -82,6 +99,7 @@ const syncAddressesFromApi = async (): Promise<SavedAddress[]> => {
     try {
       const addresses = await fetchAddressesFromApi();
       await cacheAddresses(addresses);
+      await markAddressesSynced();
       return addresses;
     } catch (error) {
       if (error instanceof ApiError && error.status === 401) {
@@ -119,6 +137,7 @@ export const saveAddress = async (
     const cached = await readCachedAddresses();
     const merged = mergeSavedAddress(cached, saved);
     await cacheAddresses(merged);
+    await markAddressesSynced();
     return saved;
   }
 
@@ -139,6 +158,7 @@ export const saveAddress = async (
   const existing = await readCachedAddresses();
   const merged = mergeSavedAddress(existing, localAddress);
   await cacheAddresses(merged);
+  await markAddressesSynced();
   return localAddress;
 };
 
@@ -158,6 +178,7 @@ export const deleteAddress = async (id: string): Promise<SavedAddress[]> => {
   }
 
   await cacheAddresses(filtered);
+  await markAddressesSynced();
   return filtered;
 };
 
@@ -202,11 +223,13 @@ export const setSelectedAddressId = async (id: string): Promise<SavedAddress | n
       id,
     );
     await cacheAddresses(updated);
+    await markAddressesSynced();
     return saved;
   }
 
   const updated = applySelectedId(addresses, id);
   await cacheAddresses(updated);
+  await markAddressesSynced();
   return updated.find((address) => address.id === id) ?? null;
 };
 
@@ -230,8 +253,10 @@ export const loadAddressSnapshot = async (force = false): Promise<AddressSnapsho
   const token = await getValidAccessToken();
 
   if (!force) {
-    const cached = await readCachedAddresses();
-    if (cached.length > 0 || !token) {
+    const cacheFresh = await isAddressCacheFresh();
+    // Fresh cache (including empty list) or logged-out: never hit the network.
+    if (cacheFresh || !token) {
+      const cached = await readCachedAddresses();
       return {
         addresses: cached,
         selectedAddress: pickSelectedAddress(cached),

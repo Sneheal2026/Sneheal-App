@@ -113,6 +113,8 @@ const HomeScreen = () => {
   const { status: locationStatus, location, refresh: refreshLocation } = useLiveLocation(true);
   const { addresses, selectedAddress, refresh: refreshAddresses } = useSavedAddresses();
 
+  // Cache-only on focus: Home should not hit the network every visit.
+  // Network sync happens via TTL inside loadAddressSnapshot, or force=true (pull-to-refresh).
   useFocusEffect(
     useCallback(() => {
       void refreshAddresses(false);
