@@ -13,9 +13,10 @@
       "infoPlist": {
         "NSMicrophoneUsageDescription": "Allow Sneheal to use the microphone for voice search.",
         "NSSpeechRecognitionUsageDescription": "Allow Sneheal to use speech recognition for voice search.",
-        "NSLocationWhenInUseUsageDescription": "Sneheal uses your location to show your delivery address and nearby pharmacies.",
+        "NSLocationWhenInUseUsageDescription": "Sneheal uses your location to show your delivery address, nearby pharmacies, and nearest hospitals.",
         "LSApplicationQueriesSchemes": [
-          "whatsapp"
+          "whatsapp",
+          "comgooglemaps"
         ]
       }
     },
@@ -68,7 +69,7 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Allow Sneheal to use your location for delivery and map."
+          "locationWhenInUsePermission": "Allow Sneheal to use your location for delivery, maps, and nearest hospitals."
         }
       ],
       [

@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   Pressable,
   Alert,
   Linking,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -16,6 +17,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { NATIONAL_HELPLINES } from '@/constants/emergencyContacts';
 import type { NationalHelpline } from '@/types/emergency.types';
 import { useTheme } from '@/hooks/useTheme';
+import { openNearestHospitalsInMaps } from '@/utils/openNearestHospitals';
 
 const HELPLINE_ICONS: Record<
   NationalHelpline['icon'],
@@ -45,6 +47,17 @@ const EmergencyContactsScreen = () => {
   const navigation = useNavigation();
   const { colors, spacing, typography, borderRadius, shadows, moderateScale, gradients } =
     useTheme();
+  const [openingMaps, setOpeningMaps] = useState(false);
+
+  const handleShowNearestHospitals = async () => {
+    if (openingMaps) return;
+    setOpeningMaps(true);
+    try {
+      await openNearestHospitalsInMaps();
+    } finally {
+      setOpeningMaps(false);
+    }
+  };
 
   const styles = useMemo(
     () =>
@@ -108,6 +121,42 @@ const EmergencyContactsScreen = () => {
           color: colors.textSecondary,
           lineHeight: 20,
           marginBottom: spacing.xs,
+        },
+        mapsBtn: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          backgroundColor: colors.white,
+          borderRadius: borderRadius.lg,
+          paddingVertical: spacing.md,
+          paddingHorizontal: spacing.lg,
+          borderWidth: 1,
+          borderColor: '#BFDBFE',
+          ...shadows.sm,
+          gap: spacing.md,
+        },
+        mapsIconWrap: {
+          width: moderateScale(48),
+          height: moderateScale(48),
+          borderRadius: moderateScale(24),
+          backgroundColor: '#DBEAFE',
+          alignItems: 'center',
+          justifyContent: 'center',
+        },
+        mapsTextBlock: {
+          flex: 1,
+          gap: 2,
+        },
+        mapsTitle: {
+          ...typography.bodySmall,
+          fontWeight: '700',
+          color: colors.textPrimary,
+        },
+        mapsSubtitle: {
+          ...typography.caption,
+          color: colors.textMuted,
+        },
+        mapsChevron: {
+          opacity: 0.7,
         },
         list: {
           gap: spacing.sm,
@@ -213,6 +262,36 @@ const EmergencyContactsScreen = () => {
             <Text style={styles.intro}>
               India emergency numbers. Tap a row to dial right away.
             </Text>
+          </Animated.View>
+
+          <Animated.View entering={FadeInDown.delay(40).duration(350)}>
+            <Pressable
+              onPress={() => void handleShowNearestHospitals()}
+              disabled={openingMaps}
+              style={({ pressed }) => [styles.mapsBtn, pressed && styles.pressed]}
+              accessibilityLabel="Show nearest hospitals in Google Maps"
+              accessibilityRole="button"
+            >
+              <View style={styles.mapsIconWrap}>
+                {openingMaps ? (
+                  <ActivityIndicator size="small" color="#2563EB" />
+                ) : (
+                  <Ionicons name="navigate" size={22} color="#2563EB" />
+                )}
+              </View>
+              <View style={styles.mapsTextBlock}>
+                <Text style={styles.mapsTitle}>Show nearest hospitals</Text>
+                <Text style={styles.mapsSubtitle}>
+                  Opens Google Maps — pick a hospital near you
+                </Text>
+              </View>
+              <Ionicons
+                name="open-outline"
+                size={18}
+                color="#2563EB"
+                style={styles.mapsChevron}
+              />
+            </Pressable>
           </Animated.View>
 
           <View style={styles.list}>
