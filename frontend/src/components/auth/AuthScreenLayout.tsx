@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   Image,
-  KeyboardAvoidingView,
   Platform,
   ScrollView,
   Keyboard,
@@ -34,6 +33,8 @@ interface AuthScreenLayoutProps {
   footer?: React.ReactNode;
   showBack?: boolean;
   onBack?: () => void;
+  /** Light grey sheet background — matches Help & Support screen */
+  mutedBackground?: boolean;
 }
 
 const AuthScreenLayout: React.FC<AuthScreenLayoutProps> = ({
@@ -41,6 +42,7 @@ const AuthScreenLayout: React.FC<AuthScreenLayoutProps> = ({
   footer,
   showBack,
   onBack,
+  mutedBackground = false,
 }) => {
   const insets = useSafeAreaInsets();
   const [keyboardHeight, setKeyboardHeight] = useState(0);
@@ -116,11 +118,13 @@ const AuthScreenLayout: React.FC<AuthScreenLayoutProps> = ({
         </View>
       </View>
 
-      <KeyboardAvoidingView
-        style={[styles.cardShell, { marginTop: -AUTH_CARD_OVERLAP }]}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
-        <View style={styles.card}>
+      <View style={[styles.cardShell, { marginTop: -AUTH_CARD_OVERLAP }]}>
+        <View
+          style={[
+            styles.card,
+            mutedBackground && { backgroundColor: colors.surfaceSecondary },
+          ]}
+        >
           <ScrollView
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
@@ -134,7 +138,7 @@ const AuthScreenLayout: React.FC<AuthScreenLayoutProps> = ({
             {footer ? <View style={styles.footer}>{footer}</View> : null}
           </ScrollView>
         </View>
-      </KeyboardAvoidingView>
+      </View>
     </View>
   );
 };
@@ -142,7 +146,7 @@ const AuthScreenLayout: React.FC<AuthScreenLayoutProps> = ({
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: colors.primary,
+    backgroundColor: 'transparent',
   },
   hero: {
     width: '100%',
