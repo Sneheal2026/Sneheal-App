@@ -7,6 +7,7 @@ import DeliveryAgentHomeScreen from '@/screens/delivery/DeliveryAgentHomeScreen'
 import DeliveryNavigationScreen from '@/screens/delivery/DeliveryNavigationScreen';
 import CustomerTrackingScreen from '@/screens/tracking/CustomerTrackingScreen';
 import DoctorHomeScreen from '@/screens/doctor/DoctorHomeScreen';
+import PatientDetailsScreen from '@/screens/doctor/PatientDetailsScreen';
 import AppNavigator from './AppNavigator';
 import SettingsScreen from '@/screens/settings/SettingsScreen';
 import NotificationsScreen from '@/screens/notifications/NotificationsScreen';
@@ -63,6 +64,7 @@ const AuthNavigator = () => {
       <Stack.Screen name="DeliveryAgentMain" component={DeliveryAgentHomeScreen} />
       <Stack.Screen name="DeliveryNavigation" component={DeliveryNavigationScreen} />
       <Stack.Screen name="DoctorMain" component={DoctorHomeScreen} />
+      <Stack.Screen name="PatientDetails" component={PatientDetailsScreen} />
     </Stack.Navigator>
   );
 };

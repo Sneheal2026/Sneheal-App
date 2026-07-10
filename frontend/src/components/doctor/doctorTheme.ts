@@ -11,4 +11,23 @@ export const doctorTheme = {
   textMutedOnDark: '#99F6E4',
   textPrimary: '#134E4A',
   textSecondary: '#5F8A86',
+  severityMild: '#0D9488',
+  severityModerate: '#D97706',
+  severitySevere: '#DC2626',
+  orderDelivered: '#059669',
+  orderCancelled: '#94A3B8',
+  /** Lab reports — warm amber, distinct from teal clinical UI */
+  reportAccent: '#C2410C',
+  reportAccentSoft: '#EA580C',
+  reportBg: '#FFF7ED',
+  reportBorder: '#FDBA74',
+  reportIconBg: '#FFEDD5',
+  reportMuted: '#9A3412',
+  /** Contact — cool indigo, distinct from teal + amber reports */
+  contactAccent: '#4338CA',
+  contactAccentSoft: '#6366F1',
+  contactBg: '#EEF2FF',
+  contactBorder: '#A5B4FC',
+  contactIconBg: '#E0E7FF',
+  contactMuted: '#312E81',
 } as const;

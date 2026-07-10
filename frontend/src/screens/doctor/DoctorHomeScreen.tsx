@@ -5,19 +5,27 @@ import {
   StyleSheet,
   StatusBar,
   Platform,
+  Pressable,
+  ScrollView,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/context/AuthContext';
 import DevResetStorageButton from '@/components/common/DevResetStorageButton';
 import { doctorTheme } from '@/components/doctor/doctorTheme';
+import { DOCTOR_PATIENTS } from '@/constants/doctorPatients';
+import type { AuthStackParamList } from '@/navigation/types';
 import theme from '@/styles/theme';
 
 const { spacing, typography, borderRadius } = theme;
 
 const DoctorHomeScreen = () => {
   const insets = useSafeAreaInsets();
+  const navigation = useNavigation<NativeStackNavigationProp<AuthStackParamList>>();
   const { user } = useAuth();
+  const patient = DOCTOR_PATIENTS[0];
 
   const topInset = Math.max(
     insets.top,
@@ -31,9 +39,7 @@ const DoctorHomeScreen = () => {
     return 'Good evening';
   }, []);
 
-  const displayName = user?.username
-    ? `Dr. ${user.username}`
-    : 'Doctor';
+  const displayName = user?.username ? `Dr. ${user.username}` : 'Doctor';
 
   return (
     <View style={styles.root}>
@@ -59,21 +65,37 @@ const DoctorHomeScreen = () => {
         </View>
       </View>
 
-      <View
-        style={[
-          styles.body,
-          {
-            paddingBottom: insets.bottom + spacing.xxl,
-          },
-        ]}
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={{
+          paddingHorizontal: spacing.xl,
+          paddingTop: spacing.xl,
+          paddingBottom: insets.bottom + spacing.xxl,
+        }}
+        showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.placeholderTitle}>Doctor home</Text>
-        <Text style={styles.placeholderBody}>
-          This space is ready — tell me what to add next.
-        </Text>
+        <Text style={styles.sectionLabel}>Your patient</Text>
+
+        <Pressable
+          onPress={() => navigation.navigate('PatientDetails', { patientId: patient.id })}
+          style={({ pressed }) => [styles.patientRow, pressed && styles.pressed]}
+          accessibilityRole="button"
+          accessibilityLabel={`Open profile for ${patient.name}`}
+        >
+          <View style={styles.patientAvatar}>
+            <Text style={styles.patientInitials}>{patient.initials}</Text>
+          </View>
+          <View style={styles.patientInfo}>
+            <Text style={styles.patientName}>{patient.name}</Text>
+            <Text style={styles.patientMeta}>
+              {patient.age} · {patient.sex} · Last visit {patient.lastVisitLabel}
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color={doctorTheme.textSecondary} />
+        </Pressable>
 
         <DevResetStorageButton />
-      </View>
+      </ScrollView>
     </View>
   );
 };
@@ -120,22 +142,55 @@ const styles = StyleSheet.create({
     color: doctorTheme.textOnDark,
     fontWeight: '700',
   },
-  body: {
+  scroll: {
     flex: 1,
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.xxl,
   },
-  placeholderTitle: {
-    fontSize: 20,
+  sectionLabel: {
+    ...typography.caption,
+    fontWeight: '700',
+    color: doctorTheme.textSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+    marginBottom: spacing.md,
+  },
+  patientRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: doctorTheme.surface,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    borderColor: doctorTheme.border,
+    padding: spacing.md,
+    gap: spacing.md,
+  },
+  patientAvatar: {
+    width: 48,
+    height: 48,
+    borderRadius: borderRadius.lg,
+    backgroundColor: doctorTheme.accentMuted,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  patientInitials: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: doctorTheme.primary,
+  },
+  patientInfo: {
+    flex: 1,
+  },
+  patientName: {
+    fontSize: 16,
     fontWeight: '700',
     color: doctorTheme.textPrimary,
-    marginBottom: spacing.sm,
+    marginBottom: 2,
   },
-  placeholderBody: {
-    ...typography.body,
+  patientMeta: {
+    ...typography.caption,
     color: doctorTheme.textSecondary,
-    lineHeight: 22,
-    marginBottom: spacing.xl,
+  },
+  pressed: {
+    opacity: 0.88,
   },
 });
 

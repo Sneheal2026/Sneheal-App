@@ -44,6 +44,7 @@ export type AuthStackParamList = {
     customerAddress: string;
   };
   DoctorMain: undefined;
+  PatientDetails: { patientId: string };
 };
 
 // ── App Tabs ──────────────────────────────────────────────────
