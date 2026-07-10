@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Pressable, View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, {
@@ -8,9 +8,7 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
-import theme from '@/styles/theme';
-
-const { colors, spacing, typography, borderRadius, shadows } = theme;
+import { useTheme } from '@/hooks/useTheme';
 
 const TIMING_CONFIG = {
   duration: 280,
@@ -28,9 +26,62 @@ const FaqAccordionItem: React.FC<FaqAccordionItemProps> = ({
   answer,
   defaultExpanded = false,
 }) => {
+  const { colors, spacing, typography, borderRadius, shadows } = useTheme();
   const [expanded, setExpanded] = useState(defaultExpanded);
   const progress = useSharedValue(defaultExpanded ? 1 : 0);
   const contentHeight = useSharedValue(0);
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        card: {
+          backgroundColor: colors.white,
+          borderRadius: borderRadius.lg,
+          overflow: 'hidden',
+          ...shadows.sm,
+        },
+        header: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: spacing.md,
+          paddingVertical: spacing.md + 2,
+          paddingHorizontal: spacing.lg,
+        },
+        pressed: {
+          opacity: 0.7,
+        },
+        question: {
+          ...typography.bodySmall,
+          flex: 1,
+          fontWeight: '600',
+          color: colors.textPrimary,
+          lineHeight: 20,
+        },
+        body: {
+          overflow: 'hidden',
+        },
+        answerMeasure: {
+          position: 'absolute',
+          left: 0,
+          right: 0,
+          top: 0,
+        },
+        answerWrap: {
+          paddingHorizontal: spacing.lg,
+          paddingBottom: spacing.lg,
+          borderTopWidth: StyleSheet.hairlineWidth,
+          borderTopColor: colors.border,
+          paddingTop: spacing.md,
+        },
+        answer: {
+          ...typography.bodySmall,
+          color: colors.textSecondary,
+          lineHeight: 22,
+        },
+      }),
+    [borderRadius, colors, shadows, spacing, typography],
+  );
 
   const toggle = () => {
     const next = !expanded;
@@ -80,53 +131,5 @@ const FaqAccordionItem: React.FC<FaqAccordionItemProps> = ({
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: colors.white,
-    borderRadius: borderRadius.lg,
-    overflow: 'hidden',
-    ...shadows.sm,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.md,
-    paddingVertical: spacing.md + 2,
-    paddingHorizontal: spacing.lg,
-  },
-  pressed: {
-    opacity: 0.7,
-  },
-  question: {
-    ...typography.bodySmall,
-    flex: 1,
-    fontWeight: '600',
-    color: colors.textPrimary,
-    lineHeight: 20,
-  },
-  body: {
-    overflow: 'hidden',
-  },
-  answerMeasure: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-  },
-  answerWrap: {
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.lg,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border,
-    paddingTop: spacing.md,
-  },
-  answer: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
-    lineHeight: 22,
-  },
-});
 
 export default React.memo(FaqAccordionItem);
