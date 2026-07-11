@@ -21,3 +21,9 @@ export interface ScanPrescriptionError {
   message: string;
   status?: number;
 }
+
+export interface SavedPrescription {
+  id: string;
+  imageUrl: string;
+  createdAt: string;
+}

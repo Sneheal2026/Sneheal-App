@@ -13,50 +13,54 @@ const { authenticateToken } = require('../middleware/validateAuth');
  *     tags: [Prescriptions]
  *     security:
  *       - BearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         multipart/form-data:
- *           schema:
- *             type: object
- *             required:
- *               - file
- *             properties:
- *               file:
- *                 type: string
- *                 format: binary
- *                 description: Prescription image (JPEG or PNG, max 10MB)
- *     responses:
- *       200:
- *         description: Prescription scanned successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 message:
- *                   type: string
- *                 data:
- *                   type: object
- *                   properties:
- *                     medicineNames:
- *                       type: array
- *                       items:
- *                         type: string
- *       400:
- *         description: Bad request (no file, invalid format, file too large)
- *       401:
- *         description: Unauthorized
- *       500:
- *         description: Server error or AI service error
  */
 router.post(
   '/scan',
   authenticateToken,
   uploadPrescriptionImage,
-  asyncHandler(prescriptionController.scanPrescription)
+  asyncHandler(prescriptionController.scanPrescription),
+);
+
+/**
+ * @swagger
+ * /api/prescriptions:
+ *   get:
+ *     summary: List saved prescription images
+ *     tags: [Prescriptions]
+ *     security:
+ *       - BearerAuth: []
+ */
+router.get('/', authenticateToken, asyncHandler(prescriptionController.listPrescriptions));
+
+/**
+ * @swagger
+ * /api/prescriptions:
+ *   post:
+ *     summary: Upload and save a prescription image
+ *     tags: [Prescriptions]
+ *     security:
+ *       - BearerAuth: []
+ */
+router.post(
+  '/',
+  authenticateToken,
+  uploadPrescriptionImage,
+  asyncHandler(prescriptionController.savePrescription),
+);
+
+/**
+ * @swagger
+ * /api/prescriptions/{id}:
+ *   delete:
+ *     summary: Delete a saved prescription
+ *     tags: [Prescriptions]
+ *     security:
+ *       - BearerAuth: []
+ */
+router.delete(
+  '/:id',
+  authenticateToken,
+  asyncHandler(prescriptionController.deletePrescription),
 );
 
 module.exports = router;

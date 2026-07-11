@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -32,7 +32,7 @@ import Animated, {
 import theme from '@/styles/theme';
 import { pickImageFromSource, type PickedImage } from '@/utils/imagePicker';
 import type { AuthScreenProps } from '@/navigation/types';
-import { scanPrescription } from '@/services/prescriptionService';
+import { scanPrescription, savePrescription } from '@/services/prescriptionService';
 import type { ScannedMedicine, ImageType } from '@/types/prescription';
 
 const { colors, spacing, typography, borderRadius, shadows, moderateScale } = theme;
@@ -247,6 +247,9 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
   const [pickedImage, setPickedImage] = useState<PickedImage | null>(null);
   const [isPicking, setIsPicking] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
+  const [hasScanned, setHasScanned] = useState(false);
   const [medicines, setMedicines] = useState<ScannedMedicine[]>([]);
   const [imageType, setImageType] = useState<ImageType>('prescription');
   const [scanError, setScanError] = useState<string | null>(null);
@@ -259,33 +262,50 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
       -1,
       true,
     );
+
+    return () => {
+      cancelAnimation(bracketPulse);
+    };
   }, [bracketPulse]);
+
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   const bracketGlowStyle = useAnimatedStyle(() => ({
     opacity: bracketPulse.value,
   }));
 
-  const canScan = Boolean(pickedImage) && !isScanning && !isPicking;
+  const canScan = Boolean(pickedImage) && !isScanning && !isPicking && !isSaving;
+  const canSave =
+    Boolean(pickedImage) && hasScanned && !isScanning && !isPicking && !isSaving && !isSaved;
 
   const handlePick = useCallback(
     async (source: 'camera' | 'gallery') => {
-      if (isPicking || isScanning) return;
+      if (isPicking || isScanning || isSaving) return;
 
       setIsPicking(true);
       setMedicines([]);
       setScanError(null);
+      setHasScanned(false);
+      setIsSaved(false);
 
       try {
         const image = await pickImageFromSource(source, PERMISSION_MESSAGE);
+        if (!mountedRef.current) return;
         if (image) {
           setPickedImage(image);
           void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         }
       } finally {
-        setIsPicking(false);
+        if (mountedRef.current) setIsPicking(false);
       }
     },
-    [isPicking, isScanning],
+    [isPicking, isScanning, isSaving],
   );
 
   const handleClearImage = useCallback(() => {
@@ -293,29 +313,64 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
     setMedicines([]);
     setScanError(null);
     setImageType('prescription');
+    setHasScanned(false);
+    setIsSaved(false);
   }, []);
 
   const handleScan = useCallback(async () => {
-    if (!pickedImage || isScanning) return;
+    if (!pickedImage || isScanning || isSaving) return;
 
     setIsScanning(true);
     setMedicines([]);
     setScanError(null);
+    setHasScanned(false);
+    setIsSaved(false);
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     try {
       const result = await scanPrescription(pickedImage.uri);
+      if (!mountedRef.current) return;
       setMedicines(result.medicines || []);
       setImageType(result.imageType || 'prescription');
+      setHasScanned(true);
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (error: any) {
+      if (!mountedRef.current) return;
       const errorMessage = error?.message || 'Failed to scan image';
       setScanError(errorMessage);
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     } finally {
-      setIsScanning(false);
+      if (mountedRef.current) setIsScanning(false);
     }
-  }, [isScanning, pickedImage]);
+  }, [isScanning, isSaving, pickedImage]);
+
+  const handleSave = useCallback(async () => {
+    if (!pickedImage || !canSave) return;
+
+    setIsSaving(true);
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+    try {
+      await savePrescription(pickedImage.uri);
+      if (!mountedRef.current) return;
+      setIsSaved(true);
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Alert.alert('Saved', 'Prescription photo saved to your account.', [
+        { text: 'OK', style: 'cancel' },
+        {
+          text: 'View prescriptions',
+          onPress: () => navigation.navigate('Prescriptions'),
+        },
+      ]);
+    } catch (error: any) {
+      if (!mountedRef.current) return;
+      const errorMessage = error?.message || 'Failed to save prescription';
+      Alert.alert('Save failed', errorMessage);
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    } finally {
+      if (mountedRef.current) setIsSaving(false);
+    }
+  }, [canSave, navigation, pickedImage]);
 
   const handleReplace = useCallback(() => {
     Alert.alert('Replace photo?', 'Choose a new prescription or medicine photo.', [
@@ -377,7 +432,7 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
         style={styles.scroll}
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingBottom: insets.bottom + moderateScale(108) },
+          { paddingBottom: insets.bottom + moderateScale(128) },
         ]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
@@ -644,6 +699,15 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
           </Animated.View>
         )}
 
+        {hasScanned && !isSaved && (
+          <Animated.View entering={FadeInUp.duration(350)} style={styles.saveHintCard}>
+            <Ionicons name="cloud-upload-outline" size={18} color={ACCENT} />
+            <Text style={styles.saveHintText}>
+              Happy with this photo? Save it to your prescriptions.
+            </Text>
+          </Animated.View>
+        )}
+
         {scanError && (
           <Animated.View entering={FadeInUp.duration(350)} style={styles.errorCard}>
             <View style={styles.errorIcon}>
@@ -658,39 +722,109 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
       </ScrollView>
 
       <View style={[styles.footer, { paddingBottom: insets.bottom + spacing.sm }]}>
-        {canScan && (
+        {canSave ? (
+          <View style={styles.footerHint}>
+            <Ionicons name="cloud-upload-outline" size={14} color={ACCENT} />
+            <Text style={[styles.footerHintText, { color: ACCENT }]}>
+              Ready to save this prescription photo
+            </Text>
+          </View>
+        ) : canScan && !hasScanned ? (
           <View style={styles.footerHint}>
             <Ionicons name="checkmark-circle" size={14} color={colors.success} />
             <Text style={styles.footerHintText}>Photo ready — tap below to scan</Text>
           </View>
-        )}
-        <Pressable
-          onPress={() => void handleScan()}
-          disabled={!canScan}
-          style={({ pressed }) => [
-            styles.scanBtn,
-            canScan && styles.scanBtnReady,
-            !canScan && styles.scanBtnDisabled,
-            pressed && canScan && styles.pressed,
-          ]}
-          accessibilityRole="button"
-          accessibilityLabel="Scan photo"
-        >
-          <LinearGradient
-            colors={canScan ? [ACCENT, ACCENT_DARK] : ['#CBD5E1', '#94A3B8']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.scanBtnInner}
+        ) : isSaved ? (
+          <View style={styles.footerHint}>
+            <Ionicons name="checkmark-circle" size={14} color={colors.success} />
+            <Text style={styles.footerHintText}>Prescription saved</Text>
+          </View>
+        ) : null}
+
+        {hasScanned ? (
+          <View style={styles.footerActions}>
+            <Pressable
+              onPress={() => void handleScan()}
+              disabled={!canScan || isSaving}
+              style={({ pressed }) => [
+                styles.secondaryBtn,
+                pressed && canScan && styles.pressed,
+                (!canScan || isSaving) && styles.scanBtnDisabled,
+              ]}
+              accessibilityRole="button"
+              accessibilityLabel="Scan again"
+            >
+              <Ionicons name="scan" size={18} color={ACCENT} />
+              <Text style={styles.secondaryBtnText}>{isScanning ? 'Analyzing...' : 'Rescan'}</Text>
+            </Pressable>
+
+            <Pressable
+              onPress={() => void handleSave()}
+              disabled={!canSave && !isSaved}
+              style={({ pressed }) => [
+                styles.scanBtn,
+                styles.saveBtnFlex,
+                (canSave || isSaved) && styles.scanBtnReady,
+                !canSave && !isSaved && styles.scanBtnDisabled,
+                pressed && canSave && styles.pressed,
+              ]}
+              accessibilityRole="button"
+              accessibilityLabel="Save prescription"
+            >
+              <LinearGradient
+                colors={
+                  isSaved
+                    ? [colors.success, '#15803D']
+                    : canSave
+                      ? [ACCENT, ACCENT_DARK]
+                      : ['#CBD5E1', '#94A3B8']
+                }
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.scanBtnInner}
+              >
+                <View style={styles.scanBtnIconWrap}>
+                  <Ionicons
+                    name={isSaved ? 'checkmark' : 'cloud-upload-outline'}
+                    size={20}
+                    color={colors.white}
+                  />
+                </View>
+                <Text style={styles.scanBtnText}>
+                  {isSaving ? 'Saving...' : isSaved ? 'Saved' : 'Save prescription'}
+                </Text>
+              </LinearGradient>
+            </Pressable>
+          </View>
+        ) : (
+          <Pressable
+            onPress={() => void handleScan()}
+            disabled={!canScan}
+            style={({ pressed }) => [
+              styles.scanBtn,
+              canScan && styles.scanBtnReady,
+              !canScan && styles.scanBtnDisabled,
+              pressed && canScan && styles.pressed,
+            ]}
+            accessibilityRole="button"
+            accessibilityLabel="Scan photo"
           >
-            <View style={styles.scanBtnIconWrap}>
-              <Ionicons name="scan" size={20} color={colors.white} />
-            </View>
-            <Text style={styles.scanBtnText}>{isScanning ? 'Analyzing...' : 'Tap to Scan'}</Text>
-            {canScan && !isScanning ? (
-              <Ionicons name="arrow-forward" size={18} color="rgba(255,255,255,0.85)" />
-            ) : null}
-          </LinearGradient>
-        </Pressable>
+            <LinearGradient
+              colors={canScan ? [ACCENT, ACCENT_DARK] : ['#CBD5E1', '#94A3B8']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.scanBtnInner}
+            >
+              <View style={styles.scanBtnIconWrap}>
+                <Ionicons name="scan" size={20} color={colors.white} />
+              </View>
+              <Text style={styles.scanBtnText}>{isScanning ? 'Analyzing...' : 'Tap to Scan'}</Text>
+              {canScan && !isScanning ? (
+                <Ionicons name="arrow-forward" size={18} color="rgba(255,255,255,0.85)" />
+              ) : null}
+            </LinearGradient>
+          </Pressable>
+        )}
       </View>
 
     </View>
@@ -1475,6 +1609,48 @@ const styles = StyleSheet.create({
   scanBtnText: {
     ...typography.button,
     color: colors.white,
+  },
+  footerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  secondaryBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    minHeight: moderateScale(56),
+    paddingHorizontal: spacing.md,
+    borderRadius: borderRadius.xl,
+    borderWidth: 1.5,
+    borderColor: ACCENT,
+    backgroundColor: colors.white,
+  },
+  secondaryBtnText: {
+    ...typography.button,
+    color: ACCENT,
+    fontSize: moderateScale(14),
+  },
+  saveBtnFlex: {
+    flex: 1,
+  },
+  saveHintCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginTop: spacing.md,
+    padding: spacing.md,
+    borderRadius: borderRadius.lg,
+    backgroundColor: 'rgba(37, 99, 235, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(37, 99, 235, 0.15)',
+  },
+  saveHintText: {
+    ...typography.bodySmall,
+    color: colors.textSecondary,
+    flex: 1,
+    lineHeight: moderateScale(18),
   },
 });
 
