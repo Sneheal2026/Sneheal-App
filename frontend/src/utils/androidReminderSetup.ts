@@ -1,9 +1,13 @@
 import { Platform, Linking, Alert } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Application from 'expo-application';
 import * as IntentLauncher from 'expo-intent-launcher';
 
 const EXACT_ALARM_ACTION = 'android.settings.REQUEST_SCHEDULE_EXACT_ALARM';
 const IGNORE_BATTERY_ACTION = 'android.settings.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS';
+
+/** Remembers that we already walked the user through the background-reminder setup. */
+const SETUP_PROMPTED_KEY = '@sneheal/androidReminderSetupPrompted';
 
 export function isAndroidReminderDevice(): boolean {
   return Platform.OS === 'android';
@@ -65,6 +69,16 @@ export function getAndroidReminderSetupMessage(): string {
 
 export async function promptAndroidReminderSetup(): Promise<void> {
   if (!isAndroidReminderDevice()) return;
+
+  // Only walk the user through system settings once, so adding/editing
+  // reminders later never re-triggers the permission prompts.
+  try {
+    const alreadyPrompted = await AsyncStorage.getItem(SETUP_PROMPTED_KEY);
+    if (alreadyPrompted) return;
+    await AsyncStorage.setItem(SETUP_PROMPTED_KEY, 'true');
+  } catch {
+    // If storage fails, fall through and show the prompt this once.
+  }
 
   Alert.alert(
     'Enable background reminders',

@@ -10,6 +10,7 @@ import { ThemeProvider } from './src/context/ThemeContext';
 import RootNavigator from './src/navigation/RootNavigator';
 import AuthBootScreen from './src/screens/auth/AuthBootScreen';
 import {
+  addReminderActionListener,
   initializeReminderNotifications,
   rescheduleAllReminders,
 } from './src/services/reminderNotificationService';
@@ -40,6 +41,9 @@ export default function App() {
       await initializeReminderNotifications();
       await rescheduleAllReminders();
     })();
+
+    const actionSubscription = addReminderActionListener();
+    return () => actionSubscription.remove();
   }, []);
 
   useEffect(() => {

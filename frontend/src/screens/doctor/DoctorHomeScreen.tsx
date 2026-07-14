@@ -41,6 +41,10 @@ const DoctorHomeScreen = () => {
 
   const displayName = user?.username ? `Dr. ${user.username}` : 'Doctor';
 
+  const shiftToCustomer = () => {
+    navigation.navigate('Main');
+  };
+
   return (
     <View style={styles.root}>
       <StatusBar
@@ -94,6 +98,16 @@ const DoctorHomeScreen = () => {
           <Ionicons name="chevron-forward" size={20} color={doctorTheme.textSecondary} />
         </Pressable>
 
+        <Pressable
+          onPress={shiftToCustomer}
+          style={({ pressed }) => [styles.shiftToCustomerBtn, pressed && styles.pressed]}
+          accessibilityRole="button"
+          accessibilityLabel="Shift to customer screen"
+        >
+          <Ionicons name="swap-horizontal" size={18} color={doctorTheme.primary} />
+          <Text style={styles.shiftToCustomerText}>Shift to Customer</Text>
+        </Pressable>
+
         <DevResetStorageButton />
       </ScrollView>
     </View>
@@ -144,6 +158,24 @@ const styles = StyleSheet.create({
   },
   scroll: {
     flex: 1,
+  },
+  shiftToCustomerBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    marginTop: spacing.xl,
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1.5,
+    borderColor: doctorTheme.primary,
+    backgroundColor: doctorTheme.surface,
+  },
+  shiftToCustomerText: {
+    ...typography.button,
+    fontSize: 14,
+    fontWeight: '700',
+    color: doctorTheme.primary,
   },
   sectionLabel: {
     ...typography.caption,

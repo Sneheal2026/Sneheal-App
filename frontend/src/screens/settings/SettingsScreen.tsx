@@ -138,6 +138,10 @@ const SettingsScreen = () => {
     });
   };
 
+  const demoNavigateDoctor = () => {
+    navigation.navigate('DoctorMain');
+  };
+
   return (
     <View style={styles.root}>
       <ScrollView
@@ -276,6 +280,18 @@ const SettingsScreen = () => {
                     </Text>
                   </Pressable>
                 </View>
+
+                <Pressable
+                  onPress={demoNavigateDoctor}
+                  style={[styles.demoDoctorBtn, { borderColor: themeColors.primary }]}
+                  accessibilityRole="button"
+                  accessibilityLabel="Shift to doctor screen"
+                >
+                  <Ionicons name="medkit-outline" size={18} color={themeColors.primary} />
+                  <Text style={[styles.demoBtnText, { color: themeColors.primary }]}>
+                    Shift to Doctor
+                  </Text>
+                </Pressable>
               </View>
             </View>
           </Animated.View>
@@ -443,6 +459,18 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     paddingVertical: spacing.md,
     borderRadius: borderRadius.lg,
+    ...shadows.sm,
+  },
+  demoDoctorBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.surface,
+    borderWidth: 1.5,
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.lg,
+    marginTop: spacing.md,
     ...shadows.sm,
   },
   demoBtnText: {

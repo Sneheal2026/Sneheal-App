@@ -4,7 +4,9 @@ import Constants from 'expo-constants';
 import type { MedicineReminder } from '@/types/reminder.types';
 import {
   getMedicineReminders,
+  getMedicineReminderById,
   saveMedicineReminders,
+  updateReminderRemainingTablets,
 } from '@/services/reminderStorage';
 import {
   ANDROID_SCHEDULE_LOOKAHEAD_DAYS,
@@ -16,7 +18,17 @@ import { promptAndroidReminderSetup } from '@/utils/androidReminderSetup';
 
 export const REMINDER_CHANNEL_ID = 'medicine-reminders';
 
+/** Category that attaches the quick action buttons to reminder notifications. */
+export const REMINDER_CATEGORY_ID = 'medicine-reminder-actions';
+/** Action button identifiers handled by the response listener. */
+export const REMINDER_ACTION_TAKEN = 'REMINDER_MARK_TAKEN';
+export const REMINDER_ACTION_SNOOZE = 'REMINDER_SNOOZE';
+
+/** How long to snooze a reminder when the user taps "Remind later". */
+const SNOOZE_MINUTES = 10;
+
 let initialized = false;
+let categoriesReady = false;
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -27,6 +39,37 @@ Notifications.setNotificationHandler({
     shouldShowList: true,
   }),
 });
+
+/**
+ * Registers the "Taken" / "Remind later" buttons shown directly on the
+ * reminder notification. The buttons run in the background so the user does
+ * not have to open the app to update their medicine list.
+ */
+export async function setupNotificationCategories(): Promise<void> {
+  if (categoriesReady) return;
+
+  try {
+    await Notifications.setNotificationCategoryAsync(REMINDER_CATEGORY_ID, [
+      {
+        identifier: REMINDER_ACTION_TAKEN,
+        buttonTitle: 'Taken',
+        options: {
+          opensAppToForeground: false,
+        },
+      },
+      {
+        identifier: REMINDER_ACTION_SNOOZE,
+        buttonTitle: `Remind in ${SNOOZE_MINUTES} min`,
+        options: {
+          opensAppToForeground: false,
+        },
+      },
+    ]);
+    categoriesReady = true;
+  } catch (error) {
+    console.warn('[Reminders] Failed to set notification categories:', error);
+  }
+}
 
 export async function setupAndroidNotificationChannel(): Promise<void> {
   if (Platform.OS !== 'android') return;
@@ -88,6 +131,7 @@ function buildNotificationContent(reminder: MedicineReminder) {
     title: 'Medicine reminder',
     body: buildNotificationBody(reminder),
     sound: true,
+    categoryIdentifier: REMINDER_CATEGORY_ID,
     data: {
       reminderId: reminder.id,
       medicineName: reminder.medicineName,
@@ -300,6 +344,7 @@ export async function initializeReminderNotifications(): Promise<void> {
   initialized = true;
 
   await setupAndroidNotificationChannel();
+  await setupNotificationCategories();
 
   const isExpoGo = Constants.appOwnership === 'expo';
   if (isExpoGo) {
@@ -335,6 +380,81 @@ export async function sendLowStockNotification(
   } catch (error) {
     console.warn('[Reminders] Failed to send low-stock notification:', error);
   }
+}
+
+/**
+ * Applies a "dose taken" straight from the notification action: decrements the
+ * remaining tablets in storage (so the in-app list reflects it) and sends a
+ * low-stock notification when supply is running out. Runs without opening the app.
+ */
+export async function markDoseTakenFromNotification(
+  reminderId: string,
+): Promise<void> {
+  const reminder = await getMedicineReminderById(reminderId);
+  if (!reminder) return;
+
+  const nextRemaining = Math.max(
+    0,
+    reminder.remainingTablets - reminder.dosePerTime,
+  );
+
+  const updated = await updateReminderRemainingTablets(reminderId, nextRemaining);
+  if (!updated) return;
+
+  const dosesPerDay = reminder.times.length * reminder.dosePerTime;
+  const daysLeft =
+    dosesPerDay > 0 ? Math.floor(nextRemaining / dosesPerDay) : 0;
+
+  if (nextRemaining > 0 && daysLeft <= 3) {
+    await sendLowStockNotification(updated);
+  }
+}
+
+/** Re-fires the reminder after a short delay when the user taps "Remind later". */
+export async function snoozeReminderFromNotification(
+  reminderId: string,
+): Promise<void> {
+  const reminder = await getMedicineReminderById(reminderId);
+  if (!reminder) return;
+
+  const permission = await getReminderPermissionStatus();
+  if (permission !== 'granted') return;
+
+  try {
+    await Notifications.scheduleNotificationAsync({
+      content: buildNotificationContent(reminder),
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+        seconds: SNOOZE_MINUTES * 60,
+      },
+    });
+  } catch (error) {
+    console.warn('[Reminders] Failed to snooze reminder:', error);
+  }
+}
+
+/**
+ * Handles a tap on one of the notification action buttons. Registered once at
+ * app start so it also catches actions that happened while the app was closed.
+ */
+export function addReminderActionListener(): Notifications.Subscription {
+  return Notifications.addNotificationResponseReceivedListener((response) => {
+    const data = response.notification.request.content.data as
+      | { reminderId?: string; type?: string }
+      | undefined;
+
+    if (!data?.reminderId || data.type !== 'medicine_reminder') return;
+
+    const reminderId = String(data.reminderId);
+
+    void (async () => {
+      if (response.actionIdentifier === REMINDER_ACTION_TAKEN) {
+        await markDoseTakenFromNotification(reminderId);
+      } else if (response.actionIdentifier === REMINDER_ACTION_SNOOZE) {
+        await snoozeReminderFromNotification(reminderId);
+      }
+    })();
+  });
 }
 
 export async function getScheduledReminderCount(): Promise<number> {
