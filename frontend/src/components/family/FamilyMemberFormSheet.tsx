@@ -13,6 +13,8 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import Animated, { FadeInRight, FadeOutLeft } from 'react-native-reanimated';
 import {
   BLOOD_GROUPS,
   COMMON_ALLERGIES,
@@ -48,6 +50,28 @@ const DEFAULT_FORM: FamilyMemberFormData = {
   currentMedicines: '',
 };
 
+const STEPS = [
+  { id: 'identity', label: 'Identity', icon: 'person-outline' as const },
+  { id: 'details', label: 'Details', icon: 'id-card-outline' as const },
+  { id: 'health', label: 'Health', icon: 'medkit-outline' as const },
+] as const;
+
+const RELATIONSHIP_ICONS: Record<FamilyRelationship, keyof typeof Ionicons.glyphMap> = {
+  self: 'person',
+  spouse: 'heart',
+  parent: 'people',
+  child: 'happy-outline',
+  sibling: 'git-network-outline',
+  other: 'ellipsis-horizontal',
+};
+
+const GENDER_ICONS: Record<FamilyGender, keyof typeof Ionicons.glyphMap> = {
+  male: 'male',
+  female: 'female',
+  other: 'transgender',
+  prefer_not_to_say: 'remove-circle-outline',
+};
+
 const COMMON_ALLERGY_SET = new Set<string>(COMMON_ALLERGIES);
 
 const toggleExclusiveChip = (
@@ -58,12 +82,18 @@ const toggleExclusiveChip = (
   if (value === noneLabel) {
     return current.includes(noneLabel) ? [] : [noneLabel];
   }
-
   const withoutNone = current.filter((item) => item !== noneLabel);
   if (withoutNone.includes(value)) {
     return withoutNone.filter((item) => item !== value);
   }
   return [...withoutNone, value];
+};
+
+const getInitials = (name: string): string => {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return '?';
+  if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
+  return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
 };
 
 const FamilyMemberFormSheet = ({
@@ -74,7 +104,10 @@ const FamilyMemberFormSheet = ({
   onSubmit,
 }: Props) => {
   const insets = useSafeAreaInsets();
-  const { colors, spacing, typography, borderRadius, shadows, moderateScale } = useTheme();
+  const { colors, spacing, typography, borderRadius, shadows, moderateScale, gradients } =
+    useTheme();
+
+  const [step, setStep] = useState(0);
   const [form, setForm] = useState<FamilyMemberFormData>(DEFAULT_FORM);
   const [nameError, setNameError] = useState('');
   const [ageText, setAgeText] = useState('');
@@ -101,6 +134,7 @@ const FamilyMemberFormSheet = ({
       setForm(DEFAULT_FORM);
       setAgeText('');
     }
+    setStep(0);
     setAllergyInput('');
     setNameError('');
   }, [visible, editingMember]);
@@ -110,100 +144,327 @@ const FamilyMemberFormSheet = ({
     [form.allergies],
   );
 
+  const relationshipLabel =
+    FAMILY_RELATIONSHIPS.find((r) => r.id === form.relationship)?.label ?? 'Member';
+  const initials = getInitials(form.name);
+  const isLastStep = step === STEPS.length - 1;
+  const progress = (step + 1) / STEPS.length;
+
   const styles = useMemo(
     () =>
       StyleSheet.create({
         overlay: {
           flex: 1,
-          backgroundColor: 'rgba(15, 23, 42, 0.4)',
+          backgroundColor: 'rgba(15, 23, 42, 0.55)',
           justifyContent: 'flex-end',
         },
         sheet: {
           backgroundColor: colors.surfaceSecondary,
           borderTopLeftRadius: borderRadius.xxl,
           borderTopRightRadius: borderRadius.xxl,
-          maxHeight: '94%',
-          paddingBottom: Math.max(insets.bottom, spacing.md),
+          maxHeight: '96%',
+          overflow: 'hidden',
           ...shadows.lg,
+        },
+        hero: {
+          paddingTop: spacing.sm,
+          paddingBottom: spacing.lg,
+          paddingHorizontal: spacing.lg,
         },
         handle: {
           alignSelf: 'center',
-          width: 36,
+          width: 40,
           height: 4,
           borderRadius: 2,
-          backgroundColor: colors.border,
-          marginTop: spacing.sm,
-          marginBottom: spacing.sm,
+          backgroundColor: 'rgba(255,255,255,0.35)',
+          marginBottom: spacing.md,
         },
-        header: {
+        heroTopRow: {
           flexDirection: 'row',
           alignItems: 'center',
-          paddingHorizontal: spacing.lg,
-          paddingBottom: spacing.md,
-        },
-        headerTitle: {
-          ...typography.h4,
-          flex: 1,
-          color: colors.textPrimary,
+          gap: spacing.md,
         },
         closeBtn: {
           width: moderateScale(36),
           height: moderateScale(36),
           borderRadius: moderateScale(18),
+          backgroundColor: 'rgba(255,255,255,0.2)',
+          alignItems: 'center',
+          justifyContent: 'center',
+        },
+        profilePreview: {
+          flex: 1,
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: spacing.md,
+        },
+        avatarRing: {
+          width: moderateScale(56),
+          height: moderateScale(56),
+          borderRadius: moderateScale(28),
+          backgroundColor: 'rgba(255,255,255,0.25)',
+          alignItems: 'center',
+          justifyContent: 'center',
+          borderWidth: 2,
+          borderColor: 'rgba(255,255,255,0.5)',
+        },
+        avatarInner: {
+          width: moderateScale(46),
+          height: moderateScale(46),
+          borderRadius: moderateScale(23),
           backgroundColor: colors.white,
           alignItems: 'center',
           justifyContent: 'center',
+        },
+        avatarText: {
+          ...typography.h4,
+          color: colors.primary,
+          fontWeight: '800',
+        },
+        heroTextBlock: {
+          flex: 1,
+        },
+        heroTitle: {
+          ...typography.h4,
+          color: colors.white,
+          fontWeight: '700',
+        },
+        heroSubtitle: {
+          ...typography.caption,
+          color: 'rgba(255,255,255,0.85)',
+          marginTop: 2,
+        },
+        progressTrack: {
+          height: 4,
+          backgroundColor: 'rgba(255,255,255,0.25)',
+          borderRadius: 2,
+          marginTop: spacing.md,
+          overflow: 'hidden',
+        },
+        progressFill: {
+          height: '100%',
+          backgroundColor: colors.white,
+          borderRadius: 2,
+        },
+        stepRow: {
+          flexDirection: 'row',
+          marginTop: spacing.md,
+          gap: spacing.xs,
+        },
+        stepPill: {
+          flex: 1,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 4,
+          paddingVertical: spacing.xs + 2,
+          borderRadius: borderRadius.full,
+          backgroundColor: 'rgba(255,255,255,0.12)',
+        },
+        stepPillActive: {
+          backgroundColor: colors.white,
+        },
+        stepPillDone: {
+          backgroundColor: 'rgba(255,255,255,0.3)',
+        },
+        stepPillLabel: {
+          ...typography.caption,
+          fontSize: 10,
+          fontWeight: '700',
+          color: 'rgba(255,255,255,0.75)',
+        },
+        stepPillLabelActive: {
+          color: colors.primary,
+        },
+        stepPillLabelDone: {
+          color: colors.white,
+        },
+        body: {
+          flexGrow: 0,
+          flexShrink: 1,
         },
         scroll: {
           paddingHorizontal: spacing.lg,
         },
         scrollContent: {
-          paddingBottom: spacing.xl,
-          gap: spacing.md,
+          paddingTop: spacing.lg,
+          paddingBottom: spacing.md,
         },
-        fieldCard: {
+        stepCard: {
           backgroundColor: colors.white,
-          borderRadius: borderRadius.lg,
+          borderRadius: borderRadius.xl,
           padding: spacing.lg,
-          gap: spacing.md,
+          borderWidth: 1,
+          borderColor: colors.borderLight,
+          ...shadows.sm,
         },
-        sectionLabel: {
-          ...typography.bodySmall,
+        stepHeading: {
+          ...typography.body,
           fontWeight: '700',
           color: colors.textPrimary,
-          letterSpacing: 0.2,
+          marginBottom: spacing.xxs,
+        },
+        stepDesc: {
+          ...typography.caption,
+          color: colors.textMuted,
+          lineHeight: 18,
+          marginBottom: spacing.lg,
+        },
+        fieldBlock: {
+          marginBottom: spacing.lg,
+        },
+        fieldBlockLast: {
+          marginBottom: 0,
+        },
+        labelRow: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: spacing.sm,
         },
         label: {
           ...typography.bodySmall,
           fontWeight: '600',
           color: colors.textSecondary,
-          marginBottom: spacing.xs,
         },
-        fieldBlock: {
-          gap: spacing.xs,
+        optionalBadge: {
+          ...typography.caption,
+          fontSize: 10,
+          fontWeight: '700',
+          color: colors.textMuted,
+          backgroundColor: colors.surfaceSecondary,
+          paddingHorizontal: spacing.sm,
+          paddingVertical: 2,
+          borderRadius: borderRadius.full,
+          overflow: 'hidden',
+        },
+        inputWrap: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          borderWidth: 1.5,
+          borderColor: colors.borderLight,
+          borderRadius: borderRadius.lg,
+          backgroundColor: colors.surfaceSecondary,
+          minHeight: moderateScale(54),
+          paddingHorizontal: spacing.md,
+          gap: spacing.sm,
+        },
+        inputWrapFocused: {
+          borderColor: colors.primary,
+          backgroundColor: colors.white,
+        },
+        inputWrapError: {
+          borderColor: colors.error,
+          backgroundColor: colors.errorLight,
         },
         input: {
           ...typography.body,
-          borderWidth: 1.5,
-          borderColor: colors.borderLight,
-          borderRadius: borderRadius.md,
-          paddingHorizontal: spacing.md + 2,
-          paddingVertical: Platform.OS === 'ios' ? spacing.md + 2 : spacing.md,
+          flex: 1,
           color: colors.textPrimary,
-          backgroundColor: colors.surfaceSecondary,
-          minHeight: moderateScale(52),
-        },
-        inputError: {
-          borderColor: colors.error,
+          paddingVertical: Platform.OS === 'ios' ? spacing.md : spacing.sm + 2,
         },
         errorText: {
           ...typography.caption,
           color: colors.error,
+          marginTop: spacing.xs,
         },
-        hint: {
+        relationshipGrid: {
+          flexDirection: 'row',
+          flexWrap: 'wrap',
+          gap: spacing.sm,
+        },
+        relationCard: {
+          width: '31%',
+          minWidth: moderateScale(96),
+          flexGrow: 1,
+          alignItems: 'center',
+          paddingVertical: spacing.md,
+          paddingHorizontal: spacing.xs,
+          borderRadius: borderRadius.lg,
+          borderWidth: 1.5,
+          borderColor: colors.borderLight,
+          backgroundColor: colors.surfaceSecondary,
+          gap: spacing.xs,
+        },
+        relationCardSelected: {
+          borderColor: colors.primary,
+          backgroundColor: colors.primarySurface,
+        },
+        relationIconWrap: {
+          width: moderateScale(40),
+          height: moderateScale(40),
+          borderRadius: moderateScale(20),
+          backgroundColor: colors.white,
+          alignItems: 'center',
+          justifyContent: 'center',
+        },
+        relationIconWrapSelected: {
+          backgroundColor: colors.primary,
+        },
+        relationLabel: {
           ...typography.caption,
-          color: colors.textMuted,
-          lineHeight: 18,
+          fontWeight: '600',
+          color: colors.textSecondary,
+          textAlign: 'center',
+        },
+        relationLabelSelected: {
+          color: colors.primary,
+        },
+        genderRow: {
+          flexDirection: 'row',
+          gap: spacing.sm,
+        },
+        genderOption: {
+          flex: 1,
+          alignItems: 'center',
+          paddingVertical: spacing.md,
+          borderRadius: borderRadius.lg,
+          borderWidth: 1.5,
+          borderColor: colors.borderLight,
+          backgroundColor: colors.surfaceSecondary,
+          gap: spacing.xs,
+        },
+        genderOptionSelected: {
+          borderColor: colors.primary,
+          backgroundColor: colors.primarySurface,
+        },
+        genderLabel: {
+          ...typography.caption,
+          fontWeight: '600',
+          color: colors.textSecondary,
+          textAlign: 'center',
+        },
+        genderLabelSelected: {
+          color: colors.primary,
+        },
+        bloodGrid: {
+          flexDirection: 'row',
+          flexWrap: 'wrap',
+          gap: spacing.sm,
+        },
+        bloodCell: {
+          width: '22%',
+          minWidth: moderateScale(58),
+          flexGrow: 1,
+          paddingVertical: spacing.sm + 2,
+          borderRadius: borderRadius.md,
+          borderWidth: 1.5,
+          borderColor: colors.borderLight,
+          backgroundColor: colors.surfaceSecondary,
+          alignItems: 'center',
+          justifyContent: 'center',
+        },
+        bloodCellSelected: {
+          borderColor: colors.primary,
+          backgroundColor: colors.primary,
+        },
+        bloodLabel: {
+          ...typography.bodySmall,
+          fontWeight: '700',
+          color: colors.textSecondary,
+        },
+        bloodLabelSelected: {
+          color: colors.white,
         },
         chipsWrap: {
           flexDirection: 'row',
@@ -211,18 +472,20 @@ const FamilyMemberFormSheet = ({
           gap: spacing.sm,
         },
         chip: {
-          paddingHorizontal: spacing.md + 2,
-          paddingVertical: spacing.sm + 4,
+          paddingHorizontal: spacing.md,
+          paddingVertical: spacing.sm + 2,
           borderRadius: borderRadius.full,
           borderWidth: 1.5,
           borderColor: colors.borderLight,
           backgroundColor: colors.surfaceSecondary,
-          minHeight: moderateScale(42),
-          justifyContent: 'center',
         },
         chipSelected: {
           borderColor: colors.primary,
           backgroundColor: colors.primarySurface,
+        },
+        chipWarn: {
+          borderColor: colors.warning,
+          backgroundColor: colors.warningLight,
         },
         chipLabel: {
           ...typography.bodySmall,
@@ -232,24 +495,8 @@ const FamilyMemberFormSheet = ({
         chipLabelSelected: {
           color: colors.primary,
         },
-        allergyRow: {
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: spacing.sm,
-        },
-        allergyInput: {
-          flex: 1,
-        },
-        addAllergyBtn: {
-          width: moderateScale(52),
-          height: moderateScale(52),
-          borderRadius: borderRadius.md,
-          backgroundColor: colors.primary,
-          alignItems: 'center',
-          justifyContent: 'center',
-        },
-        addAllergyBtnDisabled: {
-          opacity: 0.4,
+        chipLabelWarn: {
+          color: colors.warning,
         },
         customChip: {
           flexDirection: 'row',
@@ -257,27 +504,128 @@ const FamilyMemberFormSheet = ({
           gap: spacing.xs,
           paddingRight: spacing.sm,
         },
-        saveBtn: {
-          marginHorizontal: spacing.lg,
+        tagInputRow: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: spacing.sm,
           marginTop: spacing.sm,
-          backgroundColor: colors.primary,
+        },
+        tagInputWrap: {
+          flex: 1,
+        },
+        addTagBtn: {
+          width: moderateScale(54),
+          height: moderateScale(54),
           borderRadius: borderRadius.lg,
-          paddingVertical: spacing.md + 4,
-          minHeight: moderateScale(54),
+          backgroundColor: colors.primary,
+          alignItems: 'center',
+          justifyContent: 'center',
+        },
+        addTagBtnDisabled: {
+          opacity: 0.35,
+        },
+        hint: {
+          ...typography.caption,
+          color: colors.textMuted,
+          lineHeight: 18,
+          marginTop: spacing.sm,
+        },
+        healthNote: {
+          flexDirection: 'row',
+          gap: spacing.sm,
+          backgroundColor: colors.infoLight,
+          borderRadius: borderRadius.lg,
+          padding: spacing.md,
+          marginBottom: spacing.lg,
+          borderWidth: 1,
+          borderColor: 'rgba(59,130,246,0.15)',
+        },
+        healthNoteText: {
+          ...typography.caption,
+          color: colors.textSecondary,
+          flex: 1,
+          lineHeight: 18,
+        },
+        textareaWrap: {
+          borderWidth: 1.5,
+          borderColor: colors.borderLight,
+          borderRadius: borderRadius.lg,
+          backgroundColor: colors.surfaceSecondary,
+          paddingHorizontal: spacing.md,
+          paddingVertical: spacing.md,
+          minHeight: moderateScale(96),
+        },
+        textarea: {
+          ...typography.body,
+          color: colors.textPrimary,
+          minHeight: moderateScale(72),
+          textAlignVertical: 'top',
+        },
+        footer: {
+          paddingHorizontal: spacing.lg,
+          paddingTop: spacing.sm,
+          paddingBottom: Math.max(insets.bottom, spacing.md),
+          backgroundColor: colors.white,
+          borderTopWidth: 1,
+          borderTopColor: colors.borderLight,
+          gap: spacing.sm,
+        },
+        footerRow: {
+          flexDirection: 'row',
+          gap: spacing.sm,
+        },
+        backBtn: {
+          flex: 1,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: spacing.xs,
+          paddingVertical: spacing.md + 2,
+          borderRadius: borderRadius.lg,
+          borderWidth: 1.5,
+          borderColor: colors.border,
+          backgroundColor: colors.white,
+          minHeight: moderateScale(52),
+        },
+        backBtnPressed: {
+          backgroundColor: colors.surfaceSecondary,
+        },
+        backBtnText: {
+          ...typography.button,
+          color: colors.textSecondary,
+        },
+        primaryBtn: {
+          flex: 2,
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'center',
           gap: spacing.sm,
+          paddingVertical: spacing.md + 2,
+          borderRadius: borderRadius.lg,
+          backgroundColor: colors.primary,
+          minHeight: moderateScale(52),
         },
-        saveBtnDisabled: {
+        primaryBtnFull: {
+          flex: 1,
+        },
+        primaryBtnDisabled: {
           opacity: 0.6,
         },
-        saveBtnPressed: {
+        primaryBtnPressed: {
           opacity: 0.9,
         },
-        saveBtnText: {
+        primaryBtnText: {
           ...typography.button,
           color: colors.white,
+        },
+        skipBtn: {
+          alignItems: 'center',
+          paddingVertical: spacing.xs,
+        },
+        skipBtnText: {
+          ...typography.caption,
+          fontWeight: '600',
+          color: colors.textMuted,
         },
       }),
     [borderRadius, colors, insets.bottom, moderateScale, shadows, spacing, typography],
@@ -319,66 +667,92 @@ const FamilyMemberFormSheet = ({
     }));
   }, []);
 
-  const handleSubmit = useCallback(async () => {
+  const validateStep = useCallback((): boolean => {
+    if (step !== 0) return true;
     const trimmed = form.name.trim();
     if (trimmed.length < 2) {
-      setNameError('Name must be at least 2 characters');
-      return;
+      setNameError('Enter at least 2 characters');
+      return false;
     }
     setNameError('');
+    return true;
+  }, [form.name, step]);
+
+  const goNext = useCallback(() => {
+    if (!validateStep()) return;
+    setStep((s) => Math.min(s + 1, STEPS.length - 1));
+  }, [validateStep]);
+
+  const goBack = useCallback(() => {
+    setStep((s) => Math.max(s - 1, 0));
+  }, []);
+
+  const handleSubmit = useCallback(async () => {
+    if (!validateStep()) {
+      setStep(0);
+      return;
+    }
+    const trimmed = form.name.trim();
     await onSubmit({ ...form, name: trimmed });
-  }, [form, onSubmit]);
+  }, [form, onSubmit, validateStep]);
 
   const renderChip = (
     key: string,
     label: string,
     selected: boolean,
     onPress: () => void,
+    warn = false,
   ) => (
     <Pressable
       key={key}
       onPress={onPress}
-      style={[styles.chip, selected && styles.chipSelected]}
+      style={[
+        styles.chip,
+        selected && (warn ? styles.chipWarn : styles.chipSelected),
+      ]}
     >
-      <Text style={[styles.chipLabel, selected && styles.chipLabelSelected]}>
+      <Text
+        style={[
+          styles.chipLabel,
+          selected && (warn ? styles.chipLabelWarn : styles.chipLabelSelected),
+        ]}
+      >
         {label}
       </Text>
     </Pressable>
   );
 
   const canAddAllergy = allergyInput.trim().length > 0;
+  const sheetTitle = editingMember ? 'Edit member' : 'Add family member';
 
-  return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <KeyboardAvoidingView
-        style={styles.overlay}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
-        <Pressable style={{ flex: 1 }} onPress={onClose} />
-        <View style={styles.sheet}>
-          <View style={styles.handle} />
-          <View style={styles.header}>
-            <Text style={styles.headerTitle}>
-              {editingMember ? 'Edit member' : 'Add family member'}
-            </Text>
-            <Pressable onPress={onClose} style={styles.closeBtn} accessibilityLabel="Close">
-              <Ionicons name="close" size={20} color={colors.textSecondary} />
-            </Pressable>
-          </View>
-
-          <ScrollView
-            style={styles.scroll}
-            contentContainerStyle={styles.scrollContent}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
+  const renderStepContent = () => {
+    switch (step) {
+      case 0:
+        return (
+          <Animated.View
+            key="step-identity"
+            entering={FadeInRight.duration(220)}
+            exiting={FadeOutLeft.duration(160)}
+            style={styles.stepCard}
           >
-            <View style={styles.fieldCard}>
-              <Text style={styles.sectionLabel}>Profile</Text>
+            <Text style={styles.stepHeading}>Who are you adding?</Text>
+            <Text style={styles.stepDesc}>
+              Start with their name and how they relate to you.
+            </Text>
 
-              <View style={styles.fieldBlock}>
+            <View style={styles.fieldBlock}>
+              <View style={styles.labelRow}>
                 <Text style={styles.label}>Full name</Text>
+              </View>
+              <View
+                style={[
+                  styles.inputWrap,
+                  nameError ? styles.inputWrapError : null,
+                ]}
+              >
+                <Ionicons name="person-outline" size={18} color={colors.textMuted} />
                 <TextInput
-                  style={[styles.input, nameError ? styles.inputError : null]}
+                  style={styles.input}
                   placeholder="e.g. Priya Sharma"
                   placeholderTextColor={colors.textMuted}
                   value={form.name}
@@ -387,52 +761,129 @@ const FamilyMemberFormSheet = ({
                     if (nameError) setNameError('');
                   }}
                   autoCapitalize="words"
+                  autoFocus
                   accessibilityLabel="Full name"
                 />
-                {nameError ? <Text style={styles.errorText}>{nameError}</Text> : null}
               </View>
+              {nameError ? <Text style={styles.errorText}>{nameError}</Text> : null}
+            </View>
 
-              <View style={styles.fieldBlock}>
+            <View style={[styles.fieldBlock, styles.fieldBlockLast]}>
+              <View style={styles.labelRow}>
                 <Text style={styles.label}>Relationship</Text>
-                <View style={styles.chipsWrap}>
-                  {FAMILY_RELATIONSHIPS.map((item) =>
-                    renderChip(
-                      item.id,
-                      item.label,
-                      form.relationship === item.id,
-                      () =>
+              </View>
+              <View style={styles.relationshipGrid}>
+                {FAMILY_RELATIONSHIPS.map((item) => {
+                  const selected = form.relationship === item.id;
+                  return (
+                    <Pressable
+                      key={item.id}
+                      onPress={() =>
                         setForm((prev) => ({
                           ...prev,
                           relationship: item.id as FamilyRelationship,
-                        })),
-                    ),
-                  )}
-                </View>
+                        }))
+                      }
+                      style={[
+                        styles.relationCard,
+                        selected && styles.relationCardSelected,
+                      ]}
+                      accessibilityLabel={item.label}
+                    >
+                      <View
+                        style={[
+                          styles.relationIconWrap,
+                          selected && styles.relationIconWrapSelected,
+                        ]}
+                      >
+                        <Ionicons
+                          name={RELATIONSHIP_ICONS[item.id]}
+                          size={20}
+                          color={selected ? colors.white : colors.primary}
+                        />
+                      </View>
+                      <Text
+                        style={[
+                          styles.relationLabel,
+                          selected && styles.relationLabelSelected,
+                        ]}
+                      >
+                        {item.label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
               </View>
+            </View>
+          </Animated.View>
+        );
 
-              <View style={styles.fieldBlock}>
+      case 1:
+        return (
+          <Animated.View
+            key="step-details"
+            entering={FadeInRight.duration(220)}
+            exiting={FadeOutLeft.duration(160)}
+            style={styles.stepCard}
+          >
+            <Text style={styles.stepHeading}>Basic details</Text>
+            <Text style={styles.stepDesc}>
+              Optional info that helps personalize medicine care.
+            </Text>
+
+            <View style={styles.fieldBlock}>
+              <View style={styles.labelRow}>
                 <Text style={styles.label}>Gender</Text>
-                <View style={styles.chipsWrap}>
-                  {FAMILY_GENDERS.map((item) =>
-                    renderChip(
-                      item.id,
-                      item.label,
-                      form.gender === item.id,
-                      () =>
+                <Text style={styles.optionalBadge}>Optional</Text>
+              </View>
+              <View style={styles.genderRow}>
+                {FAMILY_GENDERS.map((item) => {
+                  const selected = form.gender === item.id;
+                  return (
+                    <Pressable
+                      key={item.id}
+                      onPress={() =>
                         setForm((prev) => ({
                           ...prev,
                           gender:
                             prev.gender === item.id
                               ? null
                               : (item.id as FamilyGender),
-                        })),
-                    ),
-                  )}
-                </View>
+                        }))
+                      }
+                      style={[
+                        styles.genderOption,
+                        selected && styles.genderOptionSelected,
+                      ]}
+                      accessibilityLabel={item.label}
+                    >
+                      <Ionicons
+                        name={GENDER_ICONS[item.id]}
+                        size={20}
+                        color={selected ? colors.primary : colors.textMuted}
+                      />
+                      <Text
+                        style={[
+                          styles.genderLabel,
+                          selected && styles.genderLabelSelected,
+                        ]}
+                        numberOfLines={2}
+                      >
+                        {item.label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
               </View>
+            </View>
 
-              <View style={styles.fieldBlock}>
+            <View style={styles.fieldBlock}>
+              <View style={styles.labelRow}>
                 <Text style={styles.label}>Age (years)</Text>
+                <Text style={styles.optionalBadge}>Optional</Text>
+              </View>
+              <View style={styles.inputWrap}>
+                <Ionicons name="calendar-outline" size={18} color={colors.textMuted} />
                 <TextInput
                   style={styles.input}
                   placeholder="e.g. 34"
@@ -443,66 +894,117 @@ const FamilyMemberFormSheet = ({
                   accessibilityLabel="Age in years"
                 />
               </View>
+            </View>
 
-              <View style={styles.fieldBlock}>
+            <View style={[styles.fieldBlock, styles.fieldBlockLast]}>
+              <View style={styles.labelRow}>
                 <Text style={styles.label}>Blood group</Text>
-                <View style={styles.chipsWrap}>
-                  {BLOOD_GROUPS.map((group) =>
-                    renderChip(
-                      group,
-                      group === 'unknown' ? 'Unknown' : group,
-                      form.bloodGroup === group,
-                      () =>
+                <Text style={styles.optionalBadge}>Optional</Text>
+              </View>
+              <View style={styles.bloodGrid}>
+                {BLOOD_GROUPS.map((group) => {
+                  const selected = form.bloodGroup === group;
+                  const label = group === 'unknown' ? '?' : group;
+                  return (
+                    <Pressable
+                      key={group}
+                      onPress={() =>
                         setForm((prev) => ({
                           ...prev,
                           bloodGroup:
                             prev.bloodGroup === group
                               ? null
                               : (group as BloodGroup),
-                        })),
-                    ),
-                  )}
-                </View>
+                        }))
+                      }
+                      style={[
+                        styles.bloodCell,
+                        selected && styles.bloodCellSelected,
+                      ]}
+                      accessibilityLabel={
+                        group === 'unknown' ? 'Unknown blood group' : group
+                      }
+                    >
+                      <Text
+                        style={[
+                          styles.bloodLabel,
+                          selected && styles.bloodLabelSelected,
+                        ]}
+                      >
+                        {label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
               </View>
             </View>
+          </Animated.View>
+        );
 
-            <View style={styles.fieldCard}>
-              <Text style={styles.sectionLabel}>Health safety</Text>
+      case 2:
+        return (
+          <Animated.View
+            key="step-health"
+            entering={FadeInRight.duration(220)}
+            exiting={FadeOutLeft.duration(160)}
+            style={styles.stepCard}
+          >
+            <Text style={styles.stepHeading}>Health safety</Text>
+            <Text style={styles.stepDesc}>
+              Helps flag unsafe medicines when ordering for this person.
+            </Text>
 
-              <View style={styles.fieldBlock}>
-                <Text style={styles.label}>Allergies</Text>
-                <View style={styles.chipsWrap}>
-                  {COMMON_ALLERGIES.filter((item) => item !== 'Other').map((item) =>
-                    renderChip(
-                      item,
-                      item,
-                      form.allergies.includes(item),
-                      () =>
-                        setForm((prev) => ({
-                          ...prev,
-                          allergies: toggleExclusiveChip(prev.allergies, item),
-                        })),
-                    ),
-                  )}
-                  {customAllergies.map((item) => (
-                    <Pressable
-                      key={item}
-                      onPress={() => removeAllergy(item)}
-                      style={[styles.chip, styles.chipSelected, styles.customChip]}
-                      accessibilityLabel={`Remove ${item}`}
-                    >
-                      <Text style={[styles.chipLabel, styles.chipLabelSelected]}>
-                        {item}
-                      </Text>
-                      <Ionicons name="close" size={14} color={colors.primary} />
-                    </Pressable>
-                  ))}
-                </View>
+            <View style={styles.healthNote}>
+              <Ionicons name="shield-checkmark" size={18} color={colors.info} />
+              <Text style={styles.healthNoteText}>
+                All fields here are optional. You can update them anytime from the
+                member card.
+              </Text>
+            </View>
 
-                <View style={styles.allergyRow}>
+            <View style={styles.fieldBlock}>
+              <View style={styles.labelRow}>
+                <Text style={styles.label}>Known allergies</Text>
+                <Text style={styles.optionalBadge}>Optional</Text>
+              </View>
+              <View style={styles.chipsWrap}>
+                {COMMON_ALLERGIES.filter((item) => item !== 'Other').map((item) =>
+                  renderChip(
+                    item,
+                    item,
+                    form.allergies.includes(item),
+                    () =>
+                      setForm((prev) => ({
+                        ...prev,
+                        allergies: toggleExclusiveChip(prev.allergies, item),
+                      })),
+                    item !== 'None',
+                  ),
+                )}
+                {customAllergies.map((item) => (
+                  <Pressable
+                    key={item}
+                    onPress={() => removeAllergy(item)}
+                    style={[
+                      styles.chip,
+                      styles.chipWarn,
+                      styles.customChip,
+                    ]}
+                    accessibilityLabel={`Remove ${item}`}
+                  >
+                    <Text style={[styles.chipLabel, styles.chipLabelWarn]}>
+                      {item}
+                    </Text>
+                    <Ionicons name="close-circle" size={16} color={colors.warning} />
+                  </Pressable>
+                ))}
+              </View>
+              <View style={styles.tagInputRow}>
+                <View style={[styles.inputWrap, styles.tagInputWrap]}>
+                  <Ionicons name="add-circle-outline" size={18} color={colors.textMuted} />
                   <TextInput
-                    style={[styles.input, styles.allergyInput]}
-                    placeholder="Type another allergy"
+                    style={styles.input}
+                    placeholder="Add another allergy"
                     placeholderTextColor={colors.textMuted}
                     value={allergyInput}
                     onChangeText={setAllergyInput}
@@ -511,49 +1013,51 @@ const FamilyMemberFormSheet = ({
                     autoCapitalize="sentences"
                     accessibilityLabel="Add custom allergy"
                   />
-                  <Pressable
-                    onPress={addCustomAllergy}
-                    disabled={!canAddAllergy}
-                    style={[
-                      styles.addAllergyBtn,
-                      !canAddAllergy && styles.addAllergyBtnDisabled,
-                    ]}
-                    accessibilityLabel="Add allergy"
-                  >
-                    <Ionicons name="add" size={24} color={colors.white} />
-                  </Pressable>
                 </View>
-                <Text style={styles.hint}>
-                  Tap a chip or type your own allergy above
-                </Text>
-              </View>
-
-              <View style={styles.fieldBlock}>
-                <Text style={styles.label}>Chronic conditions</Text>
-                <View style={styles.chipsWrap}>
-                  {COMMON_CONDITIONS.map((item) =>
-                    renderChip(
-                      item,
-                      item,
-                      form.conditions.includes(item),
-                      () =>
-                        setForm((prev) => ({
-                          ...prev,
-                          conditions: toggleExclusiveChip(prev.conditions, item),
-                        })),
-                    ),
-                  )}
-                </View>
-              </View>
-
-              <View style={styles.fieldBlock}>
-                <Text style={styles.label}>Current medicines (optional)</Text>
-                <TextInput
+                <Pressable
+                  onPress={addCustomAllergy}
+                  disabled={!canAddAllergy}
                   style={[
-                    styles.input,
-                    { minHeight: moderateScale(88), textAlignVertical: 'top' },
+                    styles.addTagBtn,
+                    !canAddAllergy && styles.addTagBtnDisabled,
                   ]}
-                  placeholder="e.g. Metformin 500mg, Amlodipine"
+                  accessibilityLabel="Add allergy"
+                >
+                  <Ionicons name="arrow-forward" size={22} color={colors.white} />
+                </Pressable>
+              </View>
+            </View>
+
+            <View style={styles.fieldBlock}>
+              <View style={styles.labelRow}>
+                <Text style={styles.label}>Chronic conditions</Text>
+                <Text style={styles.optionalBadge}>Optional</Text>
+              </View>
+              <View style={styles.chipsWrap}>
+                {COMMON_CONDITIONS.map((item) =>
+                  renderChip(
+                    item,
+                    item,
+                    form.conditions.includes(item),
+                    () =>
+                      setForm((prev) => ({
+                        ...prev,
+                        conditions: toggleExclusiveChip(prev.conditions, item),
+                      })),
+                  ),
+                )}
+              </View>
+            </View>
+
+            <View style={[styles.fieldBlock, styles.fieldBlockLast]}>
+              <View style={styles.labelRow}>
+                <Text style={styles.label}>Current medicines</Text>
+                <Text style={styles.optionalBadge}>Optional</Text>
+              </View>
+              <View style={styles.textareaWrap}>
+                <TextInput
+                  style={styles.textarea}
+                  placeholder="e.g. Metformin 500mg, Amlodipine 5mg"
                   placeholderTextColor={colors.textMuted}
                   value={form.currentMedicines}
                   onChangeText={(currentMedicines) =>
@@ -562,33 +1066,170 @@ const FamilyMemberFormSheet = ({
                   multiline
                   accessibilityLabel="Current medicines"
                 />
-                <Text style={styles.hint}>
-                  Helps avoid unsafe medicine combinations when ordering
-                </Text>
               </View>
+              <Text style={styles.hint}>
+                Separate multiple medicines with commas
+              </Text>
             </View>
+          </Animated.View>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+      <KeyboardAvoidingView
+        style={styles.overlay}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <Pressable style={{ flex: 1 }} onPress={onClose} accessibilityLabel="Dismiss" />
+        <View style={styles.sheet}>
+          <LinearGradient
+            colors={gradients.settingsHero}
+            locations={[0, 0.5, 1]}
+            style={styles.hero}
+          >
+            <View style={styles.handle} />
+            <View style={styles.heroTopRow}>
+              <View style={styles.profilePreview}>
+                <View style={styles.avatarRing}>
+                  <View style={styles.avatarInner}>
+                    <Text style={styles.avatarText}>{initials}</Text>
+                  </View>
+                </View>
+                <View style={styles.heroTextBlock}>
+                  <Text style={styles.heroTitle} numberOfLines={1}>
+                    {form.name.trim() || sheetTitle}
+                  </Text>
+                  <Text style={styles.heroSubtitle} numberOfLines={1}>
+                    {form.name.trim()
+                      ? `${relationshipLabel} · Step ${step + 1} of ${STEPS.length}`
+                      : `Step ${step + 1} of ${STEPS.length}`}
+                  </Text>
+                </View>
+              </View>
+              <Pressable
+                onPress={onClose}
+                style={styles.closeBtn}
+                accessibilityLabel="Close"
+              >
+                <Ionicons name="close" size={20} color={colors.white} />
+              </Pressable>
+            </View>
+
+            <View style={styles.progressTrack}>
+              <View style={[styles.progressFill, { width: `${progress * 100}%` }]} />
+            </View>
+
+            <View style={styles.stepRow}>
+              {STEPS.map((item, index) => {
+                const isActive = index === step;
+                const isDone = index < step;
+                return (
+                  <View
+                    key={item.id}
+                    style={[
+                      styles.stepPill,
+                      isActive && styles.stepPillActive,
+                      isDone && styles.stepPillDone,
+                    ]}
+                  >
+                    <Ionicons
+                      name={isDone ? 'checkmark' : item.icon}
+                      size={12}
+                      color={
+                        isActive
+                          ? colors.primary
+                          : isDone
+                            ? colors.white
+                            : 'rgba(255,255,255,0.7)'
+                      }
+                    />
+                    <Text
+                      style={[
+                        styles.stepPillLabel,
+                        isActive && styles.stepPillLabelActive,
+                        isDone && styles.stepPillLabelDone,
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {item.label}
+                    </Text>
+                  </View>
+                );
+              })}
+            </View>
+          </LinearGradient>
+
+          <ScrollView
+            style={styles.body}
+            contentContainerStyle={[styles.scroll, styles.scrollContent]}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            {renderStepContent()}
           </ScrollView>
 
-          <Pressable
-            onPress={() => void handleSubmit()}
-            disabled={saving}
-            style={({ pressed }) => [
-              styles.saveBtn,
-              saving && styles.saveBtnDisabled,
-              pressed && !saving && styles.saveBtnPressed,
-            ]}
-          >
-            {saving ? (
-              <ActivityIndicator color={colors.white} />
-            ) : (
-              <>
-                <Ionicons name="checkmark-circle" size={22} color={colors.white} />
-                <Text style={styles.saveBtnText}>
-                  {editingMember ? 'Save changes' : 'Add member'}
-                </Text>
-              </>
-            )}
-          </Pressable>
+          <View style={styles.footer}>
+            <View style={styles.footerRow}>
+              {step > 0 ? (
+                <Pressable
+                  onPress={goBack}
+                  style={({ pressed }) => [
+                    styles.backBtn,
+                    pressed && styles.backBtnPressed,
+                  ]}
+                  accessibilityLabel="Go back"
+                >
+                  <Ionicons name="chevron-back" size={18} color={colors.textSecondary} />
+                  <Text style={styles.backBtnText}>Back</Text>
+                </Pressable>
+              ) : null}
+
+              <Pressable
+                onPress={() => (isLastStep ? void handleSubmit() : goNext())}
+                disabled={saving}
+                style={({ pressed }) => [
+                  styles.primaryBtn,
+                  step === 0 && styles.primaryBtnFull,
+                  saving && styles.primaryBtnDisabled,
+                  pressed && !saving && styles.primaryBtnPressed,
+                ]}
+              >
+                {saving ? (
+                  <ActivityIndicator color={colors.white} />
+                ) : (
+                  <>
+                    <Text style={styles.primaryBtnText}>
+                      {isLastStep
+                        ? editingMember
+                          ? 'Save changes'
+                          : 'Add member'
+                        : 'Continue'}
+                    </Text>
+                    <Ionicons
+                      name={isLastStep ? 'checkmark-circle' : 'arrow-forward'}
+                      size={20}
+                      color={colors.white}
+                    />
+                  </>
+                )}
+              </Pressable>
+            </View>
+
+            {step === 2 && !saving ? (
+              <Pressable
+                onPress={() => void handleSubmit()}
+                style={styles.skipBtn}
+                accessibilityLabel="Save without health details"
+              >
+                <Text style={styles.skipBtnText}>Save without health details</Text>
+              </Pressable>
+            ) : null}
+          </View>
         </View>
       </KeyboardAvoidingView>
     </Modal>

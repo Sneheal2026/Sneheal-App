@@ -70,8 +70,22 @@ const FamilyMembersScreen = () => {
           color: 'rgba(255,255,255,0.85)',
           marginTop: 2,
         },
-        headerSpacer: {
-          width: moderateScale(40),
+        addHeaderBtn: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: spacing.xxs,
+          backgroundColor: colors.white,
+          borderRadius: borderRadius.full,
+          paddingHorizontal: spacing.md,
+          paddingVertical: spacing.sm,
+          minHeight: moderateScale(40),
+          ...shadows.sm,
+        },
+        addHeaderBtnPressed: { opacity: 0.85 },
+        addHeaderBtnText: {
+          ...typography.caption,
+          fontWeight: '700',
+          color: colors.primary,
         },
         body: {
           flex: 1,
@@ -100,7 +114,7 @@ const FamilyMembersScreen = () => {
         },
         listContent: {
           gap: spacing.sm,
-          paddingBottom: spacing.xxxxxl,
+          paddingBottom: spacing.xl,
           flexGrow: 1,
         },
         listContentEmpty: {
@@ -141,24 +155,6 @@ const FamilyMembersScreen = () => {
         },
         emptyCtaPressed: { opacity: 0.9 },
         emptyCtaText: {
-          ...typography.button,
-          color: colors.white,
-        },
-        fab: {
-          position: 'absolute',
-          right: spacing.xl,
-          bottom: spacing.xl,
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: spacing.sm,
-          backgroundColor: colors.primary,
-          borderRadius: borderRadius.full,
-          paddingHorizontal: spacing.lg,
-          paddingVertical: spacing.md,
-          ...shadows.md,
-        },
-        fabPressed: { opacity: 0.9 },
-        fabText: {
           ...typography.button,
           color: colors.white,
         },
@@ -273,7 +269,21 @@ const FamilyMembersScreen = () => {
               <Text style={styles.headerTitle}>Family members</Text>
               <Text style={styles.headerSubtitle}>Health details for safer care</Text>
             </View>
-            <View style={styles.headerSpacer} />
+            {members.length > 0 ? (
+              <Pressable
+                onPress={openAddSheet}
+                style={({ pressed }) => [
+                  styles.addHeaderBtn,
+                  pressed && styles.addHeaderBtnPressed,
+                ]}
+                accessibilityLabel="Add family member"
+              >
+                <Ionicons name="add" size={18} color={colors.primary} />
+                <Text style={styles.addHeaderBtnText}>Add</Text>
+              </Pressable>
+            ) : (
+              <View style={{ width: moderateScale(40) }} />
+            )}
           </View>
         </SafeAreaView>
       </LinearGradient>
@@ -315,17 +325,6 @@ const FamilyMembersScreen = () => {
           </>
         )}
       </View>
-
-      {members.length > 0 ? (
-        <Pressable
-          onPress={openAddSheet}
-          style={({ pressed }) => [styles.fab, pressed && styles.fabPressed]}
-          accessibilityLabel="Add family member"
-        >
-          <Ionicons name="add" size={22} color={colors.white} />
-          <Text style={styles.fabText}>Add</Text>
-        </Pressable>
-      ) : null}
 
       <FamilyMemberFormSheet
         visible={sheetVisible}
