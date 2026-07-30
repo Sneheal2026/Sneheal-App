@@ -15,6 +15,7 @@ import { ApiError } from '@/services/apiClient';
 import { devLog } from '@/utils/devLogger';
 import { createPreviewSession, isSkipAuthEnabled } from '@/utils/previewAuth';
 import type { AuthScreenProps } from '@/navigation/types';
+import { useTranslation } from 'react-i18next';
 
 const { colors, spacing, typography, borderRadius } = theme;
 
@@ -25,6 +26,7 @@ const formatPhoneDisplay = (digits: string): string => {
 };
 
 const PhoneNumberScreen = ({ navigation }: AuthScreenProps<'PhoneNumber'>) => {
+  const { t } = useTranslation();
   const { signIn } = useAuth();
   const [phoneNumber, setPhoneNumber] = useState('');
   const [isFocused, setIsFocused] = useState(false);
@@ -96,7 +98,7 @@ const PhoneNumberScreen = ({ navigation }: AuthScreenProps<'PhoneNumber'>) => {
       footer={
         <>
           <AuthPrimaryButton
-            title="Continue"
+            title={t('common.continue')}
             onPress={handleContinue}
             disabled={!isValid}
             loading={isLoading}
@@ -111,26 +113,24 @@ const PhoneNumberScreen = ({ navigation }: AuthScreenProps<'PhoneNumber'>) => {
                 (isSkipping || isLoading) && styles.skipButtonDisabled,
               ]}
               accessibilityRole="button"
-              accessibilityLabel="Continue without login for preview testing"
+              accessibilityLabel={t('auth.continuePreview')}
             >
               <Text style={styles.skipButtonText}>
-                {isSkipping ? 'Opening home...' : 'Continue without login (preview)'}
+                {isSkipping ? t('auth.openingHome') : t('auth.continuePreviewShort')}
               </Text>
             </Pressable>
           ) : null}
           <Text style={styles.termsText}>
-            By continuing, you agree to our{' '}
-            <Text style={styles.termsLink}>Terms of Service</Text>
+            {t('auth.termsPrefix')}{' '}
+            <Text style={styles.termsLink}>{t('auth.termsOfService')}</Text>
             {' & '}
-            <Text style={styles.termsLink}>Privacy Policy</Text>
+            <Text style={styles.termsLink}>{t('auth.privacyPolicy')}</Text>
           </Text>
         </>
       }
     >
-      <Text style={styles.title}>Enter mobile number</Text>
-      <Text style={styles.subtitle}>
-        We&apos;ll send a one-time verification code to your phone
-      </Text>
+      <Text style={styles.title}>{t('auth.phoneTitle')}</Text>
+      <Text style={styles.subtitle}>{t('auth.phoneSubtitle')}</Text>
 
       <Pressable
         onPress={() => inputRef.current?.focus()}
@@ -150,7 +150,7 @@ const PhoneNumberScreen = ({ navigation }: AuthScreenProps<'PhoneNumber'>) => {
         <TextInput
           ref={inputRef}
           style={styles.phoneInput}
-          placeholder="98765 43210"
+          placeholder={t('auth.phonePlaceholder')}
           placeholderTextColor={colors.textMuted}
           keyboardType="phone-pad"
           maxLength={11}
@@ -160,12 +160,12 @@ const PhoneNumberScreen = ({ navigation }: AuthScreenProps<'PhoneNumber'>) => {
           onBlur={() => setIsFocused(false)}
           returnKeyType="done"
           onSubmitEditing={handleContinue}
-          accessibilityLabel="Mobile number"
+          accessibilityLabel={t('auth.phoneLabel')}
         />
       </Pressable>
 
       {showError ? (
-        <Text style={styles.errorText}>Enter a valid 10-digit mobile number</Text>
+        <Text style={styles.errorText}>{t('auth.phoneError')}</Text>
       ) : null}
 
       {apiError ? <Text style={styles.errorText}>{apiError}</Text> : null}

@@ -3,11 +3,11 @@ import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import {
   getBloodGroupLabel,
-  getGenderLabel,
-  getRelationshipLabel,
 } from '@/constants/familyHealth';
 import type { FamilyMember } from '@/types/family.types';
 import { useTheme } from '@/hooks/useTheme';
+import { useTranslation } from 'react-i18next';
+import { translateGender, translateRelationship } from '@/utils/familyI18n';
 
 type Props = {
   member: FamilyMember;
@@ -16,6 +16,7 @@ type Props = {
 };
 
 const FamilyMemberCard = ({ member, onEdit, onDelete }: Props) => {
+  const { t } = useTranslation();
   const { colors, spacing, typography, borderRadius, shadows, moderateScale } = useTheme();
 
   const styles = useMemo(
@@ -102,9 +103,9 @@ const FamilyMemberCard = ({ member, onEdit, onDelete }: Props) => {
   );
 
   const metaParts = [
-    getRelationshipLabel(member.relationship),
-    member.ageYears != null ? `${member.ageYears} yrs` : null,
-    getGenderLabel(member.gender),
+    translateRelationship(t, member.relationship),
+    member.ageYears != null ? `${member.ageYears} ${t('family.yrs')}` : null,
+    translateGender(t, member.gender),
     getBloodGroupLabel(member.bloodGroup),
   ].filter(Boolean);
 
@@ -157,12 +158,12 @@ const FamilyMemberCard = ({ member, onEdit, onDelete }: Props) => {
           ))}
           {member.currentMedicines.trim() ? (
             <View style={styles.chip}>
-              <Text style={styles.chipText}>On medicines</Text>
+              <Text style={styles.chipText}>{t('family.onMedicines')}</Text>
             </View>
           ) : null}
         </View>
       ) : (
-        <Text style={styles.emptyHealth}>No health details added yet</Text>
+        <Text style={styles.emptyHealth}>{t('family.noHealthDetails')}</Text>
       )}
     </View>
   );

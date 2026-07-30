@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, Image } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import ScreenHeader from '@/components/common/ScreenHeader';
 import theme from '@/styles/theme';
 import type { TabScreenProps } from '@/navigation/types';
@@ -9,14 +10,16 @@ const { colors, spacing, typography, moderateScale, verticalScale } = theme;
 const NO_ORDERS_PIC = require('../../../assets/images/No-Orders-Pic.webp');
 
 const OrdersScreen = (_props: TabScreenProps<'Orders'>) => {
+  const { t } = useTranslation();
+
   return (
     <View style={styles.root}>
-      <ScreenHeader title="My Orders" subtitle="Track and manage your orders" />
+      <ScreenHeader title={t('orders.title')} subtitle={t('orders.subtitle')} />
 
       <View style={styles.content}>
         <View style={styles.emptyState}>
           <Image source={NO_ORDERS_PIC} style={styles.emptyImage} resizeMode="contain" />
-          <Text style={styles.emptyText}>No orders placed yet</Text>
+          <Text style={styles.emptyText}>{t('orders.empty')}</Text>
         </View>
       </View>
     </View>

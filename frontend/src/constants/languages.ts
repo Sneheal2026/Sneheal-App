@@ -4,7 +4,8 @@ export interface LanguageOption {
   value: AppLanguage;
   label: string;
   nativeLabel: string;
-  description: string;
+  /** i18n key under `language.*` for the option description */
+  descriptionKey: 'englishDesc' | 'hindiDesc' | 'marathiDesc';
   scriptSample: string;
 }
 
@@ -13,21 +14,21 @@ export const LANGUAGE_OPTIONS: LanguageOption[] = [
     value: 'ENGLISH',
     label: 'English',
     nativeLabel: 'English',
-    description: 'Default app language',
+    descriptionKey: 'englishDesc',
     scriptSample: 'Aa',
   },
   {
     value: 'HINDI',
     label: 'Hindi',
     nativeLabel: 'हिंदी',
-    description: 'Hindi language',
+    descriptionKey: 'hindiDesc',
     scriptSample: 'अ',
   },
   {
     value: 'MARATHI',
     label: 'Marathi',
     nativeLabel: 'मराठी',
-    description: 'Marathi language',
+    descriptionKey: 'marathiDesc',
     scriptSample: 'अ',
   },
 ];
@@ -36,3 +37,6 @@ export const DEFAULT_APP_LANGUAGE: AppLanguage = 'ENGLISH';
 
 export const getLanguageLabel = (value: AppLanguage): string =>
   LANGUAGE_OPTIONS.find((option) => option.value === value)?.label ?? 'English';
+
+export const getLanguageNativeLabel = (value: AppLanguage): string =>
+  LANGUAGE_OPTIONS.find((option) => option.value === value)?.nativeLabel ?? 'English';

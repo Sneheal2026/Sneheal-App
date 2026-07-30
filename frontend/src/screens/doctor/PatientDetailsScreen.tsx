@@ -26,6 +26,7 @@ import {
 import type { AuthStackParamList } from '@/navigation/types';
 import { openPatientReportPdf } from '@/utils/openPatientReportPdf';
 import theme from '@/styles/theme';
+import { useTranslation } from 'react-i18next';
 
 const { spacing, typography, borderRadius } = theme;
 
@@ -87,10 +88,12 @@ const TestReportRow = ({
   report,
   opening,
   onOpen,
+  viewLabel,
 }: {
   report: PatientTestReport;
   opening: boolean;
   onOpen: () => void;
+  viewLabel: string;
 }) => (
   <Pressable
     onPress={onOpen}
@@ -113,13 +116,14 @@ const TestReportRow = ({
     ) : (
       <View style={styles.viewBtn}>
         <Ionicons name="eye-outline" size={16} color={doctorTheme.reportAccent} />
-        <Text style={styles.viewBtnText}>View</Text>
+        <Text style={styles.viewBtnText}>{viewLabel}</Text>
       </View>
     )}
   </Pressable>
 );
 
 const PatientDetailsScreen = () => {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const route = useRoute<RouteProp<AuthStackParamList, 'PatientDetails'>>();
@@ -165,10 +169,10 @@ const PatientDetailsScreen = () => {
           >
             <Ionicons name="arrow-back" size={22} color={doctorTheme.textOnDark} />
           </Pressable>
-          <Text style={styles.headerTitle}>Patient profile</Text>
+          <Text style={styles.headerTitle}>{t('doctor.patientProfile')}</Text>
         </View>
         <View style={styles.missing}>
-          <Text style={styles.missingText}>Patient not found.</Text>
+          <Text style={styles.missingText}>{t('doctor.patientNotFound')}</Text>
         </View>
       </View>
     );
@@ -193,7 +197,7 @@ const PatientDetailsScreen = () => {
         >
           <Ionicons name="arrow-back" size={22} color={doctorTheme.textOnDark} />
         </Pressable>
-        <Text style={styles.headerTitle}>Patient profile</Text>
+        <Text style={styles.headerTitle}>{t('doctor.patientProfile')}</Text>
         <View style={styles.headerSpacer} />
       </View>
 
@@ -211,14 +215,14 @@ const PatientDetailsScreen = () => {
           </View>
           <Text style={styles.patientName}>{patient.name}</Text>
           <Text style={styles.patientMeta}>
-            {patient.age} yrs · {sexLabel} · Blood {patient.bloodGroup}
+            {patient.age} {t('doctor.yrs')} · {sexLabel} · {t('doctor.blood')} {patient.bloodGroup}
           </Text>
-          <Text style={styles.lastVisit}>Last visit · {patient.lastVisitLabel}</Text>
+          <Text style={styles.lastVisit}>{t('doctor.lastVisit')} · {patient.lastVisitLabel}</Text>
         </View>
 
         {/* Vitals */}
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Vitals</Text>
+          <Text style={styles.sectionLabel}>{t('doctor.vitals')}</Text>
           <View style={styles.vitalsStrip}>
             {patient.vitals.map((vital, index) => (
               <React.Fragment key={vital.id}>
@@ -237,10 +241,8 @@ const PatientDetailsScreen = () => {
 
         {/* Condition mix */}
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Condition mix</Text>
-          <Text style={styles.sectionHint}>
-            Share of care focus across active conditions
-          </Text>
+          <Text style={styles.sectionLabel}>{t('doctor.conditionMix')}</Text>
+          <Text style={styles.sectionHint}>{t('doctor.conditionMixHint')}</Text>
           <View style={styles.chartBlock}>
             <ConditionDonut conditions={patient.conditions} />
           </View>
@@ -276,9 +278,9 @@ const PatientDetailsScreen = () => {
 
         {/* Lab / test reports */}
         <View style={styles.section}>
-          <Text style={[styles.sectionLabel, styles.reportSectionLabel]}>Lab reports</Text>
+          <Text style={[styles.sectionLabel, styles.reportSectionLabel]}>{t('doctor.labReports')}</Text>
           <Text style={[styles.sectionHint, styles.reportSectionHint]}>
-            Uploaded test PDFs — tap to view or save
+            {t('doctor.labReportsHint')}
           </Text>
           <View style={styles.reportsList}>
             {patient.testReports.map((report) => (
@@ -289,6 +291,7 @@ const PatientDetailsScreen = () => {
                 onOpen={() => {
                   void handleOpenReport(report);
                 }}
+                viewLabel={t('common.view')}
               />
             ))}
           </View>
@@ -296,7 +299,7 @@ const PatientDetailsScreen = () => {
 
         {/* Past medicine orders */}
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Past medicine orders</Text>
+          <Text style={styles.sectionLabel}>{t('doctor.pastOrders')}</Text>
           <View style={styles.ordersList}>
             {patient.medicineOrders.map((order) => (
               <MedicineOrderRow key={order.id} order={order} />
@@ -306,7 +309,7 @@ const PatientDetailsScreen = () => {
 
         {/* Contact — last */}
         <View style={styles.section}>
-          <Text style={[styles.sectionLabel, styles.contactSectionLabel]}>Contact</Text>
+          <Text style={[styles.sectionLabel, styles.contactSectionLabel]}>{t('doctor.contact')}</Text>
           <View style={styles.contactCard}>
             <Pressable
               onPress={() => {
@@ -315,12 +318,12 @@ const PatientDetailsScreen = () => {
                   try {
                     const ok = await Linking.canOpenURL(url);
                     if (!ok) {
-                      Alert.alert('Unable to call', 'Calling is not supported on this device.');
+                      Alert.alert(t('doctor.unableToCall'), t('doctor.callingUnsupported'));
                       return;
                     }
                     await Linking.openURL(url);
                   } catch {
-                    Alert.alert('Unable to call', 'Please try again.');
+                    Alert.alert(t('doctor.unableToCall'), t('doctor.tryAgain'));
                   }
                 })();
               }}
@@ -332,7 +335,7 @@ const PatientDetailsScreen = () => {
                 <Ionicons name="call-outline" size={18} color={doctorTheme.contactAccent} />
               </View>
               <View style={styles.contactText}>
-                <Text style={styles.contactLabel}>Phone</Text>
+                <Text style={styles.contactLabel}>{t('doctor.phone')}</Text>
                 <Text style={styles.contactValue}>{patient.phone}</Text>
               </View>
             </Pressable>
@@ -346,12 +349,12 @@ const PatientDetailsScreen = () => {
                   try {
                     const ok = await Linking.canOpenURL(url);
                     if (!ok) {
-                      Alert.alert('Unable to email', 'Email is not set up on this device.');
+                      Alert.alert(t('doctor.unableToEmail'), t('doctor.emailUnsupported'));
                       return;
                     }
                     await Linking.openURL(url);
                   } catch {
-                    Alert.alert('Unable to email', 'Please try again.');
+                    Alert.alert(t('doctor.unableToEmail'), t('doctor.tryAgain'));
                   }
                 })();
               }}
@@ -363,7 +366,7 @@ const PatientDetailsScreen = () => {
                 <Ionicons name="mail-outline" size={18} color={doctorTheme.contactAccent} />
               </View>
               <View style={styles.contactText}>
-                <Text style={styles.contactLabel}>Email</Text>
+                <Text style={styles.contactLabel}>{t('doctor.email')}</Text>
                 <Text style={styles.contactValue}>{patient.email}</Text>
               </View>
             </Pressable>
@@ -375,7 +378,7 @@ const PatientDetailsScreen = () => {
                 <Ionicons name="location-outline" size={18} color={doctorTheme.contactAccent} />
               </View>
               <View style={styles.contactText}>
-                <Text style={styles.contactLabel}>Address</Text>
+                <Text style={styles.contactLabel}>{t('doctor.address')}</Text>
                 <Text style={styles.contactValue}>{patient.address}</Text>
               </View>
             </View>
@@ -391,12 +394,12 @@ const PatientDetailsScreen = () => {
                       try {
                         const ok = await Linking.canOpenURL(url);
                         if (!ok) {
-                          Alert.alert('Unable to call', 'Calling is not supported on this device.');
+                          Alert.alert(t('doctor.unableToCall'), t('doctor.callingUnsupported'));
                           return;
                         }
                         await Linking.openURL(url);
                       } catch {
-                        Alert.alert('Unable to call', 'Please try again.');
+                        Alert.alert(t('doctor.unableToCall'), t('doctor.tryAgain'));
                       }
                     })();
                   }}

@@ -3,6 +3,7 @@ import { ScrollView, StyleSheet, StatusBar, Platform, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useTranslation } from 'react-i18next';
 import type { AuthStackParamList } from '@/navigation/types';
 import theme from '@/styles/theme';
 import {
@@ -50,6 +51,7 @@ const ACTIVE_ORDERS: DeliveryOrder[] = [
 
 const DeliveryAgentHomeScreen = () => {
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
   const navigation = useNavigation<NativeStackNavigationProp<AuthStackParamList>>();
   const [isOnline, setIsOnline] = useState(true);
 
@@ -66,10 +68,10 @@ const DeliveryAgentHomeScreen = () => {
 
   const greeting = useMemo(() => {
     const hour = new Date().getHours();
-    if (hour < 12) return 'Good morning';
-    if (hour < 17) return 'Good afternoon';
-    return 'Good evening';
-  }, []);
+    if (hour < 12) return t('delivery.goodMorning');
+    if (hour < 17) return t('delivery.goodAfternoon');
+    return t('delivery.goodEvening');
+  }, [t]);
 
   return (
     <View style={styles.root}>
@@ -95,7 +97,7 @@ const DeliveryAgentHomeScreen = () => {
         }}
         showsVerticalScrollIndicator={false}
       >
-        <SectionHeader title="Active orders" count={ACTIVE_ORDERS.length} />
+        <SectionHeader title={t('delivery.activeOrders')} count={ACTIVE_ORDERS.length} />
 
         {ACTIVE_ORDERS.length === 0 ? (
           <DeliveryEmptyState isOnline={isOnline} />

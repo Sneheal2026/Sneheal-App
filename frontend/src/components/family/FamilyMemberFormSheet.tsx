@@ -30,6 +30,8 @@ import type {
   FamilyRelationship,
 } from '@/types/family.types';
 import { useTheme } from '@/hooks/useTheme';
+import { useTranslation } from 'react-i18next';
+import { translateGender, translateRelationship } from '@/utils/familyI18n';
 
 type Props = {
   visible: boolean;
@@ -51,9 +53,9 @@ const DEFAULT_FORM: FamilyMemberFormData = {
 };
 
 const STEPS = [
-  { id: 'identity', label: 'Identity', icon: 'person-outline' as const },
-  { id: 'details', label: 'Details', icon: 'id-card-outline' as const },
-  { id: 'health', label: 'Health', icon: 'medkit-outline' as const },
+  { id: 'identity', labelKey: 'family.stepIdentity', icon: 'person-outline' as const },
+  { id: 'details', labelKey: 'family.stepDetails', icon: 'id-card-outline' as const },
+  { id: 'health', labelKey: 'family.stepHealth', icon: 'medkit-outline' as const },
 ] as const;
 
 const RELATIONSHIP_ICONS: Record<FamilyRelationship, keyof typeof Ionicons.glyphMap> = {
@@ -103,6 +105,7 @@ const FamilyMemberFormSheet = ({
   onClose,
   onSubmit,
 }: Props) => {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const { colors, spacing, typography, borderRadius, shadows, moderateScale, gradients } =
     useTheme();
@@ -144,11 +147,11 @@ const FamilyMemberFormSheet = ({
     [form.allergies],
   );
 
-  const relationshipLabel =
-    FAMILY_RELATIONSHIPS.find((r) => r.id === form.relationship)?.label ?? 'Member';
+  const relationshipLabel = translateRelationship(t, form.relationship);
   const initials = getInitials(form.name);
   const isLastStep = step === STEPS.length - 1;
   const progress = (step + 1) / STEPS.length;
+  const noneLabel = t('family.none');
 
   const styles = useMemo(
     () =>
@@ -671,12 +674,12 @@ const FamilyMemberFormSheet = ({
     if (step !== 0) return true;
     const trimmed = form.name.trim();
     if (trimmed.length < 2) {
-      setNameError('Enter at least 2 characters');
+      setNameError(t('family.nameError'));
       return false;
     }
     setNameError('');
     return true;
-  }, [form.name, step]);
+  }, [form.name, step, t]);
 
   const goNext = useCallback(() => {
     if (!validateStep()) return;
@@ -723,7 +726,7 @@ const FamilyMemberFormSheet = ({
   );
 
   const canAddAllergy = allergyInput.trim().length > 0;
-  const sheetTitle = editingMember ? 'Edit member' : 'Add family member';
+  const sheetTitle = editingMember ? t('family.editMember') : t('family.addFamilyMember');
 
   const renderStepContent = () => {
     switch (step) {
@@ -735,14 +738,12 @@ const FamilyMemberFormSheet = ({
             exiting={FadeOutLeft.duration(160)}
             style={styles.stepCard}
           >
-            <Text style={styles.stepHeading}>Who are you adding?</Text>
-            <Text style={styles.stepDesc}>
-              Start with their name and how they relate to you.
-            </Text>
+            <Text style={styles.stepHeading}>{t('family.whoAdding')}</Text>
+            <Text style={styles.stepDesc}>{t('family.stepDescIdentity')}</Text>
 
             <View style={styles.fieldBlock}>
               <View style={styles.labelRow}>
-                <Text style={styles.label}>Full name</Text>
+                <Text style={styles.label}>{t('family.fullName')}</Text>
               </View>
               <View
                 style={[
@@ -753,7 +754,7 @@ const FamilyMemberFormSheet = ({
                 <Ionicons name="person-outline" size={18} color={colors.textMuted} />
                 <TextInput
                   style={styles.input}
-                  placeholder="e.g. Priya Sharma"
+                  placeholder={t('family.namePlaceholder')}
                   placeholderTextColor={colors.textMuted}
                   value={form.name}
                   onChangeText={(name) => {
@@ -762,7 +763,7 @@ const FamilyMemberFormSheet = ({
                   }}
                   autoCapitalize="words"
                   autoFocus
-                  accessibilityLabel="Full name"
+                  accessibilityLabel={t('family.fullName')}
                 />
               </View>
               {nameError ? <Text style={styles.errorText}>{nameError}</Text> : null}
@@ -770,7 +771,7 @@ const FamilyMemberFormSheet = ({
 
             <View style={[styles.fieldBlock, styles.fieldBlockLast]}>
               <View style={styles.labelRow}>
-                <Text style={styles.label}>Relationship</Text>
+                <Text style={styles.label}>{t('family.relationship')}</Text>
               </View>
               <View style={styles.relationshipGrid}>
                 {FAMILY_RELATIONSHIPS.map((item) => {
@@ -788,7 +789,7 @@ const FamilyMemberFormSheet = ({
                         styles.relationCard,
                         selected && styles.relationCardSelected,
                       ]}
-                      accessibilityLabel={item.label}
+                      accessibilityLabel={translateRelationship(t, item.id)}
                     >
                       <View
                         style={[
@@ -808,7 +809,7 @@ const FamilyMemberFormSheet = ({
                           selected && styles.relationLabelSelected,
                         ]}
                       >
-                        {item.label}
+                        {translateRelationship(t, item.id)}
                       </Text>
                     </Pressable>
                   );
@@ -826,15 +827,13 @@ const FamilyMemberFormSheet = ({
             exiting={FadeOutLeft.duration(160)}
             style={styles.stepCard}
           >
-            <Text style={styles.stepHeading}>Basic details</Text>
-            <Text style={styles.stepDesc}>
-              Optional info that helps personalize medicine care.
-            </Text>
+            <Text style={styles.stepHeading}>{t('family.basicDetails')}</Text>
+            <Text style={styles.stepDesc}>{t('family.stepDescDetails')}</Text>
 
             <View style={styles.fieldBlock}>
               <View style={styles.labelRow}>
-                <Text style={styles.label}>Gender</Text>
-                <Text style={styles.optionalBadge}>Optional</Text>
+                <Text style={styles.label}>{t('family.gender')}</Text>
+                <Text style={styles.optionalBadge}>{t('common.optional')}</Text>
               </View>
               <View style={styles.genderRow}>
                 {FAMILY_GENDERS.map((item) => {
@@ -855,7 +854,7 @@ const FamilyMemberFormSheet = ({
                         styles.genderOption,
                         selected && styles.genderOptionSelected,
                       ]}
-                      accessibilityLabel={item.label}
+                      accessibilityLabel={translateGender(t, item.id) ?? ''}
                     >
                       <Ionicons
                         name={GENDER_ICONS[item.id]}
@@ -869,7 +868,7 @@ const FamilyMemberFormSheet = ({
                         ]}
                         numberOfLines={2}
                       >
-                        {item.label}
+                        {translateGender(t, item.id)}
                       </Text>
                     </Pressable>
                   );
@@ -879,8 +878,8 @@ const FamilyMemberFormSheet = ({
 
             <View style={styles.fieldBlock}>
               <View style={styles.labelRow}>
-                <Text style={styles.label}>Age (years)</Text>
-                <Text style={styles.optionalBadge}>Optional</Text>
+                <Text style={styles.label}>{t('family.ageYears')}</Text>
+                <Text style={styles.optionalBadge}>{t('common.optional')}</Text>
               </View>
               <View style={styles.inputWrap}>
                 <Ionicons name="calendar-outline" size={18} color={colors.textMuted} />
@@ -891,15 +890,15 @@ const FamilyMemberFormSheet = ({
                   value={ageText}
                   onChangeText={handleAgeChange}
                   keyboardType="number-pad"
-                  accessibilityLabel="Age in years"
+                  accessibilityLabel={t('family.ageYears')}
                 />
               </View>
             </View>
 
             <View style={[styles.fieldBlock, styles.fieldBlockLast]}>
               <View style={styles.labelRow}>
-                <Text style={styles.label}>Blood group</Text>
-                <Text style={styles.optionalBadge}>Optional</Text>
+                <Text style={styles.label}>{t('family.bloodGroup')}</Text>
+                <Text style={styles.optionalBadge}>{t('common.optional')}</Text>
               </View>
               <View style={styles.bloodGrid}>
                 {BLOOD_GROUPS.map((group) => {
@@ -922,7 +921,7 @@ const FamilyMemberFormSheet = ({
                         selected && styles.bloodCellSelected,
                       ]}
                       accessibilityLabel={
-                        group === 'unknown' ? 'Unknown blood group' : group
+                        group === 'unknown' ? t('family.unknownBloodGroup') : group
                       }
                     >
                       <Text
@@ -949,23 +948,18 @@ const FamilyMemberFormSheet = ({
             exiting={FadeOutLeft.duration(160)}
             style={styles.stepCard}
           >
-            <Text style={styles.stepHeading}>Health safety</Text>
-            <Text style={styles.stepDesc}>
-              Helps flag unsafe medicines when ordering for this person.
-            </Text>
+            <Text style={styles.stepHeading}>{t('family.healthSafety')}</Text>
+            <Text style={styles.stepDesc}>{t('family.stepDescHealth')}</Text>
 
             <View style={styles.healthNote}>
               <Ionicons name="shield-checkmark" size={18} color={colors.info} />
-              <Text style={styles.healthNoteText}>
-                All fields here are optional. You can update them anytime from the
-                member card.
-              </Text>
+              <Text style={styles.healthNoteText}>{t('family.healthNoteText')}</Text>
             </View>
 
             <View style={styles.fieldBlock}>
               <View style={styles.labelRow}>
-                <Text style={styles.label}>Known allergies</Text>
-                <Text style={styles.optionalBadge}>Optional</Text>
+                <Text style={styles.label}>{t('family.allergies')}</Text>
+                <Text style={styles.optionalBadge}>{t('common.optional')}</Text>
               </View>
               <View style={styles.chipsWrap}>
                 {COMMON_ALLERGIES.filter((item) => item !== 'Other').map((item) =>
@@ -976,7 +970,7 @@ const FamilyMemberFormSheet = ({
                     () =>
                       setForm((prev) => ({
                         ...prev,
-                        allergies: toggleExclusiveChip(prev.allergies, item),
+                        allergies: toggleExclusiveChip(prev.allergies, item, noneLabel),
                       })),
                     item !== 'None',
                   ),
@@ -1004,14 +998,14 @@ const FamilyMemberFormSheet = ({
                   <Ionicons name="add-circle-outline" size={18} color={colors.textMuted} />
                   <TextInput
                     style={styles.input}
-                    placeholder="Add another allergy"
+                    placeholder={t('family.addAnotherAllergy')}
                     placeholderTextColor={colors.textMuted}
                     value={allergyInput}
                     onChangeText={setAllergyInput}
                     onSubmitEditing={addCustomAllergy}
                     returnKeyType="done"
                     autoCapitalize="sentences"
-                    accessibilityLabel="Add custom allergy"
+                    accessibilityLabel={t('family.addAnotherAllergy')}
                   />
                 </View>
                 <Pressable
@@ -1021,7 +1015,7 @@ const FamilyMemberFormSheet = ({
                     styles.addTagBtn,
                     !canAddAllergy && styles.addTagBtnDisabled,
                   ]}
-                  accessibilityLabel="Add allergy"
+                  accessibilityLabel={t('family.addAllergyA11y')}
                 >
                   <Ionicons name="arrow-forward" size={22} color={colors.white} />
                 </Pressable>
@@ -1030,8 +1024,8 @@ const FamilyMemberFormSheet = ({
 
             <View style={styles.fieldBlock}>
               <View style={styles.labelRow}>
-                <Text style={styles.label}>Chronic conditions</Text>
-                <Text style={styles.optionalBadge}>Optional</Text>
+                <Text style={styles.label}>{t('family.chronicConditions')}</Text>
+                <Text style={styles.optionalBadge}>{t('common.optional')}</Text>
               </View>
               <View style={styles.chipsWrap}>
                 {COMMON_CONDITIONS.map((item) =>
@@ -1042,7 +1036,7 @@ const FamilyMemberFormSheet = ({
                     () =>
                       setForm((prev) => ({
                         ...prev,
-                        conditions: toggleExclusiveChip(prev.conditions, item),
+                        conditions: toggleExclusiveChip(prev.conditions, item, noneLabel),
                       })),
                   ),
                 )}
@@ -1051,8 +1045,8 @@ const FamilyMemberFormSheet = ({
 
             <View style={[styles.fieldBlock, styles.fieldBlockLast]}>
               <View style={styles.labelRow}>
-                <Text style={styles.label}>Current medicines</Text>
-                <Text style={styles.optionalBadge}>Optional</Text>
+                <Text style={styles.label}>{t('family.currentMedicines')}</Text>
+                <Text style={styles.optionalBadge}>{t('common.optional')}</Text>
               </View>
               <View style={styles.textareaWrap}>
                 <TextInput
@@ -1064,12 +1058,10 @@ const FamilyMemberFormSheet = ({
                     setForm((prev) => ({ ...prev, currentMedicines }))
                   }
                   multiline
-                  accessibilityLabel="Current medicines"
+                  accessibilityLabel={t('family.currentMedicines')}
                 />
               </View>
-              <Text style={styles.hint}>
-                Separate multiple medicines with commas
-              </Text>
+              <Text style={styles.hint}>{t('family.medicinesCommaHint')}</Text>
             </View>
           </Animated.View>
         );
@@ -1106,8 +1098,12 @@ const FamilyMemberFormSheet = ({
                   </Text>
                   <Text style={styles.heroSubtitle} numberOfLines={1}>
                     {form.name.trim()
-                      ? `${relationshipLabel} · Step ${step + 1} of ${STEPS.length}`
-                      : `Step ${step + 1} of ${STEPS.length}`}
+                      ? t('family.stepOfWithRelation', {
+                          relation: relationshipLabel,
+                          current: step + 1,
+                          total: STEPS.length,
+                        })
+                      : t('family.stepOf', { current: step + 1, total: STEPS.length })}
                   </Text>
                 </View>
               </View>
@@ -1156,7 +1152,7 @@ const FamilyMemberFormSheet = ({
                       ]}
                       numberOfLines={1}
                     >
-                      {item.label}
+                      {t(item.labelKey)}
                     </Text>
                   </View>
                 );
@@ -1182,10 +1178,10 @@ const FamilyMemberFormSheet = ({
                     styles.backBtn,
                     pressed && styles.backBtnPressed,
                   ]}
-                  accessibilityLabel="Go back"
+                  accessibilityLabel={t('common.back')}
                 >
                   <Ionicons name="chevron-back" size={18} color={colors.textSecondary} />
-                  <Text style={styles.backBtnText}>Back</Text>
+                  <Text style={styles.backBtnText}>{t('common.back')}</Text>
                 </Pressable>
               ) : null}
 
@@ -1206,9 +1202,9 @@ const FamilyMemberFormSheet = ({
                     <Text style={styles.primaryBtnText}>
                       {isLastStep
                         ? editingMember
-                          ? 'Save changes'
-                          : 'Add member'
-                        : 'Continue'}
+                          ? t('reminders.saveChanges')
+                          : t('family.addMember')
+                        : t('common.continue')}
                     </Text>
                     <Ionicons
                       name={isLastStep ? 'checkmark-circle' : 'arrow-forward'}
@@ -1224,9 +1220,9 @@ const FamilyMemberFormSheet = ({
               <Pressable
                 onPress={() => void handleSubmit()}
                 style={styles.skipBtn}
-                accessibilityLabel="Save without health details"
+                accessibilityLabel={t('family.saveWithoutHealth')}
               >
-                <Text style={styles.skipBtnText}>Save without health details</Text>
+                <Text style={styles.skipBtnText}>{t('family.saveWithoutHealth')}</Text>
               </Pressable>
             ) : null}
           </View>

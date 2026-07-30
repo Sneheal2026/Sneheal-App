@@ -18,8 +18,10 @@ import FamilyMemberFormSheet from '@/components/family/FamilyMemberFormSheet';
 import { useFamilyMembers } from '@/hooks/useFamilyMembers';
 import type { FamilyMember, FamilyMemberFormData } from '@/types/family.types';
 import { useTheme } from '@/hooks/useTheme';
+import { useTranslation } from 'react-i18next';
 
 const FamilyMembersScreen = () => {
+  const { t } = useTranslation();
   const navigation = useNavigation();
   const { colors, spacing, typography, borderRadius, shadows, moderateScale, gradients } =
     useTheme();
@@ -200,31 +202,31 @@ const FamilyMembersScreen = () => {
         closeSheet();
         return true;
       } catch {
-        Alert.alert('Could not save', 'Please try again.');
+        Alert.alert(t('family.saveFailedTitle'), t('family.saveFailedBody'));
         return false;
       } finally {
         setSaving(false);
       }
     },
-    [addMember, closeSheet, editingMember, updateMember],
+    [addMember, closeSheet, editingMember, updateMember, t],
   );
 
   const handleDelete = useCallback(
     (member: FamilyMember) => {
       Alert.alert(
-        'Remove member',
-        `Remove ${member.name} from your family list?`,
+        t('family.removeMemberTitle'),
+        t('family.removeMemberBody', { name: member.name }),
         [
-          { text: 'Cancel', style: 'cancel' },
+          { text: t('common.cancel'), style: 'cancel' },
           {
-            text: 'Remove',
+            text: t('family.remove'),
             style: 'destructive',
             onPress: () => void removeMember(member.id),
           },
         ],
       );
     },
-    [removeMember],
+    [removeMember, t],
   );
 
   const renderEmpty = () => (
@@ -235,16 +237,14 @@ const FamilyMembersScreen = () => {
       >
         <Ionicons name="people-outline" size={moderateScale(48)} color={colors.primary} />
       </LinearGradient>
-      <Text style={styles.emptyTitle}>No family members yet</Text>
-      <Text style={styles.emptySubtitle}>
-        Add yourself and family so medicine orders and reminders stay personal and safer.
-      </Text>
+      <Text style={styles.emptyTitle}>{t('family.empty')}</Text>
+      <Text style={styles.emptySubtitle}>{t('family.emptySubtitle')}</Text>
       <Pressable
         onPress={openAddSheet}
         style={({ pressed }) => [styles.emptyCta, pressed && styles.emptyCtaPressed]}
       >
         <Ionicons name="person-add" size={20} color={colors.white} />
-        <Text style={styles.emptyCtaText}>Add first member</Text>
+        <Text style={styles.emptyCtaText}>{t('family.emptyCta')}</Text>
       </Pressable>
     </Animated.View>
   );
@@ -261,13 +261,13 @@ const FamilyMembersScreen = () => {
             <Pressable
               onPress={() => navigation.goBack()}
               style={({ pressed }) => [styles.backBtn, pressed && styles.backBtnPressed]}
-              accessibilityLabel="Go back"
+              accessibilityLabel={t('common.back')}
             >
               <Ionicons name="arrow-back" size={20} color={colors.textPrimary} />
             </Pressable>
             <View style={styles.headerTextBlock}>
-              <Text style={styles.headerTitle}>Family members</Text>
-              <Text style={styles.headerSubtitle}>Health details for safer care</Text>
+              <Text style={styles.headerTitle}>{t('family.title')}</Text>
+              <Text style={styles.headerSubtitle}>{t('family.subtitle')}</Text>
             </View>
             {members.length > 0 ? (
               <Pressable
@@ -276,10 +276,10 @@ const FamilyMembersScreen = () => {
                   styles.addHeaderBtn,
                   pressed && styles.addHeaderBtnPressed,
                 ]}
-                accessibilityLabel="Add family member"
+                accessibilityLabel={t('family.addMemberA11y')}
               >
                 <Ionicons name="add" size={18} color={colors.primary} />
-                <Text style={styles.addHeaderBtnText}>Add</Text>
+                <Text style={styles.addHeaderBtnText}>{t('family.add')}</Text>
               </Pressable>
             ) : (
               <View style={{ width: moderateScale(40) }} />
@@ -298,10 +298,7 @@ const FamilyMembersScreen = () => {
             {members.length > 0 ? (
               <View style={styles.infoBanner}>
                 <Ionicons name="shield-checkmark-outline" size={18} color={colors.primary} />
-                <Text style={styles.infoText}>
-                  Allergies and conditions help us flag unsafe medicines when you order for
-                  someone.
-                </Text>
+                <Text style={styles.infoText}>{t('family.infoBanner')}</Text>
               </View>
             ) : null}
 

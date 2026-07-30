@@ -1,39 +1,40 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import theme from '@/styles/theme';
 
 const { colors, spacing, typography, borderRadius } = theme;
 
 interface OrderOption {
   id: string;
-  label: string;
+  labelKey: 'home.viaWhatsApp' | 'home.viaPrescription' | 'home.viaCall';
   iconName: keyof typeof Ionicons.glyphMap;
   iconColor: string;
 }
 
 const ORDER_OPTIONS: OrderOption[] = [
-  { id: '1', label: 'WhatsApp', iconName: 'chatbubble-ellipses', iconColor: '#25D366' },
-  { id: '2', label: 'Prescription', iconName: 'camera', iconColor: colors.accentPurple },
-  { id: '3', label: 'Call', iconName: 'call', iconColor: colors.accentTeal },
+  { id: '1', labelKey: 'home.viaWhatsApp', iconName: 'chatbubble-ellipses', iconColor: '#25D366' },
+  { id: '2', labelKey: 'home.viaPrescription', iconName: 'camera', iconColor: colors.accentPurple },
+  { id: '3', labelKey: 'home.viaCall', iconName: 'call', iconColor: colors.accentTeal },
 ];
 
 const OrderVia = () => {
+  const { t } = useTranslation();
+
   return (
     <View style={styles.container}>
-      {/* Section Header */}
       <View style={styles.headerRow}>
         <View style={styles.headerLine} />
-        <Text style={styles.sectionTitle}>OR YOU CAN ORDER VIA</Text>
+        <Text style={styles.sectionTitle}>{t('home.orderVia')}</Text>
         <View style={styles.headerLine} />
       </View>
 
-      {/* Buttons Row */}
       <View style={styles.buttonsRow}>
         {ORDER_OPTIONS.map((option) => (
           <TouchableOpacity key={option.id} style={styles.optionBtn} activeOpacity={0.7}>
             <Ionicons name={option.iconName} size={20} color={option.iconColor} />
-            <Text style={styles.optionLabel}>{option.label}</Text>
+            <Text style={styles.optionLabel}>{t(option.labelKey)}</Text>
           </TouchableOpacity>
         ))}
       </View>

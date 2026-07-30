@@ -25,6 +25,7 @@ import { deliveryTheme } from '@/components/delivery/deliveryTheme';
 import { updateAgentLocation, clearOrderTracking } from '@/services/firebase';
 import theme from '@/styles/theme';
 import { GOOGLE_MAPS_KEY } from '@/constants/googleMaps';
+import { useTranslation } from 'react-i18next';
 
 const { spacing, typography, borderRadius, shadows } = theme;
 
@@ -174,6 +175,7 @@ const NAV_PITCH = 48;
 // ── Main Screen ──────────────────────────────────────────────────
 
 const DeliveryNavigationScreen = () => {
+  const { t } = useTranslation();
   const navigation = useNavigation();
   const route = useRoute<RouteProp<AuthStackParamList, 'DeliveryNavigation'>>();
   const insets = useSafeAreaInsets();
@@ -598,7 +600,7 @@ const DeliveryNavigationScreen = () => {
         </Pressable>
         <View style={styles.topInfo}>
           <Text style={styles.phaseLabel}>
-            {phase === 'to_hub' ? 'Heading to Medicine Hub' : `Delivering to customer`}
+            {phase === 'to_hub' ? t('delivery.headingToHub') : t('delivery.deliveringToCustomer')}
           </Text>
           <Text style={styles.orderLabel}>{orderId}</Text>
         </View>
@@ -610,18 +612,18 @@ const DeliveryNavigationScreen = () => {
           <View style={styles.etaRow}>
             <View>
               <Text style={styles.etaValue}>{etaText || '—'}</Text>
-              <Text style={styles.etaLabel}>{distText || 'Calculating...'}</Text>
+              <Text style={styles.etaLabel}>{distText || t('tracking.calculating')}</Text>
             </View>
             <Pressable onPress={openGoogleMaps} style={styles.navBtn}>
               <Ionicons name="navigate" size={20} color="#fff" />
-              <Text style={styles.navBtnText}>Google Maps</Text>
+              <Text style={styles.navBtnText}>{t('delivery.googleMaps')}</Text>
             </Pressable>
           </View>
 
           {phase === 'to_customer' && (
             <Pressable onPress={handleDelivered} style={styles.deliveredBtn}>
               <Ionicons name="checkmark-circle" size={20} color="#fff" />
-              <Text style={styles.deliveredBtnText}>Mark Delivered</Text>
+              <Text style={styles.deliveredBtnText}>{t('delivery.markDelivered')}</Text>
             </Pressable>
           )}
         </View>
@@ -639,13 +641,13 @@ const DeliveryNavigationScreen = () => {
           <View style={styles.hubIconWrap}>
             <Ionicons name="checkmark-circle" size={48} color={deliveryTheme.online} />
           </View>
-          <Text style={styles.hubTitle}>You reached the Medicine Hub!</Text>
+          <Text style={styles.hubTitle}>{t('delivery.hubReachedTitle')}</Text>
           <Text style={styles.hubSubtitle}>
-            Collect medicines for order {orderId} and continue to customer.
+            {t('delivery.hubReachedSubtitle', { orderId })}
           </Text>
           <Pressable onPress={handleGoToCustomer} style={styles.goCustomerBtn}>
             <Ionicons name="navigate" size={20} color="#fff" />
-            <Text style={styles.goCustomerText}>Go to Customer Location</Text>
+            <Text style={styles.goCustomerText}>{t('delivery.goToCustomer')}</Text>
           </Pressable>
         </RNAnimated.View>
       )}

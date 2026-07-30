@@ -18,10 +18,12 @@ import { doctorTheme } from '@/components/doctor/doctorTheme';
 import { DOCTOR_PATIENTS } from '@/constants/doctorPatients';
 import type { AuthStackParamList } from '@/navigation/types';
 import theme from '@/styles/theme';
+import { useTranslation } from 'react-i18next';
 
 const { spacing, typography, borderRadius } = theme;
 
 const DoctorHomeScreen = () => {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NativeStackNavigationProp<AuthStackParamList>>();
   const { user } = useAuth();
@@ -78,7 +80,7 @@ const DoctorHomeScreen = () => {
         }}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.sectionLabel}>Your patient</Text>
+        <Text style={styles.sectionLabel}>{t('doctor.yourPatient')}</Text>
 
         <Pressable
           onPress={() => navigation.navigate('PatientDetails', { patientId: patient.id })}
@@ -102,10 +104,10 @@ const DoctorHomeScreen = () => {
           onPress={shiftToCustomer}
           style={({ pressed }) => [styles.shiftToCustomerBtn, pressed && styles.pressed]}
           accessibilityRole="button"
-          accessibilityLabel="Shift to customer screen"
+          accessibilityLabel={t('doctor.shiftToCustomerA11y')}
         >
           <Ionicons name="swap-horizontal" size={18} color={doctorTheme.primary} />
-          <Text style={styles.shiftToCustomerText}>Shift to Customer</Text>
+          <Text style={styles.shiftToCustomerText}>{t('doctor.shiftToCustomer')}</Text>
         </Pressable>
 
         <DevResetStorageButton />

@@ -34,31 +34,30 @@ import { pickImageFromSource, type PickedImage } from '@/utils/imagePicker';
 import type { AuthScreenProps } from '@/navigation/types';
 import { scanPrescription, savePrescription } from '@/services/prescriptionService';
 import type { ScannedMedicine, ImageType } from '@/types/prescription';
+import { useTranslation } from 'react-i18next';
 
 const { colors, spacing, typography, borderRadius, shadows, moderateScale } = theme;
 
 const PAGE_BG = '#F5F6F8';
 const ACCENT = colors.primary;
 const ACCENT_DARK = colors.primaryDark;
-const PERMISSION_MESSAGE =
-  'Allow camera or photo access to upload your prescription.';
 
 const SCAN_TIPS = [
-  { icon: 'sunny-outline' as const, label: 'Good light', desc: 'Avoid shadows' },
-  { icon: 'scan-outline' as const, label: 'Full frame', desc: 'Capture all text' },
-  { icon: 'document-text' as const, label: 'Doctor sign', desc: 'Must be visible' },
+  { icon: 'sunny-outline' as const, labelKey: 'scan.tipGoodLight', descKey: 'scan.tipGoodLightDesc' },
+  { icon: 'scan-outline' as const, labelKey: 'scan.tipFullFrame', descKey: 'scan.tipFullFrameDesc' },
+  { icon: 'document-text' as const, labelKey: 'scan.tipDoctorSign', descKey: 'scan.tipDoctorSignDesc' },
 ];
 
 const SCAN_STEPS = [
-  { key: 'upload', label: 'Upload', icon: 'cloud-upload-outline' as const },
-  { key: 'scan', label: 'Scan', icon: 'scan-outline' as const },
-  { key: 'results', label: 'Results', icon: 'list-outline' as const },
+  { key: 'upload', labelKey: 'scan.stepUpload', icon: 'cloud-upload-outline' as const },
+  { key: 'scan', labelKey: 'scan.stepScan', icon: 'scan-outline' as const },
+  { key: 'results', labelKey: 'scan.stepResults', icon: 'list-outline' as const },
 ];
 
 const FEATURE_HIGHLIGHTS = [
-  { icon: 'sparkles' as const, title: 'AI Detection', subtitle: 'Smart read', tint: ACCENT, bg: colors.infoLight },
-  { icon: 'create-outline' as const, title: 'Auto-correct', subtitle: 'Fix typos', tint: colors.warning, bg: colors.warningLight },
-  { icon: 'flash-outline' as const, title: 'Instant', subtitle: 'Seconds', tint: colors.secondary, bg: '#CCFBF1' },
+  { icon: 'sparkles' as const, titleKey: 'scan.featureAiDetection', subtitleKey: 'scan.featureAiDetectionSub', tint: ACCENT, bg: colors.infoLight },
+  { icon: 'create-outline' as const, titleKey: 'scan.featureAutoCorrect', subtitleKey: 'scan.featureAutoCorrectSub', tint: colors.warning, bg: colors.warningLight },
+  { icon: 'flash-outline' as const, titleKey: 'scan.featureInstant', subtitleKey: 'scan.featureInstantSub', tint: colors.secondary, bg: '#CCFBF1' },
 ];
 
 const SCAN_BEAM_DURATION_MS = 2800;
@@ -85,6 +84,7 @@ interface StepIndicatorProps {
 }
 
 const StepIndicator = ({ hasImage, isScanning, hasResults }: StepIndicatorProps) => {
+  const { t } = useTranslation();
   const getStepState = (index: number): StepState => {
     if (index === 0) return hasImage ? 'complete' : 'active';
     if (index === 1) {
@@ -134,7 +134,7 @@ const StepIndicator = ({ hasImage, isScanning, hasResults }: StepIndicatorProps)
                   state === 'complete' && styles.stepLabelComplete,
                 ]}
               >
-                {step.label}
+                {t(step.labelKey)}
               </Text>
             </View>
             {!isLast ? (
@@ -240,6 +240,7 @@ const ScanBeamOverlay = ({ active, insetX = SCAN_ZONE_INSET }: ScanBeamOverlayPr
 };
 
 const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const { width: screenWidth } = useWindowDimensions();
   const previewHeight = Math.min(screenWidth - spacing.xl * 2, moderateScale(300));
@@ -295,7 +296,7 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
       setIsSaved(false);
 
       try {
-        const image = await pickImageFromSource(source, PERMISSION_MESSAGE);
+        const image = await pickImageFromSource(source, t('scan.permissionMessage'));
         if (!mountedRef.current) return;
         if (image) {
           setPickedImage(image);
@@ -305,7 +306,7 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
         if (mountedRef.current) setIsPicking(false);
       }
     },
-    [isPicking, isScanning, isSaving],
+    [isPicking, isScanning, isSaving, t],
   );
 
   const handleClearImage = useCallback(() => {
@@ -355,30 +356,30 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
       if (!mountedRef.current) return;
       setIsSaved(true);
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      Alert.alert('Saved', 'Prescription photo saved to your account.', [
-        { text: 'OK', style: 'cancel' },
+      Alert.alert(t('scan.savedTitle'), t('scan.savedBody'), [
+        { text: t('scan.ok'), style: 'cancel' },
         {
-          text: 'View prescriptions',
+          text: t('scan.viewPrescriptions'),
           onPress: () => navigation.navigate('Prescriptions'),
         },
       ]);
     } catch (error: any) {
       if (!mountedRef.current) return;
       const errorMessage = error?.message || 'Failed to save prescription';
-      Alert.alert('Save failed', errorMessage);
+      Alert.alert(t('scan.saveFailedTitle'), errorMessage);
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     } finally {
       if (mountedRef.current) setIsSaving(false);
     }
-  }, [canSave, navigation, pickedImage]);
+  }, [canSave, navigation, pickedImage, t]);
 
   const handleReplace = useCallback(() => {
-    Alert.alert('Replace photo?', 'Choose a new prescription or medicine photo.', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Camera', onPress: () => void handlePick('camera') },
-      { text: 'Gallery', onPress: () => void handlePick('gallery') },
+    Alert.alert(t('scan.replacePhotoTitle'), t('scan.replacePhotoBody'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('scan.camera'), onPress: () => void handlePick('camera') },
+      { text: t('scan.gallery'), onPress: () => void handlePick('gallery') },
     ]);
-  }, [handlePick]);
+  }, [handlePick, t]);
 
   return (
     <View style={styles.root}>
@@ -397,16 +398,16 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
             onPress={() => navigation.goBack()}
             style={({ pressed }) => [styles.backBtn, pressed && styles.pressed]}
             hitSlop={8}
-            accessibilityLabel="Go back"
+            accessibilityLabel={t('common.back')}
             accessibilityRole="button"
           >
             <Ionicons name="arrow-back" size={22} color={colors.textPrimary} />
           </Pressable>
           <View style={styles.topTitleWrap}>
-            <Text style={styles.topTitle}>Scan Medicine</Text>
+            <Text style={styles.topTitle}>{t('scan.title')}</Text>
             <View style={styles.aiBadge}>
               <Ionicons name="sparkles" size={10} color={ACCENT} />
-              <Text style={styles.aiBadgeText}>AI Powered</Text>
+              <Text style={styles.aiBadgeText}>{t('scan.aiPowered')}</Text>
             </View>
           </View>
           <Pressable
@@ -456,21 +457,19 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
           </View> */}
           
           <Text style={styles.heroTitle}>
-            Scan medicines{' '}
-            <Text style={styles.heroTitleAccent}>instantly</Text>
+            {t('scan.heroTitle')}{' '}
+            <Text style={styles.heroTitleAccent}>{t('scan.heroTitleAccent')}</Text>
           </Text>
-          <Text style={styles.heroSubtitle}>
-            Upload a prescription or medicine photo. Our AI identifies exact names, corrects mistakes, and shows full details.
-          </Text>
+          <Text style={styles.heroSubtitle}>{t('scan.heroSubtitle')}</Text>
 
           <View style={styles.featureRow}>
             {FEATURE_HIGHLIGHTS.map((feature) => (
-              <View key={feature.title} style={[styles.featureCard, { backgroundColor: feature.bg }]}>
+              <View key={feature.titleKey} style={[styles.featureCard, { backgroundColor: feature.bg }]}>
                 <View style={[styles.featureIconWrap, { backgroundColor: colors.white }]}>
                   <Ionicons name={feature.icon} size={16} color={feature.tint} />
                 </View>
-                <Text style={styles.featureTitle}>{feature.title}</Text>
-                <Text style={styles.featureSubtitle}>{feature.subtitle}</Text>
+                <Text style={styles.featureTitle}>{t(feature.titleKey)}</Text>
+                <Text style={styles.featureSubtitle}>{t(feature.subtitleKey)}</Text>
               </View>
             ))}
           </View>
@@ -499,7 +498,7 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
             }}
             style={({ pressed }) => [pressed && styles.pressed]}
             accessibilityRole="button"
-            accessibilityLabel={pickedImage ? 'Replace photo' : 'Add photo'}
+            accessibilityLabel={pickedImage ? t('scan.replacePhotoA11y') : t('scan.addPhotoA11y')}
           >
             <View style={[styles.previewFrame, { height: previewHeight }]}>
               {pickedImage ? (
@@ -515,7 +514,7 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
                       <ScanBeamOverlay active />
                       <View style={styles.scanningStatus}>
                         <View style={styles.scanningDot} />
-                        <Text style={styles.scanningStatusText}>Analyzing image...</Text>
+                        <Text style={styles.scanningStatusText}>{t('scan.analyzing')}</Text>
                       </View>
                     </View>
                   ) : (
@@ -525,7 +524,7 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
                     >
                       <View style={styles.readyPill}>
                         <Ionicons name="checkmark-circle" size={14} color={colors.success} />
-                        <Text style={styles.readyPillText}>Ready to scan</Text>
+                        <Text style={styles.readyPillText}>{t('scan.ready')}</Text>
                       </View>
                     </LinearGradient>
                   )}
@@ -547,10 +546,8 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
                       <Ionicons name="scan-outline" size={moderateScale(36)} color={ACCENT} />
                     </LinearGradient>
                   </View>
-                  <Text style={styles.emptyTitle}>Tap to add photo</Text>
-                  <Text style={styles.emptySubtitle}>
-                    Use camera or gallery below to upload your prescription
-                  </Text>
+                  <Text style={styles.emptyTitle}>{t('scan.tapToAdd')}</Text>
+                  <Text style={styles.emptySubtitle}>{t('scan.emptyPhotoSubtitle')}</Text>
                 </View>
               )}
             </View>
@@ -575,7 +572,7 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
                 <View style={styles.sourceIconCircle}>
                   <Ionicons name="camera" size={18} color={colors.white} />
                 </View>
-                <Text style={styles.sourceBtnPrimaryText}>Camera</Text>
+                <Text style={styles.sourceBtnPrimaryText}>{t('scan.camera')}</Text>
               </LinearGradient>
             </Pressable>
 
@@ -592,7 +589,7 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
               <View style={[styles.sourceIconCircle, styles.sourceIconCircleAlt]}>
                 <Ionicons name="images-outline" size={18} color={ACCENT} />
               </View>
-              <Text style={styles.sourceBtnSecondaryText}>Gallery</Text>
+              <Text style={styles.sourceBtnSecondaryText}>{t('scan.gallery')}</Text>
             </Pressable>
           </View>
             </View>
@@ -604,16 +601,16 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
             <View style={styles.tipsHeaderIcon}>
               <Ionicons name="bulb-outline" size={16} color={colors.warning} />
             </View>
-            <Text style={styles.tipsHeaderText}>Pro tips for best results</Text>
+            <Text style={styles.tipsHeaderText}>{t('scan.tipsHeader')}</Text>
           </View>
           <View style={styles.tipsRow}>
             {SCAN_TIPS.map((tip) => (
-              <View key={tip.label} style={styles.tipChip}>
+              <View key={tip.labelKey} style={styles.tipChip}>
                 <View style={styles.tipIconWrap}>
                   <Ionicons name={tip.icon} size={14} color={ACCENT} />
                 </View>
-                <Text style={styles.tipChipText}>{tip.label}</Text>
-                <Text style={styles.tipChipDesc}>{tip.desc}</Text>
+                <Text style={styles.tipChipText}>{t(tip.labelKey)}</Text>
+                <Text style={styles.tipChipDesc}>{t(tip.descKey)}</Text>
               </View>
             ))}
           </View>
@@ -692,9 +689,7 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
               ))}
             </View>
 
-            <Text style={styles.medicineFooter}>
-              AI-powered detection — please verify with your pharmacist before use.
-            </Text>
+            <Text style={styles.medicineFooter}>{t('scan.aiVerifyFooter')}</Text>
             </LinearGradient>
           </Animated.View>
         )}
@@ -702,9 +697,7 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
         {hasScanned && !isSaved && (
           <Animated.View entering={FadeInUp.duration(350)} style={styles.saveHintCard}>
             <Ionicons name="cloud-upload-outline" size={18} color={ACCENT} />
-            <Text style={styles.saveHintText}>
-              Happy with this photo? Save it to your prescriptions.
-            </Text>
+            <Text style={styles.saveHintText}>{t('scan.saveHint')}</Text>
           </Animated.View>
         )}
 
@@ -714,7 +707,7 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
               <Ionicons name="alert-circle" size={20} color={colors.error} />
             </View>
             <View style={styles.errorCopy}>
-              <Text style={styles.errorTitle}>Scan failed</Text>
+              <Text style={styles.errorTitle}>{t('scan.scanFailed')}</Text>
               <Text style={styles.errorBody}>{scanError}</Text>
             </View>
           </Animated.View>
@@ -726,18 +719,18 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
           <View style={styles.footerHint}>
             <Ionicons name="cloud-upload-outline" size={14} color={ACCENT} />
             <Text style={[styles.footerHintText, { color: ACCENT }]}>
-              Ready to save this prescription photo
+              {t('scan.readyToSaveFooter')}
             </Text>
           </View>
         ) : canScan && !hasScanned ? (
           <View style={styles.footerHint}>
             <Ionicons name="checkmark-circle" size={14} color={colors.success} />
-            <Text style={styles.footerHintText}>Photo ready — tap below to scan</Text>
+            <Text style={styles.footerHintText}>{t('scan.photoReady')}</Text>
           </View>
         ) : isSaved ? (
           <View style={styles.footerHint}>
             <Ionicons name="checkmark-circle" size={14} color={colors.success} />
-            <Text style={styles.footerHintText}>Prescription saved</Text>
+            <Text style={styles.footerHintText}>{t('scan.prescriptionSaved')}</Text>
           </View>
         ) : null}
 
@@ -752,10 +745,12 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
                 (!canScan || isSaving) && styles.scanBtnDisabled,
               ]}
               accessibilityRole="button"
-              accessibilityLabel="Scan again"
+              accessibilityLabel={t('scan.scanAgainA11y')}
             >
               <Ionicons name="scan" size={18} color={ACCENT} />
-              <Text style={styles.secondaryBtnText}>{isScanning ? 'Analyzing...' : 'Rescan'}</Text>
+              <Text style={styles.secondaryBtnText}>
+                {isScanning ? t('scan.analyzingShort') : t('scan.rescan')}
+              </Text>
             </Pressable>
 
             <Pressable
@@ -769,7 +764,7 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
                 pressed && canSave && styles.pressed,
               ]}
               accessibilityRole="button"
-              accessibilityLabel="Save prescription"
+              accessibilityLabel={t('scan.savePrescriptionA11y')}
             >
               <LinearGradient
                 colors={
@@ -791,7 +786,11 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
                   />
                 </View>
                 <Text style={styles.scanBtnText}>
-                  {isSaving ? 'Saving...' : isSaved ? 'Saved' : 'Save prescription'}
+                  {isSaving
+                    ? t('scan.saving')
+                    : isSaved
+                      ? t('scan.saved')
+                      : t('scan.savePrescription')}
                 </Text>
               </LinearGradient>
             </Pressable>
@@ -807,7 +806,7 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
               pressed && canScan && styles.pressed,
             ]}
             accessibilityRole="button"
-            accessibilityLabel="Scan photo"
+            accessibilityLabel={t('scan.scanPhotoA11y')}
           >
             <LinearGradient
               colors={canScan ? [ACCENT, ACCENT_DARK] : ['#CBD5E1', '#94A3B8']}
@@ -818,7 +817,9 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
               <View style={styles.scanBtnIconWrap}>
                 <Ionicons name="scan" size={20} color={colors.white} />
               </View>
-              <Text style={styles.scanBtnText}>{isScanning ? 'Analyzing...' : 'Tap to Scan'}</Text>
+              <Text style={styles.scanBtnText}>
+                {isScanning ? t('scan.analyzingShort') : t('scan.tapToScan')}
+              </Text>
               {canScan && !isScanning ? (
                 <Ionicons name="arrow-forward" size={18} color="rgba(255,255,255,0.85)" />
               ) : null}

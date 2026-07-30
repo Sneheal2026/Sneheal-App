@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -8,19 +8,20 @@ import {
   Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import Constants from 'expo-constants';
+import { useTranslation } from 'react-i18next';
 import SettingsListItem from '@/components/settings/SettingsListItem';
 import SettingsQuickAction from '@/components/settings/SettingsQuickAction';
 import theme from '@/styles/theme';
 import type { AuthStackParamList } from '@/navigation/types';
-import { getLanguageLabel } from '@/constants/languages';
+import { getLanguageNativeLabel } from '@/constants/languages';
 import { getColorThemeOption, getColorThemeSwatch } from '@/constants/colorThemes';
-import { getAppLanguage } from '@/services/languageStorage';
+import { useLanguage } from '@/context/LanguageContext';
 import { useTheme } from '@/hooks/useTheme';
 import { useAuth } from '@/context/AuthContext';
 import { formatPhoneNumber } from '@/utils';
@@ -32,30 +33,30 @@ const APP_VERSION = Constants.expoConfig?.version ?? '1.0.0';
 const ACCOUNT_AVATAR = require('../../../assets/images/Male_picture.webp');
 
 const QUICK_ACTIONS = [
-  { id: 'orders', icon: 'receipt-outline' as const, label: 'My orders' },
-  { id: 'prescriptions', icon: 'document-text-outline' as const, label: 'Prescriptions' },
-  { id: 'help', icon: 'chatbubble-ellipses-outline' as const, label: 'Need help?' },
+  { id: 'orders', icon: 'receipt-outline' as const, labelKey: 'settings.myOrders' },
+  { id: 'prescriptions', icon: 'document-text-outline' as const, labelKey: 'settings.prescriptions' },
+  { id: 'help', icon: 'chatbubble-ellipses-outline' as const, labelKey: 'settings.needHelp' },
 ];
 
 const YOUR_INFO_ITEMS = [
-  { id: 'addresses', icon: 'location-outline' as const, label: 'Saved addresses' },
-  { id: 'reminders', icon: 'alarm-outline' as const, label: 'Medicine reminders' },
-  { id: 'lab-reports', icon: 'flask-outline' as const, label: 'Lab reports' },
-  { id: 'family', icon: 'people-outline' as const, label: 'Family members' },
+  { id: 'addresses', icon: 'location-outline' as const, labelKey: 'settings.savedAddresses' },
+  { id: 'reminders', icon: 'alarm-outline' as const, labelKey: 'settings.medicineReminders' },
+  { id: 'lab-reports', icon: 'flask-outline' as const, labelKey: 'settings.labReports' },
+  { id: 'family', icon: 'people-outline' as const, labelKey: 'settings.familyMembers' },
 ];
 
 const HEALTH_ITEMS = [
-  { id: 'order-history', icon: 'time-outline' as const, label: 'Order history' },
-  { id: 'upload-rx', icon: 'cloud-upload-outline' as const, label: 'Upload prescription' },
-  { id: 'emergency', icon: 'medkit-outline' as const, label: 'Emergency contacts' },
+  { id: 'order-history', icon: 'time-outline' as const, labelKey: 'settings.orderHistory' },
+  { id: 'upload-rx', icon: 'cloud-upload-outline' as const, labelKey: 'settings.uploadPrescription' },
+  { id: 'emergency', icon: 'medkit-outline' as const, labelKey: 'settings.emergencyContacts' },
 ];
 
 const ACCOUNT_ITEMS = [
-  { id: 'share', icon: 'share-outline' as const, label: 'Share the app' },
-  { id: 'about', icon: 'information-circle-outline' as const, label: 'About Sneheal' },
-  { id: 'language', icon: 'language-outline' as const, label: 'Language settings' },
-  { id: 'color', icon: 'color-palette-outline' as const, label: 'Color theme' },
-  { id: 'logout', icon: 'log-out-outline' as const, label: 'Log out', destructive: true },
+  { id: 'share', icon: 'share-outline' as const, labelKey: 'settings.shareApp' },
+  { id: 'about', icon: 'information-circle-outline' as const, labelKey: 'settings.aboutSneheal' },
+  { id: 'language', icon: 'language-outline' as const, labelKey: 'settings.languageSettings' },
+  { id: 'color', icon: 'color-palette-outline' as const, labelKey: 'settings.colorTheme' },
+  { id: 'logout', icon: 'log-out-outline' as const, labelKey: 'settings.logOut', destructive: true },
 ];
 
 const DEMO_ORDER = {
@@ -66,37 +67,20 @@ const DEMO_ORDER = {
 
 const SettingsScreen = () => {
   const navigation = useNavigation<NativeStackNavigationProp<AuthStackParamList>>();
+  const { t } = useTranslation();
+  const { language } = useLanguage();
   const { user } = useAuth();
   const { colors: themeColors, gradients, colorThemeId, customPrimary } = useTheme();
-  const [currentLanguageLabel, setCurrentLanguageLabel] = useState('English');
+  const currentLanguageLabel = getLanguageNativeLabel(language);
   const currentColorLabel = getColorThemeOption(colorThemeId).label;
   const currentColorSwatch = getColorThemeSwatch(
     getColorThemeOption(colorThemeId),
     customPrimary,
   );
-  const displayName = user?.username?.trim() || 'Your account';
+  const displayName = user?.username?.trim() || t('common.yourAccount');
   const displayPhone = user?.phone
     ? formatPhoneNumber(toLocalPhone(user.phone))
     : null;
-
-  useFocusEffect(
-    useCallback(() => {
-      let active = true;
-
-      const loadLanguage = async () => {
-        const language = await getAppLanguage();
-        if (active) {
-          setCurrentLanguageLabel(getLanguageLabel(language));
-        }
-      };
-
-      void loadLanguage();
-
-      return () => {
-        active = false;
-      };
-    }, []),
-  );
 
   const handleItemPress = (id: string) => {
     if (id === 'addresses') {
@@ -161,7 +145,7 @@ const SettingsScreen = () => {
                 onPress={() => navigation.goBack()}
                 style={({ pressed }) => [styles.backBtn, pressed && styles.backBtnPressed]}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                accessibilityLabel="Go back"
+                accessibilityLabel={t('common.back')}
                 accessibilityRole="button"
               >
                 <Ionicons name="arrow-back" size={20} color={colors.textPrimary} />
@@ -173,7 +157,7 @@ const SettingsScreen = () => {
                     source={ACCOUNT_AVATAR}
                     style={styles.avatar}
                     resizeMode="cover"
-                    accessibilityLabel="Account profile photo"
+                    accessibilityLabel={t('settings.profilePhotoA11y')}
                   />
                 </View>
                 <Text style={styles.accountTitle}>{displayName}</Text>
@@ -194,20 +178,20 @@ const SettingsScreen = () => {
               <SettingsQuickAction
                 key={action.id}
                 icon={action.icon}
-                label={action.label}
+                label={t(action.labelKey)}
                 onPress={() => handleItemPress(action.id)}
               />
             ))}
           </Animated.View>
 
           <Animated.View entering={FadeInDown.delay(180).duration(400)}>
-            <Text style={styles.sectionHeading}>Your information</Text>
+            <Text style={styles.sectionHeading}>{t('settings.yourInformation')}</Text>
             <View style={styles.card}>
               {YOUR_INFO_ITEMS.map((item, index) => (
                 <SettingsListItem
                   key={item.id}
                   icon={item.icon}
-                  label={item.label}
+                  label={t(item.labelKey)}
                   onPress={() => handleItemPress(item.id)}
                   showDivider={index < YOUR_INFO_ITEMS.length - 1}
                 />
@@ -217,12 +201,12 @@ const SettingsScreen = () => {
 
           <Animated.View entering={FadeInDown.delay(220).duration(400)}>
             <View style={styles.card}>
-              <Text style={styles.cardSectionTitle}>My Health</Text>
+              <Text style={styles.cardSectionTitle}>{t('settings.myHealth')}</Text>
               {HEALTH_ITEMS.map((item, index) => (
                 <SettingsListItem
                   key={item.id}
                   icon={item.icon}
-                  label={item.label}
+                  label={t(item.labelKey)}
                   onPress={() => handleItemPress(item.id)}
                   showDivider={index < HEALTH_ITEMS.length - 1}
                 />
@@ -232,12 +216,12 @@ const SettingsScreen = () => {
 
           <Animated.View entering={FadeInDown.delay(260).duration(400)}>
             <View style={styles.card}>
-              <Text style={styles.cardSectionTitle}>Account & Support</Text>
+              <Text style={styles.cardSectionTitle}>{t('settings.accountSupport')}</Text>
               {ACCOUNT_ITEMS.map((item, index) => (
                 <SettingsListItem
                   key={item.id}
                   icon={item.icon}
-                  label={item.label}
+                  label={t(item.labelKey)}
                   onPress={() => handleItemPress(item.id)}
                   showDivider={index < ACCOUNT_ITEMS.length - 1}
                   destructive={'destructive' in item && item.destructive}
@@ -267,7 +251,7 @@ const SettingsScreen = () => {
                 <View style={styles.demoActions}>
                   <Pressable onPress={demoNavigateCustomer} style={[styles.demoCustomerBtn, { backgroundColor: themeColors.primary }]}>
                     <Ionicons name="bicycle" size={18} color="#fff" />
-                    <Text style={styles.demoBtnText}>Customer</Text>
+                    <Text style={styles.demoBtnText}>{t('settings.demoCustomer')}</Text>
                   </Pressable>
 
                   <Pressable
@@ -276,7 +260,7 @@ const SettingsScreen = () => {
                   >
                     <Ionicons name="navigate" size={18} color={themeColors.primary} />
                     <Text style={[styles.demoBtnText, { color: themeColors.primary }]}>
-                      Delivery Agent
+                      {t('settings.demoDeliveryAgent')}
                     </Text>
                   </Pressable>
                 </View>
@@ -285,11 +269,11 @@ const SettingsScreen = () => {
                   onPress={demoNavigateDoctor}
                   style={[styles.demoDoctorBtn, { borderColor: themeColors.primary }]}
                   accessibilityRole="button"
-                  accessibilityLabel="Shift to doctor screen"
+                  accessibilityLabel={t('settings.shiftToDoctor')}
                 >
                   <Ionicons name="medkit-outline" size={18} color={themeColors.primary} />
                   <Text style={[styles.demoBtnText, { color: themeColors.primary }]}>
-                    Shift to Doctor
+                    {t('settings.shiftToDoctorBtn')}
                   </Text>
                 </Pressable>
               </View>

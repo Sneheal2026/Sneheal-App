@@ -13,69 +13,81 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import Constants from 'expo-constants';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/hooks/useTheme';
 
 const APP_VERSION = Constants.expoConfig?.version ?? '1.0.0';
 const APP_ICON = require('../../../assets/images/icon.png');
 
-const STATS = [
-  { value: '24/7', label: 'Support' },
-  { value: '100%', label: 'Genuine meds' },
-  { value: 'Fast', label: 'Delivery' },
-];
-
 const HIGHLIGHTS_BASE = [
   {
     icon: 'flash' as const,
-    title: 'Lightning delivery',
-    desc: 'Medicines at your doorstep, often within hours.',
+    titleKey: 'about.highlightDelivery',
+    descKey: 'about.highlightDeliveryDesc',
     gradient: ['#FEF3C7', '#FFFBEB'] as const,
     accentKey: 'warning' as const,
   },
   {
     icon: 'scan' as const,
-    title: 'Smart Rx scan',
-    desc: 'Upload prescriptions and order in a few taps.',
+    titleKey: 'about.highlightRxScan',
+    descKey: 'about.highlightRxScanDesc',
     gradient: ['#DBEAFE', '#EFF6FF'] as const,
     accentKey: 'primary' as const,
   },
   {
     icon: 'shield-checkmark' as const,
-    title: 'Trusted & safe',
-    desc: 'Genuine medicines from verified pharmacies.',
+    titleKey: 'about.highlightTrusted',
+    descKey: 'about.highlightTrustedDesc',
     gradient: ['#D1FAE5', '#ECFDF5'] as const,
     accentKey: 'success' as const,
   },
   {
     icon: 'heart' as const,
-    title: 'Care first',
-    desc: 'Built around your health, not just orders.',
+    titleKey: 'about.highlightCareFirst',
+    descKey: 'about.highlightCareFirstDesc',
     gradient: ['#F3E8FF', '#FAF5FF'] as const,
     accentKey: 'accentPurple' as const,
   },
 ];
 
-const VALUES = [
-  { icon: 'people' as const, text: 'Healthcare accessible for every family' },
-  { icon: 'lock-closed' as const, text: 'Patient safety and privacy come first' },
-  { icon: 'rocket' as const, text: 'Technology that simplifies medicine ordering' },
+const VALUES_BASE = [
+  { icon: 'people' as const, textKey: 'about.valueAccessible' },
+  { icon: 'lock-closed' as const, textKey: 'about.valuePrivacy' },
+  { icon: 'rocket' as const, textKey: 'about.valueTechnology' },
 ];
 
 const AboutSnehealScreen = () => {
   const navigation = useNavigation();
+  const { t } = useTranslation();
   const { colors, spacing, typography, borderRadius, shadows, moderateScale } = useTheme();
+
+  const stats = useMemo(
+    () => [
+      { value: '24/7', label: t('about.statSupport') },
+      { value: '100%', label: t('about.statGenuineMeds') },
+      { value: 'Fast', label: t('about.statDelivery') },
+    ],
+    [t],
+  );
 
   const highlights = useMemo(
     () =>
       HIGHLIGHTS_BASE.map((item) => ({
         ...item,
+        title: t(item.titleKey),
+        desc: t(item.descKey),
         gradient:
           item.accentKey === 'primary'
             ? ([colors.infoLight, colors.primarySurface] as const)
             : item.gradient,
         accent: colors[item.accentKey],
       })),
-    [colors],
+    [colors, t],
+  );
+
+  const values = useMemo(
+    () => VALUES_BASE.map((item) => ({ ...item, text: t(item.textKey) })),
+    [t],
   );
 
   const styles = useMemo(
@@ -345,7 +357,7 @@ const AboutSnehealScreen = () => {
         footerHeart: {
           flexDirection: 'row',
           alignItems: 'center',
-          gap: spacing.xs,
+          gap: spacing.xxs,
         },
         footerBrand: {
           ...typography.caption,
@@ -385,12 +397,12 @@ const AboutSnehealScreen = () => {
                 onPress={() => navigation.goBack()}
                 style={({ pressed }) => [styles.backBtn, pressed && styles.pressed]}
                 hitSlop={8}
-                accessibilityLabel="Go back"
+                accessibilityLabel={t('common.back')}
                 accessibilityRole="button"
               >
                 <Ionicons name="arrow-back" size={20} color={colors.white} />
               </Pressable>
-              <Text style={styles.headerTitle}>About Sneheal</Text>
+              <Text style={styles.headerTitle}>{t('about.title')}</Text>
               <View style={styles.headerSpacer} />
             </View>
 
@@ -401,7 +413,7 @@ const AboutSnehealScreen = () => {
                 </View>
               </View>
               <Text style={styles.brandName}>sneheal</Text>
-              <Text style={styles.brandTagline}>Your trusted health companion</Text>
+              <Text style={styles.brandTagline}>{t('about.tagline')}</Text>
               <View style={styles.versionPill}>
                 <Text style={styles.versionPillText}>v{APP_VERSION}</Text>
               </View>
@@ -411,7 +423,7 @@ const AboutSnehealScreen = () => {
 
         <View style={styles.body}>
           <Animated.View entering={FadeInDown.delay(60).duration(450)} style={styles.statsRow}>
-            {STATS.map((stat) => (
+            {stats.map((stat) => (
               <View key={stat.label} style={styles.statCard}>
                 <Text style={styles.statValue}>{stat.value}</Text>
                 <Text style={styles.statLabel}>{stat.label}</Text>
@@ -422,19 +434,16 @@ const AboutSnehealScreen = () => {
           <Animated.View entering={FadeInDown.delay(100).duration(450)} style={styles.missionCard}>
             <View style={styles.missionAccent} />
             <Text style={styles.missionQuoteMark}>"</Text>
-            <Text style={styles.missionTitle}>Our mission</Text>
-            <Text style={styles.missionText}>
-              Sneheal brings pharmacy care closer to home — helping you order medicines, manage
-              prescriptions, and stay on top of your health without long waits or confusing steps.
-            </Text>
+            <Text style={styles.missionTitle}>{t('about.missionTitle')}</Text>
+            <Text style={styles.missionText}>{t('about.missionBody')}</Text>
           </Animated.View>
 
           <Animated.View entering={FadeInDown.delay(140).duration(450)}>
-            <Text style={styles.sectionLabel}>What we offer</Text>
+            <Text style={styles.sectionLabel}>{t('about.whatWeOffer')}</Text>
             <View style={styles.highlightsGrid}>
               {highlights.map((item, index) => (
                 <Animated.View
-                  key={item.title}
+                  key={item.titleKey}
                   entering={FadeIn.delay(180 + index * 50).duration(350)}
                   style={styles.highlightCard}
                 >
@@ -455,9 +464,9 @@ const AboutSnehealScreen = () => {
           </Animated.View>
 
           <Animated.View entering={FadeInDown.delay(200).duration(450)} style={styles.valuesCard}>
-            <Text style={styles.valuesTitle}>What we believe in</Text>
-            {VALUES.map((item) => (
-              <View key={item.text} style={styles.valueRow}>
+            <Text style={styles.valuesTitle}>{t('about.valuesTitle')}</Text>
+            {values.map((item) => (
+              <View key={item.textKey} style={styles.valueRow}>
                 <LinearGradient
                   colors={[colors.secondary, colors.primary]}
                   style={styles.valueIconWrap}
@@ -472,10 +481,10 @@ const AboutSnehealScreen = () => {
           <Animated.View entering={FadeInDown.delay(240).duration(450)} style={styles.footer}>
             <View style={styles.footerHeart}>
               <Ionicons name="heart" size={14} color={colors.secondary} />
-              <Text style={styles.footerBrand}>Made with care in India</Text>
+              <Text style={styles.footerBrand}>{t('about.madeWithCare')}</Text>
             </View>
             <Text style={styles.footerCopy}>
-              © {new Date().getFullYear()} Sneheal. All rights reserved.
+              {t('about.copyright', { year: new Date().getFullYear() })}
             </Text>
           </Animated.View>
         </View>

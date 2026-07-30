@@ -18,6 +18,7 @@ import { NATIONAL_HELPLINES } from '@/constants/emergencyContacts';
 import type { NationalHelpline } from '@/types/emergency.types';
 import { useTheme } from '@/hooks/useTheme';
 import { openNearestHospitalsInMaps } from '@/utils/openNearestHospitals';
+import { useTranslation } from 'react-i18next';
 
 const HELPLINE_ICONS: Record<
   NationalHelpline['icon'],
@@ -29,22 +30,27 @@ const HELPLINE_ICONS: Record<
   heart: 'heart',
 };
 
-const dialNumber = async (number: string, label: string) => {
+const dialNumber = async (
+  number: string,
+  label: string,
+  t: (key: string, options?: Record<string, string>) => string,
+) => {
   const url = `tel:${number}`;
   try {
     const supported = await Linking.canOpenURL(url);
     if (!supported) {
-      Alert.alert('Unable to call', `Cannot dial ${label} on this device.`);
+      Alert.alert(t('emergency.unableToCall'), t('emergency.cannotDial', { label }));
       return;
     }
     await Linking.openURL(url);
   } catch {
-    Alert.alert('Unable to call', 'Please try again.');
+    Alert.alert(t('emergency.unableToCall'), t('emergency.tryAgain'));
   }
 };
 
 const EmergencyContactsScreen = () => {
   const navigation = useNavigation();
+  const { t } = useTranslation();
   const { colors, spacing, typography, borderRadius, shadows, moderateScale, gradients } =
     useTheme();
   const [openingMaps, setOpeningMaps] = useState(false);
@@ -240,13 +246,13 @@ const EmergencyContactsScreen = () => {
             <Pressable
               onPress={() => navigation.goBack()}
               style={({ pressed }) => [styles.backBtn, pressed && styles.backBtnPressed]}
-              accessibilityLabel="Go back"
+              accessibilityLabel={t('common.back')}
             >
               <Ionicons name="arrow-back" size={20} color={colors.textPrimary} />
             </Pressable>
             <View style={styles.headerTextBlock}>
-              <Text style={styles.headerTitle}>Emergency help</Text>
-              <Text style={styles.headerSubtitle}>Tap to call instantly</Text>
+              <Text style={styles.headerTitle}>{t('emergency.title')}</Text>
+              <Text style={styles.headerSubtitle}>{t('emergency.subtitle')}</Text>
             </View>
             <View style={styles.headerSpacer} />
           </View>
@@ -259,9 +265,7 @@ const EmergencyContactsScreen = () => {
           showsVerticalScrollIndicator={false}
         >
           <Animated.View entering={FadeInDown.duration(350)}>
-            <Text style={styles.intro}>
-              India emergency numbers. Tap a row to dial right away.
-            </Text>
+            <Text style={styles.intro}>{t('emergency.intro')}</Text>
           </Animated.View>
 
           <Animated.View entering={FadeInDown.delay(40).duration(350)}>
@@ -269,7 +273,7 @@ const EmergencyContactsScreen = () => {
               onPress={() => void handleShowNearestHospitals()}
               disabled={openingMaps}
               style={({ pressed }) => [styles.mapsBtn, pressed && styles.pressed]}
-              accessibilityLabel="Show nearest hospitals in Google Maps"
+              accessibilityLabel={t('emergency.nearestHospitalsA11y')}
               accessibilityRole="button"
             >
               <View style={styles.mapsIconWrap}>
@@ -280,10 +284,8 @@ const EmergencyContactsScreen = () => {
                 )}
               </View>
               <View style={styles.mapsTextBlock}>
-                <Text style={styles.mapsTitle}>Show nearest hospitals</Text>
-                <Text style={styles.mapsSubtitle}>
-                  Opens Google Maps — pick a hospital near you
-                </Text>
+                <Text style={styles.mapsTitle}>{t('emergency.nearestHospitals')}</Text>
+                <Text style={styles.mapsSubtitle}>{t('emergency.nearestHospitalsSubtitle')}</Text>
               </View>
               <Ionicons
                 name="open-outline"
@@ -301,9 +303,12 @@ const EmergencyContactsScreen = () => {
                 entering={FadeInDown.delay(60 + index * 50).duration(350)}
               >
                 <Pressable
-                  onPress={() => void dialNumber(line.number, line.label)}
+                  onPress={() => void dialNumber(line.number, line.label, t)}
                   style={({ pressed }) => [styles.card, pressed && styles.pressed]}
-                  accessibilityLabel={`Call ${line.label} at ${line.number}`}
+                  accessibilityLabel={t('emergency.callAtA11y', {
+                    label: line.label,
+                    number: line.number,
+                  })}
                   accessibilityRole="button"
                 >
                   <View style={styles.iconWrap}>
@@ -320,16 +325,14 @@ const EmergencyContactsScreen = () => {
                   </View>
                   <View style={styles.callPill}>
                     <Ionicons name="call" size={14} color={colors.white} />
-                    <Text style={styles.callPillText}>Call</Text>
+                    <Text style={styles.callPillText}>{t('common.call')}</Text>
                   </View>
                 </Pressable>
               </Animated.View>
             ))}
           </View>
 
-          <Text style={styles.disclaimer}>
-            For life-threatening emergencies, call 112 or 108 immediately.
-          </Text>
+          <Text style={styles.disclaimer}>{t('emergency.disclaimer')}</Text>
         </ScrollView>
       </View>
     </View>

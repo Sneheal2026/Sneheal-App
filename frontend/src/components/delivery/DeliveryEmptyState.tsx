@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import theme from '@/styles/theme';
 import { deliveryTheme } from './deliveryTheme';
 
@@ -10,19 +11,21 @@ interface DeliveryEmptyStateProps {
   isOnline: boolean;
 }
 
-const DeliveryEmptyState: React.FC<DeliveryEmptyStateProps> = ({ isOnline }) => (
-  <View style={styles.wrap}>
-    <View style={styles.iconWrap}>
-      <Ionicons name="cube-outline" size={32} color={deliveryTheme.accent} />
+const DeliveryEmptyState: React.FC<DeliveryEmptyStateProps> = ({ isOnline }) => {
+  const { t } = useTranslation();
+
+  return (
+    <View style={styles.wrap}>
+      <View style={styles.iconWrap}>
+        <Ionicons name="cube-outline" size={32} color={deliveryTheme.accent} />
+      </View>
+      <Text style={styles.title}>{t('delivery.noActiveOrders')}</Text>
+      <Text style={styles.text}>
+        {isOnline ? t('delivery.emptyOnline') : t('delivery.emptyOffline')}
+      </Text>
     </View>
-    <Text style={styles.title}>No active orders</Text>
-    <Text style={styles.text}>
-      {isOnline
-        ? 'New delivery requests will appear here when assigned.'
-        : 'Go online to start receiving delivery requests.'}
-    </Text>
-  </View>
-);
+  );
+};
 
 const styles = StyleSheet.create({
   wrap: {

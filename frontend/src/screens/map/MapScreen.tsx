@@ -18,6 +18,7 @@ import { fetchLiveLocation, reverseGeocodeGoogle } from '@/services/locationServ
 import type { Coordinates } from '@/types/location.types';
 import type { AuthStackParamList } from '@/navigation/types';
 import theme from '@/styles/theme';
+import { useTranslation } from 'react-i18next';
 
 const { colors, spacing, typography, moderateScale, shadows } = theme;
 
@@ -28,6 +29,7 @@ const MapScreen = () => {
   const navigation =
     useNavigation<NativeStackNavigationProp<AuthStackParamList, 'LocationMap'>>();
   const route = useRoute<RouteProp<AuthStackParamList, 'LocationMap'>>();
+  const { t } = useTranslation();
 
   const editAddress = route.params?.editAddress;
   const returnTo = route.params?.returnTo ?? 'Main';
@@ -121,7 +123,7 @@ const MapScreen = () => {
   }, [navigation, pinCoords, addressLine, isGeocoding, editAddress, returnTo]);
 
   if (loading) {
-    return <Loader message="Fetching your location..." />;
+    return <Loader message={t('addresses.fetchingLocation')} />;
   }
 
   if (error || !pinCoords) {
@@ -132,7 +134,7 @@ const MapScreen = () => {
             style={styles.backButton}
             onPress={() => navigation.goBack()}
             accessibilityRole="button"
-            accessibilityLabel="Go back"
+            accessibilityLabel={t('common.back')}
           >
             <Ionicons name="arrow-back" size={moderateScale(22)} color={colors.textPrimary} />
           </TouchableOpacity>
@@ -142,9 +144,9 @@ const MapScreen = () => {
             color={colors.textMuted}
             style={styles.errorIcon}
           />
-          <Text style={styles.errorTitle}>Location unavailable</Text>
+          <Text style={styles.errorTitle}>{t('addresses.locationUnavailable')}</Text>
           <Text style={styles.errorMessage}>
-            {error ?? 'Please enable location permissions and try again.'}
+            {error ?? t('addresses.locationPermissionHint')}
           </Text>
           <TouchableOpacity
             style={styles.retryButton}
@@ -153,11 +155,13 @@ const MapScreen = () => {
               setLoading(true);
               void fetchLiveLocation()
                 .then((r) => { setPinCoords(r.coords); setAddressLine(r.addressLine); })
-                .catch((e) => setError(e instanceof Error ? e.message : 'Unable to get location'))
+                .catch((e) =>
+                  setError(e instanceof Error ? e.message : t('addresses.unableToGetLocation')),
+                )
                 .finally(() => setLoading(false));
             }}
           >
-            <Text style={styles.retryText}>Try again</Text>
+            <Text style={styles.retryText}>{t('common.retry')}</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -197,7 +201,7 @@ const MapScreen = () => {
           style={styles.circleButton}
           onPress={() => navigation.goBack()}
           accessibilityRole="button"
-          accessibilityLabel="Go back"
+          accessibilityLabel={t('common.back')}
         >
           <Ionicons name="arrow-back" size={moderateScale(20)} color={colors.textPrimary} />
         </TouchableOpacity>
@@ -206,7 +210,7 @@ const MapScreen = () => {
           style={styles.circleButton}
           onPress={handleRelocate}
           accessibilityRole="button"
-          accessibilityLabel="Centre on my location"
+          accessibilityLabel={t('addresses.centreOnMe')}
         >
           <Ionicons name="locate" size={moderateScale(20)} color={colors.primary} />
         </TouchableOpacity>
@@ -221,7 +225,7 @@ const MapScreen = () => {
               {isGeocoding ? (
                 <View style={styles.geocodingRow}>
                   <ActivityIndicator size="small" color={colors.primary} />
-                  <Text style={styles.geocodingText}>Finding address...</Text>
+                  <Text style={styles.geocodingText}>{t('addresses.findingAddress')}</Text>
                 </View>
               ) : (
                 <Text style={styles.addressText} numberOfLines={2}>
@@ -231,9 +235,7 @@ const MapScreen = () => {
             </View>
           </View>
 
-          <Text style={styles.helpText}>
-            Move the map to adjust your delivery pinpoint
-          </Text>
+          <Text style={styles.helpText}>{t('addresses.adjustPinHelp')}</Text>
 
           <TouchableOpacity
             style={[styles.confirmButton, (isGeocoding) && styles.confirmDisabled]}
@@ -241,9 +243,9 @@ const MapScreen = () => {
             disabled={isGeocoding}
             activeOpacity={0.85}
             accessibilityRole="button"
-            accessibilityLabel="Confirm this location"
+            accessibilityLabel={t('addresses.confirmA11y')}
           >
-            <Text style={styles.confirmText}>Confirm location</Text>
+            <Text style={styles.confirmText}>{t('addresses.confirmLocation')}</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>

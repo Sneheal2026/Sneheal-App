@@ -12,6 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTabBarVisibility } from '@/context/TabBarVisibilityContext';
 import theme from '@/styles/theme';
+import { useTranslation } from 'react-i18next';
 
 const { colors, spacing, typography, moderateScale, shadows } = theme;
 
@@ -25,6 +26,7 @@ interface FloatingCartBarProps {
 }
 
 const FloatingCartBar = ({ totalItems, previewImages, onPress }: FloatingCartBarProps) => {
+  const { t } = useTranslation();
   const { tabBarOffset, tabBarHeight } = useTabBarVisibility();
   const { bottom: bottomInset } = useSafeAreaInsets();
 

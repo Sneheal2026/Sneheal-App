@@ -5,6 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import type { MedicineReminder } from '@/types/reminder.types';
 import { formatTimeDisplay } from '@/utils/reminderTime';
 import { useTheme } from '@/hooks/useTheme';
+import { useTranslation } from 'react-i18next';
 
 interface ReminderCardProps {
   reminder: MedicineReminder;
@@ -21,6 +22,7 @@ const ReminderCard = ({
   onDelete,
   onMarkTaken,
 }: ReminderCardProps) => {
+  const { t } = useTranslation();
   const { colors, spacing, typography, borderRadius, shadows, moderateScale } = useTheme();
   const stockPercent =
     reminder.totalTablets > 0
@@ -196,7 +198,7 @@ const ReminderCard = ({
             {reminder.medicineName}
           </Text>
           <Text style={styles.doseText}>
-            {reminder.dosePerTime} tablet{reminder.dosePerTime > 1 ? 's' : ''} per dose
+            {t('reminders.tabletsPerDose', { count: reminder.dosePerTime })}
           </Text>
         </View>
 
@@ -205,7 +207,7 @@ const ReminderCard = ({
           onValueChange={onToggle}
           trackColor={{ false: colors.border, true: colors.primaryLight }}
           thumbColor={reminder.enabled ? colors.primary : colors.surface}
-          accessibilityLabel={`Toggle reminder for ${reminder.medicineName}`}
+          accessibilityLabel={t('reminders.toggleReminderA11y', { name: reminder.medicineName })}
         />
       </View>
 
@@ -220,7 +222,7 @@ const ReminderCard = ({
 
       <View style={styles.stockSection}>
         <View style={styles.stockHeader}>
-          <Text style={styles.stockLabel}>Tablets remaining</Text>
+          <Text style={styles.stockLabel}>{t('reminders.tabletsRemaining')}</Text>
           <Text
             style={[
               styles.stockValue,
@@ -253,16 +255,16 @@ const ReminderCard = ({
             pressed && reminder.enabled && !isEmpty && styles.takenBtnPressed,
           ]}
           accessibilityRole="button"
-          accessibilityLabel="Mark dose as taken"
+          accessibilityLabel={t('reminders.markTakenA11y')}
         >
           <Ionicons name="checkmark-circle" size={18} color={colors.white} />
-          <Text style={styles.takenBtnText}>Mark taken</Text>
+          <Text style={styles.takenBtnText}>{t('reminders.markTaken')}</Text>
         </Pressable>
 
         <Pressable
           onPress={onEdit}
           style={({ pressed }) => [styles.iconBtn, pressed && styles.iconBtnPressed]}
-          accessibilityLabel="Edit reminder"
+          accessibilityLabel={t('reminders.editA11y')}
         >
           <Ionicons name="create-outline" size={20} color={colors.primary} />
         </Pressable>
@@ -270,7 +272,7 @@ const ReminderCard = ({
         <Pressable
           onPress={onDelete}
           style={({ pressed }) => [styles.iconBtn, pressed && styles.iconBtnPressed]}
-          accessibilityLabel="Delete reminder"
+          accessibilityLabel={t('reminders.deleteA11y')}
         >
           <Ionicons name="trash-outline" size={20} color={colors.error} />
         </Pressable>

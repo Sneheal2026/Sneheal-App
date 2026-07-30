@@ -19,6 +19,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import type { AuthStackParamList } from '@/navigation/types';
 import type { SavedPrescription } from '@/types/prescription';
 import { useTheme } from '@/hooks/useTheme';
+import { useTranslation } from 'react-i18next';
 import {
   fetchPrescriptions,
   deletePrescription,
@@ -28,6 +29,7 @@ import Shimmer from '@/components/common/Shimmer';
 import ShimmerImage from '@/components/common/ShimmerImage';
 
 const PrescriptionsScreen = () => {
+  const { t } = useTranslation();
   const navigation = useNavigation<NativeStackNavigationProp<AuthStackParamList>>();
   const { width } = useWindowDimensions();
   const { colors, spacing, typography, borderRadius, shadows, moderateScale, gradients } =
@@ -58,7 +60,7 @@ const PrescriptionsScreen = () => {
     } catch (error: any) {
       if (requestId !== requestIdRef.current) return;
       if (!hasLocal) {
-        Alert.alert('Could not load', error?.message || 'Failed to load prescriptions');
+        Alert.alert(t('prescriptions.couldNotLoad'), error?.message || t('prescriptions.loadError'));
       }
     } finally {
       if (requestId === requestIdRef.current) {
@@ -88,7 +90,7 @@ const PrescriptionsScreen = () => {
         } catch (error: any) {
           if (!active || requestId !== requestIdRef.current) return;
           if (!getCachedPrescriptions()?.length) {
-            Alert.alert('Could not load', error?.message || 'Failed to load prescriptions');
+            Alert.alert(t('prescriptions.couldNotLoad'), error?.message || t('prescriptions.loadError'));
           }
         } finally {
           if (active && requestId === requestIdRef.current) {
@@ -111,10 +113,10 @@ const PrescriptionsScreen = () => {
   };
 
   const handleDelete = (item: SavedPrescription) => {
-    Alert.alert('Delete prescription?', 'This removes the saved photo from your account.', [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('prescriptions.deleteTitle'), t('prescriptions.deleteBody'), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'Delete',
+        text: t('common.delete'),
         style: 'destructive',
         onPress: () => {
           void (async () => {
@@ -126,7 +128,7 @@ const PrescriptionsScreen = () => {
               setItems((prev) => prev.filter((p) => p.id !== item.id));
             } catch (error: any) {
               if (requestId !== requestIdRef.current) return;
-              Alert.alert('Delete failed', error?.message || 'Could not delete');
+              Alert.alert(t('prescriptions.deleteFailed'), error?.message || t('prescriptions.couldNotDelete'));
             } finally {
               if (requestId === requestIdRef.current) {
                 setDeletingId(null);
@@ -338,20 +340,22 @@ const PrescriptionsScreen = () => {
             <Pressable
               onPress={() => navigation.goBack()}
               style={({ pressed }) => [styles.backBtn, pressed && styles.backBtnPressed]}
-              accessibilityLabel="Go back"
+              accessibilityLabel={t('common.back')}
             >
               <Ionicons name="arrow-back" size={20} color={colors.textPrimary} />
             </Pressable>
             <View style={styles.headerTextBlock}>
-              <Text style={styles.headerTitle}>Prescriptions</Text>
+              <Text style={styles.headerTitle}>{t('prescriptions.title')}</Text>
               <Text style={styles.headerSubtitle}>
-                {items.length > 0 ? `${items.length} saved` : 'Your uploaded photos'}
+                {items.length > 0
+                  ? t('prescriptions.savedCount', { count: items.length })
+                  : t('prescriptions.subtitleEmpty')}
               </Text>
             </View>
             <Pressable
               onPress={handleUpload}
               style={({ pressed }) => [styles.addBtn, pressed && styles.backBtnPressed]}
-              accessibilityLabel="Upload prescription"
+              accessibilityLabel={t('prescriptions.uploadA11y')}
             >
               <Ionicons name="add" size={22} color={colors.primary} />
             </Pressable>
@@ -387,17 +391,15 @@ const PrescriptionsScreen = () => {
                 color={colors.primary}
               />
             </LinearGradient>
-            <Text style={styles.emptyTitle}>No prescriptions yet</Text>
-            <Text style={styles.emptySubtitle}>
-              Scan and save a prescription photo to keep it here for later.
-            </Text>
+            <Text style={styles.emptyTitle}>{t('prescriptions.empty')}</Text>
+            <Text style={styles.emptySubtitle}>{t('prescriptions.emptySubtitle')}</Text>
             <Pressable
               onPress={handleUpload}
               style={({ pressed }) => [styles.uploadCta, pressed && styles.uploadCtaPressed]}
-              accessibilityLabel="Upload prescription"
+              accessibilityLabel={t('prescriptions.uploadA11y')}
             >
               <Ionicons name="cloud-upload-outline" size={20} color={colors.white} />
-              <Text style={styles.uploadCtaText}>Upload prescription</Text>
+              <Text style={styles.uploadCtaText}>{t('prescriptions.upload')}</Text>
             </Pressable>
           </Animated.View>
         ) : (
@@ -430,7 +432,7 @@ const PrescriptionsScreen = () => {
                     onPress={() => handleDelete(item)}
                     disabled={deletingId === item.id}
                     style={styles.deleteBtn}
-                    accessibilityLabel="Delete prescription"
+                    accessibilityLabel={t('prescriptions.deleteA11y')}
                   >
                     {deletingId === item.id ? (
                       <ActivityIndicator size="small" color={colors.error} />

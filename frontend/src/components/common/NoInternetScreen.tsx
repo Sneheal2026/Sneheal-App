@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import CustomButton from '@/components/common/CustomButton';
 import theme from '@/styles/theme';
 
@@ -16,32 +17,34 @@ interface NoInternetScreenProps {
 const NoInternetScreen: React.FC<NoInternetScreenProps> = ({
   onRetry,
   isRetrying = false,
-}) => (
-  <View style={styles.overlay} accessibilityViewIsModal>
-    <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
-      <View style={styles.content} accessibilityRole="alert">
-        <Image
-          source={NO_INTERNET_PIC}
-          style={styles.image}
-          resizeMode="contain"
-          accessibilityIgnoresInvertColors
-        />
+}) => {
+  const { t } = useTranslation();
 
-        <Text style={styles.title}>No Internet Connection</Text>
-        <Text style={styles.message}>
-          Please connect to Wi‑Fi or mobile data to continue using Sneheal.
-        </Text>
+  return (
+    <View style={styles.overlay} accessibilityViewIsModal>
+      <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+        <View style={styles.content} accessibilityRole="alert">
+          <Image
+            source={NO_INTERNET_PIC}
+            style={styles.image}
+            resizeMode="contain"
+            accessibilityIgnoresInvertColors
+          />
 
-        <CustomButton
-          title="Try Again"
-          onPress={onRetry}
-          loading={isRetrying}
-          style={styles.retryButton}
-        />
-      </View>
-    </SafeAreaView>
-  </View>
-);
+          <Text style={styles.title}>{t('network.title')}</Text>
+          <Text style={styles.message}>{t('network.subtitle')}</Text>
+
+          <CustomButton
+            title={t('network.tryAgain')}
+            onPress={onRetry}
+            loading={isRetrying}
+            style={styles.retryButton}
+          />
+        </View>
+      </SafeAreaView>
+    </View>
+  );
+};
 
 const styles = StyleSheet.create({
   overlay: {

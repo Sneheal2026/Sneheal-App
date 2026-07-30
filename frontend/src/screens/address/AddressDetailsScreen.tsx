@@ -20,17 +20,19 @@ import { saveAddress } from '@/services/addressStorage';
 import type { AddressType } from '@/types/location.types';
 import type { AuthStackParamList } from '@/navigation/types';
 import { useTheme } from '@/hooks/useTheme';
+import { useTranslation } from 'react-i18next';
 
-const ADDRESS_TYPES: { key: AddressType; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
-  { key: 'home', label: 'Home', icon: 'home-outline' },
-  { key: 'work', label: 'Work', icon: 'briefcase-outline' },
-  { key: 'other', label: 'Other', icon: 'location-outline' },
+const ADDRESS_TYPES: { key: AddressType; labelKey: string; icon: keyof typeof Ionicons.glyphMap }[] = [
+  { key: 'home', labelKey: 'addresses.typeHome', icon: 'home-outline' },
+  { key: 'work', labelKey: 'addresses.typeWork', icon: 'briefcase-outline' },
+  { key: 'other', labelKey: 'addresses.typeOther', icon: 'location-outline' },
 ];
 
 const AddressDetailsScreen = () => {
   const navigation =
     useNavigation<NativeStackNavigationProp<AuthStackParamList, 'AddressDetails'>>();
   const route = useRoute<RouteProp<AuthStackParamList, 'AddressDetails'>>();
+  const { t } = useTranslation();
   const { colors, spacing, typography, moderateScale, borderRadius } = useTheme();
 
   const styles = useMemo(
@@ -233,13 +235,13 @@ const AddressDetailsScreen = () => {
         navigation.navigate('SavedAddresses');
       }
     } catch {
-      Alert.alert('Error', 'Could not save address. Please try again.');
+      Alert.alert(t('common.error'), t('addresses.saveError'));
     } finally {
       setSaving(false);
     }
   }, [
     isValid, saving, editAddress, draft, flatNumber, landmark,
-    receiverName, mobile, addressType, customLabel, navigation, returnTo,
+    receiverName, mobile, addressType, customLabel, navigation, returnTo, t,
   ]);
 
   return (
@@ -255,12 +257,12 @@ const AddressDetailsScreen = () => {
             style={styles.backButton}
             onPress={() => navigation.goBack()}
             accessibilityRole="button"
-            accessibilityLabel="Go back"
+            accessibilityLabel={t('common.back')}
           >
             <Ionicons name="arrow-back" size={moderateScale(20)} color={colors.textPrimary} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>
-            {isEditing ? 'Edit address' : 'Add address details'}
+            {isEditing ? t('addresses.editTitle') : t('addresses.addTitle')}
           </Text>
           <View style={styles.headerSpacer} />
         </View>
@@ -274,9 +276,9 @@ const AddressDetailsScreen = () => {
           <TouchableOpacity
             onPress={() => navigation.goBack()}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            accessibilityLabel="Change location on map"
+            accessibilityLabel={t('addresses.changeLocationA11y')}
           >
-            <Text style={styles.changeText}>Change</Text>
+            <Text style={styles.changeText}>{t('common.change')}</Text>
           </TouchableOpacity>
         </View>
 
@@ -286,44 +288,40 @@ const AddressDetailsScreen = () => {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {/* ── Flat / House ── */}
-          <Text style={styles.label}>Flat / House no. / Building *</Text>
+          <Text style={styles.label}>{t('addresses.flatLabel')}</Text>
           <TextInput
             style={styles.input}
             value={flatNumber}
             onChangeText={setFlatNumber}
-            placeholder="e.g. Flat 4B, Sunrise Apartments"
+            placeholder={t('addresses.flatPlaceholder')}
             placeholderTextColor={colors.textMuted}
             autoCapitalize="words"
             returnKeyType="next"
           />
 
-          {/* ── Landmark ── */}
-          <Text style={styles.label}>Landmark (optional)</Text>
+          <Text style={styles.label}>{t('addresses.landmarkLabel')}</Text>
           <TextInput
             style={styles.input}
             value={landmark}
             onChangeText={setLandmark}
-            placeholder="e.g. Near City Mall"
+            placeholder={t('addresses.landmarkPlaceholder')}
             placeholderTextColor={colors.textMuted}
             autoCapitalize="words"
             returnKeyType="next"
           />
 
-          {/* ── Receiver name ── */}
-          <Text style={styles.label}>Receiver name *</Text>
+          <Text style={styles.label}>{t('addresses.receiverLabel')}</Text>
           <TextInput
             style={styles.input}
             value={receiverName}
             onChangeText={setReceiverName}
-            placeholder="Who will receive the delivery?"
+            placeholder={t('addresses.receiverPlaceholder')}
             placeholderTextColor={colors.textMuted}
             autoCapitalize="words"
             returnKeyType="next"
           />
 
-          {/* ── Mobile ── */}
-          <Text style={styles.label}>Mobile number *</Text>
+          <Text style={styles.label}>{t('addresses.mobileLabel')}</Text>
           <View style={styles.phoneRow}>
             <View style={styles.phonePrefix}>
               <Text style={styles.phonePrefixText}>+91</Text>
@@ -331,8 +329,8 @@ const AddressDetailsScreen = () => {
             <TextInput
               style={[styles.input, styles.phoneInput]}
               value={mobile}
-              onChangeText={(t) => setMobile(t.replace(/\D/g, '').slice(0, 10))}
-              placeholder="10-digit mobile number"
+              onChangeText={(text) => setMobile(text.replace(/\D/g, '').slice(0, 10))}
+              placeholder={t('addresses.mobilePlaceholder')}
               placeholderTextColor={colors.textMuted}
               keyboardType="phone-pad"
               maxLength={10}
@@ -340,42 +338,40 @@ const AddressDetailsScreen = () => {
             />
           </View>
 
-          {/* ── Address type ── */}
-          <Text style={styles.label}>Save as *</Text>
+          <Text style={styles.label}>{t('addresses.saveAsLabel')}</Text>
           <View style={styles.typeRow}>
-            {ADDRESS_TYPES.map((t) => {
-              const active = addressType === t.key;
+            {ADDRESS_TYPES.map((typeOption) => {
+              const active = addressType === typeOption.key;
               return (
                 <TouchableOpacity
-                  key={t.key}
+                  key={typeOption.key}
                   style={[styles.typeChip, active && styles.typeChipActive]}
-                  onPress={() => setAddressType(t.key)}
+                  onPress={() => setAddressType(typeOption.key)}
                   activeOpacity={0.8}
                   accessibilityRole="radio"
                   accessibilityState={{ checked: active }}
                 >
                   <Ionicons
-                    name={t.icon}
+                    name={typeOption.icon}
                     size={moderateScale(16)}
                     color={active ? colors.white : colors.textSecondary}
                   />
                   <Text style={[styles.typeLabel, active && styles.typeLabelActive]}>
-                    {t.label}
+                    {t(typeOption.labelKey)}
                   </Text>
                 </TouchableOpacity>
               );
             })}
           </View>
 
-          {/* ── Custom label ── */}
           {addressType === 'other' && (
             <>
-              <Text style={styles.label}>Label name *</Text>
+              <Text style={styles.label}>{t('addresses.labelName')}</Text>
               <TextInput
                 style={styles.input}
                 value={customLabel}
                 onChangeText={setCustomLabel}
-                placeholder="e.g. Mom's house, Gym"
+                placeholder={t('addresses.labelPlaceholder')}
                 placeholderTextColor={colors.textMuted}
                 autoCapitalize="words"
                 returnKeyType="done"
@@ -384,7 +380,6 @@ const AddressDetailsScreen = () => {
           )}
         </ScrollView>
 
-        {/* ── Save button ── */}
         <SafeAreaView edges={['bottom']} style={styles.bottomSafe}>
           <TouchableOpacity
             style={[styles.saveButton, (!isValid || saving) && styles.saveDisabled]}
@@ -392,13 +387,13 @@ const AddressDetailsScreen = () => {
             disabled={!isValid || saving}
             activeOpacity={0.85}
             accessibilityRole="button"
-            accessibilityLabel="Save address"
+            accessibilityLabel={t('addresses.saveA11y')}
           >
             {saving ? (
               <ActivityIndicator color={colors.textInverse} />
             ) : (
               <Text style={styles.saveText}>
-                {isEditing ? 'Update address' : 'Save address'}
+                {isEditing ? t('addresses.updateAddress') : t('addresses.saveAddress')}
               </Text>
             )}
           </TouchableOpacity>

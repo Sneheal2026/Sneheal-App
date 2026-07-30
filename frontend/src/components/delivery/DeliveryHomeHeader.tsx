@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, Pressable, Platform, StatusBar } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import theme from '@/styles/theme';
 import { deliveryTheme } from './deliveryTheme';
 
@@ -17,16 +18,18 @@ interface DeliveryHomeHeaderProps {
 
 const DeliveryHomeHeader: React.FC<DeliveryHomeHeaderProps> = ({
   greeting,
-  agentName = 'Delivery Partner',
+  agentName,
   isOnline,
   onNotificationsPress,
   hasNotifications = true,
 }) => {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const topInset = Math.max(
     insets.top,
     Platform.OS === 'android' ? StatusBar.currentHeight ?? 0 : 0,
   );
+  const displayName = agentName ?? t('delivery.partnerDefault');
 
   return (
     <View style={[styles.wrapper, { paddingTop: topInset + spacing.md }]}>
@@ -38,7 +41,7 @@ const DeliveryHomeHeader: React.FC<DeliveryHomeHeaderProps> = ({
           <View style={styles.identityText}>
             <Text style={styles.greeting}>{greeting}</Text>
             <Text style={styles.name} numberOfLines={1}>
-              {agentName}
+              {displayName}
             </Text>
           </View>
         </View>
@@ -47,7 +50,7 @@ const DeliveryHomeHeader: React.FC<DeliveryHomeHeaderProps> = ({
           onPress={onNotificationsPress}
           style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}
           accessibilityRole="button"
-          accessibilityLabel="Notifications"
+          accessibilityLabel={t('delivery.notificationsA11y')}
         >
           <Ionicons name="notifications-outline" size={22} color={deliveryTheme.textOnDark} />
           {hasNotifications ? <View style={styles.dot} /> : null}
@@ -56,7 +59,9 @@ const DeliveryHomeHeader: React.FC<DeliveryHomeHeaderProps> = ({
 
       <View style={styles.statusPill}>
         <View style={[styles.statusDot, { backgroundColor: isOnline ? deliveryTheme.online : deliveryTheme.offline }]} />
-        <Text style={styles.statusText}>{isOnline ? 'On duty' : 'Off duty'}</Text>
+        <Text style={styles.statusText}>
+          {isOnline ? t('delivery.onDuty') : t('delivery.offDuty')}
+        </Text>
       </View>
     </View>
   );

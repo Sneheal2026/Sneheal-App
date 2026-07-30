@@ -28,6 +28,7 @@ import theme from '@/styles/theme';
 import type { AuthStackParamList } from '@/navigation/types';
 import { getMedicineById } from '@/constants/medicines';
 import { SimilarItems } from '@/components/product';
+import { useTranslation } from 'react-i18next';
 
 const { colors, spacing, moderateScale } = theme;
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -45,6 +46,7 @@ type Nav = NativeStackNavigationProp<AuthStackParamList, 'ProductDetails'>;
 type Rt = RouteProp<AuthStackParamList, 'ProductDetails'>;
 
 const ProductDetailsScreen = () => {
+  const { t } = useTranslation();
   const navigation = useNavigation<Nav>();
   const route = useRoute<Rt>();
   const insets = useSafeAreaInsets();
@@ -72,9 +74,9 @@ const ProductDetailsScreen = () => {
     return (
       <View style={styles.emptyWrap}>
         <ExpoStatusBar style="dark" />
-        <Text style={styles.emptyText}>Product not found.</Text>
+        <Text style={styles.emptyText}>{t('product.notFound')}</Text>
         <Pressable onPress={() => navigation.goBack()} style={styles.emptyBtn}>
-          <Text style={styles.emptyBtnText}>Go back</Text>
+          <Text style={styles.emptyBtnText}>{t('product.goBack')}</Text>
         </Pressable>
       </View>
     );
@@ -130,7 +132,7 @@ const ProductDetailsScreen = () => {
             {medicine.originalPrice ? (
               <Text style={styles.oldPrice}>₹{medicine.originalPrice.toFixed(2)}</Text>
             ) : null}
-            <Text style={styles.taxNote}>incl. all taxes</Text>
+            <Text style={styles.taxNote}>{t('product.inclTaxes')}</Text>
           </View>
 
           {/* Highlights */}
@@ -150,7 +152,7 @@ const ProductDetailsScreen = () => {
           </View>
 
           {/* Uses */}
-          <Text style={styles.sectionTitle}>Key Uses</Text>
+          <Text style={styles.sectionTitle}>{t('product.keyUses')}</Text>
           <View style={styles.usesBox}>
             {medicine.uses.map((use) => (
               <View key={use} style={styles.useRow}>
@@ -165,7 +167,7 @@ const ProductDetailsScreen = () => {
           </View>
 
           {/* Description */}
-          <Text style={styles.sectionTitle}>About this product</Text>
+          <Text style={styles.sectionTitle}>{t('product.about')}</Text>
           <Text style={styles.description}>{medicine.description}</Text>
 
           <SimilarItems productId={productId} onPressItem={openSimilar} />
@@ -177,7 +179,7 @@ const ProductDetailsScreen = () => {
         onPress={() => navigation.goBack()}
         style={[styles.backBtn, { top: topInset + spacing.xs }]}
         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        accessibilityLabel="Go back"
+        accessibilityLabel={t('common.back')}
         accessibilityRole="button"
       >
         <Ionicons name="arrow-back" size={22} color={colors.textPrimary} />
@@ -194,7 +196,7 @@ const ProductDetailsScreen = () => {
         </View>
 
         {quantity === 0 ? (
-          <AddToCartButton onPress={handleAdd} />
+          <AddToCartButton onPress={handleAdd} label={t('product.addToCart')} />
         ) : (
           <Animated.View entering={ZoomIn.springify().damping(18)} style={styles.stepper}>
             <Pressable
@@ -219,7 +221,7 @@ const ProductDetailsScreen = () => {
   );
 };
 
-const AddToCartButton = ({ onPress }: { onPress: () => void }) => {
+const AddToCartButton = ({ onPress, label }: { onPress: () => void; label: string }) => {
   const scale = useSharedValue(1);
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
@@ -236,7 +238,7 @@ const AddToCartButton = ({ onPress }: { onPress: () => void }) => {
       style={[styles.addToCart, animatedStyle]}
     >
       <Ionicons name="cart" size={18} color={colors.white} />
-      <Text style={styles.addToCartText}>Add to Cart</Text>
+      <Text style={styles.addToCartText}>{label}</Text>
     </AnimatedPressable>
   );
 };

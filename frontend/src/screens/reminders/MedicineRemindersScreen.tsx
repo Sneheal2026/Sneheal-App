@@ -25,8 +25,10 @@ import {
 } from '@/utils/androidReminderSetup';
 import type { MedicineReminder, ReminderFormData } from '@/types/reminder.types';
 import { useTheme } from '@/hooks/useTheme';
+import { useTranslation } from 'react-i18next';
 
 const MedicineRemindersScreen = () => {
+  const { t } = useTranslation();
   const navigation = useNavigation();
   const { colors, spacing, typography, borderRadius, shadows, moderateScale, gradients } = useTheme();
   const {
@@ -294,38 +296,38 @@ const MedicineRemindersScreen = () => {
   const handleDelete = useCallback(
     (reminder: MedicineReminder) => {
       Alert.alert(
-        'Delete reminder',
-        `Remove reminders for ${reminder.medicineName}?`,
+        t('reminders.deleteTitle'),
+        t('reminders.deleteBody', { name: reminder.medicineName }),
         [
-          { text: 'Cancel', style: 'cancel' },
+          { text: t('common.cancel'), style: 'cancel' },
           {
-            text: 'Delete',
+            text: t('common.delete'),
             style: 'destructive',
             onPress: () => void removeReminder(reminder.id),
           },
         ],
       );
     },
-    [removeReminder],
+    [removeReminder, t],
   );
 
   const handleEnableNotifications = useCallback(async () => {
     const granted = await requestPermissions();
     if (!granted) {
       Alert.alert(
-        'Notifications blocked',
-        'Open your phone settings and allow notifications for Sneheal.',
+        t('reminders.notificationsBlockedTitle'),
+        t('reminders.notificationsBlockedBody'),
         [
-          { text: 'Cancel', style: 'cancel' },
+          { text: t('common.cancel'), style: 'cancel' },
           {
-            text: 'Open settings',
+            text: t('auth.openSettings'),
             onPress: () => void Linking.openSettings(),
           },
         ],
       );
     }
     await refresh();
-  }, [requestPermissions, refresh]);
+  }, [requestPermissions, refresh, t]);
 
   const renderEmpty = () => (
     <Animated.View entering={FadeInDown.duration(400)} style={styles.emptyWrap}>
@@ -335,16 +337,14 @@ const MedicineRemindersScreen = () => {
       >
         <Ionicons name="alarm-outline" size={moderateScale(48)} color={colors.primary} />
       </LinearGradient>
-      <Text style={styles.emptyTitle}>No reminders yet</Text>
-      <Text style={styles.emptySubtitle}>
-        Add your medicines and we will notify you every day at the times you choose.
-      </Text>
+      <Text style={styles.emptyTitle}>{t('reminders.empty')}</Text>
+      <Text style={styles.emptySubtitle}>{t('reminders.emptySubtitle')}</Text>
       <Pressable
         onPress={openAddSheet}
         style={({ pressed }) => [styles.emptyCta, pressed && styles.emptyCtaPressed]}
       >
         <Ionicons name="add-circle" size={20} color={colors.white} />
-        <Text style={styles.emptyCtaText}>Add your first reminder</Text>
+        <Text style={styles.emptyCtaText}>{t('reminders.emptyCta')}</Text>
       </Pressable>
     </Animated.View>
   );
@@ -361,13 +361,13 @@ const MedicineRemindersScreen = () => {
             <Pressable
               onPress={() => navigation.goBack()}
               style={({ pressed }) => [styles.backBtn, pressed && styles.backBtnPressed]}
-              accessibilityLabel="Go back"
+              accessibilityLabel={t('common.back')}
             >
               <Ionicons name="arrow-back" size={20} color={colors.textPrimary} />
             </Pressable>
             <View style={styles.headerTextBlock}>
-              <Text style={styles.headerTitle}>Medicine reminders</Text>
-              <Text style={styles.headerSubtitle}>Never miss a dose</Text>
+              <Text style={styles.headerTitle}>{t('reminders.title')}</Text>
+              <Text style={styles.headerSubtitle}>{t('reminders.subtitle')}</Text>
             </View>
             <View style={styles.headerSpacer} />
           </View>
@@ -382,10 +382,8 @@ const MedicineRemindersScreen = () => {
           >
             <Ionicons name="notifications-off-outline" size={22} color={colors.warning} />
             <View style={styles.permissionText}>
-              <Text style={styles.permissionTitle}>Turn on notifications</Text>
-              <Text style={styles.permissionSubtitle}>
-                Required for daily medicine reminders
-              </Text>
+              <Text style={styles.permissionTitle}>{t('reminders.permissionTitle')}</Text>
+              <Text style={styles.permissionSubtitle}>{t('reminders.permissionSubtitle')}</Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
           </Pressable>
@@ -395,12 +393,9 @@ const MedicineRemindersScreen = () => {
           <View style={styles.androidSetupCard}>
             <View style={styles.androidSetupHeader}>
               <Ionicons name="shield-checkmark" size={20} color={colors.primary} />
-              <Text style={styles.androidSetupTitle}>Reminders when app is closed</Text>
+              <Text style={styles.androidSetupTitle}>{t('reminders.androidSetupTitle')}</Text>
             </View>
-            <Text style={styles.androidSetupBody}>
-              Android blocks timers after you swipe Sneheal away unless you allow
-              Alarms & reminders and unrestricted battery.
-            </Text>
+            <Text style={styles.androidSetupBody}>{t('reminders.androidSetupBody')}</Text>
             <View style={styles.androidSetupActions}>
               <Pressable
                 onPress={() => void openExactAlarmPermissionSettings()}
@@ -411,7 +406,7 @@ const MedicineRemindersScreen = () => {
                 ]}
               >
                 <Ionicons name="alarm-outline" size={16} color={colors.white} />
-                <Text style={styles.androidSetupBtnPrimaryText}>Alarms & reminders</Text>
+                <Text style={styles.androidSetupBtnPrimaryText}>{t('reminders.androidAlarms')}</Text>
               </Pressable>
               <Pressable
                 onPress={() => void openBatteryOptimizationSettings()}
@@ -422,7 +417,7 @@ const MedicineRemindersScreen = () => {
                 ]}
               >
                 <Ionicons name="battery-charging-outline" size={16} color={colors.primary} />
-                <Text style={styles.androidSetupBtnSecondaryText}>Battery</Text>
+                <Text style={styles.androidSetupBtnSecondaryText}>{t('reminders.androidBattery')}</Text>
               </Pressable>
             </View>
           </View>
@@ -461,7 +456,7 @@ const MedicineRemindersScreen = () => {
         <Pressable
           onPress={openAddSheet}
           style={({ pressed }) => [styles.fab, pressed && styles.fabPressed]}
-          accessibilityLabel="Add reminder"
+          accessibilityLabel={t('reminders.addA11y')}
         >
           <LinearGradient
             colors={[colors.primary, colors.primaryDark]}

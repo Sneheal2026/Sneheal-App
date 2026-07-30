@@ -28,6 +28,8 @@ import { devLog } from '@/utils/devLogger';
 import { resolveAuthRoute } from '@/navigation/resolveAuthRoute';
 import type { AuthScreenProps, AppLanguage, UserRole } from '@/navigation/types';
 import type { CompleteRegistrationPayload, ImageDocument } from '@/types/auth';
+import { useTranslation } from 'react-i18next';
+import { useLanguage } from '@/context/LanguageContext';
 
 const LANGUAGES: { value: AppLanguage; label: string }[] = [
   { value: 'ENGLISH', label: 'English' },
@@ -35,10 +37,10 @@ const LANGUAGES: { value: AppLanguage; label: string }[] = [
   { value: 'MARATHI', label: 'Marathi' },
 ];
 
-const ROLES: { value: UserRole; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
-  { value: 'customer', label: 'Customer', icon: 'person-outline' },
-  { value: 'delivery_agent', label: 'Delivery Agent', icon: 'bicycle-outline' },
-  { value: 'doctor', label: 'Doctor', icon: 'medkit-outline' },
+const ROLES: { value: UserRole; labelKey: string; icon: keyof typeof Ionicons.glyphMap }[] = [
+  { value: 'customer', labelKey: 'auth.roleCustomer', icon: 'person-outline' },
+  { value: 'delivery_agent', labelKey: 'auth.roleDeliveryAgent', icon: 'bicycle-outline' },
+  { value: 'doctor', labelKey: 'auth.roleDoctor', icon: 'medkit-outline' },
 ];
 
 type DocumentKey = 'aadhar' | 'license';
@@ -136,6 +138,10 @@ interface DocumentUploadFieldProps {
   typography: ReturnType<typeof useTheme>['typography'];
   borderRadius: ReturnType<typeof useTheme>['borderRadius'];
   shadows: ReturnType<typeof useTheme>['shadows'];
+  changeLabel: string;
+  tapToUploadLabel: string;
+  cameraLabel: string;
+  galleryLabel: string;
 }
 
 const DocumentUploadField = ({
@@ -150,6 +156,10 @@ const DocumentUploadField = ({
   typography,
   borderRadius,
   shadows,
+  changeLabel,
+  tapToUploadLabel,
+  cameraLabel,
+  galleryLabel,
 }: DocumentUploadFieldProps) => (
   <View
     style={[
@@ -209,14 +219,14 @@ const DocumentUploadField = ({
           <Image source={{ uri }} style={docStyles.preview} />
           <View style={docStyles.overlay}>
             <Ionicons name="camera" size={18} color={colors.textInverse} />
-            <Text style={[docStyles.overlayText, { color: colors.textInverse }]}>Change</Text>
+            <Text style={[docStyles.overlayText, { color: colors.textInverse }]}>{changeLabel}</Text>
           </View>
         </>
       ) : (
         <View style={docStyles.placeholder}>
           <Ionicons name="cloud-upload-outline" size={26} color={colors.primary} />
           <Text style={[docStyles.placeholderTitle, { color: colors.textPrimary }]}>
-            Tap to upload
+            {tapToUploadLabel}
           </Text>
         </View>
       )}
@@ -237,7 +247,7 @@ const DocumentUploadField = ({
       >
         <Ionicons name="camera-outline" size={17} color={colors.primary} />
         <Text style={[docStyles.actionText, typography.caption, { color: colors.textSecondary }]}>
-          Camera
+          {cameraLabel}
         </Text>
       </Pressable>
       <Pressable
@@ -254,7 +264,7 @@ const DocumentUploadField = ({
       >
         <Ionicons name="images-outline" size={17} color={colors.primary} />
         <Text style={[docStyles.actionText, typography.caption, { color: colors.textSecondary }]}>
-          Gallery
+          {galleryLabel}
         </Text>
       </Pressable>
     </View>
@@ -353,9 +363,11 @@ const RegistrationScreen = ({
   navigation,
   route,
 }: AuthScreenProps<'Registration'>) => {
+  const { t } = useTranslation();
   const { phoneNumber } = route.params;
   const { colors, spacing, typography, borderRadius, shadows } = useTheme();
   const { accessToken, signIn } = useAuth();
+  const { setLanguage: applyAppLanguage } = useLanguage();
 
   const [username, setUsername] = useState('');
   const [language, setLanguage] = useState<AppLanguage | null>(null);
@@ -429,7 +441,7 @@ const RegistrationScreen = ({
     if (!canContinue || !role || !language || isSubmitting) return;
 
     if (!accessToken) {
-      Alert.alert('Session expired', 'Please verify your phone number again.');
+      Alert.alert(t('auth.sessionExpiredTitle'), t('auth.sessionExpiredBody'));
       navigation.reset({ index: 0, routes: [{ name: 'PhoneNumber' }] });
       return;
     }
@@ -456,7 +468,7 @@ const RegistrationScreen = ({
 
       if (role === 'delivery_agent') {
         if (!aadharUri || !licenseUri) {
-          Alert.alert('Error', 'Please upload both Aadhar card and driving license');
+          Alert.alert(t('auth.docsRequiredTitle'), t('auth.docsRequiredBody'));
           return;
         }
 
@@ -464,7 +476,7 @@ const RegistrationScreen = ({
         const licenseDoc = await readImageAsBase64(licenseUri);
 
         if (!aadharDoc || !licenseDoc) {
-          Alert.alert('Error', 'Failed to read document images. Please try again.');
+          Alert.alert(t('auth.docsRequiredTitle'), t('auth.docsReadFailBody'));
           return;
         }
 
@@ -483,6 +495,7 @@ const RegistrationScreen = ({
         profileCompleted: response.user.profileCompleted,
       });
 
+      await applyAppLanguage(language);
       await signIn(response);
 
       const { route: nextRoute, params } = resolveAuthRoute(response.user);
@@ -495,7 +508,7 @@ const RegistrationScreen = ({
 
       const message =
         error instanceof Error ? error.message : 'Registration failed. Please try again.';
-      Alert.alert('Registration Failed', message);
+      Alert.alert(t('auth.registrationFailed'), message);
     } finally {
       setIsSubmitting(false);
     }
@@ -515,6 +528,8 @@ const RegistrationScreen = ({
     licenseUri,
     signIn,
     navigation,
+    applyAppLanguage,
+    t,
   ]);
 
   const styles = StyleSheet.create({
@@ -726,7 +741,7 @@ const RegistrationScreen = ({
       onBack={() => navigation.goBack()}
       footer={
         <AuthPrimaryButton
-          title="Continue"
+          title={t('common.continue')}
           onPress={handleContinue}
           disabled={!canContinue || isSubmitting}
           loading={isSubmitting}
@@ -734,29 +749,29 @@ const RegistrationScreen = ({
       }
     >
       <Animated.Text entering={FadeIn.duration(400)} style={styles.title}>
-        Complete your profile
+        {t('auth.registrationTitle')}
       </Animated.Text>
       <Animated.Text entering={FadeIn.duration(400).delay(60)} style={styles.subtitle}>
-        Tell us a bit about yourself to personalize your Sneheal experience
+        {t('auth.registrationSubtitle')}
       </Animated.Text>
 
-      <Text style={styles.label}>Username</Text>
+      <Text style={styles.label}>{t('auth.username')}</Text>
       <TextInput
         style={styles.input}
-        placeholder="Enter your username"
+        placeholder={t('auth.usernamePlaceholder')}
         placeholderTextColor={colors.textMuted}
         value={username}
         onChangeText={setUsername}
         autoCapitalize="none"
         autoCorrect={false}
         maxLength={30}
-        accessibilityLabel="Username"
+        accessibilityLabel={t('auth.username')}
       />
       {username.length > 0 && !isUsernameValid ? (
-        <Text style={styles.errorText}>Username must be at least 2 characters</Text>
+        <Text style={styles.errorText}>{t('auth.usernameError')}</Text>
       ) : null}
 
-      <Text style={styles.label}>Preferred language</Text>
+      <Text style={styles.label}>{t('auth.preferredLanguage')}</Text>
       <View style={styles.chipRow}>
         {LANGUAGES.map((lang, index) => {
           const selected = language === lang.value;
@@ -784,7 +799,7 @@ const RegistrationScreen = ({
         })}
       </View>
 
-      <Text style={styles.label}>I am a</Text>
+      <Text style={styles.label}>{t('auth.iAmA')}</Text>
       <View style={styles.roleList}>
         {ROLES.map((item, index) => {
           const selected = role === item.value;
@@ -812,7 +827,7 @@ const RegistrationScreen = ({
                   />
                 </View>
                 <Text style={[styles.roleLabel, selected && styles.roleLabelSelected]}>
-                  {item.label}
+                  {t(item.labelKey)}
                 </Text>
                 <View style={[styles.checkWrap, selected && styles.checkWrapSelected]}>
                   {selected ? (
@@ -833,7 +848,7 @@ const RegistrationScreen = ({
             style={styles.conditionalSection}
           >
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Identity verification</Text>
+              <Text style={styles.sectionTitle}>{t('auth.identityVerification')}</Text>
               <View style={styles.progressPill}>
                 <Text style={styles.progressText}>{deliveryDocsCount}/2</Text>
               </View>
@@ -850,8 +865,8 @@ const RegistrationScreen = ({
             </View>
 
             <DocumentUploadField
-              label="Aadhar Card"
-              hint="Clear photo of your Aadhar for identity verification (JPEG/PNG, max 1 MB)"
+              label={t('auth.aadharLabel')}
+              hint={t('auth.aadharHint')}
               icon="card-outline"
               uri={aadharUri}
               error={permissionErrors.aadhar}
@@ -861,11 +876,15 @@ const RegistrationScreen = ({
               typography={typography}
               borderRadius={borderRadius}
               shadows={shadows}
+              changeLabel={t('auth.changePhoto')}
+              tapToUploadLabel={t('auth.tapToUpload')}
+              cameraLabel={t('scan.camera')}
+              galleryLabel={t('scan.gallery')}
             />
 
             <DocumentUploadField
-              label="Driving License"
-              hint="Valid driving license required for delivery partners (JPEG/PNG, max 1 MB)"
+              label={t('auth.licenseLabel')}
+              hint={t('auth.licenseHint')}
               icon="car-outline"
               uri={licenseUri}
               error={permissionErrors.license}
@@ -875,6 +894,10 @@ const RegistrationScreen = ({
               typography={typography}
               borderRadius={borderRadius}
               shadows={shadows}
+              changeLabel={t('auth.changePhoto')}
+              tapToUploadLabel={t('auth.tapToUpload')}
+              cameraLabel={t('scan.camera')}
+              galleryLabel={t('scan.gallery')}
             />
           </Animated.View>
         </Animated.View>
@@ -887,15 +910,13 @@ const RegistrationScreen = ({
             exiting={exitAnim}
             style={styles.addressCard}
           >
-            <Text style={styles.label}>Clinic / Practice address</Text>
-            <Text style={styles.hint}>
-              Enter your full address so patients can find your clinic
-            </Text>
+            <Text style={styles.label}>{t('auth.clinicAddress')}</Text>
+            <Text style={styles.hint}>{t('auth.clinicAddressHint')}</Text>
 
-            <Text style={styles.fieldLabel}>Full address</Text>
+            <Text style={styles.fieldLabel}>{t('auth.fullAddress')}</Text>
             <TextInput
               style={[styles.input, styles.multilineInput]}
-              placeholder="Building, street, area"
+              placeholder={t('auth.addressPlaceholder')}
               placeholderTextColor={colors.textMuted}
               value={addressLine}
               onChangeText={setAddressLine}
@@ -906,20 +927,20 @@ const RegistrationScreen = ({
 
             <View style={styles.row}>
               <View style={styles.halfField}>
-                <Text style={styles.fieldLabel}>City</Text>
+                <Text style={styles.fieldLabel}>{t('auth.city')}</Text>
                 <TextInput
                   style={styles.input}
-                  placeholder="City"
+                  placeholder={t('auth.city')}
                   placeholderTextColor={colors.textMuted}
                   value={city}
                   onChangeText={setCity}
                 />
               </View>
               <View style={styles.halfField}>
-                <Text style={styles.fieldLabel}>State</Text>
+                <Text style={styles.fieldLabel}>{t('auth.state')}</Text>
                 <TextInput
                   style={styles.input}
-                  placeholder="State"
+                  placeholder={t('auth.state')}
                   placeholderTextColor={colors.textMuted}
                   value={state}
                   onChangeText={setState}
@@ -927,10 +948,10 @@ const RegistrationScreen = ({
               </View>
             </View>
 
-            <Text style={styles.fieldLabel}>Pincode</Text>
+            <Text style={styles.fieldLabel}>{t('auth.pincode')}</Text>
             <TextInput
               style={styles.input}
-              placeholder="6-digit pincode"
+              placeholder={t('auth.pincodePlaceholder')}
               placeholderTextColor={colors.textMuted}
               value={pincode}
               onChangeText={(t) => setPincode(t.replace(/\D/g, '').slice(0, 6))}
@@ -938,13 +959,13 @@ const RegistrationScreen = ({
               maxLength={6}
             />
             {pincode.length > 0 && !/^\d{6}$/.test(pincode) ? (
-              <Text style={styles.errorText}>Enter a valid 6-digit pincode</Text>
+              <Text style={styles.errorText}>{t('auth.pincodeError')}</Text>
             ) : null}
 
-            <Text style={styles.fieldLabel}>Landmark (optional)</Text>
+            <Text style={styles.fieldLabel}>{t('auth.landmarkOptional')}</Text>
             <TextInput
               style={styles.input}
-              placeholder="Near hospital, mall, etc."
+              placeholder={t('auth.landmarkPlaceholder')}
               placeholderTextColor={colors.textMuted}
               value={landmark}
               onChangeText={setLandmark}
@@ -954,7 +975,9 @@ const RegistrationScreen = ({
       ) : null}
 
       <Text style={styles.phoneNote}>
-        Registering with {phoneNumber.replace(/(\d{5})(\d{5})/, '$1 $2')}
+        {t('auth.registerWith', {
+          phone: phoneNumber.replace(/(\d{5})(\d{5})/, '$1 $2'),
+        })}
       </Text>
     </AuthScreenLayout>
   );

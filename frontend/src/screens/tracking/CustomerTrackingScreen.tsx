@@ -23,6 +23,7 @@ import TrackingProgressBar from '@/components/tracking/TrackingProgressBar';
 import ScooterTopView, { AGENT_MARKER_SIZE } from '@/components/tracking/ScooterTopView';
 import theme from '@/styles/theme';
 import { GOOGLE_MAPS_KEY } from '@/constants/googleMaps';
+import { useTranslation } from 'react-i18next';
 
 const { colors, spacing, typography, borderRadius, shadows } = theme;
 
@@ -141,6 +142,7 @@ function extractDetailedRoute(route: any): Coords[] {
 // ── Main Screen ────────────────────────────────────────────────
 
 const CustomerTrackingScreen = () => {
+  const { t } = useTranslation();
   const navigation = useNavigation();
   const route = useRoute<RouteProp<AuthStackParamList, 'CustomerTracking'>>();
   const insets = useSafeAreaInsets();
@@ -169,7 +171,7 @@ const CustomerTrackingScreen = () => {
   const fullRouteRef = useRef<Coords[]>([]);
   const [remainingPolyline, setRemainingPolyline] = useState<Coords[]>([]);
   const [totalDistance, setTotalDistance] = useState(0);
-  const [etaText, setEtaText] = useState('Calculating...');
+  const [etaText, setEtaText] = useState(t('tracking.calculating'));
   const [distText, setDistText] = useState('');
 
   const prevPhaseRef = useRef(phase);
@@ -369,27 +371,27 @@ const CustomerTrackingScreen = () => {
   const phaseInfo = useMemo(() => {
     if (isWaiting || !agentCoords) {
       return {
-        title: 'Waiting for delivery agent',
-        subtitle: 'Live location will appear once agent starts',
+        title: t('tracking.waitingTitle'),
+        subtitle: t('tracking.waitingSubtitle'),
         icon: 'hourglass-outline' as const,
         color: colors.textMuted,
       };
     }
     if (phase === 'to_hub') {
       return {
-        title: 'Picking up your medicines',
-        subtitle: 'Agent is heading to Sneheal Hub',
+        title: t('tracking.pickingUpTitle'),
+        subtitle: t('tracking.pickingUpSubtitle'),
         icon: 'medkit' as const,
         color: colors.warning,
       };
     }
     return {
-      title: 'On the way to you!',
-      subtitle: 'Medicines picked up — arriving soon',
+      title: t('tracking.onTheWayTitle'),
+      subtitle: t('tracking.onTheWaySubtitle'),
       icon: 'bicycle' as const,
       color: colors.primary,
     };
-  }, [phase, isWaiting, agentCoords]);
+  }, [phase, isWaiting, agentCoords, t]);
 
   return (
     <View style={styles.root}>
@@ -475,7 +477,7 @@ const CustomerTrackingScreen = () => {
         <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={22} color={colors.textPrimary} />
         </Pressable>
-        <Text style={styles.topTitle}>Live Tracking</Text>
+        <Text style={styles.topTitle}>{t('tracking.liveTracking')}</Text>
         <Pressable onPress={fitMap} style={styles.backBtn}>
           <Ionicons name="locate" size={20} color={colors.textPrimary} />
         </Pressable>
@@ -485,7 +487,7 @@ const CustomerTrackingScreen = () => {
       {isStale && isActive && (
         <View style={[styles.staleBanner, { top: insets.top + 72 }]}>
           <Ionicons name="time-outline" size={14} color={colors.warning} />
-          <Text style={styles.staleText}>Updating location...</Text>
+          <Text style={styles.staleText}>{t('tracking.updatingLocation')}</Text>
         </View>
       )}
 
@@ -514,7 +516,7 @@ const CustomerTrackingScreen = () => {
               <Ionicons name="time-outline" size={18} color={colors.primary} />
               <View>
                 <Text style={styles.etaValue}>{etaText}</Text>
-                <Text style={styles.etaLabel}>Estimated time</Text>
+                <Text style={styles.etaLabel}>{t('tracking.estimatedTime')}</Text>
               </View>
             </View>
             <View style={styles.etaDivider} />
@@ -522,7 +524,7 @@ const CustomerTrackingScreen = () => {
               <Ionicons name="navigate-outline" size={18} color={colors.primary} />
               <View>
                 <Text style={styles.etaValue}>{distText || '—'}</Text>
-                <Text style={styles.etaLabel}>Distance</Text>
+                <Text style={styles.etaLabel}>{t('tracking.distance')}</Text>
               </View>
             </View>
           </View>
@@ -549,15 +551,13 @@ const CustomerTrackingScreen = () => {
             <View style={styles.deliveredIcon}>
               <Ionicons name="checkmark-circle" size={56} color={colors.success} />
             </View>
-            <Text style={styles.deliveredTitle}>Medicines Delivered!</Text>
-            <Text style={styles.deliveredSubtitle}>
-              Your order has been delivered successfully
-            </Text>
+            <Text style={styles.deliveredTitle}>{t('tracking.deliveredTitle')}</Text>
+            <Text style={styles.deliveredSubtitle}>{t('tracking.deliveredSubtitle')}</Text>
             <Pressable
               onPress={() => navigation.goBack()}
               style={styles.deliveredBtn}
             >
-              <Text style={styles.deliveredBtnText}>Done</Text>
+              <Text style={styles.deliveredBtnText}>{t('common.done')}</Text>
             </Pressable>
           </RNAnimated.View>
         </View>

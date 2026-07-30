@@ -18,6 +18,8 @@ import { useSavedAddresses } from '@/hooks/useSavedAddresses';
 import type { SavedAddress } from '@/types/location.types';
 import { useTheme } from '@/hooks/useTheme';
 import type { AuthStackParamList } from '@/navigation/types';
+import { useTranslation } from 'react-i18next';
+import type { AddressType } from '@/types/location.types';
 
 const TYPE_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
   home: 'home',
@@ -25,10 +27,27 @@ const TYPE_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
   other: 'location',
 };
 
+const TYPE_LABEL_KEYS: Record<AddressType, string> = {
+  home: 'addresses.typeHome',
+  work: 'addresses.typeWork',
+  other: 'addresses.typeOther',
+};
+
 const SavedAddressesScreen = () => {
   const navigation =
     useNavigation<NativeStackNavigationProp<AuthStackParamList, 'SavedAddresses'>>();
+  const { t } = useTranslation();
   const { colors, spacing, typography, moderateScale, borderRadius } = useTheme();
+
+  const getTypeLabel = useCallback(
+    (type: AddressType, customTypeLabel?: string) => {
+      if (type === 'other') {
+        return customTypeLabel || t('addresses.typeOther');
+      }
+      return t(TYPE_LABEL_KEYS[type]);
+    },
+    [t],
+  );
 
   const styles = useMemo(
     () =>
@@ -232,12 +251,12 @@ const SavedAddressesScreen = () => {
           routes: [{ name: 'Main' }],
         });
       } catch {
-        Alert.alert('Error', 'Could not update delivery address. Please try again.');
+        Alert.alert(t('common.error'), t('addresses.updateError'));
       } finally {
         setSelectingId(null);
       }
     },
-    [selectAddress, navigation, selectingId, selectedAddress?.id],
+    [selectAddress, navigation, selectingId, selectedAddress?.id, t],
   );
 
   const handleEdit = useCallback(
@@ -249,24 +268,22 @@ const SavedAddressesScreen = () => {
 
   const handleDelete = useCallback(
     (address: SavedAddress) => {
-      const label = address.type === 'other'
-        ? address.customTypeLabel || 'Other'
-        : address.type.charAt(0).toUpperCase() + address.type.slice(1);
+      const label = getTypeLabel(address.type, address.customTypeLabel);
 
       Alert.alert(
-        'Delete address',
-        `Remove your "${label}" address?`,
+        t('addresses.deleteTitle'),
+        t('addresses.deleteConfirmBody', { label }),
         [
-          { text: 'Cancel', style: 'cancel' },
+          { text: t('common.cancel'), style: 'cancel' },
           {
-            text: 'Delete',
+            text: t('common.delete'),
             style: 'destructive',
             onPress: async () => {
               setDeletingId(address.id);
               try {
                 await removeAddress(address.id);
               } catch {
-                Alert.alert('Error', 'Could not delete address. Please try again.');
+                Alert.alert(t('common.error'), t('addresses.deleteError'));
               } finally {
                 setDeletingId(null);
               }
@@ -275,7 +292,7 @@ const SavedAddressesScreen = () => {
         ],
       );
     },
-    [removeAddress, deletingId],
+    [removeAddress, t, getTypeLabel],
   );
 
   const handleAddNew = useCallback(() => {
@@ -287,9 +304,7 @@ const SavedAddressesScreen = () => {
       const isSelected = selectedAddress?.id === item.id;
       const isSelecting = selectingId === item.id;
       const isDeleting = deletingId === item.id;
-      const typeLabel = item.type === 'other'
-        ? item.customTypeLabel || 'Other'
-        : item.type.charAt(0).toUpperCase() + item.type.slice(1);
+      const typeLabel = getTypeLabel(item.type, item.customTypeLabel);
       const icon = TYPE_ICONS[item.type] ?? 'location';
 
       return (
@@ -299,7 +314,7 @@ const SavedAddressesScreen = () => {
           activeOpacity={0.8}
           disabled={Boolean(selectingId) || Boolean(deletingId)}
           accessibilityRole="button"
-          accessibilityLabel={`Select ${typeLabel} address`}
+          accessibilityLabel={t('addresses.selectA11y', { label: typeLabel })}
         >
           <View style={[styles.iconCircle, isSelected && styles.iconCircleSelected]}>
             <Ionicons
@@ -314,7 +329,7 @@ const SavedAddressesScreen = () => {
               <Text style={styles.typeLabel}>{typeLabel}</Text>
               {item.isDefault && (
                 <View style={styles.defaultBadge}>
-                  <Text style={styles.defaultText}>Default</Text>
+                  <Text style={styles.defaultText}>{t('addresses.default')}</Text>
                 </View>
               )}
             </View>
@@ -339,7 +354,7 @@ const SavedAddressesScreen = () => {
               onPress={() => handleEdit(item)}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               disabled={Boolean(selectingId) || Boolean(deletingId)}
-              accessibilityLabel="Edit address"
+              accessibilityLabel={t('addresses.editA11y')}
             >
               <Ionicons name="create-outline" size={moderateScale(18)} color={colors.textMuted} />
             </TouchableOpacity>
@@ -347,7 +362,7 @@ const SavedAddressesScreen = () => {
               onPress={() => handleDelete(item)}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               disabled={Boolean(selectingId) || isDeleting}
-              accessibilityLabel="Delete address"
+              accessibilityLabel={t('addresses.deleteA11y')}
             >
               {isDeleting ? (
                 <ActivityIndicator size="small" color={colors.error} />
@@ -359,7 +374,7 @@ const SavedAddressesScreen = () => {
         </TouchableOpacity>
       );
     },
-    [selectedAddress, handleSelect, handleEdit, handleDelete, selectingId, deletingId, colors, styles],
+    [selectedAddress, handleSelect, handleEdit, handleDelete, selectingId, deletingId, colors, styles, t, getTypeLabel, moderateScale],
   );
 
   if (loading && addresses.length === 0) {
@@ -370,14 +385,14 @@ const SavedAddressesScreen = () => {
             style={styles.backButton}
             onPress={() => navigation.goBack()}
             accessibilityRole="button"
-            accessibilityLabel="Go back"
+            accessibilityLabel={t('common.back')}
           >
             <Ionicons name="arrow-back" size={moderateScale(20)} color={colors.textPrimary} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Saved addresses</Text>
+          <Text style={styles.headerTitle}>{t('addresses.title')}</Text>
           <View style={styles.headerSpacer} />
         </View>
-        <Loader message="Loading your addresses..." fullScreen={false} />
+        <Loader message={t('addresses.loading')} fullScreen={false} />
       </SafeAreaView>
     );
   }
@@ -390,11 +405,11 @@ const SavedAddressesScreen = () => {
           style={styles.backButton}
           onPress={() => navigation.goBack()}
           accessibilityRole="button"
-          accessibilityLabel="Go back"
+          accessibilityLabel={t('common.back')}
         >
           <Ionicons name="arrow-back" size={moderateScale(20)} color={colors.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Saved addresses</Text>
+        <Text style={styles.headerTitle}>{t('addresses.title')}</Text>
         <View style={styles.headerSpacer} />
       </View>
 
@@ -428,10 +443,8 @@ const SavedAddressesScreen = () => {
                 size={moderateScale(52)}
                 color={colors.textMuted}
               />
-              <Text style={styles.emptyTitle}>No saved addresses</Text>
-              <Text style={styles.emptySubtitle}>
-                Add a delivery address to get started
-              </Text>
+              <Text style={styles.emptyTitle}>{t('addresses.empty')}</Text>
+              <Text style={styles.emptySubtitle}>{t('addresses.emptySubtitle')}</Text>
             </View>
           )
         }
@@ -444,10 +457,10 @@ const SavedAddressesScreen = () => {
           onPress={handleAddNew}
           activeOpacity={0.85}
           accessibilityRole="button"
-          accessibilityLabel="Add a new address"
+          accessibilityLabel={t('addresses.addNewA11y')}
         >
           <Ionicons name="add" size={moderateScale(20)} color={colors.white} />
-          <Text style={styles.addButtonText}>Add new address</Text>
+          <Text style={styles.addButtonText}>{t('addresses.addNew')}</Text>
         </TouchableOpacity>
       </SafeAreaView>
     </SafeAreaView>

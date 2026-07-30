@@ -6,6 +6,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import NetworkGate from './src/components/common/NetworkGate';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
+import { LanguageProvider } from './src/context/LanguageContext';
 import { ThemeProvider } from './src/context/ThemeContext';
 import RootNavigator from './src/navigation/RootNavigator';
 import AuthBootScreen from './src/screens/auth/AuthBootScreen';
@@ -14,6 +15,7 @@ import {
   initializeReminderNotifications,
   rescheduleAllReminders,
 } from './src/services/reminderNotificationService';
+import './src/i18n';
 
 const AppNavigation = () => {
   const { isBootstrapping, initialNavState } = useAuth();
@@ -64,11 +66,13 @@ export default function App() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <ThemeProvider>
-          <NetworkGate>
-            <AuthProvider>
-              <AppNavigation />
-            </AuthProvider>
-          </NetworkGate>
+          <LanguageProvider>
+            <NetworkGate>
+              <AuthProvider>
+                <AppNavigation />
+              </AuthProvider>
+            </NetworkGate>
+          </LanguageProvider>
         </ThemeProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

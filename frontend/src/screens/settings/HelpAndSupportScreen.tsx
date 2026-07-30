@@ -19,9 +19,18 @@ import {
   type FaqCategory,
 } from '@/constants/helpFaq';
 import { useTheme } from '@/hooks/useTheme';
+import { useTranslation } from 'react-i18next';
+
+const CATEGORY_LABEL_KEYS: Record<FaqCategory, string> = {
+  prescriptions: 'help.categoryPrescriptions',
+  orders: 'help.categoryOrders',
+  delivery: 'help.categoryDelivery',
+  account: 'help.categoryAccount',
+};
 
 const HelpAndSupportScreen = () => {
   const navigation = useNavigation();
+  const { t } = useTranslation();
   const { colors, spacing, typography, borderRadius, shadows, moderateScale } = useTheme();
   const [activeCategory, setActiveCategory] = useState<FaqCategory | 'all'>('all');
 
@@ -210,12 +219,12 @@ const HelpAndSupportScreen = () => {
             onPress={() => navigation.goBack()}
             style={({ pressed }) => [styles.backBtn, pressed && styles.pressed]}
             hitSlop={8}
-            accessibilityLabel="Go back"
+            accessibilityLabel={t('common.back')}
             accessibilityRole="button"
           >
             <Ionicons name="arrow-back" size={20} color={colors.textPrimary} />
           </Pressable>
-          <Text style={styles.headerTitle}>Help & Support</Text>
+          <Text style={styles.headerTitle}>{t('help.title')}</Text>
           <View style={styles.headerSpacer} />
         </View>
       </SafeAreaView>
@@ -230,10 +239,8 @@ const HelpAndSupportScreen = () => {
             <Ionicons name="chatbubble-ellipses" size={24} color={colors.primary} />
           </View>
           <View style={styles.introTextBlock}>
-            <Text style={styles.introTitle}>How can we help?</Text>
-            <Text style={styles.introText}>
-              Browse answers to common questions about orders, prescriptions, and delivery.
-            </Text>
+            <Text style={styles.introTitle}>{t('help.introTitle')}</Text>
+            <Text style={styles.introText}>{t('help.introSubtitle')}</Text>
           </View>
         </Animated.View>
 
@@ -252,7 +259,7 @@ const HelpAndSupportScreen = () => {
               ]}
             >
               <Text style={[styles.chipText, activeCategory === 'all' && styles.chipTextActive]}>
-                All
+                {t('help.categoryAll')}
               </Text>
             </Pressable>
             {FAQ_CATEGORIES.map((category) => (
@@ -271,7 +278,7 @@ const HelpAndSupportScreen = () => {
                     activeCategory === category.id && styles.chipTextActive,
                   ]}
                 >
-                  {category.label}
+                  {t(CATEGORY_LABEL_KEYS[category.id])}
                 </Text>
               </Pressable>
             ))}
@@ -285,29 +292,27 @@ const HelpAndSupportScreen = () => {
           {filteredFaq.map((item) => (
             <FaqAccordionItem
               key={item.id}
-              question={item.question}
-              answer={item.answer}
+              question={t(item.questionKey)}
+              answer={t(item.answerKey)}
             />
           ))}
         </Animated.View>
 
         <Animated.View entering={FadeInDown.delay(140).duration(400)} style={styles.contactCard}>
-          <Text style={styles.contactTitle}>Still need help?</Text>
-          <Text style={styles.contactSubtitle}>
-            Our support team is here to assist you with any questions.
-          </Text>
+          <Text style={styles.contactTitle}>{t('help.stillNeedHelp')}</Text>
+          <Text style={styles.contactSubtitle}>{t('help.contactSubtitle')}</Text>
 
           <Pressable
             onPress={handleEmail}
             style={({ pressed }) => [styles.contactRow, pressed && styles.pressed]}
             accessibilityRole="button"
-            accessibilityLabel={`Email support at ${SUPPORT_CONTACT.email}`}
+            accessibilityLabel={t('help.emailSupportA11y', { email: SUPPORT_CONTACT.email })}
           >
             <View style={styles.contactIconWrap}>
               <Ionicons name="mail-outline" size={18} color={colors.primary} />
             </View>
             <View style={styles.contactTextBlock}>
-              <Text style={styles.contactLabel}>Email us</Text>
+              <Text style={styles.contactLabel}>{t('help.emailUs')}</Text>
               <Text style={styles.contactValue}>{SUPPORT_CONTACT.email}</Text>
             </View>
             <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
@@ -319,13 +324,13 @@ const HelpAndSupportScreen = () => {
             onPress={handlePhone}
             style={({ pressed }) => [styles.contactRow, pressed && styles.pressed]}
             accessibilityRole="button"
-            accessibilityLabel={`Call support at ${SUPPORT_CONTACT.phone}`}
+            accessibilityLabel={t('help.callSupportA11y', { phone: SUPPORT_CONTACT.phone })}
           >
             <View style={styles.contactIconWrap}>
               <Ionicons name="call-outline" size={18} color={colors.primary} />
             </View>
             <View style={styles.contactTextBlock}>
-              <Text style={styles.contactLabel}>Call us</Text>
+              <Text style={styles.contactLabel}>{t('help.callUs')}</Text>
               <Text style={styles.contactValue}>{SUPPORT_CONTACT.phone}</Text>
             </View>
             <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />

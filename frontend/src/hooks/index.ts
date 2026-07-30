@@ -3,3 +3,4 @@ export { useTabBarScrollHandler, useTabBarScrollState } from './useTabBarScrollH
 export { useLiveLocation } from './useLiveLocation';
 export { useNetworkStatus } from './useNetworkStatus';
 export { useTheme } from './useTheme';
+export { useLanguage } from '@/context/LanguageContext';

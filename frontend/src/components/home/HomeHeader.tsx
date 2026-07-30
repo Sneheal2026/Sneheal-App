@@ -10,6 +10,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
+import { useTranslation } from 'react-i18next';
 import { LocationBar } from '@/components/location';
 import SearchBar from './SearchBar';
 import HeroBackground from './HeroBackground';
@@ -39,12 +40,14 @@ const HomeHeader: React.FC<HomeHeaderProps> = ({
   isScrolling = false,
   onAccountPress,
   onNotificationsPress,
-  addressLabel = 'Add delivery address',
+  addressLabel,
   addressTag,
   onLocationPress,
   onUploadScanPress,
 }) => {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
+  const resolvedAddressLabel = addressLabel ?? t('home.addDeliveryAddress');
   const topInset = Math.max(
     insets.top,
     Platform.OS === 'android' ? StatusBar.currentHeight ?? 0 : 0,
@@ -62,16 +65,16 @@ const HomeHeader: React.FC<HomeHeaderProps> = ({
             entering={FadeInDown.delay(60).duration(450).springify()}
             style={styles.deliveryBlock}
           >
-            <Text style={styles.deliveryLabel}>Sneheal in</Text>
+            <Text style={styles.deliveryLabel}>{t('home.snehealIn')}</Text>
             <View style={styles.deliveryTimeRow}>
-              <Text style={styles.deliveryTime}>30 minutes</Text>
+              <Text style={styles.deliveryTime}>{t('home.deliveryTime')}</Text>
               <View style={styles.deliveryBadge}>
                 <Ionicons
                   name="medkit-outline"
                   size={moderateScale(11)}
                   color={colors.headerAccent}
                 />
-                <Text style={styles.deliveryBadgeText}>Pharmacy</Text>
+                <Text style={styles.deliveryBadgeText}>{t('home.pharmacy')}</Text>
               </View>
             </View>
           </Animated.View>
@@ -85,7 +88,7 @@ const HomeHeader: React.FC<HomeHeaderProps> = ({
               activeOpacity={0.8}
               onPress={onNotificationsPress}
               hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-              accessibilityLabel="Open notifications"
+              accessibilityLabel={t('home.openNotifications')}
               accessibilityRole="button"
             >
               <Ionicons
@@ -100,7 +103,7 @@ const HomeHeader: React.FC<HomeHeaderProps> = ({
               activeOpacity={0.75}
               onPress={onAccountPress}
               hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-              accessibilityLabel="Open account settings"
+              accessibilityLabel={t('home.openAccount')}
               accessibilityRole="button"
             >
               <Ionicons
@@ -114,7 +117,7 @@ const HomeHeader: React.FC<HomeHeaderProps> = ({
 
         <Animated.View entering={FadeInDown.delay(140).duration(450).springify()}>
           <LocationBar
-            addressLabel={addressLabel}
+            addressLabel={resolvedAddressLabel}
             addressTag={addressTag}
             onPress={onLocationPress}
           />

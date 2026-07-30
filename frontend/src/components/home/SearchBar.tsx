@@ -8,27 +8,29 @@ import Animated, {
   Easing,
   runOnJS,
 } from 'react-native-reanimated';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/hooks/useTheme';
 
-const SEARCH_SUGGESTIONS = [
-  'Medicines',
-  'Fitness Products',
-  'Skin Care',
-  'Vitamins',
-  'Pain Relief',
-  'Prescriptions',
-  'Ayurveda',
-  'Nutrition Drinks',
+const SEARCH_SUGGESTION_KEYS = [
+  'home.suggestionMedicines',
+  'home.suggestionFitness',
+  'home.suggestionSkinCare',
+  'home.suggestionVitamins',
+  'home.suggestionPainRelief',
+  'home.suggestionPrescriptions',
+  'home.suggestionAyurveda',
+  'home.suggestionNutrition',
 ] as const;
 
 const ROTATE_INTERVAL_MS = 2800;
 
 interface AnimatedPlaceholderProps {
   terms: readonly string[];
+  searchPrefix: string;
   paused: boolean;
 }
 
-const AnimatedPlaceholder: React.FC<AnimatedPlaceholderProps> = ({ terms, paused }) => {
+const AnimatedPlaceholder: React.FC<AnimatedPlaceholderProps> = ({ terms, searchPrefix, paused }) => {
   const { colors, typography } = useTheme();
   const [index, setIndex] = useState(0);
   const opacity = useSharedValue(1);
@@ -82,7 +84,7 @@ const AnimatedPlaceholder: React.FC<AnimatedPlaceholderProps> = ({ terms, paused
   return (
     <View style={styles.placeholderRow} pointerEvents="none">
       <Text style={[styles.placeholderPrefix, typography.bodySmall, { color: colors.textMuted, fontWeight: '500' }]}>
-        Search &quot;
+        {searchPrefix}&quot;
       </Text>
       <View style={styles.termClip}>
         <Animated.View style={termStyle}>
@@ -125,10 +127,13 @@ const SearchBar: React.FC<SearchBarProps> = ({
   insideHeader = false,
   elevated = false,
   animatePlaceholder = true,
-  searchSuggestions = SEARCH_SUGGESTIONS,
-  placeholder = 'Search "medicines"',
+  searchSuggestions,
+  placeholder,
 }) => {
+  const { t } = useTranslation();
   const { colors, spacing, typography, borderRadius, shadows } = useTheme();
+  const resolvedSuggestions = searchSuggestions ?? SEARCH_SUGGESTION_KEYS.map((key) => t(key));
+  const resolvedPlaceholder = placeholder ?? `${t('home.searchPrefix')} "${t('home.suggestionMedicines').toLowerCase()}"`;
   const inputRef = useRef<TextInput>(null);
   const [isFocused, setIsFocused] = useState(false);
 
@@ -201,7 +206,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
         <TextInput
           ref={inputRef}
           style={[styles.searchInput, typography.bodySmall, { color: colors.textPrimary }]}
-          placeholder={showStaticPlaceholder ? placeholder : ''}
+          placeholder={showStaticPlaceholder ? resolvedPlaceholder : ''}
           placeholderTextColor={colors.textMuted}
           value={value}
           onChangeText={onChangeText}
@@ -218,12 +223,16 @@ const SearchBar: React.FC<SearchBarProps> = ({
           selection={!value && isFocused ? { start: 0, end: 0 } : undefined}
         />
         {showAnimatedPlaceholder && (
-          <AnimatedPlaceholder terms={searchSuggestions} paused={isFocused} />
+          <AnimatedPlaceholder
+            terms={resolvedSuggestions}
+            searchPrefix={t('home.searchPrefix')}
+            paused={isFocused}
+          />
         )}
         {showListeningPlaceholder && (
           <View style={styles.placeholderRow} pointerEvents="none">
             <Text style={[typography.bodySmall, { color: colors.primary, fontWeight: '500' }]}>
-              Listening...
+              {t('voice.listening')}
             </Text>
           </View>
         )}
@@ -234,7 +243,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
           activeOpacity={0.7}
           onPress={handleClear}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          accessibilityLabel="Clear search"
+          accessibilityLabel={t('voice.clearSearch')}
           accessibilityRole="button"
         >
           <Ionicons
@@ -254,7 +263,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
         onPress={() => {
           void onMicPress?.();
         }}
-        accessibilityLabel={isListening ? 'Stop voice search' : 'Start voice search'}
+        accessibilityLabel={isListening ? t('voice.stopSearch') : t('voice.startSearch')}
         accessibilityRole="button"
       >
         <Ionicons
@@ -292,7 +301,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
         ]}
         activeOpacity={0.8}
         onPress={onDocumentPress}
-        accessibilityLabel="Scan prescription or medicine"
+        accessibilityLabel={t('voice.scanPrescription')}
         accessibilityRole="button"
       >
         <Ionicons

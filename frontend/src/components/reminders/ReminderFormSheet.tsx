@@ -25,6 +25,7 @@ import {
   timeStringFromDate,
 } from '@/utils/reminderTime';
 import { useTheme } from '@/hooks/useTheme';
+import { useTranslation } from 'react-i18next';
 
 interface ReminderFormSheetProps {
   visible: boolean;
@@ -48,6 +49,7 @@ const ReminderFormSheet = ({
   onClose,
   onSubmit,
 }: ReminderFormSheetProps) => {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const { colors, spacing, typography, borderRadius, shadows, moderateScale } = useTheme();
   const [form, setForm] = useState<ReminderFormData>(DEFAULT_FORM);
@@ -99,7 +101,7 @@ const ReminderFormSheet = ({
   const removeTime = useCallback((time: string) => {
     setForm((prev) => {
       if (prev.times.length <= 1) {
-        setTimesError('At least one reminder time is required');
+        setTimesError(t('reminders.timesErrorMinOne'));
         return prev;
       }
       setTimesError('');
@@ -123,14 +125,24 @@ const ReminderFormSheet = ({
     [addTime],
   );
 
+  const presetLabels: Record<string, string> = useMemo(
+    () => ({
+      '08:00': t('reminders.presetMorning'),
+      '14:00': t('reminders.presetAfternoon'),
+      '20:00': t('reminders.presetEvening'),
+      '22:00': t('reminders.presetNight'),
+    }),
+    [t],
+  );
+
   const handleSubmit = useCallback(async () => {
     const trimmed = form.medicineName.trim();
     if (!trimmed) {
-      setNameError('Enter a medicine name');
+      setNameError(t('reminders.nameError'));
       return;
     }
     if (form.times.length === 0) {
-      setTimesError('Add at least one time');
+      setTimesError(t('reminders.timesErrorAddOne'));
       return;
     }
 
@@ -138,7 +150,7 @@ const ReminderFormSheet = ({
     if (success) {
       onClose();
     }
-  }, [form, onClose, onSubmit]);
+  }, [form, onClose, onSubmit, t]);
 
   const styles = useMemo(
     () =>
@@ -374,16 +386,14 @@ const ReminderFormSheet = ({
           <View style={styles.sheetHeader}>
             <View>
               <Text style={styles.sheetTitle}>
-                {editingReminder ? 'Edit reminder' : 'New reminder'}
+                {editingReminder ? t('reminders.editReminder') : t('reminders.newReminder')}
               </Text>
-              <Text style={styles.sheetSubtitle}>
-                We will notify you daily at your chosen times
-              </Text>
+              <Text style={styles.sheetSubtitle}>{t('reminders.sheetSubtitle')}</Text>
             </View>
             <Pressable
               onPress={onClose}
               style={({ pressed }) => [styles.closeBtn, pressed && styles.closeBtnPressed]}
-              accessibilityLabel="Close"
+              accessibilityLabel={t('common.close')}
             >
               <Ionicons name="close" size={22} color={colors.textPrimary} />
             </Pressable>
@@ -394,12 +404,12 @@ const ReminderFormSheet = ({
             keyboardShouldPersistTaps="handled"
             contentContainerStyle={styles.formContent}
           >
-            <Text style={styles.label}>Medicine name</Text>
+            <Text style={styles.label}>{t('reminders.medicineName')}</Text>
             <View style={[styles.inputWrap, nameError ? styles.inputError : null]}>
               <Ionicons name="medkit-outline" size={20} color={colors.textMuted} />
               <TextInput
                 style={styles.textInput}
-                placeholder="e.g. Dolo 650, Augmentin 625"
+                placeholder={t('reminders.medicinePlaceholder')}
                 placeholderTextColor={colors.textMuted}
                 value={form.medicineName}
                 onChangeText={(text) => {
@@ -412,7 +422,7 @@ const ReminderFormSheet = ({
             </View>
             {nameError ? <Text style={styles.errorText}>{nameError}</Text> : null}
 
-            <Text style={styles.label}>Reminder times</Text>
+            <Text style={styles.label}>{t('reminders.reminderTimes')}</Text>
             <View style={styles.presetRow}>
               {QUICK_TIME_PRESETS.map((preset) => {
                 const selected = form.times.includes(preset.time);
@@ -437,7 +447,7 @@ const ReminderFormSheet = ({
                         selected && styles.presetLabelSelected,
                       ]}
                     >
-                      {preset.label}
+                      {presetLabels[preset.time] ?? preset.label}
                     </Text>
                   </Pressable>
                 );
@@ -449,7 +459,7 @@ const ReminderFormSheet = ({
               style={({ pressed }) => [styles.customTimeBtn, pressed && styles.customTimeBtnPressed]}
             >
               <Ionicons name="time-outline" size={18} color={colors.primary} />
-              <Text style={styles.customTimeText}>Pick custom time</Text>
+              <Text style={styles.customTimeText}>{t('reminders.pickCustomTime')}</Text>
             </Pressable>
 
             {showTimePicker && (
@@ -469,7 +479,7 @@ const ReminderFormSheet = ({
                     }}
                     style={styles.pickerDoneBtn}
                   >
-                    <Text style={styles.pickerDoneText}>Add this time</Text>
+                    <Text style={styles.pickerDoneText}>{t('reminders.addThisTime')}</Text>
                   </Pressable>
                 )}
               </View>
@@ -490,7 +500,7 @@ const ReminderFormSheet = ({
             </View>
             {timesError ? <Text style={styles.errorText}>{timesError}</Text> : null}
 
-            <Text style={styles.label}>Tablets per dose</Text>
+            <Text style={styles.label}>{t('reminders.tabletsPerDose')}</Text>
             <View style={styles.stepperRow}>
               <Pressable
                 onPress={() => adjustDose(-1)}
@@ -507,7 +517,7 @@ const ReminderFormSheet = ({
               </Pressable>
             </View>
 
-            <Text style={styles.label}>Total tablets you have</Text>
+            <Text style={styles.label}>{t('reminders.totalTablets')}</Text>
             <View style={styles.stepperRow}>
               <Pressable
                 onPress={() => adjustTablets(-1)}
@@ -523,9 +533,7 @@ const ReminderFormSheet = ({
                 <Ionicons name="add" size={20} color={colors.primary} />
               </Pressable>
             </View>
-            <Text style={styles.hintText}>
-              We will track remaining tablets when you mark doses as taken
-            </Text>
+            <Text style={styles.hintText}>{t('reminders.trackTabletsHint')}</Text>
           </ScrollView>
 
           <Pressable
@@ -543,7 +551,7 @@ const ReminderFormSheet = ({
               <>
                 <Ionicons name="notifications" size={20} color={colors.white} />
                 <Text style={styles.saveBtnText}>
-                  {editingReminder ? 'Save changes' : 'Set reminder'}
+                  {editingReminder ? t('reminders.saveChanges') : t('reminders.setReminder')}
                 </Text>
               </>
             )}

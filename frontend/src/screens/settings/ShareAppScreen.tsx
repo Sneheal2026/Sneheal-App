@@ -21,22 +21,24 @@ import {
   WHATSAPP_WEB_SHARE_URL,
 } from '@/constants/appInfo';
 import { useTheme } from '@/hooks/useTheme';
-
-const openWhatsAppShare = async () => {
-  try {
-    await Linking.openURL(WHATSAPP_SHARE_URL);
-  } catch {
-    try {
-      await Linking.openURL(WHATSAPP_WEB_SHARE_URL);
-    } catch {
-      Alert.alert('Unable to open WhatsApp', 'Please make sure WhatsApp is installed on your device.');
-    }
-  }
-};
+import { useTranslation } from 'react-i18next';
 
 const ShareAppScreen = () => {
   const navigation = useNavigation();
+  const { t } = useTranslation();
   const { colors, spacing, typography, borderRadius, shadows, moderateScale } = useTheme();
+
+  const openWhatsAppShare = useCallback(async () => {
+    try {
+      await Linking.openURL(WHATSAPP_SHARE_URL);
+    } catch {
+      try {
+        await Linking.openURL(WHATSAPP_WEB_SHARE_URL);
+      } catch {
+        Alert.alert(t('share.whatsappFailTitle'), t('share.whatsappFailBody'));
+      }
+    }
+  }, [t]);
 
   const styles = useMemo(
     () =>
@@ -281,8 +283,8 @@ const ShareAppScreen = () => {
   );
 
   const handleQrPress = useCallback(() => {
-    openWhatsAppShare();
-  }, []);
+    void openWhatsAppShare();
+  }, [openWhatsAppShare]);
 
   return (
     <View style={styles.root}>
@@ -301,12 +303,12 @@ const ShareAppScreen = () => {
             onPress={() => navigation.goBack()}
             style={({ pressed }) => [styles.backBtn, pressed && styles.pressed]}
             hitSlop={8}
-            accessibilityLabel="Go back"
+            accessibilityLabel={t('common.back')}
             accessibilityRole="button"
           >
             <Ionicons name="arrow-back" size={20} color={colors.textPrimary} />
           </Pressable>
-          <Text style={styles.headerTitle}>Share the App</Text>
+          <Text style={styles.headerTitle}>{t('share.title')}</Text>
           <View style={styles.headerSpacer} />
         </View>
       </SafeAreaView>
@@ -320,15 +322,13 @@ const ShareAppScreen = () => {
           <View style={styles.heroBlock}>
             <View style={styles.heroBadge}>
               <Ionicons name="sparkles" size={12} color={colors.secondary} />
-              <Text style={styles.heroBadgeText}>Invite & earn goodwill</Text>
+              <Text style={styles.heroBadgeText}>{t('share.badge')}</Text>
             </View>
             <Text style={styles.heroTitle}>
-              Share Sneheal,{'\n'}
-              <Text style={styles.heroTitleAccent}>spread wellness</Text>
+              {t('share.heroTitlePrefix')}{'\n'}
+              <Text style={styles.heroTitleAccent}>{t('share.heroTitleAccent')}</Text>
             </Text>
-            <Text style={styles.heroSubtitle}>
-              Help friends & family order medicines in minutes with a single scan or tap.
-            </Text>
+            <Text style={styles.heroSubtitle}>{t('share.heroSubtitle')}</Text>
           </View>
         </Animated.View>
 
@@ -343,8 +343,8 @@ const ShareAppScreen = () => {
               onPress={handleQrPress}
               style={({ pressed }) => [styles.qrCard, pressed && styles.qrCardPressed]}
               accessibilityRole="button"
-              accessibilityLabel="Share Sneheal on WhatsApp"
-              accessibilityHint="Opens WhatsApp with the app download link"
+              accessibilityLabel={t('share.qrShareA11y')}
+              accessibilityHint={t('share.qrShareHint')}
             >
               <View style={styles.qrInner}>
                 <View style={styles.qrImageWrap}>
@@ -352,7 +352,7 @@ const ShareAppScreen = () => {
                     source={{ uri: APP_QR_IMAGE_URI }}
                     style={styles.qrImage}
                     resizeMode="cover"
-                    accessibilityLabel="QR code to download Sneheal"
+                    accessibilityLabel={t('share.qrCodeA11y')}
                   />
                   <View style={styles.qrLogoOverlay} pointerEvents="none">
                     <View style={styles.qrLogoBadge}>
@@ -367,7 +367,7 @@ const ShareAppScreen = () => {
 
                 <View style={styles.scanBadge}>
                   <View style={styles.scanDot} />
-                  <Text style={styles.scanBadgeText}>Tap to share</Text>
+                  <Text style={styles.scanBadgeText}>{t('share.tapToShare')}</Text>
                 </View>
               </View>
             </Pressable>
@@ -383,10 +383,10 @@ const ShareAppScreen = () => {
 
         <Animated.View entering={FadeInDown.delay(140).duration(450)}>
           <Pressable
-            onPress={openWhatsAppShare}
+            onPress={() => void openWhatsAppShare()}
             style={({ pressed }) => [styles.whatsappBtn, pressed && styles.pressed]}
             accessibilityRole="button"
-            accessibilityLabel="Share on WhatsApp"
+            accessibilityLabel={t('share.whatsappShareA11y')}
           >
             <LinearGradient
               colors={['#25D366', '#128C7E']}
@@ -398,8 +398,8 @@ const ShareAppScreen = () => {
                 <Ionicons name="logo-whatsapp" size={24} color={colors.white} />
               </View>
               <View style={styles.whatsappTextBlock}>
-                <Text style={styles.whatsappBtnText}>Share on WhatsApp</Text>
-                <Text style={styles.whatsappBtnSub}>Send link to friends instantly</Text>
+                <Text style={styles.whatsappBtnText}>{t('share.whatsapp')}</Text>
+                <Text style={styles.whatsappBtnSub}>{t('share.whatsappSub')}</Text>
               </View>
               <Ionicons name="arrow-forward-circle" size={26} color="rgba(255,255,255,0.85)" />
             </LinearGradient>

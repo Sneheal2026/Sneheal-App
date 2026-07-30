@@ -26,6 +26,25 @@ import {
 } from '@/constants/colorThemes';
 import { useTheme } from '@/hooks/useTheme';
 import { hexToHue, hueToBrandHex } from '@/utils/colorUtils';
+import { useTranslation } from 'react-i18next';
+
+const THEME_LABEL_KEYS: Record<ColorThemeId, string> = {
+  blue: 'colorTheme.classicBlue',
+  teal: 'colorTheme.wellnessTeal',
+  purple: 'colorTheme.royalPurple',
+  coral: 'colorTheme.warmCoral',
+  green: 'colorTheme.freshGreen',
+  custom: 'colorTheme.custom',
+};
+
+const THEME_DESC_KEYS: Record<ColorThemeId, string> = {
+  blue: 'colorTheme.classicBlueDesc',
+  teal: 'colorTheme.wellnessTealDesc',
+  purple: 'colorTheme.royalPurpleDesc',
+  coral: 'colorTheme.warmCoralDesc',
+  green: 'colorTheme.freshGreenDesc',
+  custom: 'colorTheme.customDesc',
+};
 
 const HUE_RAINBOW = [
   '#FF0000',
@@ -42,16 +61,16 @@ const TRACK_HEIGHT = 16;
 const CUSTOM_PERSIST_DELAY_MS = 1000;
 
 const PRESET_OPTIONS = COLOR_THEME_OPTIONS.filter((option) => option.id !== 'custom');
-const CUSTOM_OPTION = COLOR_THEME_OPTIONS.find((option) => option.id === 'custom')!;
 
 type HuePickerProps = {
   hue: number;
   color: string;
   onChange: (hue: number) => void;
   onDragEnd: () => void;
+  accessibilityLabel: string;
 };
 
-const HuePicker = ({ hue, color, onChange, onDragEnd }: HuePickerProps) => {
+const HuePicker = ({ hue, color, onChange, onDragEnd, accessibilityLabel }: HuePickerProps) => {
   const widthSv = useSharedValue(0);
   const thumbX = useSharedValue(0);
   const isDragging = useSharedValue(false);
@@ -133,7 +152,7 @@ const HuePicker = ({ hue, color, onChange, onDragEnd }: HuePickerProps) => {
         onLayout={handleLayout}
         style={huePickerStyles.hitArea}
         accessibilityRole="adjustable"
-        accessibilityLabel="Custom color hue"
+        accessibilityLabel={accessibilityLabel}
         accessibilityValue={{ now: hue, min: 0, max: 360 }}
       >
         <LinearGradient
@@ -186,6 +205,7 @@ const huePickerStyles = StyleSheet.create({
 
 const ColorSettingsScreen = () => {
   const navigation = useNavigation();
+  const { t } = useTranslation();
   const {
     colors,
     spacing,
@@ -527,12 +547,12 @@ const ColorSettingsScreen = () => {
               onPress={() => navigation.goBack()}
               style={({ pressed }) => [styles.backBtn, pressed && styles.pressed]}
               hitSlop={8}
-              accessibilityLabel="Go back"
+              accessibilityLabel={t('common.back')}
               accessibilityRole="button"
             >
               <Ionicons name="arrow-back" size={20} color={colors.textPrimary} />
             </Pressable>
-            <Text style={styles.headerTitle}>Color theme</Text>
+            <Text style={styles.headerTitle}>{t('colorTheme.title')}</Text>
             <View style={styles.headerSpacer} />
           </View>
 
@@ -541,10 +561,8 @@ const ColorSettingsScreen = () => {
               <Ionicons name="color-palette" size={26} color={colors.primary} />
             </View>
             <View style={styles.heroTextBlock}>
-              <Text style={styles.heroTitle}>Personalize Sneheal</Text>
-              <Text style={styles.heroSubtitle}>
-                Pick an accent color. It updates buttons, headers, and highlights across the app.
-              </Text>
+              <Text style={styles.heroTitle}>{t('colorTheme.heroTitle')}</Text>
+              <Text style={styles.heroSubtitle}>{t('colorTheme.heroSubtitle')}</Text>
             </View>
           </Animated.View>
         </SafeAreaView>
@@ -563,6 +581,8 @@ const ColorSettingsScreen = () => {
           <Animated.View entering={FadeInDown.delay(80).duration(400)} style={styles.optionsList}>
             {PRESET_OPTIONS.map((option, index) => {
               const isSelected = selected === option.id;
+              const optionLabel = t(THEME_LABEL_KEYS[option.id]);
+              const optionDescription = t(THEME_DESC_KEYS[option.id]);
 
               return (
                 <Animated.View
@@ -579,7 +599,7 @@ const ColorSettingsScreen = () => {
                     ]}
                     accessibilityRole="radio"
                     accessibilityState={{ selected: isSelected }}
-                    accessibilityLabel={`${option.label}, ${option.primary}`}
+                    accessibilityLabel={`${optionLabel}, ${option.primary}`}
                   >
                     <View style={[styles.swatch, { backgroundColor: getColorThemeSwatch(option) }]}>
                       {isSelected ? (
@@ -591,9 +611,9 @@ const ColorSettingsScreen = () => {
                       <Text
                         style={[styles.optionLabel, isSelected && styles.optionLabelSelected]}
                       >
-                        {option.label}
+                        {optionLabel}
                       </Text>
-                      <Text style={styles.optionDescription}>{option.description}</Text>
+                      <Text style={styles.optionDescription}>{optionDescription}</Text>
                       <Text style={styles.colorCode}>{option.primary}</Text>
                     </View>
 
@@ -623,7 +643,7 @@ const ColorSettingsScreen = () => {
                 style={({ pressed }) => [styles.optionRow, pressed && styles.pressed]}
                 accessibilityRole="radio"
                 accessibilityState={{ selected: isCustomSelected }}
-                accessibilityLabel={`Custom, ${customPreview}`}
+                accessibilityLabel={`${t('colorTheme.custom')}, ${customPreview}`}
               >
                 <View style={[styles.swatch, { backgroundColor: customPreview }]}>
                   {isCustomSelected ? (
@@ -638,9 +658,9 @@ const ColorSettingsScreen = () => {
                       isCustomSelected && styles.optionLabelSelected,
                     ]}
                   >
-                    {CUSTOM_OPTION.label}
+                    {t('colorTheme.custom')}
                   </Text>
-                  <Text style={styles.optionDescription}>{CUSTOM_OPTION.description}</Text>
+                  <Text style={styles.optionDescription}>{t('colorTheme.customDesc')}</Text>
                   <Text style={styles.colorCode}>{customPreview}</Text>
                 </View>
 
@@ -655,7 +675,7 @@ const ColorSettingsScreen = () => {
 
               <View style={styles.pickerBlock}>
                 <View style={styles.pickerLabelRow}>
-                  <Text style={styles.pickerLabel}>Slide to pick a color</Text>
+                  <Text style={styles.pickerLabel}>{t('colorTheme.slideToPick')}</Text>
                   <Text style={styles.pickerHex}>{customPreview}</Text>
                 </View>
                 <HuePicker
@@ -663,6 +683,7 @@ const ColorSettingsScreen = () => {
                   color={customPreview}
                   onChange={handleHueChange}
                   onDragEnd={handleHueDragEnd}
+                  accessibilityLabel={t('colorTheme.customHueA11y')}
                 />
               </View>
             </Animated.View>
@@ -671,10 +692,7 @@ const ColorSettingsScreen = () => {
 
         <Animated.View entering={FadeInDown.delay(320).duration(400)} style={styles.footerNote}>
           <Ionicons name="information-circle-outline" size={18} color={colors.textMuted} />
-          <Text style={styles.footerText}>
-            Your color choice is saved on this device and applied automatically next time you open
-            Sneheal.
-          </Text>
+          <Text style={styles.footerText}>{t('colorTheme.footerNote')}</Text>
         </Animated.View>
       </ScrollView>
     </View>

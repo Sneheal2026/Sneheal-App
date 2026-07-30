@@ -10,6 +10,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import theme from '@/styles/theme';
+import { useTranslation } from 'react-i18next';
 
 const { colors, spacing, typography, borderRadius } = theme;
 
@@ -23,6 +24,7 @@ const DOT_SIZE = 14;
 const BIKE_SIZE = 28;
 
 const TrackingProgressBar: React.FC<Props> = ({ phase, progress }) => {
+  const { t } = useTranslation();
   const bikeProgress = useSharedValue(0);
   const bikeBounce = useSharedValue(0);
 
@@ -67,12 +69,12 @@ const TrackingProgressBar: React.FC<Props> = ({ phase, progress }) => {
             <View style={[styles.dot, styles.dotActive]} />
           )}
           <Text style={[styles.label, phase === 'to_customer' && styles.labelDone]}>
-            Hub
+            {t('tracking.hub')}
           </Text>
         </View>
         <View style={[styles.labelItem, { alignItems: 'flex-end' }]}>
           <View style={[styles.dot, phase === 'to_customer' && styles.dotActive]} />
-          <Text style={styles.label}>Your location</Text>
+          <Text style={styles.label}>{t('tracking.yourLocation')}</Text>
         </View>
       </View>
 

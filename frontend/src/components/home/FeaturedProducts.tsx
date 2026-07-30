@@ -19,6 +19,7 @@ import Animated, {
   useAnimatedStyle,
   withSpring,
 } from 'react-native-reanimated';
+import { useTranslation } from 'react-i18next';
 import theme from '@/styles/theme';
 import { useTheme } from '@/hooks/useTheme';
 
@@ -227,6 +228,7 @@ interface FeaturedProductsProps {
 
 const FeaturedProducts = ({ quantities, onIncrement, onDecrement, onPressItem }: FeaturedProductsProps) => {
   const { colors } = useTheme();
+  const { t } = useTranslation();
 
   const renderItem = useCallback(
     ({ item }: { item: Product }) => (
@@ -244,9 +246,9 @@ const FeaturedProducts = ({ quantities, onIncrement, onDecrement, onPressItem }:
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Featured Products</Text>
+        <Text style={styles.title}>{t('home.featuredProducts')}</Text>
         <Pressable>
-          <Text style={[styles.viewAll, { color: colors.primary }]}>View All</Text>
+          <Text style={[styles.viewAll, { color: colors.primary }]}>{t('common.viewAll')}</Text>
         </Pressable>
       </View>
 

@@ -11,6 +11,7 @@ import SearchBar from '@/components/home/SearchBar';
 import { useVoiceRecognition } from '@/hooks/useVoiceRecognition';
 import { useTabBarScrollHandler } from '@/hooks/useTabBarScrollHandler';
 import { useTheme } from '@/hooks/useTheme';
+import { useTranslation } from 'react-i18next';
 import { getTabBarHeight } from '@/navigation/tabBarConfig';
 import globalStyles from '@/styles/globalStyles';
 
@@ -35,6 +36,7 @@ const CATEGORIES = [
 ];
 
 const SearchScreen = () => {
+  const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState('');
   const { colors, spacing, typography, borderRadius } = useTheme();
   const insets = useSafeAreaInsets();
@@ -127,7 +129,7 @@ const SearchScreen = () => {
         onScroll={tabBarScrollHandler}
         scrollEventThrottle={16}
       >
-        <Text style={styles.sectionTitle}>Popular Searches</Text>
+        <Text style={styles.sectionTitle}>{t('search.popularSearches')}</Text>
         <View style={styles.chipsRow}>
           {POPULAR_SEARCHES.map((item) => {
             const isSelected = searchQuery === item;
@@ -144,7 +146,7 @@ const SearchScreen = () => {
           })}
         </View>
 
-        <Text style={styles.sectionTitle}>Browse Categories</Text>
+        <Text style={styles.sectionTitle}>{t('search.browseCategories')}</Text>
         <View style={styles.categoryGrid}>
           {CATEGORIES.map((name) => (
             <Pressable

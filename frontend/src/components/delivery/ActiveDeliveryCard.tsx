@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import theme from '@/styles/theme';
 import { deliveryTheme } from './deliveryTheme';
 import type { DeliveryOrder, DeliveryStatus } from './types';
+import { useTranslation } from 'react-i18next';
 
 const { spacing, typography, borderRadius, shadows } = theme;
 
@@ -13,24 +14,27 @@ interface ActiveDeliveryCardProps {
   onCall?: () => void;
 }
 
+const STATUS_LABEL_KEYS: Record<DeliveryStatus, string> = {
+  ready: 'delivery.readyForPickup',
+  transit: 'delivery.inTransit',
+  delivered: 'delivery.delivered',
+};
+
 const STATUS_STYLES: Record<
   DeliveryStatus,
-  { accent: string; bg: string; label: string }
+  { accent: string; bg: string }
 > = {
   ready: {
     accent: deliveryTheme.ready,
     bg: deliveryTheme.readyBg,
-    label: 'Ready for pickup',
   },
   transit: {
     accent: deliveryTheme.transit,
     bg: deliveryTheme.transitBg,
-    label: 'In transit',
   },
   delivered: {
     accent: deliveryTheme.online,
     bg: deliveryTheme.onlineBg,
-    label: 'Delivered',
   },
 };
 
@@ -39,18 +43,20 @@ const ActiveDeliveryCard: React.FC<ActiveDeliveryCardProps> = ({
   onNavigate,
   onCall,
 }) => {
+  const { t } = useTranslation();
   const statusStyle = STATUS_STYLES[order.status];
+  const statusLabel = t(STATUS_LABEL_KEYS[order.status]);
 
   return (
     <View style={[styles.card, { borderLeftColor: statusStyle.accent }]}>
       <View style={styles.header}>
         <View>
           <Text style={styles.orderId}>{order.orderId}</Text>
-          <Text style={styles.eta}>ETA {order.eta}</Text>
+          <Text style={styles.eta}>{t('delivery.etaPrefix')} {order.eta}</Text>
         </View>
         <View style={[styles.statusChip, { backgroundColor: statusStyle.bg }]}>
           <Text style={[styles.statusText, { color: statusStyle.accent }]}>
-            {order.statusLabel}
+            {statusLabel}
           </Text>
         </View>
       </View>
@@ -62,7 +68,7 @@ const ActiveDeliveryCard: React.FC<ActiveDeliveryCardProps> = ({
         <View style={styles.customerInfo}>
           <Text style={styles.customerName}>{order.customer}</Text>
           <Text style={styles.meta}>
-            {order.items} {order.items === 1 ? 'item' : 'items'} · {order.distance}
+            {order.items} {order.items === 1 ? t('delivery.item') : t('delivery.items')} · {order.distance}
           </Text>
         </View>
       </View>
@@ -82,7 +88,7 @@ const ActiveDeliveryCard: React.FC<ActiveDeliveryCardProps> = ({
           accessibilityLabel={`Call ${order.customer}`}
         >
           <Ionicons name="call-outline" size={18} color={theme.colors.textPrimary} />
-          <Text style={styles.secondaryBtnText}>Call</Text>
+          <Text style={styles.secondaryBtnText}>{t('common.call')}</Text>
         </Pressable>
 
         <Pressable
@@ -92,7 +98,7 @@ const ActiveDeliveryCard: React.FC<ActiveDeliveryCardProps> = ({
           accessibilityLabel={`Navigate to ${order.orderId}`}
         >
           <Ionicons name="navigate-outline" size={18} color={theme.colors.textInverse} />
-          <Text style={styles.primaryBtnText}>Navigate</Text>
+          <Text style={styles.primaryBtnText}>{t('delivery.navigate')}</Text>
         </Pressable>
       </View>
     </View>

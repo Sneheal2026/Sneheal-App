@@ -8,6 +8,7 @@ import {
   Animated,
   ImageSourcePropType,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import theme from '@/styles/theme';
 
 const { colors, spacing, typography, moderateScale } = theme;
@@ -131,16 +132,20 @@ const CategoryCard = React.memo(({ item }: { item: CategoryItem }) => (
 
 CategoryCard.displayName = 'CategoryCard';
 
-const CategoriesGrid = () => (
+const CategoriesGrid = () => {
+  const { t } = useTranslation();
+
+  return (
   <View style={styles.section}>
-    <Text style={styles.sectionTitle}>Categories</Text>
+    <Text style={styles.sectionTitle}>{t('home.categories')}</Text>
     <View style={styles.grid}>
       {CATEGORIES.map((item) => (
         <CategoryCard key={item.id} item={item} />
       ))}
     </View>
   </View>
-);
+  );
+};
 
 const styles = StyleSheet.create({
   section: {

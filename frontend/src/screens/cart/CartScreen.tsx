@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, Image } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import ScreenHeader from '@/components/common/ScreenHeader';
 import theme from '@/styles/theme';
 import type { TabScreenProps } from '@/navigation/types';
@@ -9,14 +10,16 @@ const { colors, spacing, typography, moderateScale, verticalScale } = theme;
 const CART_EMPTY_PIC = require('../../../assets/images/Cart-Empty-Pic.webp');
 
 const CartScreen = (_props: TabScreenProps<'Cart'>) => {
+  const { t } = useTranslation();
+
   return (
     <View style={styles.root}>
-      <ScreenHeader title="My Cart" subtitle="Review before checkout" />
+      <ScreenHeader title={t('cart.title')} subtitle={t('cart.subtitle')} />
 
       <View style={styles.content}>
         <View style={styles.emptyState}>
           <Image source={CART_EMPTY_PIC} style={styles.emptyImage} resizeMode="contain" />
-          <Text style={styles.emptyText}>Your cart is empty</Text>
+          <Text style={styles.emptyText}>{t('cart.empty')}</Text>
         </View>
       </View>
     </View>

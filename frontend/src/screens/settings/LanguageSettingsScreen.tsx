@@ -14,11 +14,14 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import type { AppLanguage } from '@/navigation/types';
 import { LANGUAGE_OPTIONS } from '@/constants/languages';
-import { getAppLanguage, saveAppLanguage } from '@/services/languageStorage';
+import { useLanguage } from '@/context/LanguageContext';
 import { useTheme } from '@/hooks/useTheme';
+import { useTranslation } from 'react-i18next';
 
 const LanguageSettingsScreen = () => {
   const navigation = useNavigation();
+  const { t } = useTranslation();
+  const { language: currentLanguage, setLanguage } = useLanguage();
   const { colors, spacing, typography, borderRadius, shadows, moderateScale, gradients } = useTheme();
   const [selected, setSelected] = useState<AppLanguage | null>(null);
   const [loading, setLoading] = useState(true);
@@ -26,23 +29,9 @@ const LanguageSettingsScreen = () => {
 
   useFocusEffect(
     useCallback(() => {
-      let active = true;
-
-      const loadLanguage = async () => {
-        setLoading(true);
-        const language = await getAppLanguage();
-        if (active) {
-          setSelected(language);
-          setLoading(false);
-        }
-      };
-
-      void loadLanguage();
-
-      return () => {
-        active = false;
-      };
-    }, []),
+      setSelected(currentLanguage);
+      setLoading(false);
+    }, [currentLanguage]),
   );
 
   const handleSelect = async (language: AppLanguage) => {
@@ -52,7 +41,7 @@ const LanguageSettingsScreen = () => {
     setSelected(language);
 
     try {
-      await saveAppLanguage(language);
+      await setLanguage(language);
     } finally {
       setSaving(false);
     }
@@ -255,12 +244,12 @@ const LanguageSettingsScreen = () => {
               onPress={() => navigation.goBack()}
               style={({ pressed }) => [styles.backBtn, pressed && styles.pressed]}
               hitSlop={8}
-              accessibilityLabel="Go back"
+              accessibilityLabel={t('common.back')}
               accessibilityRole="button"
             >
               <Ionicons name="arrow-back" size={20} color={colors.textPrimary} />
             </Pressable>
-            <Text style={styles.headerTitle}>Language settings</Text>
+            <Text style={styles.headerTitle}>{t('language.title')}</Text>
             <View style={styles.headerSpacer} />
           </View>
 
@@ -269,10 +258,8 @@ const LanguageSettingsScreen = () => {
               <Ionicons name="language" size={26} color={colors.primary} />
             </View>
             <View style={styles.heroTextBlock}>
-              <Text style={styles.heroTitle}>Choose your language</Text>
-              <Text style={styles.heroSubtitle}>
-                Select how you want Sneheal to appear across the app.
-              </Text>
+              <Text style={styles.heroTitle}>{t('language.heroTitle')}</Text>
+              <Text style={styles.heroSubtitle}>{t('language.heroSubtitle')}</Text>
             </View>
           </Animated.View>
         </SafeAreaView>
@@ -322,7 +309,9 @@ const LanguageSettingsScreen = () => {
                         {option.nativeLabel}
                       </Text>
                       <Text style={styles.englishLabel}>{option.label}</Text>
-                      <Text style={styles.optionDescription}>{option.description}</Text>
+                      <Text style={styles.optionDescription}>
+                        {t(`language.${option.descriptionKey}`)}
+                      </Text>
                     </View>
 
                     <View
@@ -341,9 +330,7 @@ const LanguageSettingsScreen = () => {
 
         <Animated.View entering={FadeInDown.delay(320).duration(400)} style={styles.footerNote}>
           <Ionicons name="information-circle-outline" size={18} color={colors.textMuted} />
-          <Text style={styles.footerText}>
-            Your language preference is saved on this device and can be changed anytime.
-          </Text>
+          <Text style={styles.footerText}>{t('language.footerNote')}</Text>
         </Animated.View>
       </ScrollView>
     </View>

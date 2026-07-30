@@ -12,6 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useTheme } from '@/hooks/useTheme';
+import { useTranslation } from 'react-i18next';
 
 type NotificationIcon = keyof typeof Ionicons.glyphMap;
 
@@ -70,6 +71,7 @@ type ListRow =
 
 const NotificationsScreen = () => {
   const navigation = useNavigation();
+  const { t } = useTranslation();
   const { colors, spacing, typography, borderRadius, shadows, moderateScale, gradients } =
     useTheme();
   const [notifications, setNotifications] = useState(INITIAL_NOTIFICATIONS);
@@ -82,15 +84,15 @@ const NotificationsScreen = () => {
     const rows: ListRow[] = [];
 
     if (today.length > 0) {
-      rows.push({ type: 'header', id: 'header-today', label: 'Today' });
+      rows.push({ type: 'header', id: 'header-today', label: t('notifications.today') });
       today.forEach((item) => rows.push({ type: 'item', id: item.id, item }));
     }
     if (earlier.length > 0) {
-      rows.push({ type: 'header', id: 'header-earlier', label: 'Earlier' });
+      rows.push({ type: 'header', id: 'header-earlier', label: t('notifications.earlier') });
       earlier.forEach((item) => rows.push({ type: 'item', id: item.id, item }));
     }
     return rows;
-  }, [notifications]);
+  }, [notifications, t]);
 
   const markAllRead = useCallback(() => {
     setNotifications((prev) => prev.map((n) => ({ ...n, unread: false })));
@@ -340,18 +342,20 @@ const NotificationsScreen = () => {
             <Pressable
               onPress={() => navigation.goBack()}
               style={({ pressed }) => [styles.backBtn, pressed && styles.backBtnPressed]}
-              accessibilityLabel="Go back"
+              accessibilityLabel={t('common.back')}
               accessibilityRole="button"
             >
               <Ionicons name="arrow-back" size={20} color={colors.textPrimary} />
             </Pressable>
 
             <View style={styles.headerTextBlock}>
-              <Text style={styles.headerTitle}>Notifications</Text>
+              <Text style={styles.headerTitle}>{t('notifications.title')}</Text>
               <Text style={styles.headerSubtitle}>
                 {unreadCount > 0
-                  ? `${unreadCount} new update${unreadCount > 1 ? 's' : ''}`
-                  : 'You are all caught up'}
+                  ? t(unreadCount > 1 ? 'notifications.newUpdates' : 'notifications.newUpdate', {
+                      count: unreadCount,
+                    })
+                  : t('notifications.caughtUp')}
               </Text>
             </View>
 
@@ -363,7 +367,7 @@ const NotificationsScreen = () => {
                 unreadCount === 0 && styles.markReadBtnDisabled,
                 pressed && unreadCount > 0 && styles.backBtnPressed,
               ]}
-              accessibilityLabel="Mark all as read"
+              accessibilityLabel={t('notifications.markAllReadA11y')}
               accessibilityRole="button"
             >
               <Ionicons
@@ -398,10 +402,8 @@ const NotificationsScreen = () => {
                   color={colors.primary}
                 />
               </LinearGradient>
-              <Text style={styles.emptyTitle}>No notifications</Text>
-              <Text style={styles.emptySubtitle}>
-                Order updates, reminders, and offers will show up here.
-              </Text>
+              <Text style={styles.emptyTitle}>{t('notifications.empty')}</Text>
+              <Text style={styles.emptySubtitle}>{t('notifications.emptySubtitle')}</Text>
             </Animated.View>
           }
         />

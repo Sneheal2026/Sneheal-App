@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTranslation } from 'react-i18next';
 import theme from '@/styles/theme';
 import BillTicketEdge from './BillTicketEdge';
 import DecorativeBubbles from './DecorativeBubbles';
@@ -32,12 +33,15 @@ const CartBilling = ({
   savings,
   grandTotal,
   currency = '₹',
-}: CartBillingProps) => (
+}: CartBillingProps) => {
+  const { t } = useTranslation();
+
+  return (
   <View style={styles.wrap}>
     <BillTicketEdge pageColor={PAGE_BG} cardColor={colors.white} />
 
     <View style={styles.card}>
-      <Text style={styles.title}>Bill details</Text>
+      <Text style={styles.title}>{t('cart.billDetails')}</Text>
 
       {lines.map((line) => (
         <View key={line.label} style={styles.row}>
@@ -75,7 +79,7 @@ const CartBilling = ({
                 <Ionicons name="pricetag" size={14} color={SAVINGS_GREEN} />
               </View>
               <Text style={styles.savingsText}>
-                Your total savings on this order
+                {t('cart.totalSavings')}
               </Text>
             </View>
             <Text style={styles.savingsAmount}>
@@ -86,14 +90,15 @@ const CartBilling = ({
       ) : null}
 
       <View style={styles.totalRow}>
-        <Text style={styles.totalLabel}>To pay</Text>
+        <Text style={styles.totalLabel}>{t('cart.toPay')}</Text>
         <Text style={styles.totalValue}>
           {currency}{grandTotal.toFixed(2)}
         </Text>
       </View>
     </View>
   </View>
-);
+  );
+};
 
 const styles = StyleSheet.create({
   wrap: {

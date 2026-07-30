@@ -24,6 +24,7 @@ import { devLog } from '@/utils/devLogger';
 import { fillOtpSmoothly } from '@/utils/otpFill';
 import { resolveAuthRoute } from '@/navigation/resolveAuthRoute';
 import type { AuthScreenProps } from '@/navigation/types';
+import { useTranslation } from 'react-i18next';
 
 const { colors, spacing, typography, borderRadius } = theme;
 
@@ -34,6 +35,7 @@ const OTP_BOX_WIDTH =
   OTP_LENGTH;
 
 const OtpScreen = ({ navigation, route }: AuthScreenProps<'Otp'>) => {
+  const { t } = useTranslation();
   const { signIn } = useAuth();
   const { phoneNumber, devOtp: initialDevOtp } = route.params;
   const [otpValues, setOtpValues] = useState<string[]>(Array(OTP_LENGTH).fill(''));
@@ -178,14 +180,14 @@ const OtpScreen = ({ navigation, route }: AuthScreenProps<'Otp'>) => {
       onBack={() => navigation.goBack()}
       footer={
         <AuthPrimaryButton
-          title="Verify & Continue"
+          title={t('auth.otpVerify')}
           onPress={handleVerify}
           disabled={!isOtpComplete || isAutoFilling}
           loading={isValidating}
         />
       }
     >
-      <Text style={styles.title}>Enter verification code</Text>
+      <Text style={styles.title}>{t('auth.otpTitle')}</Text>
 
       {__DEV__ && initialDevOtp ? (
         <Text style={styles.devHint}>
@@ -195,12 +197,12 @@ const OtpScreen = ({ navigation, route }: AuthScreenProps<'Otp'>) => {
 
       <View style={styles.sentRow}>
         <Text style={styles.sentText}>
-          Sent to <Text style={styles.phoneText}>{displayPhone}</Text>
+          {t('auth.otpSentTo')} <Text style={styles.phoneText}>{displayPhone}</Text>
         </Text>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          accessibilityLabel="Edit phone number"
+          accessibilityLabel={t('auth.editPhoneA11y')}
         >
           <Ionicons name="create-outline" size={18} color={colors.primary} />
         </TouchableOpacity>
@@ -234,18 +236,18 @@ const OtpScreen = ({ navigation, route }: AuthScreenProps<'Otp'>) => {
       {isValidating ? (
         <View style={styles.validatingPill}>
           <ActivityIndicator size="small" color={colors.success} />
-          <Text style={styles.validatingText}>We are validating the OTP</Text>
+          <Text style={styles.validatingText}>{t('auth.otpValidating')}</Text>
         </View>
       ) : (
         <View style={styles.resendRow}>
-          <Text style={styles.resendLabel}>Didn&apos;t receive the code?</Text>
+          <Text style={styles.resendLabel}>{t('auth.resendPrompt')}</Text>
           <TouchableOpacity onPress={handleResend} disabled={!canResend || isResending}>
             <Text style={[styles.resendBtn, (!canResend || isResending) && styles.resendBtnDisabled]}>
               {isResending
-                ? 'Sending...'
+                ? t('auth.sending')
                 : canResend
-                  ? 'Resend OTP'
-                  : `Resend in ${resendTimer}s`}
+                  ? t('auth.otpResend')
+                  : t('auth.otpResendIn', { seconds: resendTimer })}
             </Text>
           </TouchableOpacity>
         </View>
