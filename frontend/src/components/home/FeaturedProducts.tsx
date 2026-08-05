@@ -8,7 +8,6 @@ import {
   FlatList,
   Image,
   Platform,
-  ImageSourcePropType,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, {
@@ -22,6 +21,10 @@ import Animated, {
 import { useTranslation } from 'react-i18next';
 import theme from '@/styles/theme';
 import { useTheme } from '@/hooks/useTheme';
+import Shimmer from '@/components/common/Shimmer';
+import type { Product } from '@/types/product.types';
+
+export type { Product } from '@/types/product.types';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -38,36 +41,6 @@ const CARD_MARGIN = spacing.md;
 const ADD_BTN_SIZE = moderateScale(34, 0.35);
 const ACTION_SLOT_WIDTH = moderateScale(92, 0.35);
 const INNER_BTN = ADD_BTN_SIZE - moderateScale(6, 0.35);
-
-const PRODUCT_IMAGES = {
-  vitaminsMinerals: require('../../../assets/images/Vitamins-Minerals.png'),
-  nutritionDrinks: require('../../../assets/images/Nutrition-Drinks.png'),
-  feverCold: require('../../../assets/images/Fever-Cold.png'),
-  painRelief: require('../../../assets/images/Pain-Relief.png'),
-  ayurveda: require('../../../assets/images/Ayurveda.png'),
-  fitness: require('../../../assets/images/Fitness.png'),
-  oralCare: require('../../../assets/images/Oral-Care.png'),
-  hairCare: require('../../../assets/images/Hair-Care.png'),
-} as const;
-
-export interface Product {
-  id: string;
-  name: string;
-  image: ImageSourcePropType;
-  price: number;
-  originalPrice?: number;
-}
-
-export const FEATURED_PRODUCTS: Product[] = [
-  { id: '1', name: 'Daily Multivitamin Capsules', image: PRODUCT_IMAGES.vitaminsMinerals, price: 12.49, originalPrice: 16.65 },
-  { id: '2', name: 'Pediacare Super Immune Plus', image: PRODUCT_IMAGES.nutritionDrinks, price: 15.99, originalPrice: 18.15 },
-  { id: '3', name: 'Fever & Cold Relief Syrup', image: PRODUCT_IMAGES.feverCold, price: 6.99 },
-  { id: '4', name: 'Pain Relief Tablets', image: PRODUCT_IMAGES.painRelief, price: 4.99, originalPrice: 6.99 },
-  { id: '5', name: 'Ayurvedic Immunity Booster', image: PRODUCT_IMAGES.ayurveda, price: 22.99 },
-  { id: '6', name: 'Dietary Supplement Health Products', image: PRODUCT_IMAGES.fitness, price: 18.99 },
-  { id: '7', name: 'Oral Care Essentials', image: PRODUCT_IMAGES.oralCare, price: 9.99, originalPrice: 14.99 },
-  { id: '8', name: 'Biotin Hair Growth Support', image: PRODUCT_IMAGES.hairCare, price: 14.99 },
-];
 
 const ADD_GREEN = '#1F9D55';
 const ADD_GREEN_LIGHT = '#E8F7EE';
@@ -219,14 +192,40 @@ const ProductCard = ({ item, quantity, onIncrement, onDecrement, onPress }: Prod
   );
 };
 
+const SkeletonCard = () => (
+  <View style={styles.card}>
+    <View style={styles.imageBox}>
+      <Shimmer width="75%" height="75%" borderRadius={moderateScale(6)} />
+    </View>
+    <View style={styles.info}>
+      <Shimmer width="90%" height={moderateScale(13)} />
+      <View style={{ height: spacing.sm }} />
+      <Shimmer width="55%" height={moderateScale(16)} />
+    </View>
+  </View>
+);
+
 interface FeaturedProductsProps {
+  products: Product[];
+  loading?: boolean;
+  error?: string | null;
   quantities: Record<string, number>;
   onIncrement: (id: string) => void;
   onDecrement: (id: string) => void;
   onPressItem?: (id: string) => void;
+  onRetry?: () => void;
 }
 
-const FeaturedProducts = ({ quantities, onIncrement, onDecrement, onPressItem }: FeaturedProductsProps) => {
+const FeaturedProducts = ({
+  products,
+  loading = false,
+  error = null,
+  quantities,
+  onIncrement,
+  onDecrement,
+  onPressItem,
+  onRetry,
+}: FeaturedProductsProps) => {
   const { colors } = useTheme();
   const { t } = useTranslation();
 
@@ -243,6 +242,10 @@ const FeaturedProducts = ({ quantities, onIncrement, onDecrement, onPressItem }:
     [quantities, onIncrement, onDecrement, onPressItem],
   );
 
+  const showSkeletons = loading && products.length === 0;
+  const showError = !loading && error && products.length === 0;
+  const showEmpty = !loading && !error && products.length === 0;
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -252,16 +255,36 @@ const FeaturedProducts = ({ quantities, onIncrement, onDecrement, onPressItem }:
         </Pressable>
       </View>
 
-      <FlatList
-        data={FEATURED_PRODUCTS}
-        renderItem={renderItem}
-        keyExtractor={(item) => item.id}
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.list}
-        ItemSeparatorComponent={() => <View style={{ width: CARD_MARGIN }} />}
-        nestedScrollEnabled
-      />
+      {showSkeletons ? (
+        <View style={[styles.list, styles.skeletonRow]}>
+          {[0, 1, 2].map((key) => (
+            <View key={key} style={{ marginRight: CARD_MARGIN }}>
+              <SkeletonCard />
+            </View>
+          ))}
+        </View>
+      ) : showError ? (
+        <Pressable style={styles.stateBox} onPress={onRetry}>
+          <Ionicons name="cloud-offline-outline" size={moderateScale(22)} color={colors.textSecondary} />
+          <Text style={styles.stateText}>{error}</Text>
+          <Text style={[styles.stateAction, { color: colors.primary }]}>{t('common.retry')}</Text>
+        </Pressable>
+      ) : showEmpty ? (
+        <View style={styles.stateBox}>
+          <Text style={styles.stateText}>{t('home.noProducts')}</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={products}
+          renderItem={renderItem}
+          keyExtractor={(item) => item.id}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.list}
+          ItemSeparatorComponent={() => <View style={{ width: CARD_MARGIN }} />}
+          nestedScrollEnabled
+        />
+      )}
     </View>
   );
 };
@@ -292,6 +315,26 @@ const styles = StyleSheet.create({
   },
   list: {
     paddingHorizontal: spacing.lg,
+  },
+  skeletonRow: {
+    flexDirection: 'row',
+  },
+  stateBox: {
+    marginHorizontal: spacing.lg,
+    paddingVertical: spacing.xl,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+  },
+  stateText: {
+    fontSize: moderateScale(13),
+    color: colors.textSecondary,
+    textAlign: 'center',
+  },
+  stateAction: {
+    fontSize: moderateScale(13),
+    fontWeight: '700',
+    marginTop: spacing.xxs,
   },
   card: {
     width: CARD_WIDTH,

@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ActivityIndicator } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -14,7 +14,7 @@ import {
   SearchResultRow,
 } from '@/components/search';
 import { SEARCH_CATEGORIES, TRENDING_SEARCHES, type SearchCategory } from '@/constants/searchCatalog';
-import { useMedicineSearch } from '@/hooks/useMedicineSearch';
+import { useProductSearch } from '@/hooks/useCatalog';
 import { useTabBarScrollHandler } from '@/hooks/useTabBarScrollHandler';
 import { useTheme } from '@/hooks/useTheme';
 import { useVoiceRecognition } from '@/hooks/useVoiceRecognition';
@@ -35,7 +35,7 @@ const SearchScreen = () => {
   const [query, setQuery] = useState('');
   const [history, setHistory] = useState<string[]>([]);
 
-  const results = useMedicineSearch(query);
+  const { data: results, loading: searchLoading } = useProductSearch(query);
   const hasQuery = query.trim().length > 0;
   const tabBarHeight = getTabBarHeight(insets.bottom);
   const tabBarScrollHandler = useTabBarScrollHandler();
@@ -178,6 +178,11 @@ const SearchScreen = () => {
         resultsList: {
           gap: spacing.sm,
         },
+        loadingBox: {
+          paddingVertical: spacing.xxxl,
+          alignItems: 'center',
+          justifyContent: 'center',
+        },
       }),
     [borderRadius, colors, moderateScale, spacing, typography],
   );
@@ -220,7 +225,11 @@ const SearchScreen = () => {
         scrollEventThrottle={16}
       >
         {hasQuery ? (
-          results.length > 0 ? (
+          searchLoading && results.length === 0 ? (
+            <View style={styles.loadingBox}>
+              <ActivityIndicator size="large" color={colors.primary} />
+            </View>
+          ) : results.length > 0 ? (
             <View style={styles.section}>
               <View style={styles.resultsHeader}>
                 <Text style={styles.resultsTitle} numberOfLines={1}>

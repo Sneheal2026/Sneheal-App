@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,7 +9,9 @@ import {
   Dimensions,
 } from 'react-native';
 import theme from '@/styles/theme';
-import { getSimilarMedicines, type Medicine } from '@/constants/medicines';
+import Shimmer from '@/components/common/Shimmer';
+import { useSimilarProducts } from '@/hooks/useCatalog';
+import type { Product } from '@/types/product.types';
 
 const { colors, spacing, moderateScale } = theme;
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -28,7 +30,7 @@ const SimilarCard = ({
   item,
   onPress,
 }: {
-  item: Medicine;
+  item: Product;
   onPress: (id: string) => void;
 }) => (
   <Pressable
@@ -54,23 +56,48 @@ const SimilarCard = ({
   </Pressable>
 );
 
+const SimilarSkeleton = () => (
+  <View style={styles.card}>
+    <View style={styles.imageBox}>
+      <Shimmer width="72%" height="72%" borderRadius={moderateScale(8)} />
+    </View>
+    <View style={styles.info}>
+      <Shimmer width="90%" height={moderateScale(12)} />
+      <View style={{ height: spacing.sm }} />
+      <Shimmer width="50%" height={moderateScale(14)} />
+    </View>
+  </View>
+);
+
 const SimilarItems = ({
   productId,
   onPressItem,
   title = 'Similar items',
   limit = 6,
 }: SimilarItemsProps) => {
-  const items = useMemo(
-    () => getSimilarMedicines(productId, limit),
-    [productId, limit],
-  );
+  const { data: items, loading } = useSimilarProducts(productId, limit);
 
   const renderItem = useCallback(
-    ({ item }: { item: Medicine }) => (
+    ({ item }: { item: Product }) => (
       <SimilarCard item={item} onPress={onPressItem} />
     ),
     [onPressItem],
   );
+
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.title}>{title}</Text>
+        <View style={[styles.list, styles.skeletonRow]}>
+          {[0, 1, 2].map((key) => (
+            <View key={key} style={styles.skeletonItem}>
+              <SimilarSkeleton />
+            </View>
+          ))}
+        </View>
+      </View>
+    );
+  }
 
   if (items.length === 0) return null;
 
@@ -105,6 +132,12 @@ const styles = StyleSheet.create({
   list: {
     paddingVertical: spacing.xs,
     paddingRight: spacing.lg,
+  },
+  skeletonRow: {
+    flexDirection: 'row',
+  },
+  skeletonItem: {
+    marginRight: spacing.md,
   },
   separator: {
     width: spacing.md,

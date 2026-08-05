@@ -4,13 +4,13 @@ import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/hooks/useTheme';
-import type { Medicine } from '@/constants/medicines';
+import type { Product } from '@/types/product.types';
 
 const RATING_GOLD = '#F5A623';
 const DISCOUNT_GREEN = '#1F9D55';
 
 interface SearchResultRowProps {
-  medicine: Medicine;
+  medicine: Product;
   index: number;
   onPress: (id: string) => void;
 }

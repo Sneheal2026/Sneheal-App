@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   View,
   Text,
@@ -26,8 +26,9 @@ import Animated, {
 } from 'react-native-reanimated';
 import theme from '@/styles/theme';
 import type { AuthStackParamList } from '@/navigation/types';
-import { getMedicineById } from '@/constants/medicines';
+import { useProductDetails } from '@/hooks/useCatalog';
 import { SimilarItems } from '@/components/product';
+import Loader from '@/components/common/Loader';
 import { useTranslation } from 'react-i18next';
 
 const { colors, spacing, moderateScale } = theme;
@@ -52,7 +53,7 @@ const ProductDetailsScreen = () => {
   const insets = useSafeAreaInsets();
   const { productId } = route.params;
 
-  const medicine = useMemo(() => getMedicineById(productId), [productId]);
+  const { data: medicine, loading, error, refetch } = useProductDetails(productId);
   const [quantity, setQuantity] = useState(0);
 
   const topInset = Math.max(
@@ -70,13 +71,27 @@ const ProductDetailsScreen = () => {
     [navigation],
   );
 
-  if (!medicine) {
+  if (loading) {
     return (
       <View style={styles.emptyWrap}>
         <ExpoStatusBar style="dark" />
-        <Text style={styles.emptyText}>{t('product.notFound')}</Text>
-        <Pressable onPress={() => navigation.goBack()} style={styles.emptyBtn}>
-          <Text style={styles.emptyBtnText}>{t('product.goBack')}</Text>
+        <Loader message={t('common.loading')} fullScreen={false} />
+      </View>
+    );
+  }
+
+  if (error || !medicine) {
+    return (
+      <View style={styles.emptyWrap}>
+        <ExpoStatusBar style="dark" />
+        <Text style={styles.emptyText}>{error ?? t('product.notFound')}</Text>
+        <Pressable
+          onPress={() => (error ? refetch() : navigation.goBack())}
+          style={styles.emptyBtn}
+        >
+          <Text style={styles.emptyBtnText}>
+            {error ? t('common.retry') : t('product.goBack')}
+          </Text>
         </Pressable>
       </View>
     );

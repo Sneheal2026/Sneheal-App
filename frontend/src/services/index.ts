@@ -24,6 +24,13 @@ export {
   deleteAddressOnApi,
 } from './addressApiService';
 export {
+  fetchProducts,
+  fetchProductById,
+  searchProducts,
+  fetchSimilarProducts,
+  fetchCategories,
+} from './productService';
+export {
   getSavedAddresses,
   getCachedAddresses,
   saveAddress,

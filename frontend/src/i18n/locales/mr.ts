@@ -102,6 +102,7 @@ const mr: TranslationResources = {
     openAccount: 'खाते सेटिंग उघडा',
     searchPrefix: 'शोधा',
     featuredProducts: 'विशेष उत्पादने',
+    noProducts: 'सध्या कोणतीही उत्पादने उपलब्ध नाहीत.',
     categories: 'श्रेणी',
     orderVia: 'किंवा याद्वारे ऑर्डर करा',
     viaWhatsApp: 'व्हाट्सअॅप',

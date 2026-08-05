@@ -103,6 +103,7 @@ const en = {
     openAccount: 'Open account settings',
     searchPrefix: 'Search for',
     featuredProducts: 'Featured Products',
+    noProducts: 'No products available right now.',
     categories: 'Categories',
     orderVia: 'OR YOU CAN ORDER VIA',
     viaWhatsApp: 'WhatsApp',

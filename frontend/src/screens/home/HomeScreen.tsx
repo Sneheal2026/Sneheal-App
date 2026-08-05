@@ -27,7 +27,6 @@ import {
   CategoriesGrid,
   FeaturedProducts,
 } from '@/components/home';
-import { FEATURED_PRODUCTS } from '@/components/home/FeaturedProducts';
 import FloatingCartBar from '@/components/cart/FloatingCartBar';
 import DevResetStorageButton from '@/components/common/DevResetStorageButton';
 import { useTabBarScrollState } from '@/hooks/useTabBarScrollHandler';
@@ -35,6 +34,7 @@ import { useLiveLocation } from '@/hooks/useLiveLocation';
 import { useSavedAddresses } from '@/hooks/useSavedAddresses';
 import { updateTabBarOnScroll } from '@/utils/tabBarScrollWorklet';
 import { useVoiceRecognition } from '@/hooks/useVoiceRecognition';
+import { useFeaturedProducts } from '@/hooks/useCatalog';
 import theme from '@/styles/theme';
 import globalStyles from '@/styles/globalStyles';
 import { useTheme } from '@/hooks/useTheme';
@@ -58,6 +58,12 @@ const HomeScreen = () => {
   const { tabBarOffset, tabBarHeight, lastScrollY } = useTabBarScrollState();
   const scrollEndTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const insets = useSafeAreaInsets();
+  const {
+    data: featuredProducts,
+    loading: featuredLoading,
+    error: featuredError,
+    refetch: refetchFeatured,
+  } = useFeaturedProducts();
   const handleIncrement = useCallback((id: string) => {
     setQuantities((prev) => ({
       ...prev,
@@ -84,8 +90,8 @@ const HomeScreen = () => {
 
   const previewImages = useMemo(
     () =>
-      FEATURED_PRODUCTS.filter((p) => (quantities[p.id] ?? 0) > 0).map((p) => p.image),
-    [quantities],
+      featuredProducts.filter((p) => (quantities[p.id] ?? 0) > 0).map((p) => p.image),
+    [quantities, featuredProducts],
   );
 
   const handleOpenSettings = useCallback(() => {
@@ -298,6 +304,10 @@ const HomeScreen = () => {
             <CategoriesGrid />
             <PromoBanner isScrolling={isScrolling} />
             <FeaturedProducts
+              products={featuredProducts}
+              loading={featuredLoading}
+              error={featuredError}
+              onRetry={refetchFeatured}
               quantities={quantities}
               onIncrement={handleIncrement}
               onDecrement={handleDecrement}
