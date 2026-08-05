@@ -124,7 +124,14 @@ const PhoneNumberScreen = ({ navigation }: AuthScreenProps<'PhoneNumber'>) => {
             {t('auth.termsPrefix')}{' '}
             <Text style={styles.termsLink}>{t('auth.termsOfService')}</Text>
             {' & '}
-            <Text style={styles.termsLink}>{t('auth.privacyPolicy')}</Text>
+            <Text
+              style={styles.termsLink}
+              onPress={() => navigation.navigate('PrivacyPolicy')}
+              accessibilityRole="link"
+              accessibilityLabel={t('auth.privacyPolicy')}
+            >
+              {t('auth.privacyPolicy')}
+            </Text>
           </Text>
         </>
       }

@@ -54,6 +54,7 @@ const HEALTH_ITEMS = [
 const ACCOUNT_ITEMS = [
   { id: 'share', icon: 'share-outline' as const, labelKey: 'settings.shareApp' },
   { id: 'about', icon: 'information-circle-outline' as const, labelKey: 'settings.aboutSneheal' },
+  { id: 'privacy', icon: 'shield-checkmark-outline' as const, labelKey: 'settings.privacyPolicy' },
   { id: 'language', icon: 'language-outline' as const, labelKey: 'settings.languageSettings' },
   { id: 'color', icon: 'color-palette-outline' as const, labelKey: 'settings.colorTheme' },
   { id: 'logout', icon: 'log-out-outline' as const, labelKey: 'settings.logOut', destructive: true },
@@ -99,6 +100,8 @@ const SettingsScreen = () => {
       navigation.navigate('ShareApp' as never);
     } else if (id === 'about') {
       navigation.navigate('AboutSneheal' as never);
+    } else if (id === 'privacy') {
+      navigation.navigate('PrivacyPolicy');
     } else if (id === 'language') {
       navigation.navigate('LanguageSettings');
     } else if (id === 'color') {

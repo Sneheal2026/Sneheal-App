@@ -126,7 +126,7 @@ const en = {
   search: {
     placeholder: 'Search medicines, products...',
     heroTitle: 'Find your medicines',
-    heroSubtitle: 'Trusted care, delivered fast',
+    heroCSubtitle: 'Trusted care, delivered fast',
     recent: 'Recent',
     clear: 'Clear',
     trending: 'Trending now',
@@ -191,6 +191,7 @@ const en = {
     emergencyContacts: 'Emergency contacts',
     shareApp: 'Share the app',
     aboutSneheal: 'About Sneheal',
+    privacyPolicy: 'Privacy Policy',
     languageSettings: 'Language settings',
     colorTheme: 'Color theme',
     logOut: 'Log out',
@@ -269,6 +270,52 @@ const en = {
     valuePrivacy: 'Patient safety and privacy come first',
     valueTechnology: 'Technology that simplifies medicine ordering',
     copyright: '© {{year}} Sneheal. All rights reserved.',
+  },
+  privacy: {
+    title: 'Privacy Policy',
+    introTitle: 'Your privacy matters',
+    lastUpdated: 'Last updated: 5 August 2026',
+    introBody:
+      'This Privacy Policy explains how Sneheal (“we”, “us”, or “our”) collects, uses, stores, and protects your personal data when you use the Sneheal mobile application in India. We process personal data in line with the Digital Personal Data Protection Act, 2023 (DPDP Act) and other applicable Indian laws.',
+    introductionTitle: '1. Who we are',
+    introductionBody:
+      'Sneheal is a healthcare companion app that helps you order medicines, upload prescriptions, set reminders, manage family health details, and receive delivery updates. For privacy questions, contact us at support@sneheal.com.',
+    dataWeCollectTitle: '2. Information we collect',
+    dataWeCollectBody:
+      'Depending on how you use the app, we may collect: (a) Account details — mobile number, OTP verification data, username, preferred language, and role; (b) Delivery & address data — saved addresses, landmarks, receiver name/mobile, and approximate location; (c) Health-related data — prescription images, medicine names from scans, reminders, family member details (name, relationship, age, gender, blood group, allergies, conditions, medicines), and emergency contacts; (d) Order & usage data — cart and order information, device preferences such as language and colour theme; (e) Role-specific data — for delivery partners, identity documents you upload (for example Aadhaar or driving licence images); for doctors, clinic or professional details you provide; (f) Technical data — app version and basic device information needed to run the service securely.',
+    howWeUseTitle: '3. How we use your information',
+    howWeUseBody:
+      'We use your data to: create and manage your account; verify your phone number; process medicine orders and deliveries; scan and review prescriptions; send medicine reminders and notifications you enable; show delivery tracking; personalise language and appearance; provide customer support; improve reliability and prevent fraud or misuse; and comply with legal or regulatory obligations. We process this data with your consent and/or for legitimate uses needed to provide the service you request.',
+    sensitiveHealthTitle: '4. Health and sensitive personal data',
+    sensitiveHealthBody:
+      'Prescriptions, medical history, family health details, and similar information are sensitive. We use this data only to provide healthcare-related features you choose (such as ordering medicines, reminders, or family profiles). We do not sell your health data. Access is limited to authorised personnel and systems needed to fulfil your request (for example pharmacists reviewing a prescription, or delivery partners seeing address details for an order).',
+    devicePermissionsTitle: '5. Device permissions',
+    devicePermissionsBody:
+      'With your permission, the app may access: Location — to set delivery addresses and support tracking; Camera and photos — to capture or upload prescriptions and documents; Microphone — for voice search where available; Notifications — for order updates and medicine reminders. You can deny or revoke these permissions in your device settings. Some features may not work without the related permission.',
+    sharingTitle: '6. When we share information',
+    sharingBody:
+      'We may share limited data with: licensed pharmacy and fulfilment partners to process orders; delivery partners to complete delivery; technology service providers who host or support the app under confidentiality obligations; and authorities when required by Indian law. We do not sell personal data to third parties for marketing.',
+    storageSecurityTitle: '7. Storage and security',
+    storageSecurityBody:
+      'Your data is stored using reasonable technical and organisational safeguards, including access controls and encrypted transmission where applicable. Account tokens and profile data may be stored securely on your device and on our servers. No method of transmission or storage is completely secure; we work continuously to protect your information.',
+    retentionTitle: '8. How long we keep data',
+    retentionBody:
+      'We retain personal data only as long as needed to provide the service, meet legal, tax, or regulatory requirements, resolve disputes, and enforce our policies. You may request deletion of your account data subject to lawful retention needs (for example completed order records).',
+    yourRightsTitle: '9. Your rights (DPDP Act)',
+    yourRightsBody:
+      'As a Data Principal under Indian law, you may have the right to: access your personal data; correct inaccurate or incomplete data; withdraw consent for processing that relies on consent; request erasure of data that is no longer needed, subject to legal exceptions; and raise a grievance with us. To exercise these rights, email support@sneheal.com. We will respond within a reasonable time as required by law.',
+    childrenTitle: '10. Children',
+    childrenBody:
+      'Sneheal is intended for use by adults. If a parent or guardian manages health information for a child or family member, they are responsible for providing accurate details and for having the legal authority to do so. We do not knowingly allow children to create accounts without parental guidance.',
+    changesTitle: '11. Changes to this policy',
+    changesBody:
+      'We may update this Privacy Policy from time to time. The “Last updated” date at the top will change when we do. Continued use of the app after an update means you acknowledge the revised policy. Material changes will be highlighted in the app where appropriate.',
+    contactTitle: '12. Contact and grievance',
+    contactBody:
+      'For privacy requests, data rights, or grievances related to personal data, contact our support team. If you are not satisfied with our response, you may escalate as provided under the Digital Personal Data Protection Act, 2023 and rules framed thereunder.',
+    emailA11y: 'Email privacy support at {{email}}',
+    footerNote:
+      'This policy applies to the Sneheal mobile app in India. It is provided for transparency and does not replace advice from a qualified legal professional.',
   },
   help: {
     title: 'Help & Support',

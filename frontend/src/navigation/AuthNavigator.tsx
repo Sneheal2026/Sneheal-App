@@ -14,6 +14,7 @@ import NotificationsScreen from '@/screens/notifications/NotificationsScreen';
 import HelpAndSupportScreen from '@/screens/settings/HelpAndSupportScreen';
 import ShareAppScreen from '@/screens/settings/ShareAppScreen';
 import AboutSnehealScreen from '@/screens/settings/AboutSnehealScreen';
+import PrivacyPolicyScreen from '@/screens/settings/PrivacyPolicyScreen';
 import DevStorageInspectorScreen from '@/screens/dev/DevStorageInspectorScreen';
 import LanguageSettingsScreen from '@/screens/settings/LanguageSettingsScreen';
 import ColorSettingsScreen from '@/screens/settings/ColorSettingsScreen';
@@ -50,6 +51,7 @@ const AuthNavigator = () => {
       <Stack.Screen name="HelpAndSupport" component={HelpAndSupportScreen} />
       <Stack.Screen name="ShareApp" component={ShareAppScreen} />
       <Stack.Screen name="AboutSneheal" component={AboutSnehealScreen} />
+      <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} />
       <Stack.Screen name="DevStorageInspector" component={DevStorageInspectorScreen} />
       <Stack.Screen name="LanguageSettings" component={LanguageSettingsScreen} />
       <Stack.Screen name="ColorSettings" component={ColorSettingsScreen} />
