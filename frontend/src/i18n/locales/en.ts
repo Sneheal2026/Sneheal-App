@@ -133,6 +133,7 @@ const en = {
     shopByCategory: 'Shop by category',
     resultsFor: 'Results for “{{query}}”',
     resultCount: '{{count}} found',
+    endOfResults: 'End of results',
     noResultsTitle: 'No matches found',
     noResultsSubtitle: 'Check the spelling or browse categories below.',
     browseCta: 'Browse categories',

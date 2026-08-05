@@ -52,3 +52,20 @@ export interface ApiCategory {
 export interface Category extends ApiCategory {
   image: ImageSourcePropType;
 }
+
+/** Paginated list/search payload from catalog APIs. */
+export interface ProductPage {
+  items: Product[];
+  total: number;
+  limit: number;
+  offset: number;
+  hasMore: boolean;
+}
+
+export interface ApiProductPage {
+  items: ApiProduct[];
+  total: number;
+  limit: number;
+  offset: number;
+  hasMore: boolean;
+}

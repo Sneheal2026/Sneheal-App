@@ -56,8 +56,16 @@ const clampInt = (value, fallback, min, max) => {
   return Math.min(Math.max(Math.trunc(num), min), max);
 };
 
+const buildPage = (items, total, limit, offset) => ({
+  items,
+  total,
+  limit,
+  offset,
+  hasMore: offset + items.length < total,
+});
+
 const findMany = async (
-  { featured, categoryId, limit = 50, offset = 0 } = {},
+  { featured, categoryId, limit = 20, offset = 0 } = {},
   connection = db,
 ) => {
   const clauses = ['is_active = 1'];
@@ -72,21 +80,26 @@ const findMany = async (
     params.push(categoryId);
   }
 
-  const safeLimit = clampInt(limit, 50, 1, 100);
+  const whereSql = clauses.join(' AND ');
+  const safeLimit = clampInt(limit, 20, 1, 50);
   const safeOffset = clampInt(offset, 0, 0, 1000000);
 
-  // LIMIT/OFFSET inlined as validated integers: mysql2 prepared statements
-  // reject bound parameters in LIMIT/OFFSET positions.
+  const [countRows] = await connection.execute(
+    `SELECT COUNT(*) AS total FROM products WHERE ${whereSql}`,
+    params,
+  );
+  const total = Number(countRows[0]?.total) || 0;
+
   const [rows] = await connection.execute(
     `SELECT ${PRODUCT_SELECT}
      FROM products
-     WHERE ${clauses.join(' AND ')}
+     WHERE ${whereSql}
      ORDER BY is_featured DESC, rating DESC, name ASC
      LIMIT ${safeLimit} OFFSET ${safeOffset}`,
     params,
   );
 
-  return rows.map(mapProduct);
+  return buildPage(rows.map(mapProduct), total, safeLimit, safeOffset);
 };
 
 const findById = async (id, connection = db) => {
@@ -101,25 +114,38 @@ const findById = async (id, connection = db) => {
   return mapProduct(rows[0]);
 };
 
-const search = async (query, { limit = 30, offset = 0 } = {}, connection = db) => {
+const search = async (query, { limit = 20, offset = 0 } = {}, connection = db) => {
   const term = String(query || '').trim();
-  if (!term) return [];
+  if (!term) {
+    return buildPage([], 0, clampInt(limit, 20, 1, 50), clampInt(offset, 0, 0, 1000000));
+  }
 
   const like = `%${term}%`;
-  const safeLimit = clampInt(limit, 30, 1, 100);
+  const safeLimit = clampInt(limit, 20, 1, 50);
   const safeOffset = clampInt(offset, 0, 0, 1000000);
+
+  // Avoid CAST(uses AS CHAR) — too expensive at 5k+ rows.
+  const whereSql = `
+    is_active = 1
+    AND (
+      name LIKE ?
+      OR manufacturer LIKE ?
+      OR brand_name LIKE ?
+      OR generic_name LIKE ?
+    )
+  `;
+  const whereParams = [like, like, like, like];
+
+  const [countRows] = await connection.execute(
+    `SELECT COUNT(*) AS total FROM products WHERE ${whereSql}`,
+    whereParams,
+  );
+  const total = Number(countRows[0]?.total) || 0;
 
   const [rows] = await connection.execute(
     `SELECT ${PRODUCT_SELECT}
      FROM products
-     WHERE is_active = 1
-       AND (
-         name LIKE ?
-         OR manufacturer LIKE ?
-         OR brand_name LIKE ?
-         OR generic_name LIKE ?
-         OR CAST(uses AS CHAR) LIKE ?
-       )
+     WHERE ${whereSql}
      ORDER BY
        CASE
          WHEN name LIKE ? THEN 0
@@ -130,10 +156,10 @@ const search = async (query, { limit = 30, offset = 0 } = {}, connection = db) =
        rating DESC,
        name ASC
      LIMIT ${safeLimit} OFFSET ${safeOffset}`,
-    [like, like, like, like, like, like, like, like],
+    [...whereParams, like, like, like],
   );
 
-  return rows.map(mapProduct);
+  return buildPage(rows.map(mapProduct), total, safeLimit, safeOffset);
 };
 
 const findSimilar = async (id, { limit = 6 } = {}, connection = db) => {

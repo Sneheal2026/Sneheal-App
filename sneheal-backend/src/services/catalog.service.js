@@ -34,7 +34,13 @@ const searchProducts = async (query, queryParams = {}) => {
   const term = String(query || '').trim();
 
   if (!term) {
-    return [];
+    return {
+      items: [],
+      total: 0,
+      limit: 20,
+      offset: 0,
+      hasMore: false,
+    };
   }
 
   return productRepo.search(term, {

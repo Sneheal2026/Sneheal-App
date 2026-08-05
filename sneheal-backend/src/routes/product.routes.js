@@ -26,13 +26,13 @@ const router = express.Router();
  *         schema: { type: integer }
  *       - in: query
  *         name: limit
- *         schema: { type: integer }
+ *         schema: { type: integer, maximum: 50, default: 20 }
  *       - in: query
  *         name: offset
- *         schema: { type: integer }
+ *         schema: { type: integer, default: 0 }
  *     responses:
  *       200:
- *         description: Products fetched successfully
+ *         description: Paginated products ({ items, total, limit, offset, hasMore })
  */
 router.get('/', asyncHandler(catalogController.listProducts));
 

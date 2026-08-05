@@ -132,6 +132,7 @@ const mr: TranslationResources = {
     shopByCategory: 'श्रेणीनुसार खरेदी',
     resultsFor: '“{{query}}” चे निकाल',
     resultCount: '{{count}} सापडले',
+    endOfResults: 'निकाल संपले',
     noResultsTitle: 'काही सापडले नाही',
     noResultsSubtitle: 'स्पेलिंग तपासा किंवा खालील श्रेणी पहा.',
     browseCta: 'श्रेणी पहा',

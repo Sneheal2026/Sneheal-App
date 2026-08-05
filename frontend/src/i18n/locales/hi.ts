@@ -132,6 +132,7 @@ const hi: TranslationResources = {
     shopByCategory: 'श्रेणी से खरीदें',
     resultsFor: '“{{query}}” के नतीजे',
     resultCount: '{{count}} मिले',
+    endOfResults: 'परिणाम समाप्त',
     noResultsTitle: 'कुछ नहीं मिला',
     noResultsSubtitle: 'स्पेलिंग जाँचें या नीचे श्रेणियाँ देखें।',
     browseCta: 'श्रेणियाँ देखें',

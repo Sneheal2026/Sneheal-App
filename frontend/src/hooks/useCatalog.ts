@@ -4,7 +4,7 @@ import {
   fetchProductById,
   fetchProducts,
   fetchSimilarProducts,
-  searchProducts,
+  searchProductsPage,
 } from '@/services/productService';
 import type { Category, Product } from '@/types/product.types';
 
@@ -15,11 +15,12 @@ interface AsyncState<T> {
 }
 
 const ERROR_MESSAGE = 'Something went wrong. Please try again.';
+const SEARCH_PAGE_SIZE = 20;
 
 const toMessage = (error: unknown): string =>
   error instanceof Error && error.message ? error.message : ERROR_MESSAGE;
 
-/** Featured products for the Home screen. */
+/** Featured products for the Home screen (small capped list). */
 export const useFeaturedProducts = () => {
   const [state, setState] = useState<AsyncState<Product[]>>({
     data: [],
@@ -31,7 +32,7 @@ export const useFeaturedProducts = () => {
   const load = useCallback(async () => {
     setState((prev) => ({ ...prev, loading: true, error: null }));
     try {
-      const products = await fetchProducts({ featured: true });
+      const products = await fetchProducts({ featured: true, limit: 20 });
       if (mounted.current) {
         setState({ data: products, loading: false, error: null });
       }
@@ -123,45 +124,125 @@ export const useSimilarProducts = (productId: string, limit = 6) => {
   return state;
 };
 
-/** Debounced product search. */
+/**
+ * Debounced product search with pagination / load-more.
+ * - Waits `debounceMs` after typing stops before first page fetch
+ * - `loadMore` appends the next page while `hasMore` is true
+ */
 export const useProductSearch = (query: string, debounceMs = 300) => {
-  const [state, setState] = useState<AsyncState<Product[]>>({
-    data: [],
-    loading: false,
-    error: null,
-  });
+  const [items, setItems] = useState<Product[]>([]);
+  const [total, setTotal] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const requestIdRef = useRef(0);
+  const loadingMoreRef = useRef(false);
+  const offsetRef = useRef(0);
+  const hasMoreRef = useRef(false);
 
   useEffect(() => {
     const term = query.trim();
 
     if (!term) {
-      setState({ data: [], loading: false, error: null });
+      requestIdRef.current += 1;
+      setItems([]);
+      setTotal(0);
+      setHasMore(false);
+      hasMoreRef.current = false;
+      offsetRef.current = 0;
+      setLoading(false);
+      setLoadingMore(false);
+      setError(null);
       return;
     }
 
-    let active = true;
-    setState((prev) => ({ ...prev, loading: true, error: null }));
+    const requestId = ++requestIdRef.current;
+    setLoading(true);
+    setError(null);
+    setItems([]);
+    setTotal(0);
+    setHasMore(false);
+    hasMoreRef.current = false;
+    offsetRef.current = 0;
 
     const timer = setTimeout(async () => {
       try {
-        const products = await searchProducts(term);
-        if (active) {
-          setState({ data: products, loading: false, error: null });
-        }
-      } catch (error) {
-        if (active) {
-          setState({ data: [], loading: false, error: toMessage(error) });
-        }
+        const page = await searchProductsPage(term, {
+          limit: SEARCH_PAGE_SIZE,
+          offset: 0,
+        });
+
+        if (requestId !== requestIdRef.current) return;
+
+        setItems(page.items);
+        setTotal(page.total);
+        setHasMore(page.hasMore);
+        hasMoreRef.current = page.hasMore;
+        offsetRef.current = page.items.length;
+        setLoading(false);
+      } catch (err) {
+        if (requestId !== requestIdRef.current) return;
+        setItems([]);
+        setTotal(0);
+        setHasMore(false);
+        hasMoreRef.current = false;
+        offsetRef.current = 0;
+        setLoading(false);
+        setError(toMessage(err));
       }
     }, debounceMs);
 
     return () => {
-      active = false;
       clearTimeout(timer);
     };
   }, [query, debounceMs]);
 
-  return state;
+  const loadMore = useCallback(async () => {
+    const term = query.trim();
+    if (!term || !hasMoreRef.current || loadingMoreRef.current) return;
+
+    loadingMoreRef.current = true;
+    setLoadingMore(true);
+    const requestId = requestIdRef.current;
+
+    try {
+      const page = await searchProductsPage(term, {
+        limit: SEARCH_PAGE_SIZE,
+        offset: offsetRef.current,
+      });
+
+      if (requestId !== requestIdRef.current) return;
+
+      setItems((prev) => {
+        const seen = new Set(prev.map((p) => p.id));
+        const next = page.items.filter((p) => !seen.has(p.id));
+        const merged = [...prev, ...next];
+        offsetRef.current = merged.length;
+        return merged;
+      });
+      setTotal(page.total);
+      setHasMore(page.hasMore);
+      hasMoreRef.current = page.hasMore;
+    } catch (err) {
+      if (requestId !== requestIdRef.current) return;
+      setError(toMessage(err));
+    } finally {
+      loadingMoreRef.current = false;
+      setLoadingMore(false);
+    }
+  }, [query]);
+
+  return {
+    data: items,
+    total,
+    hasMore,
+    loading,
+    loadingMore,
+    error,
+    loadMore,
+  };
 };
 
 /** Active catalog categories. */

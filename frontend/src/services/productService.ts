@@ -3,8 +3,10 @@ import { resolveCatalogImage } from '@/utils/productImage';
 import type {
   ApiCategory,
   ApiProduct,
+  ApiProductPage,
   Category,
   Product,
+  ProductPage,
 } from '@/types/product.types';
 
 const toProduct = (raw: ApiProduct): Product => ({
@@ -19,6 +21,14 @@ const toProduct = (raw: ApiProduct): Product => ({
 const toCategory = (raw: ApiCategory): Category => ({
   ...raw,
   image: resolveCatalogImage(raw.imageUrl),
+});
+
+const toPage = (raw: ApiProductPage): ProductPage => ({
+  items: (raw.items ?? []).map(toProduct),
+  total: Number(raw.total) || 0,
+  limit: Number(raw.limit) || 20,
+  offset: Number(raw.offset) || 0,
+  hasMore: Boolean(raw.hasMore),
 });
 
 const buildQuery = (params: Record<string, string | number | boolean | undefined>): string => {
@@ -40,18 +50,26 @@ export interface FetchProductsParams {
   offset?: number;
 }
 
-export const fetchProducts = async (
+export const fetchProductsPage = async (
   params: FetchProductsParams = {},
-): Promise<Product[]> => {
+): Promise<ProductPage> => {
   const query = buildQuery({
     featured: params.featured ? 'true' : undefined,
     categoryId: params.categoryId,
-    limit: params.limit,
-    offset: params.offset,
+    limit: params.limit ?? 20,
+    offset: params.offset ?? 0,
   });
 
-  const data = await apiRequest<ApiProduct[]>(`/api/products${query}`);
-  return data.map(toProduct);
+  const data = await apiRequest<ApiProductPage>(`/api/products${query}`);
+  return toPage(data);
+};
+
+/** Convenience wrapper — returns only the items array (Home featured, etc.). */
+export const fetchProducts = async (
+  params: FetchProductsParams = {},
+): Promise<Product[]> => {
+  const page = await fetchProductsPage(params);
+  return page.items;
 };
 
 export const fetchProductById = async (id: string): Promise<Product> => {
@@ -59,14 +77,29 @@ export const fetchProductById = async (id: string): Promise<Product> => {
   return toProduct(data);
 };
 
-export const searchProducts = async (query: string): Promise<Product[]> => {
+export const searchProductsPage = async (
+  query: string,
+  params: { limit?: number; offset?: number } = {},
+): Promise<ProductPage> => {
   const term = query.trim();
-  if (!term) return [];
+  if (!term) {
+    return { items: [], total: 0, limit: params.limit ?? 20, offset: 0, hasMore: false };
+  }
 
-  const data = await apiRequest<ApiProduct[]>(
-    `/api/products/search${buildQuery({ q: term })}`,
+  const data = await apiRequest<ApiProductPage>(
+    `/api/products/search${buildQuery({
+      q: term,
+      limit: params.limit ?? 20,
+      offset: params.offset ?? 0,
+    })}`,
   );
-  return data.map(toProduct);
+  return toPage(data);
+};
+
+/** @deprecated Prefer searchProductsPage for pagination. */
+export const searchProducts = async (query: string): Promise<Product[]> => {
+  const page = await searchProductsPage(query);
+  return page.items;
 };
 
 export const fetchSimilarProducts = async (

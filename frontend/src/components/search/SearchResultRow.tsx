@@ -117,8 +117,7 @@ const SearchResultRow: React.FC<SearchResultRowProps> = ({ medicine, index, onPr
     [borderRadius, colors, moderateScale, shadows, spacing, typography],
   );
 
-  return (
-    <Animated.View entering={FadeInDown.delay(index * 40).duration(320)}>
+  const content = (
       <Pressable
         onPress={() => onPress(medicine.id)}
         style={({ pressed }) => [styles.card, pressed && styles.pressed]}
@@ -160,8 +159,18 @@ const SearchResultRow: React.FC<SearchResultRowProps> = ({ medicine, index, onPr
 
         <Ionicons name="chevron-forward" size={moderateScale(18)} color={colors.textMuted} />
       </Pressable>
-    </Animated.View>
   );
+
+  // Only animate the first page of results — avoids lag when paging large catalogs.
+  if (index < 8) {
+    return (
+      <Animated.View entering={FadeInDown.delay(index * 40).duration(320)}>
+        {content}
+      </Animated.View>
+    );
+  }
+
+  return content;
 };
 
 export default SearchResultRow;

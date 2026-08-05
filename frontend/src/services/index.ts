@@ -25,8 +25,10 @@ export {
 } from './addressApiService';
 export {
   fetchProducts,
+  fetchProductsPage,
   fetchProductById,
   searchProducts,
+  searchProductsPage,
   fetchSimilarProducts,
   fetchCategories,
 } from './productService';
