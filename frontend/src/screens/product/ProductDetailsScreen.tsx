@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback } from 'react';
 import {
   View,
   Text,
@@ -19,16 +19,14 @@ import Animated, {
   FadeIn,
   FadeInDown,
   FadeInUp,
-  ZoomIn,
-  useSharedValue,
-  useAnimatedStyle,
-  withSpring,
 } from 'react-native-reanimated';
 import theme from '@/styles/theme';
 import type { AuthStackParamList } from '@/navigation/types';
 import { useProductDetails } from '@/hooks/useCatalog';
+import { useCart } from '@/context/CartContext';
 import { SimilarItems } from '@/components/product';
 import Loader from '@/components/common/Loader';
+import QuantityStepper from '@/components/common/QuantityStepper';
 import { useTranslation } from 'react-i18next';
 
 const { colors, spacing, moderateScale } = theme;
@@ -36,12 +34,7 @@ const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 const HERO_HEIGHT = SCREEN_HEIGHT * 0.34;
 
 const ADD_GREEN = '#1F9D55';
-const ADD_GREEN_DARK = '#188A47';
 const PRICE_BLUE = '#0A74DA';
-
-const SPRING = { damping: 16, stiffness: 320, mass: 0.7 };
-
-const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 type Nav = NativeStackNavigationProp<AuthStackParamList, 'ProductDetails'>;
 type Rt = RouteProp<AuthStackParamList, 'ProductDetails'>;
@@ -54,15 +47,18 @@ const ProductDetailsScreen = () => {
   const { productId } = route.params;
 
   const { data: medicine, loading, error, refetch } = useProductDetails(productId);
-  const [quantity, setQuantity] = useState(0);
+  const { getQuantity, addProduct, decrement } = useCart();
+  const quantity = getQuantity(productId);
 
   const topInset = Math.max(
     insets.top,
     Platform.OS === 'android' ? StatusBar.currentHeight ?? 0 : 0,
   );
 
-  const handleAdd = useCallback(() => setQuantity((q) => q + 1), []);
-  const handleRemove = useCallback(() => setQuantity((q) => Math.max(0, q - 1)), []);
+  const handleAdd = useCallback(() => {
+    if (medicine) addProduct(medicine);
+  }, [medicine, addProduct]);
+  const handleRemove = useCallback(() => decrement(productId), [decrement, productId]);
 
   const openSimilar = useCallback(
     (id: string) => {
@@ -210,51 +206,15 @@ const ProductDetailsScreen = () => {
           <Text style={styles.bottomPriceUnit}>{medicine.unit}</Text>
         </View>
 
-        {quantity === 0 ? (
-          <AddToCartButton onPress={handleAdd} label={t('product.addToCart')} />
-        ) : (
-          <Animated.View entering={ZoomIn.springify().damping(18)} style={styles.stepper}>
-            <Pressable
-              onPress={handleRemove}
-              style={styles.stepBtn}
-              hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-            >
-              <Ionicons name="remove" size={20} color={colors.white} />
-            </Pressable>
-            <Text style={styles.stepQty}>{quantity}</Text>
-            <Pressable
-              onPress={handleAdd}
-              style={styles.stepBtn}
-              hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-            >
-              <Ionicons name="add" size={20} color={colors.white} />
-            </Pressable>
-          </Animated.View>
-        )}
+        <QuantityStepper
+          size="lg"
+          reserveSlot={false}
+          quantity={quantity}
+          onIncrement={handleAdd}
+          onDecrement={handleRemove}
+        />
       </Animated.View>
     </View>
-  );
-};
-
-const AddToCartButton = ({ onPress, label }: { onPress: () => void; label: string }) => {
-  const scale = useSharedValue(1);
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-  }));
-  return (
-    <AnimatedPressable
-      onPress={onPress}
-      onPressIn={() => {
-        scale.value = withSpring(0.96, SPRING);
-      }}
-      onPressOut={() => {
-        scale.value = withSpring(1, SPRING);
-      }}
-      style={[styles.addToCart, animatedStyle]}
-    >
-      <Ionicons name="cart" size={18} color={colors.white} />
-      <Text style={styles.addToCartText}>{label}</Text>
-    </AnimatedPressable>
   );
 };
 
@@ -456,8 +416,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: spacing.xl,
     paddingTop: spacing.md,
+    minHeight: moderateScale(64),
     backgroundColor: colors.white,
     borderTopWidth: 1,
     borderTopColor: colors.borderLight,
@@ -472,7 +433,10 @@ const styles = StyleSheet.create({
     }),
   },
   bottomPrice: {
-    flexShrink: 1,
+    flex: 1,
+    minWidth: 0,
+    paddingRight: spacing.md,
+    justifyContent: 'center',
   },
   bottomPriceValue: {
     fontSize: moderateScale(20),
@@ -482,51 +446,6 @@ const styles = StyleSheet.create({
   bottomPriceUnit: {
     fontSize: moderateScale(11),
     color: colors.textSecondary,
-  },
-  addToCart: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-    backgroundColor: ADD_GREEN,
-    paddingHorizontal: spacing.xxl,
-    paddingVertical: spacing.md,
-    borderRadius: theme.borderRadius.full,
-    ...Platform.select({
-      ios: {
-        shadowColor: ADD_GREEN,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-      },
-      android: { elevation: 4 },
-    }),
-  },
-  addToCartText: {
-    color: colors.white,
-    fontSize: moderateScale(15),
-    fontWeight: '700',
-  },
-  stepper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: ADD_GREEN,
-    borderRadius: theme.borderRadius.full,
-    paddingHorizontal: spacing.sm,
-  },
-  stepBtn: {
-    width: moderateScale(40),
-    height: moderateScale(44),
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  stepQty: {
-    minWidth: moderateScale(34),
-    textAlign: 'center',
-    color: colors.white,
-    fontSize: moderateScale(17),
-    fontWeight: '800',
-    fontVariant: ['tabular-nums'],
   },
 });
 

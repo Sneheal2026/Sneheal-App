@@ -11,3 +11,4 @@ export {
 export { useNetworkStatus } from './useNetworkStatus';
 export { useTheme } from './useTheme';
 export { useLanguage } from '@/context/LanguageContext';
+export { useCart } from '@/context/CartContext';

@@ -5,14 +5,12 @@ import {
   StyleSheet,
   Image,
   ImageSourcePropType,
-  Pressable,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import theme from '@/styles/theme';
+import QuantityStepper from '@/components/common/QuantityStepper';
 
 const { colors, spacing, typography, borderRadius, moderateScale, shadows } = theme;
 
-const ADD_GREEN = '#1F9D55';
 const ADD_GREEN_LIGHT = '#E8F7EE';
 
 interface CartItemRowProps {
@@ -58,27 +56,11 @@ const CartItemRow = ({
         </View>
       </View>
 
-      <View style={styles.stepper}>
-        <Pressable
-          onPress={onDecrement}
-          style={({ pressed }) => [styles.stepBtn, pressed && styles.stepBtnPressed]}
-          hitSlop={6}
-        >
-          <Ionicons name="remove" size={15} color={ADD_GREEN} />
-        </Pressable>
-        <Text style={styles.qty}>{quantity}</Text>
-        <Pressable
-          onPress={onIncrement}
-          style={({ pressed }) => [
-            styles.stepBtn,
-            styles.stepBtnAdd,
-            pressed && styles.stepBtnAddPressed,
-          ]}
-          hitSlop={6}
-        >
-          <Ionicons name="add" size={15} color={colors.white} />
-        </Pressable>
-      </View>
+      <QuantityStepper
+        quantity={quantity}
+        onIncrement={onIncrement ?? (() => undefined)}
+        onDecrement={onDecrement ?? (() => undefined)}
+      />
     </View>
   );
 };
@@ -86,7 +68,7 @@ const CartItemRow = ({
 const styles = StyleSheet.create({
   card: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     backgroundColor: colors.white,
     borderRadius: borderRadius.lg,
     padding: spacing.md,
@@ -112,7 +94,6 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
     gap: 2,
-    paddingTop: 2,
   },
   name: {
     ...typography.bodySmall,
@@ -139,38 +120,6 @@ const styles = StyleSheet.create({
     ...typography.caption,
     color: colors.textMuted,
     textDecorationLine: 'line-through',
-  },
-  stepper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: borderRadius.md,
-    borderWidth: 1.5,
-    borderColor: ADD_GREEN,
-    overflow: 'hidden',
-    alignSelf: 'center',
-  },
-  stepBtn: {
-    width: 28,
-    height: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.white,
-  },
-  stepBtnPressed: {
-    backgroundColor: ADD_GREEN_LIGHT,
-  },
-  stepBtnAdd: {
-    backgroundColor: ADD_GREEN,
-  },
-  stepBtnAddPressed: {
-    backgroundColor: '#188A47',
-  },
-  qty: {
-    minWidth: 22,
-    textAlign: 'center',
-    fontSize: moderateScale(13, 0.35),
-    fontWeight: '700',
-    color: colors.textPrimary,
   },
 });
 

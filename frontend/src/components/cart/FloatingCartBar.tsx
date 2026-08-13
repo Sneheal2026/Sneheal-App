@@ -45,8 +45,6 @@ const FloatingCartBar = ({ totalItems, previewImages, onPress }: FloatingCartBar
 
   if (totalItems === 0) return null;
 
-  const itemLabel = totalItems === 1 ? '1 item' : `${totalItems} items`;
-
   return (
     <Animated.View style={[styles.wrapper, wrapperStyle]}>
       <Pressable
@@ -69,8 +67,8 @@ const FloatingCartBar = ({ totalItems, previewImages, onPress }: FloatingCartBar
         </View>
 
         <View style={styles.textBlock}>
-          <Text style={styles.title}>View cart</Text>
-          <Text style={styles.subtitle}>{itemLabel}</Text>
+          <Text style={styles.title}>{t('cart.viewCart')}</Text>
+          <Text style={styles.subtitle}>{t('cart.itemCount', { count: totalItems })}</Text>
         </View>
 
         <Ionicons name="chevron-forward" size={18} color={colors.white} />

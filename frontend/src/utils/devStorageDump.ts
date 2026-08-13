@@ -58,6 +58,11 @@ const KNOWN_SECTIONS: KnownSectionDef[] = [
     keys: [{ key: '@sneheal/familyMembers', label: 'Members' }],
   },
   {
+    id: 'cart',
+    title: 'Cart',
+    keys: [{ key: '@sneheal/cart', label: 'Cart lines' }],
+  },
+  {
     id: 'preferences',
     title: 'App Preferences',
     keys: [

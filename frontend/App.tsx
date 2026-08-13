@@ -6,6 +6,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import NetworkGate from './src/components/common/NetworkGate';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
+import { CartProvider } from './src/context/CartContext';
 import { LanguageProvider } from './src/context/LanguageContext';
 import { ThemeProvider } from './src/context/ThemeContext';
 import RootNavigator from './src/navigation/RootNavigator';
@@ -69,7 +70,9 @@ export default function App() {
           <LanguageProvider>
             <NetworkGate>
               <AuthProvider>
-                <AppNavigation />
+                <CartProvider>
+                  <AppNavigation />
+                </CartProvider>
               </AuthProvider>
             </NetworkGate>
           </LanguageProvider>

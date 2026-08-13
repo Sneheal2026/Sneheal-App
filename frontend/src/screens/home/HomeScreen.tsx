@@ -35,6 +35,8 @@ import { useSavedAddresses } from '@/hooks/useSavedAddresses';
 import { updateTabBarOnScroll } from '@/utils/tabBarScrollWorklet';
 import { useVoiceRecognition } from '@/hooks/useVoiceRecognition';
 import { useFeaturedProducts } from '@/hooks/useCatalog';
+import { useCart } from '@/context/CartContext';
+import { resolveCatalogImage } from '@/utils/productImage';
 import theme from '@/styles/theme';
 import globalStyles from '@/styles/globalStyles';
 import { useTheme } from '@/hooks/useTheme';
@@ -51,7 +53,6 @@ const HomeScreen = () => {
   const navigation = useNavigation();
   const { colors } = useTheme();
   const [searchQuery, setSearchQuery] = useState('');
-  const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [isScrolling, setIsScrolling] = useState(false);
   const [stickyHeaderActive, setStickyHeaderActive] = useState(false);
   const scrollY = useSharedValue(0);
@@ -64,34 +65,34 @@ const HomeScreen = () => {
     error: featuredError,
     refetch: refetchFeatured,
   } = useFeaturedProducts();
-  const handleIncrement = useCallback((id: string) => {
-    setQuantities((prev) => ({
-      ...prev,
-      [id]: (prev[id] ?? 0) + 1,
-    }));
-  }, []);
+  const { lines, totalItems, addProduct, decrement } = useCart();
 
-  const handleDecrement = useCallback((id: string) => {
-    setQuantities((prev) => {
-      const current = prev[id] ?? 0;
-      if (current <= 1) {
-        const next = { ...prev };
-        delete next[id];
-        return next;
-      }
-      return { ...prev, [id]: current - 1 };
-    });
-  }, []);
+  const quantities = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const line of lines) {
+      map[line.productId] = line.quantity;
+    }
+    return map;
+  }, [lines]);
 
-  const totalItems = useMemo(
-    () => Object.values(quantities).reduce((sum, qty) => sum + qty, 0),
-    [quantities],
+  const handleIncrement = useCallback(
+    (id: string) => {
+      const product = featuredProducts.find((item) => item.id === id);
+      if (product) addProduct(product);
+    },
+    [featuredProducts, addProduct],
+  );
+
+  const handleDecrement = useCallback(
+    (id: string) => {
+      decrement(id);
+    },
+    [decrement],
   );
 
   const previewImages = useMemo(
-    () =>
-      featuredProducts.filter((p) => (quantities[p.id] ?? 0) > 0).map((p) => p.image),
-    [quantities, featuredProducts],
+    () => lines.map((line) => resolveCatalogImage(line.imageUrl)),
+    [lines],
   );
 
   const handleOpenSettings = useCallback(() => {

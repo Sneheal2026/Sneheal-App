@@ -10,26 +10,14 @@ import {
   Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, {
-  FadeOut,
-  ZoomIn,
-  LinearTransition,
-  useSharedValue,
-  useAnimatedStyle,
-  withSpring,
-} from 'react-native-reanimated';
 import { useTranslation } from 'react-i18next';
 import theme from '@/styles/theme';
 import { useTheme } from '@/hooks/useTheme';
 import Shimmer from '@/components/common/Shimmer';
+import QuantityStepper from '@/components/common/QuantityStepper';
 import type { Product } from '@/types/product.types';
 
 export type { Product } from '@/types/product.types';
-
-const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
-
-const SPRING_PRESS = { damping: 18, stiffness: 420, mass: 0.6 };
-const SPRING_LAYOUT = { damping: 22, stiffness: 320, mass: 0.8 };
 
 const { colors, spacing, moderateScale, device } = theme;
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -39,108 +27,6 @@ const CARD_WIDTH = device.isSmallDevice
   : SCREEN_WIDTH * 0.42;
 const CARD_MARGIN = spacing.md;
 const ADD_BTN_SIZE = moderateScale(34, 0.35);
-const ACTION_SLOT_WIDTH = moderateScale(92, 0.35);
-const INNER_BTN = ADD_BTN_SIZE - moderateScale(6, 0.35);
-
-const ADD_GREEN = '#1F9D55';
-const ADD_GREEN_LIGHT = '#E8F7EE';
-const ADD_GREEN_DARK = '#188A47';
-const BTN_SIZE = INNER_BTN;
-
-interface ScalePressableProps {
-  onPress: () => void;
-  style?: object | object[];
-  hitSlop?: { top: number; bottom: number; left: number; right: number };
-  children: React.ReactNode;
-}
-
-const ScalePressable = ({ onPress, style, hitSlop, children }: ScalePressableProps) => {
-  const scale = useSharedValue(1);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-  }));
-
-  return (
-    <AnimatedPressable
-      onPress={onPress}
-      onPressIn={() => {
-        scale.value = withSpring(0.9, SPRING_PRESS);
-      }}
-      onPressOut={() => {
-        scale.value = withSpring(1, SPRING_PRESS);
-      }}
-      hitSlop={hitSlop}
-      style={[style, animatedStyle]}
-    >
-      {children}
-    </AnimatedPressable>
-  );
-};
-
-interface QuantityStepperProps {
-  quantity: number;
-  onIncrement: () => void;
-  onDecrement: () => void;
-}
-
-const QuantityStepper = ({ quantity, onIncrement, onDecrement }: QuantityStepperProps) => (
-  <Animated.View
-    layout={LinearTransition.springify()
-      .damping(SPRING_LAYOUT.damping)
-      .stiffness(SPRING_LAYOUT.stiffness)
-      .mass(SPRING_LAYOUT.mass)}
-    style={styles.actionSlot}
-  >
-    {quantity === 0 ? (
-      <Animated.View
-        entering={ZoomIn.springify().damping(20).stiffness(340)}
-        exiting={FadeOut.duration(140)}
-        style={styles.addBtnWrap}
-      >
-        <ScalePressable
-          onPress={onIncrement}
-          style={styles.addBtn}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        >
-          <Ionicons name="add" size={moderateScale(19, 0.35)} color={colors.white} />
-        </ScalePressable>
-      </Animated.View>
-    ) : (
-      <Animated.View
-        entering={ZoomIn.springify().damping(20).stiffness(340)}
-        exiting={FadeOut.duration(140)}
-        style={styles.qtyCounter}
-      >
-        <ScalePressable
-          onPress={onDecrement}
-          style={styles.qtyBtnMinus}
-          hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-        >
-          <Ionicons name="remove" size={moderateScale(14, 0.35)} color={ADD_GREEN} />
-        </ScalePressable>
-
-        <View style={styles.qtyValueWrap}>
-          <Animated.Text
-            key={quantity}
-            entering={ZoomIn.springify().damping(22).stiffness(380)}
-            style={styles.qtyText}
-          >
-            {quantity}
-          </Animated.Text>
-        </View>
-
-        <ScalePressable
-          onPress={onIncrement}
-          style={styles.qtyBtnPlus}
-          hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-        >
-          <Ionicons name="add" size={moderateScale(14, 0.35)} color={colors.white} />
-        </ScalePressable>
-      </Animated.View>
-    )}
-  </Animated.View>
-);
 
 interface ProductCardProps {
   item: Product;
@@ -409,105 +295,6 @@ const styles = StyleSheet.create({
     textDecorationLine: 'line-through',
     lineHeight: moderateScale(15, 0.35),
     marginTop: 2,
-  },
-  actionSlot: {
-    width: ACTION_SLOT_WIDTH,
-    height: ADD_BTN_SIZE,
-    alignItems: 'flex-end',
-    justifyContent: 'center',
-    flexShrink: 0,
-    zIndex: 20,
-    elevation: 20,
-  },
-  addBtnWrap: {
-    width: ADD_BTN_SIZE,
-    height: ADD_BTN_SIZE,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  addBtn: {
-    width: ADD_BTN_SIZE,
-    height: ADD_BTN_SIZE,
-    borderRadius: ADD_BTN_SIZE / 2,
-    backgroundColor: ADD_GREEN,
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...Platform.select({
-      ios: {
-        shadowColor: ADD_GREEN,
-        shadowOffset: { width: 0, height: 3 },
-        shadowOpacity: 0.3,
-        shadowRadius: 5,
-      },
-      android: {
-        elevation: 4,
-      },
-    }),
-  },
-  qtyCounter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    width: ACTION_SLOT_WIDTH,
-    height: ADD_BTN_SIZE,
-    backgroundColor: ADD_GREEN_LIGHT,
-    borderRadius: ADD_BTN_SIZE / 2,
-    paddingHorizontal: moderateScale(3, 0.35),
-    borderWidth: 1,
-    borderColor: 'rgba(31, 157, 85, 0.15)',
-  },
-  qtyBtnMinus: {
-    width: BTN_SIZE,
-    height: BTN_SIZE,
-    borderRadius: BTN_SIZE / 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.white,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.06,
-        shadowRadius: 2,
-      },
-      android: {
-        elevation: 1,
-      },
-    }),
-  },
-  qtyBtnPlus: {
-    width: BTN_SIZE,
-    height: BTN_SIZE,
-    borderRadius: BTN_SIZE / 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: ADD_GREEN,
-    ...Platform.select({
-      ios: {
-        shadowColor: ADD_GREEN_DARK,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.25,
-        shadowRadius: 3,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
-  },
-  qtyValueWrap: {
-    flex: 1,
-    height: BTN_SIZE,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  qtyText: {
-    textAlign: 'center',
-    fontSize: moderateScale(13, 0.35),
-    fontWeight: '800',
-    color: ADD_GREEN_DARK,
-    fontVariant: ['tabular-nums'],
-    lineHeight: moderateScale(16, 0.35),
-    includeFontPadding: false,
   },
 });
 
