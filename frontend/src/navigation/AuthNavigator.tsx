@@ -8,6 +8,8 @@ import DeliveryNavigationScreen from '@/screens/delivery/DeliveryNavigationScree
 import CustomerTrackingScreen from '@/screens/tracking/CustomerTrackingScreen';
 import DoctorHomeScreen from '@/screens/doctor/DoctorHomeScreen';
 import PatientDetailsScreen from '@/screens/doctor/PatientDetailsScreen';
+import OrderPlacedScreen from '@/screens/orders/OrderPlacedScreen';
+import OrderDetailScreen from '@/screens/orders/OrderDetailScreen';
 import AppNavigator from './AppNavigator';
 import SettingsScreen from '@/screens/settings/SettingsScreen';
 import NotificationsScreen from '@/screens/notifications/NotificationsScreen';
@@ -69,6 +71,12 @@ const AuthNavigator = () => {
       <Stack.Screen name="DeliveryNavigation" component={DeliveryNavigationScreen} />
       <Stack.Screen name="DoctorMain" component={DoctorHomeScreen} />
       <Stack.Screen name="PatientDetails" component={PatientDetailsScreen} />
+      <Stack.Screen
+        name="OrderPlaced"
+        component={OrderPlacedScreen}
+        options={{ gestureEnabled: false, animation: 'fade' }}
+      />
+      <Stack.Screen name="OrderDetail" component={OrderDetailScreen} />
     </Stack.Navigator>
   );
 };

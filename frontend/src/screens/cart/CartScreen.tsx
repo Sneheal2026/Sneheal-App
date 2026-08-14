@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   Image,
   ScrollView,
   Pressable,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
@@ -13,12 +14,16 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ScreenHeader from '@/components/common/ScreenHeader';
-import { CartBilling, CartItemRow, type BillLine } from '@/components/cart';
+import { CartBilling, CartItemRow, RazorpayCheckoutModal, type BillLine } from '@/components/cart';
 import { useCart } from '@/context/CartContext';
+import { useAuth } from '@/context/AuthContext';
 import { useSavedAddresses } from '@/hooks/useSavedAddresses';
 import { computeCartBill, formatInr } from '@/utils/cartBilling';
 import { resolveCatalogImage } from '@/utils/productImage';
 import { getTabBarHeight } from '@/navigation/tabBarConfig';
+import { createCheckoutOrder, seedOrderInCache, verifyPayment } from '@/services/orderService';
+import { ApiError } from '@/services/apiClient';
+import type { CheckoutSession, RazorpaySuccessPayload } from '@/types/order.types';
 import type { AuthStackParamList, TabScreenProps } from '@/navigation/types';
 import theme from '@/styles/theme';
 
@@ -33,8 +38,17 @@ const CartScreen = ({ navigation: tabNavigation }: TabScreenProps<'Cart'>) => {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const tabBarHeight = getTabBarHeight(insets.bottom);
-  const { lines, totalItems, increment, decrement } = useCart();
+  const { lines, totalItems, increment, decrement, clearCart } = useCart();
+  const { user } = useAuth();
+  const checkoutPrefill = useMemo(
+    () => ({ name: user?.username, contact: user?.phone }),
+    [user?.phone, user?.username],
+  );
   const { selectedAddress, addresses, refresh } = useSavedAddresses();
+  const [submitting, setSubmitting] = useState(false);
+  const [verifying, setVerifying] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [checkout, setCheckout] = useState<CheckoutSession | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -108,10 +122,69 @@ const CartScreen = ({ navigation: tabNavigation }: TabScreenProps<'Cart'>) => {
     tabNavigation.navigate('Home');
   }, [tabNavigation]);
 
+  const onProceed = useCallback(async () => {
+    if (submitting || verifying) return;
+    setError(null);
+
+    if (!selectedAddress) {
+      openAddresses();
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const session = await createCheckoutOrder(
+        selectedAddress.id,
+        lines.map((line) => ({ productId: line.productId, quantity: line.quantity })),
+      );
+      setCheckout(session);
+    } catch (err) {
+      const message =
+        err instanceof ApiError ? err.message : t('cart.checkoutFailed');
+      setError(message);
+    } finally {
+      setSubmitting(false);
+    }
+  }, [lines, openAddresses, selectedAddress, submitting, t, verifying]);
+
+  const onCheckoutClose = useCallback(() => {
+    setCheckout(null);
+  }, []);
+
+  const onCheckoutSuccess = useCallback(
+    async (payload: RazorpaySuccessPayload) => {
+      if (!checkout) return;
+      const session = checkout;
+      setCheckout(null);
+      setVerifying(true);
+      setError(null);
+      try {
+        const order = await verifyPayment(session.id, payload);
+        seedOrderInCache(order);
+        clearCart();
+        const parent = navigation.getParent<NativeStackNavigationProp<AuthStackParamList>>();
+        parent?.replace('OrderPlaced', {
+          orderId: order.id,
+          publicId: order.publicId,
+          grandTotal: order.grandTotal,
+        });
+      } catch (err) {
+        const message =
+          err instanceof ApiError ? err.message : t('cart.verifyFailed');
+        setError(message);
+      } finally {
+        setVerifying(false);
+      }
+    },
+    [checkout, clearCart, navigation, t],
+  );
+
   const subtitle =
     totalItems > 0
       ? t('cart.itemCount', { count: totalItems })
       : t('cart.subtitle');
+
+  const proceedBusy = submitting || verifying;
 
   return (
     <View style={styles.root}>
@@ -182,20 +255,46 @@ const CartScreen = ({ navigation: tabNavigation }: TabScreenProps<'Cart'>) => {
               grandTotal={bill.grandTotal}
             />
 
+            {error ? <Text style={styles.errorText}>{error}</Text> : null}
+
             <View style={styles.checkoutBar}>
               <View>
                 <Text style={styles.checkoutKicker}>{t('cart.toPay')}</Text>
                 <Text style={styles.checkoutTotal}>{formatInr(bill.grandTotal)}</Text>
               </View>
               <Pressable
-                style={({ pressed }) => [styles.proceedBtn, pressed && styles.pressed]}
+                onPress={() => {
+                  void onProceed();
+                }}
+                disabled={proceedBusy}
+                style={({ pressed }) => [
+                  styles.proceedBtn,
+                  pressed && styles.pressed,
+                  proceedBusy && styles.proceedDisabled,
+                ]}
               >
-                <Text style={styles.proceedText}>{t('cart.proceed')}</Text>
-                <Ionicons name="arrow-forward" size={16} color={colors.white} />
+                {proceedBusy ? (
+                  <ActivityIndicator color={colors.white} size="small" />
+                ) : (
+                  <>
+                    <Text style={styles.proceedText}>{t('cart.proceed')}</Text>
+                    <Ionicons name="arrow-forward" size={16} color={colors.white} />
+                  </>
+                )}
               </Pressable>
             </View>
           </ScrollView>
       )}
+
+      <RazorpayCheckoutModal
+        visible={Boolean(checkout) && !verifying}
+        session={checkout}
+        prefill={checkoutPrefill}
+        onSuccess={(payload) => {
+          void onCheckoutSuccess(payload);
+        }}
+        onClose={onCheckoutClose}
+      />
     </View>
   );
 };
@@ -298,6 +397,11 @@ const styles = StyleSheet.create({
   itemsList: {
     gap: spacing.sm,
   },
+  errorText: {
+    ...typography.bodySmall,
+            color: colors.error,
+    fontWeight: '600',
+  },
   checkoutBar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -329,6 +433,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xl,
     borderRadius: borderRadius.lg,
     gap: spacing.xs,
+    minWidth: 120,
+    justifyContent: 'center',
+  },
+  proceedDisabled: {
+    opacity: 0.7,
   },
   proceedText: {
     ...typography.bodySmall,

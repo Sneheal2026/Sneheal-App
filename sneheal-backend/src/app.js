@@ -12,9 +12,13 @@ const prescriptionRoutes = require('./routes/prescription.routes');
 const addressRoutes = require('./routes/address.routes');
 const productRoutes = require('./routes/product.routes');
 const categoryRoutes = require('./routes/category.routes');
+const orderRoutes = require('./routes/order.routes');
+const paymentRoutes = require('./routes/payment.routes');
+const paymentController = require('./controllers/payment.controller');
 const { authLimiter } = require('./middleware/rateLimiter');
 const errorHandler = require('./middleware/errorHandler');
 const { success } = require('./utils/response');
+const asyncHandler = require('./utils/asyncHandler');
 
 validateEnv();
 
@@ -27,6 +31,11 @@ app.use(
   })
 );
 app.use(cors());
+app.post(
+  '/api/payments/webhook',
+  express.raw({ type: 'application/json' }),
+  asyncHandler(paymentController.handleWebhook),
+);
 app.use(express.json({ limit: '10mb' }));
 
 if (process.env.NODE_ENV !== 'production') {
@@ -47,6 +56,8 @@ app.use('/api/prescriptions', prescriptionRoutes);
 app.use('/api/addresses', addressRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/categories', categoryRoutes);
+app.use('/api/orders', orderRoutes);
+app.use('/api/payments', paymentRoutes);
 
 app.use((_req, res) => {
   return res.status(404).json({ success: false, message: 'Route not found' });

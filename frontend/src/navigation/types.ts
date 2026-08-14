@@ -1,3 +1,4 @@
+import type { NavigatorScreenParams } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import type { AddressDraft, SavedAddress } from '@/types/location.types';
@@ -6,12 +7,20 @@ import type { AddressDraft, SavedAddress } from '@/types/location.types';
 export type AppLanguage = 'ENGLISH' | 'HINDI' | 'MARATHI';
 export type UserRole = 'customer' | 'delivery_agent' | 'doctor';
 
+export type TabParamList = {
+  Home: undefined;
+  Search: undefined;
+  Scan: undefined;
+  Cart: undefined;
+  Orders: undefined;
+};
+
 // ── Auth Stack ──────────────────────────────────────────────────
 export type AuthStackParamList = {
   PhoneNumber: undefined;
   Otp: { phoneNumber: string; devOtp?: string };
   Registration: { phoneNumber: string };
-  Main: undefined;
+  Main: NavigatorScreenParams<TabParamList> | undefined;
   Settings: undefined;
   Notifications: undefined;
   HelpAndSupport: undefined;
@@ -47,15 +56,8 @@ export type AuthStackParamList = {
   };
   DoctorMain: undefined;
   PatientDetails: { patientId: string };
-};
-
-// ── App Tabs ──────────────────────────────────────────────────
-export type TabParamList = {
-  Home: undefined;
-  Search: undefined;
-  Scan: undefined;
-  Cart: undefined;
-  Orders: undefined;
+  OrderPlaced: { orderId: string; publicId: string; grandTotal: number };
+  OrderDetail: { orderId: string };
 };
 
 // ── App Stack ──────────────────────────────────────────────────

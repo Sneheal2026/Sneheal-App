@@ -18,6 +18,7 @@ import {
 } from '@/services/authTokenManager';
 import { buildAuthInitialState } from '@/navigation/buildAuthInitialState';
 import { resolveAuthRoute } from '@/navigation/resolveAuthRoute';
+import { invalidateOrdersCache } from '@/services/orderService';
 import { devLog } from '@/utils/devLogger';
 import type { AuthUser, VerifyOtpResponse } from '@/types/auth';
 
@@ -107,6 +108,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, [applySession]);
 
   const signOut = useCallback(async () => {
+    invalidateOrdersCache();
     await clearAuthSession();
     applySession(null);
     devLog('Auth', 'Signed out');

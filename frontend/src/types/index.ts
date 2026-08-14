@@ -36,6 +36,14 @@ export { mapSpeechError, mapPermissionError } from './speech.types';
 
 export type { CartLine } from './cart.types';
 export { MAX_CART_QTY, productToCartLine } from './cart.types';
+export type {
+  CheckoutSession,
+  OrderListItem,
+  OrderDetail,
+  OrderBill,
+  OrderStatus,
+  PaymentStatus,
+} from './order.types';
 
 export type {
   LocationStatus,

@@ -1,7 +1,5 @@
-import type { CartLine } from '@/types/cart.types';
-
-/** Dummy fee values for the cart bill until live pricing APIs exist.
- *  Keep in sync with sneheal-backend/src/services/cartBilling.service.js
+/**
+ * Keep fee rules in sync with frontend/src/utils/cartBilling.ts
  */
 const HANDLING_FEE = 9;
 const DELIVERY_FEE = 29;
@@ -9,26 +7,10 @@ const PROMO_DISCOUNT = 10;
 const FREE_DELIVERY_MIN = 199;
 const GST_RATE = 0.18;
 
-const toPaise = (amount: number) => Math.round(amount * 100);
-const fromPaise = (paise: number) => paise / 100;
+const toPaise = (amount) => Math.round(Number(amount) * 100);
+const fromPaise = (paise) => Number(paise) / 100;
 
-export const formatInr = (amount: number) => `₹${amount.toFixed(2)}`;
-
-export interface CartBill {
-  itemMrp: number;
-  itemSelling: number;
-  itemDiscount: number;
-  promoDiscount: number;
-  handlingFee: number;
-  deliveryFee: number;
-  deliveryOriginal: number;
-  deliveryFree: boolean;
-  gstOnFees: number;
-  grandTotal: number;
-  savings: number;
-}
-
-export const computeCartBill = (lines: CartLine[]): CartBill => {
+const computeCartBill = (lines) => {
   let itemMrpPaise = 0;
   let itemSellingPaise = 0;
 
@@ -56,6 +38,17 @@ export const computeCartBill = (lines: CartLine[]): CartBill => {
     itemDiscountPaise + promoPaise + (deliveryFree ? deliveryOriginalPaise : 0);
 
   return {
+    itemMrpPaise,
+    itemSellingPaise,
+    itemDiscountPaise,
+    promoPaise,
+    handlingPaise,
+    deliveryPaise,
+    deliveryOriginalPaise,
+    deliveryFree,
+    gstPaise,
+    grandTotalPaise,
+    savingsPaise,
     itemMrp: fromPaise(itemMrpPaise),
     itemSelling: fromPaise(itemSellingPaise),
     itemDiscount: fromPaise(itemDiscountPaise),
@@ -63,9 +56,14 @@ export const computeCartBill = (lines: CartLine[]): CartBill => {
     handlingFee: fromPaise(handlingPaise),
     deliveryFee: fromPaise(deliveryPaise),
     deliveryOriginal: fromPaise(deliveryOriginalPaise),
-    deliveryFree,
     gstOnFees: fromPaise(gstPaise),
     grandTotal: fromPaise(grandTotalPaise),
     savings: fromPaise(savingsPaise),
   };
+};
+
+module.exports = {
+  toPaise,
+  fromPaise,
+  computeCartBill,
 };

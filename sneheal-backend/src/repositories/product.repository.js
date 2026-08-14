@@ -114,6 +114,21 @@ const findById = async (id, connection = db) => {
   return mapProduct(rows[0]);
 };
 
+const findByIds = async (ids, connection = db) => {
+  const uniqueIds = [...new Set((ids || []).map((id) => String(id)).filter(Boolean))];
+  if (uniqueIds.length === 0) return [];
+
+  const placeholders = uniqueIds.map(() => '?').join(',');
+  const [rows] = await connection.execute(
+    `SELECT ${PRODUCT_SELECT}
+     FROM products
+     WHERE is_active = 1 AND id IN (${placeholders})`,
+    uniqueIds,
+  );
+
+  return rows.map(mapProduct);
+};
+
 const search = async (query, { limit = 20, offset = 0 } = {}, connection = db) => {
   const term = String(query || '').trim();
   if (!term) {
@@ -198,6 +213,7 @@ const findSimilar = async (id, { limit = 6 } = {}, connection = db) => {
 module.exports = {
   findMany,
   findById,
+  findByIds,
   search,
   findSimilar,
 };

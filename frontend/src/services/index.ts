@@ -24,6 +24,15 @@ export {
   deleteAddressOnApi,
 } from './addressApiService';
 export {
+  createCheckoutOrder,
+  fetchOrders,
+  fetchOrderById,
+  verifyPayment,
+  peekOrdersCache,
+  invalidateOrdersCache,
+  seedOrderInCache,
+} from './orderService';
+export {
   fetchProducts,
   fetchProductsPage,
   fetchProductById,

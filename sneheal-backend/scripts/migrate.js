@@ -1,4 +1,6 @@
 require('dotenv').config();
+const fs = require('fs');
+const path = require('path');
 const db = require('../src/config/db');
 
 const migrations = [
@@ -14,6 +16,39 @@ const migrations = [
   },
 ];
 
+const SQL_FILES = ['009_orders_payments.sql'];
+
+const splitStatements = (sql) =>
+  sql
+    .split(';')
+    .map((part) =>
+      part
+        .split('\n')
+        .filter((line) => !line.trim().startsWith('--'))
+        .join('\n')
+        .trim(),
+    )
+    .filter(Boolean);
+
+async function runSqlFile(filename) {
+  const filePath = path.join(__dirname, '..', 'migrations', filename);
+  const sql = fs.readFileSync(filePath, 'utf8');
+  const statements = splitStatements(sql);
+
+  for (const statement of statements) {
+    try {
+      await db.execute(statement);
+      console.log(`Migration ${filename}: applied statement`);
+    } catch (err) {
+      if (err.code === 'ER_TABLE_EXISTS_ERROR' || err.code === 'ER_DUP_KEYNAME') {
+        console.log(`Migration ${filename}: already applied (${err.code})`);
+        continue;
+      }
+      throw err;
+    }
+  }
+}
+
 async function migrate() {
   for (const migration of migrations) {
     try {
@@ -27,6 +62,11 @@ async function migrate() {
       }
     }
   }
+
+  for (const file of SQL_FILES) {
+    await runSqlFile(file);
+  }
+
   await db.end();
 }
 
