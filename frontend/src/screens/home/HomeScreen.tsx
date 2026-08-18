@@ -10,6 +10,7 @@ import {
 import { StatusBar as ExpoStatusBar } from 'expo-status-bar';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   useSharedValue,
@@ -33,14 +34,13 @@ import { useTabBarScrollState } from '@/hooks/useTabBarScrollHandler';
 import { useLiveLocation } from '@/hooks/useLiveLocation';
 import { useSavedAddresses } from '@/hooks/useSavedAddresses';
 import { updateTabBarOnScroll } from '@/utils/tabBarScrollWorklet';
-import { useVoiceRecognition } from '@/hooks/useVoiceRecognition';
 import { useFeaturedProducts } from '@/hooks/useCatalog';
 import { useCart } from '@/context/CartContext';
 import { resolveCatalogImage } from '@/utils/productImage';
 import theme from '@/styles/theme';
 import globalStyles from '@/styles/globalStyles';
 import { useTheme } from '@/hooks/useTheme';
-import type { AuthStackParamList } from '@/navigation/types';
+import type { AuthStackParamList, TabParamList } from '@/navigation/types';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const PILL_IMAGE = require('../../../assets/images/Sneheal-Pill-2.webp');
@@ -50,9 +50,8 @@ const { colors, spacing } = theme;
 const STICKY_THRESHOLD = 140;
 
 const HomeScreen = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<BottomTabNavigationProp<TabParamList, 'Home'>>();
   const { colors } = useTheme();
-  const [searchQuery, setSearchQuery] = useState('');
   const [isScrolling, setIsScrolling] = useState(false);
   const [stickyHeaderActive, setStickyHeaderActive] = useState(false);
   const scrollY = useSharedValue(0);
@@ -104,7 +103,15 @@ const HomeScreen = () => {
   }, [navigation]);
 
   const handleOpenCart = useCallback(() => {
-    navigation.navigate('Cart' as never);
+    navigation.navigate('Cart');
+  }, [navigation]);
+
+  const handleOpenSearch = useCallback(() => {
+    navigation.navigate('Search', { autofocus: true });
+  }, [navigation]);
+
+  const handleSearchMic = useCallback(() => {
+    navigation.navigate('Search', { startVoice: true });
   }, [navigation]);
 
   const handleUploadScan = useCallback(() => {
@@ -198,14 +205,6 @@ const HomeScreen = () => {
     ],
   }));
 
-  const handleSearchChange = useCallback((text: string) => {
-    setSearchQuery(text);
-  }, []);
-
-  const { toggleListening, isListening } = useVoiceRecognition({
-    onTranscriptChange: handleSearchChange,
-  });
-
   const clearScrollEndTimer = useCallback(() => {
     if (scrollEndTimer.current) {
       clearTimeout(scrollEndTimer.current);
@@ -257,11 +256,9 @@ const HomeScreen = () => {
           pointerEvents={stickyHeaderActive ? 'box-none' : 'none'}
         >
           <SearchBar
-            value={searchQuery}
-            onChangeText={handleSearchChange}
-            onMicPress={toggleListening}
+            onPress={handleOpenSearch}
+            onMicPress={handleSearchMic}
             onDocumentPress={handleUploadScan}
-            isListening={isListening}
             compact
           />
         </Animated.View>
@@ -288,10 +285,8 @@ const HomeScreen = () => {
           bounces={Platform.OS === 'ios'}
         >
           <HomeHeader
-            searchQuery={searchQuery}
-            onSearchChange={handleSearchChange}
-            onMicPress={toggleListening}
-            isVoiceListening={isListening}
+            onSearchPress={handleOpenSearch}
+            onMicPress={handleSearchMic}
             isScrolling={isScrolling}
             onAccountPress={handleOpenSettings}
             onNotificationsPress={handleOpenNotifications}

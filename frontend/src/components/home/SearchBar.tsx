@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { View, TextInput, StyleSheet, TouchableOpacity, Text } from 'react-native';
+import { View, TextInput, StyleSheet, TouchableOpacity, Pressable, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, {
   useSharedValue,
@@ -104,8 +104,9 @@ const AnimatedPlaceholder: React.FC<AnimatedPlaceholderProps> = ({ terms, search
 };
 
 interface SearchBarProps {
-  value: string;
-  onChangeText: (text: string) => void;
+  value?: string;
+  onChangeText?: (text: string) => void;
+  onPress?: () => void;
   onMicPress?: () => void;
   onDocumentPress?: () => void;
   isListening?: boolean;
@@ -117,9 +118,10 @@ interface SearchBarProps {
   placeholder?: string;
 }
 
-const SearchBar: React.FC<SearchBarProps> = ({
-  value,
+const SearchBar = React.forwardRef<TextInput, SearchBarProps>(({
+  value = '',
   onChangeText,
+  onPress,
   onMicPress,
   onDocumentPress,
   isListening = false,
@@ -129,13 +131,26 @@ const SearchBar: React.FC<SearchBarProps> = ({
   animatePlaceholder = true,
   searchSuggestions,
   placeholder,
-}) => {
+}, ref) => {
   const { t } = useTranslation();
   const { colors, spacing, typography, borderRadius, shadows } = useTheme();
   const resolvedSuggestions = searchSuggestions ?? SEARCH_SUGGESTION_KEYS.map((key) => t(key));
   const resolvedPlaceholder = placeholder ?? `${t('home.searchPrefix')} "${t('home.suggestionMedicines').toLowerCase()}"`;
   const inputRef = useRef<TextInput>(null);
   const [isFocused, setIsFocused] = useState(false);
+  const isLaunchOnly = onPress != null;
+
+  const setInputRef = useCallback(
+    (node: TextInput | null) => {
+      inputRef.current = node;
+      if (typeof ref === 'function') {
+        ref(node);
+      } else if (ref) {
+        ref.current = node;
+      }
+    },
+    [ref],
+  );
 
   const showAnimatedPlaceholder = animatePlaceholder && !value && !isListening && !isFocused;
   const showListeningPlaceholder = isListening && !value;
@@ -155,9 +170,13 @@ const SearchBar: React.FC<SearchBarProps> = ({
   }, []);
 
   const handleClear = useCallback(() => {
-    onChangeText('');
+    onChangeText?.('');
     inputRef.current?.focus();
   }, [onChangeText]);
+
+  const handleFieldPress = useCallback(() => {
+    onPress?.();
+  }, [onPress]);
 
   const showClearButton = value.length > 0;
 
@@ -196,15 +215,22 @@ const SearchBar: React.FC<SearchBarProps> = ({
         onDocumentPress != null && styles.searchContainerWithAction,
       ]}
     >
+      <Pressable
+        style={styles.fieldPressable}
+        onPress={isLaunchOnly ? handleFieldPress : undefined}
+        disabled={!isLaunchOnly}
+        accessibilityRole={isLaunchOnly ? 'search' : undefined}
+        accessibilityLabel={isLaunchOnly ? t('tabs.search') : undefined}
+      >
       <Ionicons
         name="search"
         size={19}
         color={colors.headerTextDark}
         style={styles.searchIcon}
       />
-      <View style={styles.inputWrap}>
+      <View style={styles.inputWrap} pointerEvents={isLaunchOnly ? 'none' : 'auto'}>
         <TextInput
-          ref={inputRef}
+          ref={setInputRef}
           style={[styles.searchInput, typography.bodySmall, { color: colors.textPrimary }]}
           placeholder={showStaticPlaceholder ? resolvedPlaceholder : ''}
           placeholderTextColor={colors.textMuted}
@@ -212,7 +238,13 @@ const SearchBar: React.FC<SearchBarProps> = ({
           onChangeText={onChangeText}
           onFocus={handleFocus}
           onBlur={handleBlur}
+          editable={!isLaunchOnly}
+          showSoftInputOnFocus={!isLaunchOnly}
           onPressIn={() => {
+            if (isLaunchOnly) {
+              handleFieldPress();
+              return;
+            }
             if (!value) {
               requestAnimationFrame(() => {
                 inputRef.current?.setSelection(0, 0);
@@ -237,7 +269,8 @@ const SearchBar: React.FC<SearchBarProps> = ({
           </View>
         )}
       </View>
-      {showClearButton && (
+      </Pressable>
+      {showClearButton && !isLaunchOnly && (
         <TouchableOpacity
           style={styles.clearBtn}
           activeOpacity={0.7}
@@ -312,9 +345,17 @@ const SearchBar: React.FC<SearchBarProps> = ({
       </TouchableOpacity>
     </View>
   );
-};
+});
+
+SearchBar.displayName = 'SearchBar';
 
 const styles = StyleSheet.create({
+  fieldPressable: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    minWidth: 0,
+  },
   searchRow: {
     flexDirection: 'row',
     alignItems: 'center',

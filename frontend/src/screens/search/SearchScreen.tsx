@@ -1,15 +1,24 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   Pressable,
   ActivityIndicator,
+  InteractionManager,
   type ListRenderItemInfo,
+  type TextInput,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import {
+  useFocusEffect,
+  useNavigation,
+  useRoute,
+  type CompositeNavigationProp,
+  type RouteProp,
+} from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useTranslation } from 'react-i18next';
@@ -25,7 +34,7 @@ import { useProductSearch } from '@/hooks/useCatalog';
 import { useTabBarScrollHandler } from '@/hooks/useTabBarScrollHandler';
 import { useTheme } from '@/hooks/useTheme';
 import { useVoiceRecognition } from '@/hooks/useVoiceRecognition';
-import type { AuthStackParamList } from '@/navigation/types';
+import type { AuthStackParamList, TabParamList } from '@/navigation/types';
 import { getTabBarHeight } from '@/navigation/tabBarConfig';
 import type { Product } from '@/types/product.types';
 import {
@@ -34,11 +43,21 @@ import {
   getSearchHistory,
 } from '@/services/searchHistoryStorage';
 
+type SearchNavigation = CompositeNavigationProp<
+  BottomTabNavigationProp<TabParamList, 'Search'>,
+  NativeStackNavigationProp<AuthStackParamList>
+>;
+
 const SearchScreen = () => {
   const { t } = useTranslation();
-  const navigation = useNavigation<NativeStackNavigationProp<AuthStackParamList>>();
+  const navigation = useNavigation<SearchNavigation>();
+  const route = useRoute<RouteProp<TabParamList, 'Search'>>();
   const insets = useSafeAreaInsets();
   const { colors, spacing, typography, borderRadius, gradients, moderateScale } = useTheme();
+  const searchInputRef = useRef<TextInput>(null);
+  const paramsRef = useRef(route.params);
+  const startListeningRef = useRef<() => Promise<void>>(async () => {});
+  paramsRef.current = route.params;
 
   const [query, setQuery] = useState('');
   const [history, setHistory] = useState<string[]>([]);
@@ -56,22 +75,60 @@ const SearchScreen = () => {
   const tabBarHeight = getTabBarHeight(insets.bottom);
   const tabBarScrollHandler = useTabBarScrollHandler();
 
-  const { toggleListening, isListening } = useVoiceRecognition({
+  const { toggleListening, startListening, isListening } = useVoiceRecognition({
     onTranscriptChange: setQuery,
   });
+  startListeningRef.current = startListening;
 
   useFocusEffect(
     useCallback(() => {
       let active = true;
+      let cancelled = false;
+      let voiceTimer: ReturnType<typeof setTimeout> | undefined;
 
       void getSearchHistory().then((stored) => {
         if (active) setHistory(stored);
       });
 
+      const params = paramsRef.current;
+      const incomingQuery = params?.query?.trim();
+      const shouldFocus = Boolean(params?.autofocus);
+      const shouldStartVoice = Boolean(params?.startVoice);
+
+      if (incomingQuery) {
+        setQuery(incomingQuery);
+      }
+
+      if (shouldFocus || shouldStartVoice || incomingQuery) {
+        navigation.setParams({
+          query: undefined,
+          autofocus: undefined,
+          startVoice: undefined,
+        });
+      }
+
+      const interactionTask = InteractionManager.runAfterInteractions(() => {
+        if (cancelled) return;
+
+        if (shouldStartVoice) {
+          voiceTimer = setTimeout(() => {
+            if (!cancelled) void startListeningRef.current();
+          }, 80);
+          return;
+        }
+
+        if (shouldFocus) {
+          searchInputRef.current?.focus();
+        }
+      });
+
       return () => {
         active = false;
+        cancelled = true;
+        interactionTask.cancel();
+        if (voiceTimer) clearTimeout(voiceTimer);
       };
-    }, []),
+    }, [navigation]),
   );
 
   const applyTerm = useCallback(async (term: string) => {
@@ -374,6 +431,7 @@ const SearchScreen = () => {
             <Text style={styles.heroSubtitle}>{t('search.heroSubtitle')}</Text>
 
             <SearchBar
+              ref={searchInputRef}
               value={query}
               onChangeText={setQuery}
               onMicPress={toggleListening}

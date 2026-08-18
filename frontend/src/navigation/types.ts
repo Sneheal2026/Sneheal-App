@@ -7,9 +7,15 @@ import type { AddressDraft, SavedAddress } from '@/types/location.types';
 export type AppLanguage = 'ENGLISH' | 'HINDI' | 'MARATHI';
 export type UserRole = 'customer' | 'delivery_agent' | 'doctor';
 
+export type SearchTabParams = {
+  query?: string;
+  autofocus?: boolean;
+  startVoice?: boolean;
+};
+
 export type TabParamList = {
   Home: undefined;
-  Search: undefined;
+  Search: SearchTabParams | undefined;
   Scan: undefined;
   Cart: undefined;
   Orders: undefined;

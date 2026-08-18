@@ -19,10 +19,8 @@ import theme from '@/styles/theme';
 const { colors, spacing, borderRadius, moderateScale } = theme;
 
 interface HomeHeaderProps {
-  searchQuery: string;
-  onSearchChange: (text: string) => void;
+  onSearchPress: () => void;
   onMicPress?: () => void;
-  isVoiceListening?: boolean;
   isScrolling?: boolean;
   onAccountPress?: () => void;
   onNotificationsPress?: () => void;
@@ -33,10 +31,8 @@ interface HomeHeaderProps {
 }
 
 const HomeHeader: React.FC<HomeHeaderProps> = ({
-  searchQuery,
-  onSearchChange,
+  onSearchPress,
   onMicPress,
-  isVoiceListening = false,
   isScrolling = false,
   onAccountPress,
   onNotificationsPress,
@@ -128,11 +124,9 @@ const HomeHeader: React.FC<HomeHeaderProps> = ({
           style={styles.searchSection}
         >
           <SearchBar
-            value={searchQuery}
-            onChangeText={onSearchChange}
+            onPress={onSearchPress}
             onMicPress={onMicPress}
             onDocumentPress={onUploadScanPress}
-            isListening={isVoiceListening}
             insideHeader
             elevated
           />
