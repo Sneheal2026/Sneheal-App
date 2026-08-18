@@ -7,6 +7,7 @@ const orderRepo = require('../repositories/order.repository');
 const paymentRepo = require('../repositories/payment.repository');
 const { computeCartBill, fromPaise, toPaise } = require('./cartBilling.service');
 const razorpayService = require('./razorpay.service');
+const mailService = require('./mail.service');
 
 const MAX_LINES = 50;
 const MAX_QTY = 10;
@@ -324,7 +325,13 @@ const applyPaid = async ({
       orderRepo.findItemsByOrderId(paid.id),
       paymentRepo.findByOrderId(paid.id),
     ]);
-    return toDetailPayload(paid, items, payment);
+    const detail = toDetailPayload(paid, items, payment);
+    setImmediate(() => {
+      mailService.notifyOpsNewOrder(detail).catch((err) => {
+        console.error('[mail] ops order email failed', err.message);
+      });
+    });
+    return detail;
   } catch (error) {
     await connection.rollback();
     throw error;
