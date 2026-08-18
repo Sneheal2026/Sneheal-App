@@ -4,11 +4,12 @@ import {
   Text,
   StyleSheet,
   Dimensions,
-  TouchableOpacity,
-  Image,
-  ImageSourcePropType,
+  Pressable,
+  type ComponentProps,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
+import Svg, { G, Line, Path, Polygon, Rect } from 'react-native-svg';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -18,7 +19,12 @@ import Animated, {
   runOnJS,
 } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { useNavigation } from '@react-navigation/native';
+import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useTranslation } from 'react-i18next';
 import theme from '@/styles/theme';
+import type { AuthStackParamList, TabParamList } from '@/navigation/types';
 
 const { colors, spacing, borderRadius, moderateScale } = theme;
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -26,220 +32,377 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const SIDE_INSET = spacing.xl;
 const PEEK = spacing.lg;
 const BANNER_WIDTH = SCREEN_WIDTH;
-const BANNER_HEIGHT = moderateScale(172);
+const BANNER_HEIGHT = moderateScale(208);
 const SLIDE_GAP = spacing.md;
 const SLIDE_WIDTH = SCREEN_WIDTH - SIDE_INSET - PEEK;
 const ITEM_STRIDE = SLIDE_WIDTH + SLIDE_GAP;
-const AUTO_PLAY_MS = 3600;
+const AUTO_PLAY_MS = 3800;
 const SCROLL_DURATION = 1300;
 const SMOOTH_EASING = Easing.bezier(0.22, 1, 0.36, 1);
 const VELOCITY_THRESHOLD = 450;
 
-const PROMO_IMAGES = {
-  vitamins: require('../../../assets/images/Vitamins-Minerals.png'),
-  nutrition: require('../../../assets/images/Nutrition-Drinks.png'),
-  prescription: require('../../../assets/images/Sneheal-Pill-2.webp'),
-  fitness: require('../../../assets/images/Fitness.png'),
-  ayurveda: require('../../../assets/images/Ayurveda.png'),
-} as const;
+type IoniconName = ComponentProps<typeof Ionicons>['name'];
+type PromoRoute =
+  | 'MedicineScan'
+  | 'Search'
+  | 'EmergencyContacts'
+  | 'MedicineReminders'
+  | 'FamilyMembers';
+type PatternKind = 'rx' | 'speed' | 'sos' | 'dose' | 'family';
 
 interface PromoSlide {
   id: string;
-  code: string;
+  pattern: PatternKind;
+  route: PromoRoute;
+  icon: IoniconName;
+  eyebrowKey: string;
+  titleKey: string;
+  detailKey: string;
+  metaKey: string;
+  ctaKey: string;
+  gradient: [string, string, string];
+  ink: string;
+  inkSoft: string;
+  ctaColor: string;
+}
+
+interface ResolvedSlide extends PromoSlide {
   eyebrow: string;
   title: string;
-  subtitle: string;
+  detail: string;
+  meta: string;
   cta: string;
-  image: ImageSourcePropType;
-  gradient: [string, string, string];
-  glowColor: string;
-  badgeTextColor: string;
-  accentSoft: string;
 }
 
 const PROMO_SLIDES: PromoSlide[] = [
   {
-    id: '1',
-    code: 'SNEHEAL40',
-    eyebrow: 'New Customer Offer',
-    title: 'Save 40% on Your First Pharmacy Order',
-    subtitle: 'Verified medicines · Licensed pharmacists · Fast doorstep delivery',
-    cta: 'Shop Medicines',
-    image: PROMO_IMAGES.vitamins,
-    gradient: ['#0A2F6B', '#1A73E8', '#1247A8'],
-    glowColor: 'rgba(74, 156, 245, 0.45)',
-    badgeTextColor: '#1558B0',
-    accentSoft: 'rgba(255,255,255,0.14)',
+    id: 'rx',
+    pattern: 'rx',
+    route: 'MedicineScan',
+    icon: 'document-text',
+    eyebrowKey: 'home.promoRxEyebrow',
+    titleKey: 'home.promoRxTitle',
+    detailKey: 'home.promoRxDetail',
+    metaKey: 'home.promoRxMeta',
+    ctaKey: 'home.promoRxCta',
+    gradient: ['#1E3A8A', '#2563EB', '#38BDF8'],
+    ink: '#DBEAFE',
+    inkSoft: 'rgba(219, 234, 254, 0.28)',
+    ctaColor: '#1D4ED8',
   },
   {
-    id: '2',
-    code: 'FREEDEL',
-    eyebrow: 'Delivery Benefit',
-    title: 'Free Delivery on Orders Above ₹499',
-    subtitle: 'Essential healthcare products delivered safely to your home',
-    cta: 'Browse Essentials',
-    image: PROMO_IMAGES.nutrition,
-    gradient: ['#064E45', '#0D9488', '#0F766E'],
-    glowColor: 'rgba(45, 212, 191, 0.4)',
-    badgeTextColor: '#0F766E',
-    accentSoft: 'rgba(255,255,255,0.12)',
+    id: 'speed',
+    pattern: 'speed',
+    route: 'Search',
+    icon: 'flash',
+    eyebrowKey: 'home.promoFastEyebrow',
+    titleKey: 'home.promoFastTitle',
+    detailKey: 'home.promoFastDetail',
+    metaKey: 'home.promoFastMeta',
+    ctaKey: 'home.promoFastCta',
+    gradient: ['#115E59', '#0D9488', '#2DD4BF'],
+    ink: '#CCFBF1',
+    inkSoft: 'rgba(204, 251, 241, 0.28)',
+    ctaColor: '#0F766E',
   },
   {
-    id: '3',
-    code: 'RXEASY',
-    eyebrow: 'Digital Prescription',
-    title: 'Upload Your Rx. We Dispense With Care.',
-    subtitle: 'Secure upload · Pharmacist review · Ready in minutes',
-    cta: 'Upload Prescription',
-    image: PROMO_IMAGES.prescription,
-    gradient: ['#0C4A6E', '#0369A1', '#1558B0'],
-    glowColor: 'rgba(56, 189, 248, 0.38)',
-    badgeTextColor: '#0369A1',
-    accentSoft: 'rgba(255,255,255,0.13)',
+    id: 'sos',
+    pattern: 'sos',
+    route: 'EmergencyContacts',
+    icon: 'call',
+    eyebrowKey: 'home.promoSosEyebrow',
+    titleKey: 'home.promoSosTitle',
+    detailKey: 'home.promoSosDetail',
+    metaKey: 'home.promoSosMeta',
+    ctaKey: 'home.promoSosCta',
+    gradient: ['#9F1239', '#E11D48', '#FB7185'],
+    ink: '#FFE4E6',
+    inkSoft: 'rgba(255, 228, 230, 0.3)',
+    ctaColor: '#BE123C',
   },
   {
-    id: '4',
-    code: 'LAB20',
-    eyebrow: 'Preventive Health',
-    title: '20% Off Full Body Health Checkups',
-    subtitle: 'Trusted diagnostic partners · Accurate reports · Home collection',
-    cta: 'Book Screening',
-    image: PROMO_IMAGES.fitness,
-    gradient: ['#3B0764', '#5B2E91', '#6D28D9'],
-    glowColor: 'rgba(167, 139, 250, 0.42)',
-    badgeTextColor: '#5B2E91',
-    accentSoft: 'rgba(255,255,255,0.11)',
+    id: 'dose',
+    pattern: 'dose',
+    route: 'MedicineReminders',
+    icon: 'alarm',
+    eyebrowKey: 'home.promoDoseEyebrow',
+    titleKey: 'home.promoDoseTitle',
+    detailKey: 'home.promoDoseDetail',
+    metaKey: 'home.promoDoseMeta',
+    ctaKey: 'home.promoDoseCta',
+    gradient: ['#4C1D95', '#7C3AED', '#A78BFA'],
+    ink: '#EDE9FE',
+    inkSoft: 'rgba(237, 233, 254, 0.3)',
+    ctaColor: '#6D28D9',
   },
   {
-    id: '5',
-    code: 'SNEPLUS',
-    eyebrow: 'Sneheal Plus Membership',
-    title: 'Priority Care & Exclusive Member Savings',
-    subtitle: 'Member-only pricing · Free delivery · Wellness rewards',
-    cta: 'View Benefits',
-    image: PROMO_IMAGES.ayurveda,
-    gradient: ['#064E3B', '#059669', '#047857'],
-    glowColor: 'rgba(52, 211, 153, 0.4)',
-    badgeTextColor: '#047857',
-    accentSoft: 'rgba(255,255,255,0.12)',
+    id: 'family',
+    pattern: 'family',
+    route: 'FamilyMembers',
+    icon: 'people',
+    eyebrowKey: 'home.promoFamilyEyebrow',
+    titleKey: 'home.promoFamilyTitle',
+    detailKey: 'home.promoFamilyDetail',
+    metaKey: 'home.promoFamilyMeta',
+    ctaKey: 'home.promoFamilyCta',
+    gradient: ['#9A3412', '#EA580C', '#FBBF24'],
+    ink: '#FFEDD5',
+    inkSoft: 'rgba(255, 237, 213, 0.32)',
+    ctaColor: '#C2410C',
   },
 ];
 
 const SLIDE_COUNT = PROMO_SLIDES.length;
 const MAX_TRANSLATE = -(SLIDE_COUNT - 1) * ITEM_STRIDE;
 
-const LOOP_SLIDES: PromoSlide[] = [...PROMO_SLIDES, PROMO_SLIDES[0]];
-
-const SlideBackdrop = React.memo(({ slide }: { slide: PromoSlide }) => (
-  <View style={styles.backdropWrap} pointerEvents="none">
-    <LinearGradient
-      colors={slide.gradient}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={StyleSheet.absoluteFill}
-    />
-
-    <View style={[styles.glowOrb, styles.glowOrbPrimary, { backgroundColor: slide.glowColor }]} />
-    <View style={[styles.glowOrb, styles.glowOrbSecondary, { backgroundColor: slide.accentSoft }]} />
-
-    {Array.from({ length: 8 }).map((_, i) => (
-      <View
-        key={`line-${i}`}
-        style={[
-          styles.meshLine,
-          {
-            left: i * 38 - 18,
-            opacity: 0.04 + (i % 2) * 0.025,
-          },
-        ]}
+const PatternRx = ({ ink, inkSoft }: { ink: string; inkSoft: string }) => (
+  <G>
+    {Array.from({ length: 12 }).map((_, i) => (
+      <Line
+        key={`hatch-${i}`}
+        x1={i * 28 - 30}
+        y1={-10}
+        x2={i * 28 + 90}
+        y2={200}
+        stroke={ink}
+        strokeWidth={1.4}
+        opacity={0.22}
       />
     ))}
+    <Rect x="168" y="18" width="92" height="118" rx="10" fill={inkSoft} transform="rotate(14 214 77)" />
+    <Rect x="158" y="28" width="92" height="118" rx="10" fill={ink} opacity={0.22} transform="rotate(-8 204 87)" />
+    <Rect x="150" y="34" width="92" height="118" rx="10" fill="rgba(255,255,255,0.16)" />
+    <Line x1="166" y1="62" x2="226" y2="62" stroke={ink} strokeWidth={3} strokeDasharray="8 6" opacity={0.9} />
+    <Line x1="166" y1="78" x2="218" y2="78" stroke="#fff" strokeWidth={3} strokeDasharray="8 6" opacity={0.55} />
+    <Line x1="166" y1="94" x2="210" y2="94" stroke="#fff" strokeWidth={3} strokeDasharray="8 6" opacity={0.4} />
+    {[{ x: 262, y: 28 }, { x: 286, y: 64 }, { x: 248, y: 148 }].map((plus) => (
+      <G key={`${plus.x}-${plus.y}`}>
+        <Rect x={plus.x} y={plus.y} width={5} height={18} rx={1} fill={ink} />
+        <Rect x={plus.x - 6.5} y={plus.y + 6.5} width={18} height={5} rx={1} fill={ink} />
+      </G>
+    ))}
+  </G>
+);
 
-    <View style={styles.crossGrid}>
-      {Array.from({ length: 6 }).map((_, i) => (
-        <View key={`cross-${i}`} style={[styles.medicalCross, { opacity: 0.06 + (i % 2) * 0.04 }]}>
-          <View style={styles.crossVertical} />
-          <View style={styles.crossHorizontal} />
-        </View>
-      ))}
-    </View>
-
-    <View style={styles.dotGrid}>
-      {Array.from({ length: 28 }).map((_, i) => (
-        <View
-          key={`dot-${i}`}
-          style={[
-            styles.backdropDot,
-            { opacity: i % 4 === 0 ? 0.18 : 0.08 },
-          ]}
-        />
-      ))}
-    </View>
-
-    <LinearGradient
-      colors={['transparent', 'rgba(0,0,0,0.22)']}
-      start={{ x: 0.5, y: 0 }}
-      end={{ x: 0.5, y: 1 }}
-      style={styles.bottomVignette}
+const PatternSpeed = ({ ink, inkSoft }: { ink: string; inkSoft: string }) => (
+  <G>
+    {Array.from({ length: 7 }).map((_, i) => (
+      <Path
+        key={`chevron-${i}`}
+        d={`M ${88 + i * 28} 8 L ${128 + i * 28} 90 L ${88 + i * 28} 172`}
+        fill="none"
+        stroke={i % 2 === 0 ? ink : inkSoft}
+        strokeWidth={i === 3 ? 14 : 8}
+        opacity={0.28 + (i % 3) * 0.08}
+      />
+    ))}
+    {Array.from({ length: 8 }).map((_, i) => (
+      <Rect
+        key={`dash-${i}`}
+        x={24 + i * 18}
+        y={22 + (i % 3) * 46}
+        width={28 + (i % 2) * 16}
+        height={7}
+        rx={1}
+        fill={ink}
+        opacity={0.35}
+      />
+    ))}
+    <Polygon
+      points="236,16 188,92 214,92 164,168 258,84 228,84"
+      fill={ink}
+      opacity={0.92}
     />
-    <View style={styles.shineStreak} />
-  </View>
-));
+  </G>
+);
 
-SlideBackdrop.displayName = 'SlideBackdrop';
+const PatternSos = ({ ink, inkSoft }: { ink: string; inkSoft: string }) => (
+  <G>
+    {Array.from({ length: 12 }).map((_, i) => {
+      const angle = ((112 + i * 13) * Math.PI) / 180;
+      return (
+        <Line
+          key={`burst-${i}`}
+          x1={318}
+          y1={8}
+          x2={318 + Math.cos(angle) * 240}
+          y2={8 + Math.sin(angle) * 240}
+          stroke={i % 2 === 0 ? ink : '#fff'}
+          strokeWidth={i % 3 === 0 ? 7 : 3}
+          opacity={0.24}
+        />
+      );
+    })}
+    <Polygon points="214,22 258,98 170,98" fill={ink} opacity={0.92} />
+    <Polygon points="214,38 246,90 182,90" fill="#FF1744" />
+    <Rect x="210" y="54" width="8" height="22" rx="1" fill={ink} />
+    <Rect x="210" y="80" width="8" height="8" rx="1" fill={ink} />
+    {Array.from({ length: 9 }).map((_, i) => (
+      <Rect
+        key={`pad-${i}`}
+        x={236 + (i % 3) * 22}
+        y={112 + Math.floor(i / 3) * 18}
+        width={14}
+        height={14}
+        rx={2}
+        fill={i === 4 ? ink : inkSoft}
+        opacity={i === 4 ? 1 : 0.7}
+      />
+    ))}
+  </G>
+);
 
-const PromoSlideCard = React.memo(({ slide }: { slide: PromoSlide }) => (
-  <View style={styles.slide}>
-    <SlideBackdrop slide={slide} />
+const PatternDose = ({ ink, inkSoft }: { ink: string; inkSoft: string }) => (
+  <G>
+    {Array.from({ length: 10 }).map((_, i) => (
+      <Line
+        key={`tick-${i}`}
+        x1={40 + i * 28}
+        y1={8}
+        x2={40 + i * 28}
+        y2={i % 2 === 0 ? 28 : 22}
+        stroke={ink}
+        strokeWidth={3}
+        opacity={0.4}
+      />
+    ))}
+    <Polygon points="176,22 254,8 268,42 190,56" fill={ink} opacity={0.92} />
+    <Polygon points="176,22 214,16 222,46 184,52" fill="#fff" opacity={0.28} />
+    <Polygon points="148,96 230,78 242,108 160,126" fill={inkSoft} />
+    <Polygon points="148,96 188,88 194,112 154,120" fill={ink} opacity={0.7} />
+    <Polygon points="236,128 298,116 306,140 244,152" fill="#fff" opacity={0.22} />
+    {[{ x: 286, y: 22 }, { x: 54, y: 128 }, { x: 292, y: 148 }].map((plus) => (
+      <G key={`${plus.x}-${plus.y}`} opacity={0.85}>
+        <Rect x={plus.x} y={plus.y} width={5} height={16} rx={1} fill={ink} />
+        <Rect x={plus.x - 5.5} y={plus.y + 5.5} width={16} height={5} rx={1} fill={ink} />
+      </G>
+    ))}
+  </G>
+);
 
-    <View style={styles.slideBody}>
-      <View style={styles.textBlock}>
-        <View style={styles.eyebrowRow}>
-          <View style={styles.eyebrowDot} />
-          <Text style={styles.eyebrow}>{slide.eyebrow}</Text>
+const PatternFamily = ({ ink, inkSoft }: { ink: string; inkSoft: string }) => (
+  <G>
+    {Array.from({ length: 5 }).map((_, row) =>
+      Array.from({ length: 4 }).map((__, col) => {
+        const x = 148 + col * 42 + (row % 2) * 21;
+        const y = 8 + row * 36;
+        return (
+          <Polygon
+            key={`dia-${row}-${col}`}
+            points={`${x},${y} ${x + 18},${y + 16} ${x},${y + 32} ${x - 18},${y + 16}`}
+            fill={col % 2 === 0 ? ink : inkSoft}
+            opacity={0.22 + ((row + col) % 3) * 0.1}
+          />
+        );
+      }),
+    )}
+    <Rect x="188" y="36" width="58" height="58" rx="8" fill={ink} opacity={0.85} transform="rotate(18 217 65)" />
+    <Rect x="162" y="62" width="58" height="58" rx="8" fill="#fff" opacity={0.22} transform="rotate(-12 191 91)" />
+    <Rect x="214" y="78" width="58" height="58" rx="8" fill={inkSoft} transform="rotate(8 243 107)" />
+  </G>
+);
+
+const PATTERN_MAP: Record<
+  PatternKind,
+  React.ComponentType<{ ink: string; inkSoft: string }>
+> = {
+  rx: PatternRx,
+  speed: PatternSpeed,
+  sos: PatternSos,
+  dose: PatternDose,
+  family: PatternFamily,
+};
+
+const SlidePattern = React.memo(({ slide }: { slide: ResolvedSlide }) => {
+  const Pattern = PATTERN_MAP[slide.pattern];
+
+  return (
+    <View style={styles.backdropWrap} pointerEvents="none">
+      <LinearGradient
+        colors={slide.gradient}
+        start={{ x: 0, y: 0.15 }}
+        end={{ x: 1, y: 1 }}
+        style={StyleSheet.absoluteFill}
+      />
+      <Svg
+        width="100%"
+        height="100%"
+        viewBox="0 0 320 180"
+        preserveAspectRatio="xMaxYMid slice"
+      >
+        <Pattern ink={slide.ink} inkSoft={slide.inkSoft} />
+      </Svg>
+      <LinearGradient
+        colors={['rgba(0,0,0,0.42)', 'rgba(0,0,0,0.12)', 'transparent']}
+        locations={[0, 0.42, 0.78]}
+        start={{ x: 0, y: 0.5 }}
+        end={{ x: 1, y: 0.5 }}
+        style={StyleSheet.absoluteFill}
+      />
+    </View>
+  );
+});
+
+SlidePattern.displayName = 'SlidePattern';
+
+const PromoSlideCard = React.memo(
+  ({ slide, onPress }: { slide: ResolvedSlide; onPress: (route: PromoRoute) => void }) => (
+    <Pressable
+      onPress={() => onPress(slide.route)}
+      style={styles.slide}
+      accessibilityRole="button"
+      accessibilityLabel={`${slide.title}. ${slide.detail}`}
+    >
+      <SlidePattern slide={slide} />
+
+      <View style={styles.slideInner}>
+        <View style={styles.topRow}>
+          <View style={[styles.eyebrowChip, { borderColor: slide.inkSoft }]}>
+            <View style={[styles.eyebrowMark, { backgroundColor: slide.ink }]} />
+            <Text style={styles.eyebrow}>{slide.eyebrow}</Text>
+          </View>
+
+          <View style={[styles.markPlate, { borderColor: slide.ink }]}>
+            <View style={styles.markInner}>
+              <Ionicons name={slide.icon} size={moderateScale(18)} color={colors.white} />
+            </View>
+          </View>
         </View>
 
-        <Text style={styles.title} numberOfLines={2}>
-          {slide.title}
-        </Text>
+        <View style={styles.copyStack}>
+          <Text style={styles.title} numberOfLines={2}>
+            {slide.title}
+          </Text>
+          <Text style={styles.detail} numberOfLines={2}>
+            {slide.detail}
+          </Text>
+        </View>
 
-        <Text style={styles.subtitle} numberOfLines={2}>
-          {slide.subtitle}
-        </Text>
+        <View style={styles.bottomRow}>
+          <View style={styles.metaChip}>
+            <Text style={styles.metaText}>{slide.meta}</Text>
+          </View>
 
-        <View style={styles.codeChip}>
-          <Text style={styles.codeChipLabel}>Promo code</Text>
-          <View style={styles.codeBadge}>
-            <Text style={[styles.codeText, { color: slide.badgeTextColor }]}>{slide.code}</Text>
+          <View style={styles.ctaButton}>
+            <LinearGradient
+              colors={['rgba(255,255,255,0.98)', 'rgba(255,255,255,0.88)']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.ctaGradient}
+            >
+              <Text style={[styles.ctaText, { color: slide.ctaColor }]} numberOfLines={1}>
+                {slide.cta}
+              </Text>
+              <View style={[styles.ctaIcon, { backgroundColor: slide.ctaColor }]}>
+                <Ionicons name="arrow-forward" size={moderateScale(12)} color={colors.white} />
+              </View>
+            </LinearGradient>
           </View>
         </View>
       </View>
-
-      <View style={styles.heroWrap}>
-        <View style={[styles.heroAura, { backgroundColor: slide.glowColor }]} />
-        <View style={[styles.heroRing, { borderColor: slide.accentSoft }]} />
-        <View style={styles.heroPlate}>
-          <LinearGradient
-            colors={['rgba(255,255,255,0.28)', 'rgba(255,255,255,0.06)']}
-            style={styles.heroPlateSheen}
-          />
-          <Image source={slide.image} style={styles.heroImage} resizeMode="contain" />
-        </View>
-      </View>
-    </View>
-
-    <TouchableOpacity style={styles.ctaButton} activeOpacity={0.88}>
-      <LinearGradient
-        colors={['rgba(255,255,255,0.96)', 'rgba(255,255,255,0.88)']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.ctaGradient}
-      >
-        <Text style={[styles.ctaText, { color: slide.badgeTextColor }]}>{slide.cta}</Text>
-      </LinearGradient>
-    </TouchableOpacity>
-  </View>
-));
+    </Pressable>
+  ),
+);
 
 PromoSlideCard.displayName = 'PromoSlideCard';
 
@@ -248,6 +411,8 @@ interface PromoBannerProps {
 }
 
 const PromoBanner = ({ isScrolling = false }: PromoBannerProps) => {
+  const { t } = useTranslation();
+  const navigation = useNavigation<BottomTabNavigationProp<TabParamList, 'Home'>>();
   const [activeIndex, setActiveIndex] = useState(0);
   const visualIndexRef = useRef(0);
   const isAnimatingRef = useRef(false);
@@ -258,6 +423,33 @@ const PromoBanner = ({ isScrolling = false }: PromoBannerProps) => {
   const dragStartX = useSharedValue(0);
 
   isScrollingRef.current = isScrolling;
+
+  const slides = useMemo<ResolvedSlide[]>(
+    () =>
+      PROMO_SLIDES.map((slide) => ({
+        ...slide,
+        eyebrow: t(slide.eyebrowKey),
+        title: t(slide.titleKey),
+        detail: t(slide.detailKey),
+        meta: t(slide.metaKey),
+        cta: t(slide.ctaKey),
+      })),
+    [t],
+  );
+
+  const loopSlides = useMemo(() => [...slides, slides[0]], [slides]);
+
+  const handleSlidePress = useCallback(
+    (route: PromoRoute) => {
+      if (route === 'Search') {
+        navigation.navigate('Search');
+        return;
+      }
+      const parent = navigation.getParent<NativeStackNavigationProp<AuthStackParamList>>();
+      parent?.navigate(route);
+    },
+    [navigation],
+  );
 
   const clearTimer = useCallback(() => {
     if (timerRef.current) {
@@ -420,16 +612,16 @@ const PromoBanner = ({ isScrolling = false }: PromoBannerProps) => {
     transform: [{ translateX: translateX.value }],
   }));
 
-  const activeAccent = PROMO_SLIDES[activeIndex]?.badgeTextColor ?? colors.primary;
+  const activeInk = slides[activeIndex]?.ink ?? colors.primary;
 
   return (
     <View style={styles.container}>
       <GestureDetector gesture={panGesture}>
         <View style={styles.carouselViewport}>
           <Animated.View style={[styles.carouselTrack, trackStyle]}>
-            {LOOP_SLIDES.map((slide, index) => (
+            {loopSlides.map((slide, index) => (
               <View key={`${slide.id}-${index}`} style={styles.slideWrapper}>
-                <PromoSlideCard slide={slide} />
+                <PromoSlideCard slide={slide} onPress={handleSlidePress} />
               </View>
             ))}
           </Animated.View>
@@ -438,19 +630,21 @@ const PromoBanner = ({ isScrolling = false }: PromoBannerProps) => {
 
       <View style={styles.progressRow}>
         <View style={styles.dotsRow}>
-          {PROMO_SLIDES.map((slide, index) => (
-            <TouchableOpacity
+          {slides.map((slide, index) => (
+            <Pressable
               key={slide.id}
               onPress={() => goToSlide(index)}
               hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+              accessibilityRole="button"
+              accessibilityLabel={slide.title}
             >
               <View
                 style={[
                   styles.dot,
-                  index === activeIndex && [styles.dotActive, { backgroundColor: activeAccent }],
+                  index === activeIndex && [styles.dotActive, { backgroundColor: activeInk }],
                 ]}
               />
-            </TouchableOpacity>
+            </Pressable>
           ))}
         </View>
       </View>
@@ -484,239 +678,139 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     backgroundColor: colors.primaryDark,
     shadowColor: colors.black,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.16,
-    shadowRadius: 14,
-    elevation: 6,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    elevation: 7,
   },
   backdropWrap: {
     ...StyleSheet.absoluteFillObject,
     overflow: 'hidden',
   },
-  glowOrb: {
-    position: 'absolute',
-    borderRadius: 999,
-  },
-  glowOrbPrimary: {
-    width: moderateScale(160),
-    height: moderateScale(160),
-    top: -moderateScale(52),
-    right: -moderateScale(28),
-  },
-  glowOrbSecondary: {
-    width: moderateScale(96),
-    height: moderateScale(96),
-    bottom: -moderateScale(24),
-    left: -moderateScale(18),
-  },
-  meshLine: {
-    position: 'absolute',
-    top: -48,
-    width: 1,
-    height: '170%',
-    backgroundColor: colors.white,
-    transform: [{ rotate: '24deg' }],
-  },
-  crossGrid: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    width: 64,
-    gap: 10,
-  },
-  medicalCross: {
-    width: 14,
-    height: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  crossVertical: {
-    position: 'absolute',
-    width: 2,
-    height: 10,
-    borderRadius: 1,
-    backgroundColor: colors.white,
-  },
-  crossHorizontal: {
-    position: 'absolute',
-    width: 10,
-    height: 2,
-    borderRadius: 1,
-    backgroundColor: colors.white,
-  },
-  dotGrid: {
-    position: 'absolute',
-    bottom: 14,
-    left: 14,
-    width: 56,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 5,
-  },
-  backdropDot: {
-    width: 3,
-    height: 3,
-    borderRadius: 2,
-    backgroundColor: colors.white,
-  },
-  bottomVignette: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    height: '42%',
-  },
-  shineStreak: {
-    position: 'absolute',
-    top: -20,
-    left: '18%',
-    width: moderateScale(42),
-    height: '130%',
-    backgroundColor: 'rgba(255,255,255,0.07)',
-    transform: [{ rotate: '18deg' }],
-  },
-  slideBody: {
+  slideInner: {
     flex: 1,
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md + 2,
+    paddingBottom: spacing.md,
+  },
+  topRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingTop: spacing.md,
-    paddingBottom: spacing.lg + spacing.sm,
-    paddingLeft: spacing.lg,
-    paddingRight: spacing.sm,
+    justifyContent: 'space-between',
   },
-  textBlock: {
-    flex: 1,
-    paddingRight: spacing.xs,
-    zIndex: 2,
-  },
-  eyebrowRow: {
+  eyebrowChip: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    alignSelf: 'flex-start',
-    backgroundColor: 'rgba(255,255,255,0.14)',
+    backgroundColor: 'rgba(0,0,0,0.28)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.18)',
     paddingHorizontal: spacing.sm,
-    paddingVertical: 3,
-    borderRadius: borderRadius.full,
+    paddingVertical: 5,
+    borderRadius: 8,
   },
-  eyebrowDot: {
-    width: 5,
-    height: 5,
-    borderRadius: 3,
-    backgroundColor: colors.white,
+  eyebrowMark: {
+    width: 6,
+    height: 6,
+    borderRadius: 1.5,
   },
   eyebrow: {
-    fontSize: moderateScale(9),
+    fontSize: moderateScale(10),
     fontWeight: '700',
-    color: 'rgba(255,255,255,0.92)',
-    letterSpacing: 0.4,
+    color: colors.white,
+    letterSpacing: 0.6,
     textTransform: 'uppercase',
+    includeFontPadding: false,
+  },
+  copyStack: {
+    gap: spacing.sm,
+    paddingRight: spacing.xl,
+    marginVertical: spacing.xs,
   },
   title: {
-    fontSize: moderateScale(16),
+    fontSize: moderateScale(20),
     fontWeight: '800',
     color: colors.white,
-    lineHeight: moderateScale(20),
-    marginTop: spacing.sm,
-    letterSpacing: -0.35,
+    lineHeight: moderateScale(26),
+    letterSpacing: -0.4,
+    includeFontPadding: false,
   },
-  subtitle: {
-    fontSize: moderateScale(10),
+  detail: {
+    fontSize: moderateScale(12),
     fontWeight: '500',
-    color: 'rgba(255,255,255,0.78)',
-    lineHeight: moderateScale(14),
-    marginTop: spacing.xxs + 1,
+    color: 'rgba(255,255,255,0.88)',
+    lineHeight: moderateScale(17),
+    includeFontPadding: false,
   },
-  codeChip: {
+  bottomRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xs,
-    marginTop: spacing.sm,
+    justifyContent: 'space-between',
+    gap: spacing.sm,
   },
-  codeChipLabel: {
-    fontSize: moderateScale(9),
-    fontWeight: '600',
-    color: 'rgba(255,255,255,0.72)',
-  },
-  codeBadge: {
-    backgroundColor: colors.white,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
-    borderRadius: borderRadius.full,
-  },
-  codeText: {
-    fontSize: moderateScale(9),
-    fontWeight: '800',
-    letterSpacing: 0.5,
-  },
-  heroWrap: {
-    width: moderateScale(98),
-    height: moderateScale(98),
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: spacing.xxs,
-  },
-  heroAura: {
-    position: 'absolute',
-    width: moderateScale(92),
-    height: moderateScale(92),
-    borderRadius: moderateScale(46),
-  },
-  heroRing: {
-    position: 'absolute',
-    width: moderateScale(86),
-    height: moderateScale(86),
-    borderRadius: moderateScale(43),
-    borderWidth: 1.5,
-  },
-  heroPlate: {
-    width: moderateScale(78),
-    height: moderateScale(78),
-    borderRadius: moderateScale(20),
+  metaChip: {
+    flexShrink: 1,
     backgroundColor: 'rgba(255,255,255,0.16)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.28)',
+    borderColor: 'rgba(255,255,255,0.22)',
+    paddingHorizontal: spacing.sm + 2,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  metaText: {
+    fontSize: moderateScale(10),
+    fontWeight: '700',
+    color: colors.white,
+    letterSpacing: 0.15,
+    includeFontPadding: false,
+  },
+  markPlate: {
+    width: moderateScale(36),
+    height: moderateScale(36),
+    borderRadius: 10,
+    borderWidth: 1.5,
+    backgroundColor: 'rgba(0,0,0,0.22)',
+    transform: [{ rotate: '10deg' }],
     alignItems: 'center',
     justifyContent: 'center',
-    overflow: 'hidden',
   },
-  heroPlateSheen: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  heroImage: {
-    width: '84%',
-    height: '84%',
+  markInner: {
+    transform: [{ rotate: '-10deg' }],
   },
   ctaButton: {
-    position: 'absolute',
-    right: spacing.md,
-    bottom: spacing.md,
+    flexShrink: 0,
     borderRadius: borderRadius.full,
     overflow: 'hidden',
-    zIndex: 3,
     shadowColor: colors.black,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.16,
     shadowRadius: 8,
-    elevation: 5,
+    elevation: 4,
   },
   ctaGradient: {
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm + 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingLeft: spacing.md,
+    paddingRight: 4,
+    paddingVertical: 4,
+    gap: spacing.xs + 2,
   },
   ctaText: {
-    fontSize: moderateScale(11),
+    fontSize: moderateScale(12),
     fontWeight: '800',
-    letterSpacing: 0.15,
+    letterSpacing: 0.1,
+    includeFontPadding: false,
+  },
+  ctaIcon: {
+    width: moderateScale(26),
+    height: moderateScale(26),
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   progressRow: {
     alignItems: 'center',
     marginTop: spacing.sm,
-    gap: spacing.sm,
   },
   dotsRow: {
     flexDirection: 'row',
@@ -724,9 +818,9 @@ const styles = StyleSheet.create({
     gap: 5,
   },
   dot: {
-    width: 5,
-    height: 5,
-    borderRadius: 3,
+    width: 7,
+    height: 7,
+    borderRadius: 1.5,
     backgroundColor: colors.border,
   },
   dotActive: {
