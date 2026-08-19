@@ -181,11 +181,11 @@ const SearchScreen = () => {
           ...typography.h3,
           fontSize: moderateScale(21),
           fontWeight: '800',
-          color: colors.textPrimary,
+          color: colors.white,
         },
         heroSubtitle: {
           ...typography.caption,
-          color: colors.textSecondary,
+          color: 'rgba(255,255,255,0.85)',
           marginBottom: spacing.md,
         },
         list: {

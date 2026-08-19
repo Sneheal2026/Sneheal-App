@@ -643,8 +643,11 @@ const hi: TranslationResources = {
   },
   notifications: {
     title: 'सूचनाएँ',
-    empty: 'कोई सूचना नहीं',
-    emptySubtitle: 'ऑर्डर अपडेट, रिमाइंडर और ऑफ़र यहाँ दिखेंगे।',
+    empty: 'आप सब देख चुके हैं',
+    emptySubtitle: 'ऑर्डर अपडेट, दवा रिमाइंडर और ऑफ़र यहाँ दिखेंगे।',
+    hintOrders: 'ऑर्डर',
+    hintReminders: 'रिमाइंडर',
+    hintOffers: 'ऑफ़र',
     today: 'आज',
     earlier: 'पहले',
     caughtUp: 'आप सब देख चुके हैं',

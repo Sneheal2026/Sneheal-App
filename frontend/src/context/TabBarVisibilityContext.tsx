@@ -32,8 +32,11 @@ export const TabBarVisibilityProvider = ({ children }: { children: React.ReactNo
   );
 };
 
+export const useOptionalTabBarVisibility = () =>
+  useContext(TabBarVisibilityContext);
+
 export const useTabBarVisibility = () => {
-  const context = useContext(TabBarVisibilityContext);
+  const context = useOptionalTabBarVisibility();
   if (!context) {
     throw new Error('useTabBarVisibility must be used within TabBarVisibilityProvider');
   }

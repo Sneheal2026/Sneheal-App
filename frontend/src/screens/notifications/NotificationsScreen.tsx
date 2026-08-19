@@ -10,9 +10,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { useTheme } from '@/hooks/useTheme';
 import { useTranslation } from 'react-i18next';
+import { withAlpha } from '@/utils/colorUtils';
 
 type NotificationIcon = keyof typeof Ionicons.glyphMap;
 
@@ -26,57 +27,28 @@ interface NotificationItem {
   section: 'today' | 'earlier';
 }
 
-const INITIAL_NOTIFICATIONS: NotificationItem[] = [
-  {
-    id: '1',
-    title: 'Order on the way',
-    message: 'Order #SH-2847 is out for delivery. Expected in about 25 minutes.',
-    time: '5 min ago',
-    icon: 'bicycle-outline',
-    unread: true,
-    section: 'today',
-  },
-  {
-    id: '2',
-    title: 'Medicine reminder',
-    message: 'Time to take Paracetamol 500mg. Stay on track with your schedule.',
-    time: '1 hr ago',
-    icon: 'alarm-outline',
-    unread: true,
-    section: 'today',
-  },
-  {
-    id: '3',
-    title: 'Weekend wellness offer',
-    message: '20% off vitamins & supplements. Use code WELL20 at checkout.',
-    time: 'Yesterday',
-    icon: 'pricetag-outline',
-    unread: false,
-    section: 'earlier',
-  },
-  {
-    id: '4',
-    title: 'Order delivered',
-    message: 'Your medicines from order #SH-2791 were delivered successfully.',
-    time: '2 days ago',
-    icon: 'checkmark-circle-outline',
-    unread: false,
-    section: 'earlier',
-  },
-];
-
 type ListRow =
   | { type: 'header'; id: string; label: string }
   | { type: 'item'; id: string; item: NotificationItem };
+
+const EMPTY_HINTS: {
+  key: 'hintOrders' | 'hintReminders' | 'hintOffers';
+  icon: NotificationIcon;
+}[] = [
+  { key: 'hintOrders', icon: 'bicycle-outline' },
+  { key: 'hintReminders', icon: 'alarm-outline' },
+  { key: 'hintOffers', icon: 'pricetag-outline' },
+];
 
 const NotificationsScreen = () => {
   const navigation = useNavigation();
   const { t } = useTranslation();
   const { colors, spacing, typography, borderRadius, shadows, moderateScale, gradients } =
     useTheme();
-  const [notifications, setNotifications] = useState(INITIAL_NOTIFICATIONS);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
 
   const unreadCount = notifications.filter((n) => n.unread).length;
+  const isEmpty = notifications.length === 0;
 
   const listData = useMemo<ListRow[]>(() => {
     const today = notifications.filter((n) => n.section === 'today');
@@ -153,8 +125,8 @@ const NotificationsScreen = () => {
           justifyContent: 'center',
           paddingHorizontal: spacing.sm,
         },
-        markReadBtnDisabled: {
-          opacity: 0.4,
+        headerSpacer: {
+          width: moderateScale(40),
         },
         body: {
           flex: 1,
@@ -170,9 +142,6 @@ const NotificationsScreen = () => {
           paddingBottom: spacing.xxxxxl,
           gap: spacing.sm,
           flexGrow: 1,
-        },
-        listContentEmpty: {
-          justifyContent: 'center',
         },
         sectionLabel: {
           ...typography.caption,
@@ -254,29 +223,94 @@ const NotificationsScreen = () => {
           flexShrink: 0,
         },
         emptyWrap: {
-          alignItems: 'center',
-          paddingHorizontal: spacing.lg,
-          gap: spacing.sm,
-        },
-        emptyIconCircle: {
-          width: moderateScale(88),
-          height: moderateScale(88),
-          borderRadius: moderateScale(44),
+          flex: 1,
           alignItems: 'center',
           justifyContent: 'center',
-          marginBottom: spacing.sm,
+          paddingHorizontal: spacing.xl,
+          paddingBottom: spacing.xxxxl,
+        },
+        emptyCard: {
+          width: '100%',
+          maxWidth: moderateScale(340),
+          alignItems: 'center',
+          backgroundColor: colors.white,
+          borderRadius: borderRadius.xxl,
+          paddingHorizontal: spacing.xl,
+          paddingTop: spacing.xxxl,
+          paddingBottom: spacing.xxl,
+          borderWidth: 1,
+          borderColor: colors.borderLight,
+          ...shadows.sm,
+        },
+        illustration: {
+          width: moderateScale(148),
+          height: moderateScale(148),
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginBottom: spacing.lg,
+        },
+        ringOuter: {
+          position: 'absolute',
+          width: moderateScale(148),
+          height: moderateScale(148),
+          borderRadius: moderateScale(74),
+          borderWidth: 1,
+          borderColor: withAlpha(colors.primary, 0.12),
+          backgroundColor: withAlpha(colors.primary, 0.04),
+        },
+        ringMid: {
+          position: 'absolute',
+          width: moderateScale(110),
+          height: moderateScale(110),
+          borderRadius: moderateScale(55),
+          borderWidth: 1,
+          borderColor: withAlpha(colors.primary, 0.18),
+          backgroundColor: withAlpha(colors.primary, 0.08),
+        },
+        emptyIconCircle: {
+          width: moderateScale(72),
+          height: moderateScale(72),
+          borderRadius: moderateScale(36),
+          alignItems: 'center',
+          justifyContent: 'center',
         },
         emptyTitle: {
-          ...typography.h4,
+          ...typography.h3,
+          fontSize: moderateScale(20),
           color: colors.textPrimary,
-          fontWeight: '700',
+          fontWeight: '800',
+          textAlign: 'center',
         },
         emptySubtitle: {
           ...typography.bodySmall,
           color: colors.textSecondary,
           textAlign: 'center',
-          lineHeight: 20,
-          maxWidth: 280,
+          lineHeight: moderateScale(21),
+          marginTop: spacing.sm,
+          maxWidth: moderateScale(260),
+        },
+        hintRow: {
+          flexDirection: 'row',
+          flexWrap: 'wrap',
+          justifyContent: 'center',
+          gap: spacing.sm,
+          marginTop: spacing.xl,
+        },
+        hintChip: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: spacing.xs,
+          paddingHorizontal: spacing.md,
+          paddingVertical: spacing.sm,
+          borderRadius: borderRadius.full,
+          backgroundColor: colors.surfaceSecondary,
+          borderWidth: 1,
+          borderColor: colors.borderLight,
+        },
+        hintText: {
+          ...typography.caption,
+          fontWeight: '700',
+          color: colors.textSecondary,
         },
       }),
     [borderRadius, colors, moderateScale, shadows, spacing, typography],
@@ -359,54 +393,72 @@ const NotificationsScreen = () => {
               </Text>
             </View>
 
-            <Pressable
-              onPress={markAllRead}
-              disabled={unreadCount === 0}
-              style={({ pressed }) => [
-                styles.markReadBtn,
-                unreadCount === 0 && styles.markReadBtnDisabled,
-                pressed && unreadCount > 0 && styles.backBtnPressed,
-              ]}
-              accessibilityLabel={t('notifications.markAllReadA11y')}
-              accessibilityRole="button"
-            >
-              <Ionicons
-                name="checkmark-done-outline"
-                size={20}
-                color={colors.white}
-              />
-            </Pressable>
+            {isEmpty ? (
+              <View style={styles.headerSpacer} />
+            ) : (
+              <Pressable
+                onPress={markAllRead}
+                disabled={unreadCount === 0}
+                style={({ pressed }) => [
+                  styles.markReadBtn,
+                  unreadCount === 0 && { opacity: 0.4 },
+                  pressed && unreadCount > 0 && styles.backBtnPressed,
+                ]}
+                accessibilityLabel={t('notifications.markAllReadA11y')}
+                accessibilityRole="button"
+              >
+                <Ionicons name="checkmark-done-outline" size={20} color={colors.white} />
+              </Pressable>
+            )}
           </View>
         </SafeAreaView>
       </LinearGradient>
 
       <View style={styles.body}>
-        <FlatList
-          data={listData}
-          keyExtractor={(row) => row.id}
-          renderItem={renderItem}
-          contentContainerStyle={[
-            styles.listContent,
-            listData.length === 0 && styles.listContentEmpty,
-          ]}
-          showsVerticalScrollIndicator={false}
-          ListEmptyComponent={
-            <Animated.View entering={FadeInDown.duration(400)} style={styles.emptyWrap}>
-              <LinearGradient
-                colors={[colors.infoLight, colors.white]}
-                style={styles.emptyIconCircle}
-              >
-                <Ionicons
-                  name="notifications-off-outline"
-                  size={moderateScale(40)}
-                  color={colors.primary}
-                />
-              </LinearGradient>
+        {isEmpty ? (
+          <Animated.View entering={FadeIn.duration(380)} style={styles.emptyWrap}>
+            <Animated.View entering={FadeInDown.delay(80).duration(420)} style={styles.emptyCard}>
+              <View style={styles.illustration}>
+                <View style={styles.ringOuter} />
+                <View style={styles.ringMid} />
+                <LinearGradient
+                  colors={[colors.infoLight, colors.white]}
+                  style={styles.emptyIconCircle}
+                >
+                  <Ionicons
+                    name="notifications-off-outline"
+                    size={moderateScale(32)}
+                    color={colors.primary}
+                  />
+                </LinearGradient>
+              </View>
+
               <Text style={styles.emptyTitle}>{t('notifications.empty')}</Text>
               <Text style={styles.emptySubtitle}>{t('notifications.emptySubtitle')}</Text>
+
+              <View style={styles.hintRow}>
+                {EMPTY_HINTS.map((hint) => (
+                  <View key={hint.key} style={styles.hintChip}>
+                    <Ionicons
+                      name={hint.icon}
+                      size={moderateScale(13)}
+                      color={colors.primary}
+                    />
+                    <Text style={styles.hintText}>{t(`notifications.${hint.key}`)}</Text>
+                  </View>
+                ))}
+              </View>
             </Animated.View>
-          }
-        />
+          </Animated.View>
+        ) : (
+          <FlatList
+            data={listData}
+            keyExtractor={(row) => row.id}
+            renderItem={renderItem}
+            contentContainerStyle={styles.listContent}
+            showsVerticalScrollIndicator={false}
+          />
+        )}
       </View>
     </View>
   );

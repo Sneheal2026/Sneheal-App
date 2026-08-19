@@ -156,7 +156,7 @@ const en = {
   search: {
     placeholder: 'Search medicines, products...',
     heroTitle: 'Find your medicines',
-    heroCSubtitle: 'Trusted care, delivered fast',
+    heroSubtitle: 'Trusted care, delivered fast',
     recent: 'Recent',
     clear: 'Clear',
     trending: 'Trending now',
@@ -644,8 +644,11 @@ const en = {
   },
   notifications: {
     title: 'Notifications',
-    empty: 'No notifications',
-    emptySubtitle: 'Order updates, reminders, and offers will show up here.',
+    empty: "You're all caught up",
+    emptySubtitle: 'Order updates, medicine reminders, and offers will appear here.',
+    hintOrders: 'Orders',
+    hintReminders: 'Reminders',
+    hintOffers: 'Offers',
     today: 'Today',
     earlier: 'Earlier',
     caughtUp: 'You are all caught up',

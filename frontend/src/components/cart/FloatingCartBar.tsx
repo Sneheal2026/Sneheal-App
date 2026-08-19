@@ -7,10 +7,10 @@ import {
   Image,
   ImageSourcePropType,
 } from 'react-native';
-import Animated, { useAnimatedStyle } from 'react-native-reanimated';
+import Animated, { FadeInUp, useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useTabBarVisibility } from '@/context/TabBarVisibilityContext';
+import { useOptionalTabBarVisibility } from '@/context/TabBarVisibilityContext';
 import theme from '@/styles/theme';
 import { useTranslation } from 'react-i18next';
 
@@ -19,18 +19,31 @@ const { colors, spacing, typography, moderateScale, shadows } = theme;
 const CART_GREEN = '#111152';
 const THUMB_SIZE = moderateScale(36, 0.35);
 
+export const FLOATING_CART_BAR_HEIGHT =
+  THUMB_SIZE + (spacing.sm + 2) * 2;
+
 interface FloatingCartBarProps {
   totalItems: number;
   previewImages: ImageSourcePropType[];
   onPress: () => void;
+  /** Distance from the screen bottom. When set, tab-bar tracking is skipped. */
+  bottomOffset?: number;
 }
 
-const FloatingCartBar = ({ totalItems, previewImages, onPress }: FloatingCartBarProps) => {
+const FloatingCartBar = ({
+  totalItems,
+  previewImages,
+  onPress,
+  bottomOffset,
+}: FloatingCartBarProps) => {
   const { t } = useTranslation();
-  const { tabBarOffset, tabBarHeight } = useTabBarVisibility();
+  const tabBar = useOptionalTabBarVisibility();
+  const fallbackOffset = useSharedValue(0);
+  const tabBarOffset = tabBar?.tabBarOffset ?? fallbackOffset;
+  const tabBarHeight = tabBar?.tabBarHeight ?? 0;
   const { bottom: bottomInset } = useSafeAreaInsets();
 
-  const wrapperStyle = useAnimatedStyle(() => {
+  const tabAwareStyle = useAnimatedStyle(() => {
     const offset = tabBarOffset.value;
     const hiddenProgress = tabBarHeight > 0 ? offset / tabBarHeight : 0;
 
@@ -46,7 +59,14 @@ const FloatingCartBar = ({ totalItems, previewImages, onPress }: FloatingCartBar
   if (totalItems === 0) return null;
 
   return (
-    <Animated.View style={[styles.wrapper, wrapperStyle]}>
+    <Animated.View
+      entering={FadeInUp.duration(280).springify().damping(18)}
+      pointerEvents="box-none"
+      style={[
+        styles.wrapper,
+        bottomOffset != null ? { bottom: bottomOffset } : tabAwareStyle,
+      ]}
+    >
       <Pressable
         onPress={onPress}
         style={({ pressed }) => [styles.bar, pressed && styles.barPressed]}

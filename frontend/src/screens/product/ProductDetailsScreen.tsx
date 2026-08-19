@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -27,6 +27,10 @@ import { useCart } from '@/context/CartContext';
 import { SimilarItems } from '@/components/product';
 import Loader from '@/components/common/Loader';
 import QuantityStepper from '@/components/common/QuantityStepper';
+import FloatingCartBar, {
+  FLOATING_CART_BAR_HEIGHT,
+} from '@/components/cart/FloatingCartBar';
+import { resolveCatalogImage } from '@/utils/productImage';
 import { useTranslation } from 'react-i18next';
 
 const { colors, spacing, moderateScale } = theme;
@@ -47,18 +51,37 @@ const ProductDetailsScreen = () => {
   const { productId } = route.params;
 
   const { data: medicine, loading, error, refetch } = useProductDetails(productId);
-  const { getQuantity, addProduct, decrement } = useCart();
+  const { getQuantity, addProduct, decrement, lines, totalItems } = useCart();
   const quantity = getQuantity(productId);
+
+  const previewImages = useMemo(
+    () => lines.map((line) => resolveCatalogImage(line.imageUrl)),
+    [lines],
+  );
 
   const topInset = Math.max(
     insets.top,
     Platform.OS === 'android' ? StatusBar.currentHeight ?? 0 : 0,
   );
 
+  const estimatedActionBarHeight =
+    spacing.md + moderateScale(48, 0.35) + Math.max(insets.bottom, spacing.md);
+  const [actionBarHeight, setActionBarHeight] = useState(estimatedActionBarHeight);
+  const cartGap = spacing.md;
+  const floatingCartOffset = actionBarHeight + cartGap;
+  const scrollBottomPad =
+    actionBarHeight +
+    (totalItems > 0 ? FLOATING_CART_BAR_HEIGHT + cartGap : 0) +
+    spacing.lg;
+
   const handleAdd = useCallback(() => {
     if (medicine) addProduct(medicine);
   }, [medicine, addProduct]);
   const handleRemove = useCallback(() => decrement(productId), [decrement, productId]);
+
+  const openCart = useCallback(() => {
+    navigation.navigate('Main', { screen: 'Cart' });
+  }, [navigation]);
 
   const openSimilar = useCallback(
     (id: string) => {
@@ -100,7 +123,7 @@ const ProductDetailsScreen = () => {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
-          paddingBottom: spacing.xxxxxl + spacing.xxxxl + Math.max(insets.bottom, spacing.md),
+          paddingBottom: scrollBottomPad,
         }}
         bounces={Platform.OS === 'ios'}
       >
@@ -199,6 +222,10 @@ const ProductDetailsScreen = () => {
       {/* Sticky bottom bar */}
       <Animated.View
         entering={FadeInDown.duration(360)}
+        onLayout={(event) => {
+          const next = event.nativeEvent.layout.height;
+          setActionBarHeight((prev) => (Math.abs(prev - next) < 1 ? prev : next));
+        }}
         style={[styles.bottomBar, { paddingBottom: Math.max(insets.bottom, spacing.md) }]}
       >
         <View style={styles.bottomPrice}>
@@ -214,6 +241,13 @@ const ProductDetailsScreen = () => {
           onDecrement={handleRemove}
         />
       </Animated.View>
+
+      <FloatingCartBar
+        totalItems={totalItems}
+        previewImages={previewImages}
+        onPress={openCart}
+        bottomOffset={floatingCartOffset}
+      />
     </View>
   );
 };
@@ -413,6 +447,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
+    zIndex: 40,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
