@@ -710,6 +710,7 @@ const hi: TranslationResources = {
     savePrescriptionA11y: 'प्रिस्क्रिप्शन सेव करें',
     aiVerifyFooter:
       'AI पहचान — उपयोग से पहले अपने फार्मासिस्ट से सत्यापित करें।',
+    searchMedicineA11y: '{{name}} खोजें',
     ok: 'ठीक है',
   },
   tracking: {

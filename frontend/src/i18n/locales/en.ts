@@ -710,6 +710,7 @@ const en = {
     scanAgainA11y: 'Scan again',
     savePrescriptionA11y: 'Save prescription',
     aiVerifyFooter: 'AI-powered detection — please verify with your pharmacist before use.',
+    searchMedicineA11y: 'Search {{name}}',
     ok: 'OK',
   },
   tracking: {

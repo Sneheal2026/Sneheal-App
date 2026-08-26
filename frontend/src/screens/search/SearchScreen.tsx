@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -130,6 +130,14 @@ const SearchScreen = () => {
       };
     }, [navigation]),
   );
+
+  useEffect(() => {
+    const incomingQuery = route.params?.query?.trim();
+    if (!incomingQuery) return;
+
+    setQuery(incomingQuery);
+    navigation.setParams({ query: undefined });
+  }, [navigation, route.params?.query]);
 
   const applyTerm = useCallback(async (term: string) => {
     setQuery(term);

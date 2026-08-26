@@ -34,6 +34,7 @@ import { pickImageFromSource, type PickedImage } from '@/utils/imagePicker';
 import type { AuthScreenProps } from '@/navigation/types';
 import { scanPrescription, savePrescription } from '@/services/prescriptionService';
 import type { ScannedMedicine, ImageType } from '@/types/prescription';
+import { ScannedMedicineCard } from '@/components/scan';
 import { useTranslation } from 'react-i18next';
 
 const { colors, spacing, typography, borderRadius, shadows, moderateScale } = theme;
@@ -381,6 +382,19 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
     ]);
   }, [handlePick, t]);
 
+  const handleSearchMedicine = useCallback(
+    (query: string) => {
+      const term = query.trim();
+      if (!term) return;
+      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      navigation.navigate('Main', {
+        screen: 'Search',
+        params: { query: term, autofocus: true },
+      });
+    },
+    [navigation],
+  );
+
   return (
     <View style={styles.root}>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent={Platform.OS === 'android'} />
@@ -642,50 +656,12 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
 
             <View style={styles.medicineList}>
               {medicines.map((med, index) => (
-                <View key={index} style={styles.medicineCard}>
-                  <View style={styles.medicineCardTop}>
-                    <View style={styles.medicineNumber}>
-                      <Text style={styles.medicineNumberText}>{index + 1}</Text>
-                    </View>
-                    <View style={styles.medicineCardInfo}>
-                      <Text style={styles.medicineName}>{med.correctedName}</Text>
-
-                      {med.hasSpellingError && med.detectedName !== med.correctedName && (
-                        <View style={styles.correctionRow}>
-                          <Ionicons name="sparkles" size={12} color={colors.warning} />
-                          <Text style={styles.correctionText}>
-                            Detected as "<Text style={styles.correctionStrike}>{med.detectedName}</Text>" — auto-corrected
-                          </Text>
-                        </View>
-                      )}
-
-                      {med.genericName ? (
-                        <View style={styles.genericRow}>
-                          <Ionicons name="flask-outline" size={12} color={colors.textMuted} />
-                          <Text style={styles.genericText}>{med.genericName}</Text>
-                        </View>
-                      ) : null}
-
-                      <View style={styles.tagRow}>
-                        {med.brandName ? (
-                          <View style={styles.brandTag}>
-                            <Text style={styles.brandTagText}>{med.brandName}</Text>
-                          </View>
-                        ) : null}
-                        {med.form ? (
-                          <View style={styles.formTag}>
-                            <Text style={styles.formTagText}>{med.form}</Text>
-                          </View>
-                        ) : null}
-                        {med.manufacturer ? (
-                          <View style={styles.mfgTag}>
-                            <Text style={styles.mfgTagText}>{med.manufacturer}</Text>
-                          </View>
-                        ) : null}
-                      </View>
-                    </View>
-                  </View>
-                </View>
+                <ScannedMedicineCard
+                  key={`${med.correctedName}-${index}`}
+                  medicine={med}
+                  index={index}
+                  onSearchPress={handleSearchMedicine}
+                />
               ))}
             </View>
 
@@ -1368,113 +1344,6 @@ const styles = StyleSheet.create({
   },
   medicineList: {
     gap: spacing.md,
-  },
-  medicineCard: {
-    backgroundColor: colors.white,
-    borderRadius: borderRadius.lg,
-    padding: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.borderLight,
-    borderLeftWidth: 3,
-    borderLeftColor: ACCENT,
-    ...shadows.sm,
-  },
-  medicineCardTop: {
-    flexDirection: 'row',
-    gap: spacing.md,
-  },
-  medicineCardInfo: {
-    flex: 1,
-    gap: spacing.xs,
-  },
-  correctionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    backgroundColor: '#FFF8E1',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-    borderRadius: borderRadius.md,
-    alignSelf: 'flex-start',
-  },
-  correctionText: {
-    fontSize: moderateScale(11),
-    color: '#B45309',
-    fontWeight: '500',
-    flex: 1,
-  },
-  correctionStrike: {
-    textDecorationLine: 'line-through',
-    color: '#DC2626',
-  },
-  genericRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  genericText: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    fontWeight: '500',
-    flex: 1,
-  },
-  tagRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.xs,
-    marginTop: 2,
-  },
-  brandTag: {
-    backgroundColor: colors.infoLight,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
-    borderRadius: borderRadius.full,
-  },
-  brandTagText: {
-    fontSize: moderateScale(10),
-    fontWeight: '700',
-    color: ACCENT,
-  },
-  formTag: {
-    backgroundColor: '#F0FDF4',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
-    borderRadius: borderRadius.full,
-  },
-  formTagText: {
-    fontSize: moderateScale(10),
-    fontWeight: '600',
-    color: colors.success,
-  },
-  mfgTag: {
-    backgroundColor: '#F5F3FF',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
-    borderRadius: borderRadius.full,
-  },
-  mfgTagText: {
-    fontSize: moderateScale(10),
-    fontWeight: '600',
-    color: '#7C3AED',
-  },
-  medicineNumber: {
-    width: moderateScale(26),
-    height: moderateScale(26),
-    borderRadius: moderateScale(13),
-    backgroundColor: colors.infoLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  medicineNumberText: {
-    ...typography.caption,
-    fontWeight: '800',
-    color: ACCENT,
-  },
-  medicineName: {
-    ...typography.body,
-    fontWeight: '600',
-    color: colors.textPrimary,
-    flex: 1,
   },
   medicineFooter: {
     ...typography.caption,
