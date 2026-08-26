@@ -93,6 +93,14 @@ const OrderDetailScreen = () => {
         />
 
         <View style={styles.body}>
+          <Text style={styles.section}>{t('orders.paymentMethod')}</Text>
+          <View style={styles.card}>
+            <Text style={styles.name}>{t('cart.codTitle')}</Text>
+            <Text style={styles.meta}>
+              {t('orders.payOnDelivery', { amount: formatInr(order.grandTotal) })}
+            </Text>
+          </View>
+
           <Text style={styles.section}>{t('orders.deliverTo')}</Text>
           <View style={styles.card}>
             <Text style={styles.name}>{order.address.receiverName}</Text>

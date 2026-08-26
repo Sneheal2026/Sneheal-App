@@ -33,9 +33,9 @@ const buildBodies = (order) => {
     .join('');
 
   const text = [
-    `New paid order ${order.publicId}`,
+    `New order ${order.publicId}`,
     `Amount: ${inr(order.grandTotal)}`,
-    `Payment: ${order.payment?.method || 'paid'}`,
+    `Payment: Cash on Delivery`,
     '',
     `Customer: ${address.receiverName || '-'}`,
     `Mobile: ${address.mobile || '-'}`,
@@ -49,9 +49,9 @@ const buildBodies = (order) => {
     .join('\n');
 
   const html = `
-    <h2>New paid order ${escapeHtml(order.publicId)}</h2>
+    <h2>New order ${escapeHtml(order.publicId)}</h2>
     <p><strong>Amount:</strong> ${inr(order.grandTotal)}<br/>
-    <strong>Payment:</strong> ${escapeHtml(order.payment?.method || 'paid')}</p>
+    <strong>Payment:</strong> Cash on Delivery</p>
     <p><strong>Customer:</strong> ${escapeHtml(address.receiverName)}<br/>
     <strong>Mobile:</strong> ${escapeHtml(address.mobile)}<br/>
     <strong>Address:</strong> ${escapeHtml(address.flatNumber)}, ${escapeHtml(address.addressLine)}

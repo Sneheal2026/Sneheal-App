@@ -43,7 +43,7 @@ const OrderPlacedScreen = () => {
       <OrderStatusPanel
         publicId={params?.publicId ?? ''}
         grandTotal={params?.grandTotal ?? 0}
-        paymentStatus="paid"
+        paymentStatus="pending"
         status="confirmed"
       />
       <View style={styles.footer}>

@@ -69,8 +69,7 @@ const OrdersScreen = (_props: TabScreenProps<'Orders'>) => {
     [navigation],
   );
 
-  const statusKey = (order: OrderListItem) =>
-    order.paymentStatus === 'paid' ? order.status : order.paymentStatus;
+  const statusKey = (order: OrderListItem) => order.status;
 
   return (
     <View style={styles.root}>

@@ -16,7 +16,11 @@ const migrations = [
   },
 ];
 
-const SQL_FILES = ['009_orders_payments.sql'];
+const SQL_FILES = [
+  '009_orders_payments.sql',
+  '010_cod_payments.sql',
+  '011_delete_unpaid_razorpay_drafts.sql',
+];
 
 const splitStatements = (sql) =>
   sql

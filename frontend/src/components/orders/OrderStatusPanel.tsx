@@ -11,15 +11,15 @@ import theme from '@/styles/theme';
 const { colors, spacing, typography, borderRadius, shadows } = theme;
 const NAVY = '#111152';
 const NAVY_SOFT = '#1C1C6A';
-const STEPS = ['paid', 'packed', 'onWay', 'delivered'] as const;
+const STEPS = ['placed', 'packed', 'onWay', 'delivered'] as const;
 
 export const orderStatusStep = (
   paymentStatus: PaymentStatus,
   status: OrderStatus,
 ): number => {
   if (paymentStatus === 'failed' || status === 'cancelled') return -1;
-  if (paymentStatus !== 'paid') return 0;
-  return 1;
+  if (status === 'confirmed') return 1;
+  return 0;
 };
 
 type Props = {
@@ -62,9 +62,9 @@ const OrderStatusPanel = ({
       ? { kicker: t('orders.status.cancelled'), title: t('orders.cancelledTitle'), sub: t('orders.cancelledSubtitle') }
       : paymentStatus === 'failed'
         ? { kicker: t('orders.status.failed'), title: t('orders.failedTitle'), sub: t('orders.failedSubtitle') }
-        : paymentStatus !== 'paid'
-          ? { kicker: t('orders.status.awaiting_payment'), title: t('orders.pendingTitle'), sub: t('orders.pendingSubtitle') }
-          : { kicker: t('orders.placedKicker'), title: t('orders.placedTitle'), sub: t('orders.placedSubtitle') };
+        : status === 'confirmed'
+          ? { kicker: t('orders.placedKicker'), title: t('orders.placedTitle'), sub: t('orders.placedSubtitle') }
+          : { kicker: t('orders.status.awaiting_payment'), title: t('orders.pendingTitle'), sub: t('orders.pendingSubtitle') };
 
   return (
     <View>

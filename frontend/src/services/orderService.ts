@@ -1,16 +1,11 @@
 import { authenticatedApiRequest } from './authTokenManager';
-import type {
-  CheckoutSession,
-  OrderDetail,
-  OrderListItem,
-  RazorpaySuccessPayload,
-} from '@/types/order.types';
+import type { OrderDetail, OrderListItem } from '@/types/order.types';
 
 export const createCheckoutOrder = (
   addressId: string,
   items: Array<{ productId: string; quantity: number }>,
-): Promise<CheckoutSession> =>
-  authenticatedApiRequest<CheckoutSession>('/api/orders', {
+): Promise<OrderDetail> =>
+  authenticatedApiRequest<OrderDetail>('/api/orders', {
     method: 'POST',
     body: { addressId, items },
   });
@@ -67,17 +62,3 @@ export const fetchOrders = (options?: { force?: boolean }): Promise<OrderListIte
 
 export const fetchOrderById = (orderId: string): Promise<OrderDetail> =>
   authenticatedApiRequest<OrderDetail>(`/api/orders/${orderId}`);
-
-export const verifyPayment = (
-  orderId: string,
-  payload: RazorpaySuccessPayload,
-): Promise<OrderDetail> =>
-  authenticatedApiRequest<OrderDetail>('/api/payments/verify', {
-    method: 'POST',
-    body: {
-      orderId,
-      razorpay_order_id: payload.razorpay_order_id,
-      razorpay_payment_id: payload.razorpay_payment_id,
-      razorpay_signature: payload.razorpay_signature,
-    },
-  });

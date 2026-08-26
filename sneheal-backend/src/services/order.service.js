@@ -6,19 +6,10 @@ const productRepo = require('../repositories/product.repository');
 const orderRepo = require('../repositories/order.repository');
 const paymentRepo = require('../repositories/payment.repository');
 const { computeCartBill, fromPaise, toPaise } = require('./cartBilling.service');
-const razorpayService = require('./razorpay.service');
 const mailService = require('./mail.service');
 
 const MAX_LINES = 50;
 const MAX_QTY = 10;
-
-const itemSignature = (items) => {
-  const normalized = items
-    .map((item) => `${item.productId}:${item.quantity}`)
-    .sort()
-    .join('|');
-  return crypto.createHash('sha256').update(normalized).digest('hex');
-};
 
 const makePublicId = () => {
   const rand = crypto.randomBytes(3).toString('hex').toUpperCase();
@@ -41,16 +32,6 @@ const billFromOrder = (order) => ({
       order.promoPaise +
       (order.deliveryPaise === 0 ? order.deliveryOriginalPaise : 0),
   ),
-});
-
-const toCheckoutPayload = (order) => ({
-  id: order.id,
-  publicId: order.publicId,
-  amountPaise: order.grandTotalPaise,
-  currency: order.currency,
-  razorpayOrderId: order.razorpayOrderId,
-  keyId: razorpayService.getKeyId(),
-  bill: billFromOrder(order),
 });
 
 const toDetailPayload = (order, items, payment) => ({
@@ -84,7 +65,6 @@ const toDetailPayload = (order, items, payment) => ({
     ? {
         status: payment.status,
         method: payment.method,
-        razorpayPaymentId: payment.razorpayPaymentId,
       }
     : null,
 });
@@ -164,27 +144,7 @@ const createCheckoutOrder = async (userId, body) => {
 
   const bill = computeCartBill(pricedLines);
   if (bill.grandTotalPaise < 100) {
-    throw new AppError(400, 'Order total is too low to pay');
-  }
-
-  const signature = itemSignature(pricedLines);
-  const pending = await orderRepo.findPendingReusable({
-    userId,
-    addressId,
-    grandTotalPaise: bill.grandTotalPaise,
-  });
-
-  for (const candidate of pending) {
-    const existingItems = await orderRepo.findItemsByOrderId(candidate.id);
-    const existingSignature = itemSignature(
-      existingItems.map((item) => ({
-        productId: item.productId,
-        quantity: item.quantity,
-      })),
-    );
-    if (existingSignature === signature && candidate.razorpayOrderId) {
-      return toCheckoutPayload(candidate);
-    }
+    throw new AppError(400, 'Order total is too low');
   }
 
   const snapshotItems = pricedLines.map((line) => ({
@@ -229,23 +189,9 @@ const createCheckoutOrder = async (userId, body) => {
     );
 
     await orderRepo.insertItems(order.id, snapshotItems, connection);
-
-    let rzpOrder;
-    try {
-      rzpOrder = await razorpayService.createRazorpayOrder({
-        amountPaise: bill.grandTotalPaise,
-        receipt: order.publicId,
-        notes: { orderId: order.id, publicId: order.publicId },
-      });
-    } catch (error) {
-      throw new AppError(502, 'Could not start payment. Please try again.');
-    }
-
-    await orderRepo.setRazorpayOrderId(order.id, rzpOrder.id, connection);
     await paymentRepo.create(
       {
         orderId: order.id,
-        razorpayOrderId: rzpOrder.id,
         amountPaise: bill.grandTotalPaise,
       },
       connection,
@@ -253,10 +199,17 @@ const createCheckoutOrder = async (userId, body) => {
 
     await connection.commit();
 
-    return toCheckoutPayload({
-      ...order,
-      razorpayOrderId: rzpOrder.id,
+    const [items, payment] = await Promise.all([
+      orderRepo.findItemsByOrderId(order.id),
+      paymentRepo.findByOrderId(order.id),
+    ]);
+    const detail = toDetailPayload(order, items, payment);
+    setImmediate(() => {
+      mailService.notifyOpsNewOrder(detail).catch((err) => {
+        console.error('[mail] ops order email failed', err.message);
+      });
     });
+    return detail;
   } catch (error) {
     await connection.rollback();
     throw error;
@@ -289,155 +242,8 @@ const getOrder = async (userId, orderId) => {
   return toDetailPayload(order, items, payment);
 };
 
-const applyPaid = async ({
-  order,
-  razorpayPaymentId,
-  razorpaySignature,
-  method,
-  rawPayload,
-  status,
-}) => {
-  if (order.paymentStatus === 'paid') {
-    const [items, payment] = await Promise.all([
-      orderRepo.findItemsByOrderId(order.id),
-      paymentRepo.findByOrderId(order.id),
-    ]);
-    return toDetailPayload(order, items, payment);
-  }
-
-  const connection = await db.getConnection();
-  try {
-    await connection.beginTransaction();
-    await paymentRepo.markCaptured(
-      {
-        orderId: order.id,
-        razorpayPaymentId,
-        razorpaySignature,
-        method,
-        rawPayload,
-        status: status || 'captured',
-      },
-      connection,
-    );
-    const paid = await orderRepo.markPaid(order.id, connection);
-    await connection.commit();
-    const [items, payment] = await Promise.all([
-      orderRepo.findItemsByOrderId(paid.id),
-      paymentRepo.findByOrderId(paid.id),
-    ]);
-    const detail = toDetailPayload(paid, items, payment);
-    setImmediate(() => {
-      mailService.notifyOpsNewOrder(detail).catch((err) => {
-        console.error('[mail] ops order email failed', err.message);
-      });
-    });
-    return detail;
-  } catch (error) {
-    await connection.rollback();
-    throw error;
-  } finally {
-    connection.release();
-  }
-};
-
-const verifyPayment = async (userId, body) => {
-  const orderId = String(body.orderId ?? '').trim();
-  const razorpayOrderId = String(body.razorpay_order_id ?? '').trim();
-  const razorpayPaymentId = String(body.razorpay_payment_id ?? '').trim();
-  const razorpaySignature = String(body.razorpay_signature ?? '').trim();
-
-  if (!orderId || !razorpayOrderId || !razorpayPaymentId || !razorpaySignature) {
-    throw new AppError(400, 'Payment verification details are required');
-  }
-
-  const order = await orderRepo.findByIdAndUserId(orderId, userId);
-  if (!order) {
-    throw new AppError(404, 'Order not found');
-  }
-  if (order.razorpayOrderId !== razorpayOrderId) {
-    throw new AppError(400, 'Payment does not match this order');
-  }
-
-  razorpayService.verifyCheckoutSignature({
-    razorpayOrderId,
-    razorpayPaymentId,
-    razorpaySignature,
-  });
-
-  const gatewayPayment = await razorpayService.fetchPayment(razorpayPaymentId);
-  if (gatewayPayment.order_id !== razorpayOrderId) {
-    throw new AppError(400, 'Payment does not match this order');
-  }
-  if (Number(gatewayPayment.amount) !== order.grandTotalPaise) {
-    throw new AppError(400, 'Payment amount does not match the order');
-  }
-  if (!['captured', 'authorized'].includes(gatewayPayment.status)) {
-    throw new AppError(400, 'Payment is not complete');
-  }
-
-  return applyPaid({
-    order,
-    razorpayPaymentId,
-    razorpaySignature,
-    method: gatewayPayment.method,
-    rawPayload: gatewayPayment,
-    status: gatewayPayment.status === 'authorized' ? 'authorized' : 'captured',
-  });
-};
-
-const handleWebhook = async ({ eventId, event, payload }) => {
-  const inserted = await paymentRepo.insertWebhookEvent({
-    eventId,
-    event,
-    payload,
-  });
-  if (!inserted) {
-    return { ignored: true };
-  }
-
-  const paymentEntity =
-    payload?.payload?.payment?.entity || payload?.payment?.entity || null;
-  const orderEntity = payload?.payload?.order?.entity || null;
-  const razorpayOrderId = paymentEntity?.order_id || orderEntity?.id;
-  if (!razorpayOrderId) {
-    return { ignored: true };
-  }
-
-  const order = await orderRepo.findByRazorpayOrderId(razorpayOrderId);
-  if (!order) {
-    return { ignored: true };
-  }
-
-  if (event === 'payment.failed') {
-    if (order.paymentStatus === 'paid') {
-      return { ignored: true };
-    }
-    await paymentRepo.markFailed({ orderId: order.id, rawPayload: payload });
-    await orderRepo.markPaymentFailed(order.id);
-    return { ok: true };
-  }
-
-  if (event === 'payment.captured' || event === 'order.paid') {
-    if (paymentEntity && Number(paymentEntity.amount) !== order.grandTotalPaise) {
-      return { ignored: true };
-    }
-    await applyPaid({
-      order,
-      razorpayPaymentId: paymentEntity?.id || null,
-      razorpaySignature: null,
-      method: paymentEntity?.method || null,
-      rawPayload: payload,
-      status: 'captured',
-    });
-  }
-
-  return { ok: true };
-};
-
 module.exports = {
   createCheckoutOrder,
   listOrders,
   getOrder,
-  verifyPayment,
-  handleWebhook,
 };

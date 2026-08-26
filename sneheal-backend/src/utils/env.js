@@ -5,8 +5,6 @@ const REQUIRED_ENV = [
   'DB_PASSWORD',
   'DB_NAME',
   'JWT_SECRET',
-  'RAZORPAY_KEY_ID',
-  'RAZORPAY_KEY_SECRET',
 ];
 
 const validateEnv = () => {

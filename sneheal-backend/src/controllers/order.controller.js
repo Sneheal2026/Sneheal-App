@@ -3,7 +3,7 @@ const { success } = require('../utils/response');
 
 const createOrder = async (req, res) => {
   const data = await orderService.createCheckoutOrder(req.user.sub, req.body);
-  return success(res, 'Order created successfully', data, 201);
+  return success(res, 'Order placed successfully', data, 201);
 };
 
 const listOrders = async (req, res) => {

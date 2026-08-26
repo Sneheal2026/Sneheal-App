@@ -16,7 +16,7 @@ const router = express.Router();
  * @swagger
  * /api/orders:
  *   post:
- *     summary: Create a checkout order and Razorpay order
+ *     summary: Place a Cash on Delivery order
  *     tags: [Orders]
  *     security:
  *       - BearerAuth: []

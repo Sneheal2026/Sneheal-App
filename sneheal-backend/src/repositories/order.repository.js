@@ -32,7 +32,6 @@ const mapOrder = (row) => {
     gstPaise: Number(row.gst_paise),
     grandTotalPaise: Number(row.grand_total_paise),
     currency: row.currency,
-    razorpayOrderId: row.razorpay_order_id,
     createdAt: toIso(row.created_at),
     updatedAt: toIso(row.updated_at),
   };
@@ -59,7 +58,7 @@ const ORDER_SELECT = `
   flat_number, landmark, latitude, longitude, status, payment_status,
   item_mrp_paise, item_selling_paise, discount_paise, promo_paise,
   handling_paise, delivery_paise, delivery_original_paise, gst_paise,
-  grand_total_paise, currency, razorpay_order_id, created_at, updated_at
+  grand_total_paise, currency, created_at, updated_at
 `;
 
 const create = async (data, connection = db) => {
@@ -70,7 +69,7 @@ const create = async (data, connection = db) => {
       item_mrp_paise, item_selling_paise, discount_paise, promo_paise,
       handling_paise, delivery_paise, delivery_original_paise, gst_paise,
       grand_total_paise, currency
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'awaiting_payment', 'pending', ?, ?, ?, ?, ?, ?, ?, ?, ?, 'INR')`,
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'confirmed', 'pending', ?, ?, ?, ?, ?, ?, ?, ?, ?, 'INR')`,
     [
       data.publicId,
       data.userId,
@@ -112,67 +111,12 @@ const findByIdAndUserId = async (id, userId, connection = db) => {
   return mapOrder(rows[0]);
 };
 
-const findByRazorpayOrderId = async (razorpayOrderId, connection = db) => {
-  const [rows] = await connection.execute(
-    `SELECT ${ORDER_SELECT} FROM orders WHERE razorpay_order_id = ? LIMIT 1`,
-    [razorpayOrderId],
-  );
-  return mapOrder(rows[0]);
-};
-
 const findByUserId = async (userId, connection = db) => {
   const [rows] = await connection.execute(
     `SELECT ${ORDER_SELECT} FROM orders WHERE user_id = ? ORDER BY created_at DESC`,
     [userId],
   );
   return rows.map(mapOrder);
-};
-
-const findPendingReusable = async (
-  { userId, addressId, grandTotalPaise },
-  connection = db,
-) => {
-  const [rows] = await connection.execute(
-    `SELECT ${ORDER_SELECT}
-     FROM orders
-     WHERE user_id = ?
-       AND address_id = ?
-       AND grand_total_paise = ?
-       AND status = 'awaiting_payment'
-       AND payment_status = 'pending'
-       AND razorpay_order_id IS NOT NULL
-     ORDER BY created_at DESC
-     LIMIT 8`,
-    [userId, addressId, grandTotalPaise],
-  );
-  return rows.map(mapOrder);
-};
-
-const setRazorpayOrderId = async (orderId, razorpayOrderId, connection = db) => {
-  await connection.execute(
-    'UPDATE orders SET razorpay_order_id = ? WHERE id = ?',
-    [razorpayOrderId, orderId],
-  );
-};
-
-const markPaid = async (orderId, connection = db) => {
-  await connection.execute(
-    `UPDATE orders
-     SET status = 'confirmed', payment_status = 'paid'
-     WHERE id = ? AND payment_status <> 'paid'`,
-    [orderId],
-  );
-  return findById(orderId, connection);
-};
-
-const markPaymentFailed = async (orderId, connection = db) => {
-  await connection.execute(
-    `UPDATE orders
-     SET payment_status = 'failed'
-     WHERE id = ? AND payment_status = 'pending'`,
-    [orderId],
-  );
-  return findById(orderId, connection);
 };
 
 const insertItems = async (orderId, items, connection = db) => {
@@ -232,12 +176,7 @@ module.exports = {
   create,
   findById,
   findByIdAndUserId,
-  findByRazorpayOrderId,
   findByUserId,
-  findPendingReusable,
-  setRazorpayOrderId,
-  markPaid,
-  markPaymentFailed,
   insertItems,
   findItemsByOrderId,
   findItemsByOrderIds,
