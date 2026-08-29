@@ -1,7 +1,7 @@
 const express = require('express');
 const orderController = require('../controllers/order.controller');
 const asyncHandler = require('../utils/asyncHandler');
-const { authenticateToken } = require('../middleware/validateAuth');
+const { authenticateToken, requireRole } = require('../middleware/validateAuth');
 
 const router = express.Router();
 
@@ -33,6 +33,38 @@ router.post('/', authenticateToken, asyncHandler(orderController.createOrder));
  *       - BearerAuth: []
  */
 router.get('/', authenticateToken, asyncHandler(orderController.listOrders));
+
+/**
+ * @swagger
+ * /api/orders/delivery/queue:
+ *   get:
+ *     summary: List pending and recently delivered orders for delivery partners
+ *     tags: [Orders]
+ *     security:
+ *       - BearerAuth: []
+ */
+router.get(
+  '/delivery/queue',
+  authenticateToken,
+  requireRole('delivery_agent'),
+  asyncHandler(orderController.listDeliveryQueue),
+);
+
+/**
+ * @swagger
+ * /api/orders/{id}/status:
+ *   patch:
+ *     summary: Update fulfillment status (delivery partner)
+ *     tags: [Orders]
+ *     security:
+ *       - BearerAuth: []
+ */
+router.patch(
+  '/:id/status',
+  authenticateToken,
+  requireRole('delivery_agent'),
+  asyncHandler(orderController.updateStatus),
+);
 
 /**
  * @swagger

@@ -1,5 +1,5 @@
 import { authenticatedApiRequest } from './authTokenManager';
-import type { OrderDetail, OrderListItem } from '@/types/order.types';
+import type { OrderDetail, OrderListItem, DeliveryQueue } from '@/types/order.types';
 
 export const createCheckoutOrder = (
   addressId: string,
@@ -62,3 +62,15 @@ export const fetchOrders = (options?: { force?: boolean }): Promise<OrderListIte
 
 export const fetchOrderById = (orderId: string): Promise<OrderDetail> =>
   authenticatedApiRequest<OrderDetail>(`/api/orders/${orderId}`);
+
+export const fetchDeliveryQueue = (): Promise<DeliveryQueue> =>
+  authenticatedApiRequest<DeliveryQueue>('/api/orders/delivery/queue');
+
+export const updateOrderStatus = (
+  orderId: string,
+  status: Extract<OrderDetail['status'], 'out_for_delivery' | 'delivered'>,
+): Promise<OrderDetail> =>
+  authenticatedApiRequest<OrderDetail>(`/api/orders/${orderId}/status`, {
+    method: 'PATCH',
+    body: { status },
+  });

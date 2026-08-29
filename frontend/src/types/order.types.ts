@@ -1,4 +1,9 @@
-export type OrderStatus = 'awaiting_payment' | 'confirmed' | 'cancelled';
+export type OrderStatus =
+  | 'awaiting_payment'
+  | 'confirmed'
+  | 'out_for_delivery'
+  | 'delivered'
+  | 'cancelled';
 export type PaymentStatus = 'pending' | 'paid' | 'failed';
 export type PaymentMethod = 'cod';
 
@@ -25,6 +30,7 @@ export type OrderListItem = {
   itemCount: number;
   firstItemName: string | null;
   createdAt: string;
+  deliveredAt?: string | null;
 };
 
 export type OrderDetailItem = {
@@ -46,7 +52,12 @@ export type OrderDetail = {
   paymentStatus: PaymentStatus;
   currency: string;
   createdAt: string;
+  deliveredAt?: string | null;
   grandTotal: number;
+  coords?: {
+    latitude: number;
+    longitude: number;
+  };
   address: {
     receiverName: string;
     mobile: string;
@@ -60,4 +71,21 @@ export type OrderDetail = {
     status: string;
     method: PaymentMethod | string | null;
   } | null;
+};
+
+export type DeliveryQueueOrder = OrderListItem & {
+  receiverName: string;
+  mobile: string;
+  addressLine: string;
+  flatNumber: string;
+  landmark: string;
+  coords: {
+    latitude: number;
+    longitude: number;
+  };
+};
+
+export type DeliveryQueue = {
+  active: DeliveryQueueOrder[];
+  completed: DeliveryQueueOrder[];
 };

@@ -9,5 +9,6 @@ export interface DeliveryOrder {
   distance: string;
   eta: string;
   status: DeliveryStatus;
-  statusLabel: string;
+  mobile?: string;
+  coords?: { latitude: number; longitude: number };
 }

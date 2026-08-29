@@ -40,8 +40,16 @@ const findByOrderId = async (orderId, connection = db) => {
   return mapPayment(rows[0]);
 };
 
+const markCollectedByOrderId = async (orderId, connection = db) => {
+  await connection.execute(
+    `UPDATE payments SET status = 'captured' WHERE order_id = ? AND status IN ('pending', 'created')`,
+    [orderId],
+  );
+};
+
 module.exports = {
   create,
   findById,
   findByOrderId,
+  markCollectedByOrderId,
 };

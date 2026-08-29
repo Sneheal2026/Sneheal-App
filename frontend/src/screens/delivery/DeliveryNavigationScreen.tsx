@@ -7,6 +7,7 @@ import {
   Platform,
   StatusBar,
   Animated as RNAnimated,
+  Alert,
   Linking,
 } from 'react-native';
 import MapView, {
@@ -23,6 +24,8 @@ import type { RouteProp } from '@react-navigation/native';
 import type { AuthStackParamList } from '@/navigation/types';
 import { deliveryTheme } from '@/components/delivery/deliveryTheme';
 import { updateAgentLocation, clearOrderTracking } from '@/services/firebase';
+import { updateOrderStatus } from '@/services/orderService';
+import { ApiError } from '@/services/apiClient';
 import theme from '@/styles/theme';
 import { GOOGLE_MAPS_KEY } from '@/constants/googleMaps';
 import { useTranslation } from 'react-i18next';
@@ -180,7 +183,7 @@ const DeliveryNavigationScreen = () => {
   const route = useRoute<RouteProp<AuthStackParamList, 'DeliveryNavigation'>>();
   const insets = useSafeAreaInsets();
 
-  const { orderId, customerAddress, customerCoords } = route.params;
+  const { orderId, publicId, customerAddress, customerCoords } = route.params;
 
   const destination = useMemo<Coords>(
     () =>
@@ -198,6 +201,7 @@ const DeliveryNavigationScreen = () => {
   const [showHubSheet, setShowHubSheet] = useState(false);
   const [etaText, setEtaText] = useState('');
   const [distText, setDistText] = useState('');
+  const [markingDelivered, setMarkingDelivered] = useState(false);
 
   const mapRef = useRef<MapView>(null);
   const animatedCoord = useRef(
@@ -514,11 +518,25 @@ const DeliveryNavigationScreen = () => {
   }, [currentDestination]);
 
   // ── Finish delivery ────────────────────────────────────────────
-  const handleDelivered = useCallback(() => {
-    locationSub.current?.remove();
-    clearOrderTracking(orderId);
-    navigation.goBack();
-  }, [orderId, navigation]);
+  const handleDelivered = useCallback(async () => {
+    if (markingDelivered) return;
+    setMarkingDelivered(true);
+    try {
+      if (/^\d+$/.test(orderId)) {
+        await updateOrderStatus(orderId, 'delivered');
+      }
+      locationSub.current?.remove();
+      clearOrderTracking(orderId);
+      navigation.goBack();
+    } catch (err) {
+      Alert.alert(
+        t('delivery.markDeliveredFailed'),
+        err instanceof ApiError ? err.message : undefined,
+      );
+    } finally {
+      setMarkingDelivered(false);
+    }
+  }, [markingDelivered, navigation, orderId, t]);
 
   // ── Sheet translate ────────────────────────────────────────────
   const sheetTranslateY = sheetAnim.interpolate({ inputRange: [0, 1], outputRange: [300, 0] });
@@ -602,7 +620,7 @@ const DeliveryNavigationScreen = () => {
           <Text style={styles.phaseLabel}>
             {phase === 'to_hub' ? t('delivery.headingToHub') : t('delivery.deliveringToCustomer')}
           </Text>
-          <Text style={styles.orderLabel}>{orderId}</Text>
+          <Text style={styles.orderLabel}>{publicId || orderId}</Text>
         </View>
       </View>
 
@@ -621,7 +639,11 @@ const DeliveryNavigationScreen = () => {
           </View>
 
           {phase === 'to_customer' && (
-            <Pressable onPress={handleDelivered} style={styles.deliveredBtn}>
+            <Pressable
+              onPress={() => void handleDelivered()}
+              disabled={markingDelivered}
+              style={[styles.deliveredBtn, markingDelivered && { opacity: 0.7 }]}
+            >
               <Ionicons name="checkmark-circle" size={20} color="#fff" />
               <Text style={styles.deliveredBtnText}>{t('delivery.markDelivered')}</Text>
             </Pressable>

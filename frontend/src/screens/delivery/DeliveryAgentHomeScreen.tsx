@@ -1,7 +1,16 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, StatusBar, Platform, View } from 'react-native';
+import {
+  Alert,
+  Linking,
+  Platform,
+  RefreshControl,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTranslation } from 'react-i18next';
 import type { AuthStackParamList } from '@/navigation/types';
@@ -15,55 +24,103 @@ import {
   deliveryTheme,
 } from '@/components/delivery';
 import DevResetStorageButton from '@/components/common/DevResetStorageButton';
-import type { DeliveryOrder } from '@/components/delivery';
+import type { DeliveryOrder, DeliveryStatus } from '@/components/delivery';
+import {
+  fetchDeliveryQueue,
+  updateOrderStatus,
+} from '@/services/orderService';
+import { ApiError } from '@/services/apiClient';
+import type { DeliveryQueueOrder } from '@/types/order.types';
 
 const { spacing } = theme;
 
-const DEMO_CUSTOMER = {
-  address: 'Nizamabad Bus Stop, Nizamabad, Telangana',
-  coords: { latitude: 18.6725, longitude: 78.0941 },
+const toDeliveryStatus = (status: DeliveryQueueOrder['status']): DeliveryStatus => {
+  if (status === 'out_for_delivery') return 'transit';
+  if (status === 'delivered') return 'delivered';
+  return 'ready';
 };
 
-const ACTIVE_ORDERS: DeliveryOrder[] = [
-  {
-    id: '1',
-    orderId: '#SNH-4821',
-    customer: 'Priya Sharma',
-    address: DEMO_CUSTOMER.address,
-    items: 3,
-    distance: '1.2 km',
-    eta: '8 min',
-    status: 'ready',
-    statusLabel: 'Ready for pickup',
-  },
-  {
-    id: '2',
-    orderId: '#SNH-4819',
-    customer: 'Rahul Mehta',
-    address: DEMO_CUSTOMER.address,
-    items: 1,
-    distance: '1.5 km',
-    eta: '10 min',
-    status: 'transit',
-    statusLabel: 'In transit',
-  },
-];
+const formatAddress = (order: DeliveryQueueOrder) =>
+  [order.flatNumber, order.addressLine, order.landmark].filter(Boolean).join(', ');
+
+const toCard = (order: DeliveryQueueOrder): DeliveryOrder => ({
+  id: order.id,
+  orderId: order.publicId,
+  customer: order.receiverName,
+  address: formatAddress(order),
+  items: order.itemCount,
+  distance: '—',
+  eta: '—',
+  status: toDeliveryStatus(order.status),
+  mobile: order.mobile,
+  coords: order.coords,
+});
 
 const DeliveryAgentHomeScreen = () => {
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
   const navigation = useNavigation<NativeStackNavigationProp<AuthStackParamList>>();
   const [isOnline, setIsOnline] = useState(true);
+  const [active, setActive] = useState<DeliveryOrder[]>([]);
+  const [completed, setCompleted] = useState<DeliveryOrder[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
+  const [startingId, setStartingId] = useState<string | null>(null);
+
+  const load = useCallback(async (force = false) => {
+    if (force) setRefreshing(true);
+    try {
+      const queue = await fetchDeliveryQueue();
+      setActive(queue.active.map(toCard));
+      setCompleted(queue.completed.map(toCard));
+    } catch (err) {
+      Alert.alert(
+        t('delivery.loadQueueFailed'),
+        err instanceof ApiError ? err.message : undefined,
+      );
+    } finally {
+      setRefreshing(false);
+    }
+  }, [t]);
+
+  useFocusEffect(
+    useCallback(() => {
+      void load();
+    }, [load]),
+  );
+
+  const handleCall = useCallback((order: DeliveryOrder) => {
+    if (!order.mobile) return;
+    void Linking.openURL(`tel:${order.mobile}`);
+  }, []);
 
   const handleNavigateOrder = useCallback(
-    (order: DeliveryOrder) => {
-      navigation.navigate('DeliveryNavigation', {
-        orderId: order.orderId,
-        customerAddress: order.address,
-        customerCoords: DEMO_CUSTOMER.coords,
-      });
+    async (order: DeliveryOrder) => {
+      if (startingId) return;
+      setStartingId(order.id);
+      try {
+        if (order.status === 'ready') {
+          await updateOrderStatus(order.id, 'out_for_delivery');
+          setActive((rows) =>
+            rows.map((row) => (row.id === order.id ? { ...row, status: 'transit' } : row)),
+          );
+        }
+        navigation.navigate('DeliveryNavigation', {
+          orderId: order.id,
+          publicId: order.orderId,
+          customerAddress: order.address,
+          customerCoords: order.coords,
+          customerMobile: order.mobile,
+        });
+      } catch (err) {
+        Alert.alert(
+          t('delivery.startDeliveryFailed'),
+          err instanceof ApiError ? err.message : undefined,
+        );
+      } finally {
+        setStartingId(null);
+      }
     },
-    [navigation],
+    [navigation, startingId, t],
   );
 
   const greeting = useMemo(() => {
@@ -72,6 +129,8 @@ const DeliveryAgentHomeScreen = () => {
     if (hour < 17) return t('delivery.goodAfternoon');
     return t('delivery.goodEvening');
   }, [t]);
+
+  const visibleActive = isOnline ? active : [];
 
   return (
     <View style={styles.root}>
@@ -96,20 +155,37 @@ const DeliveryAgentHomeScreen = () => {
           paddingBottom: insets.bottom + spacing.xxl,
         }}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={() => void load(true)} />
+        }
       >
-        <SectionHeader title={t('delivery.activeOrders')} count={ACTIVE_ORDERS.length} />
+        <SectionHeader title={t('delivery.activeOrders')} count={visibleActive.length} />
 
-        {ACTIVE_ORDERS.length === 0 ? (
+        {visibleActive.length === 0 ? (
           <DeliveryEmptyState isOnline={isOnline} />
         ) : (
-          ACTIVE_ORDERS.map((order) => (
+          visibleActive.map((order) => (
             <ActiveDeliveryCard
               key={order.id}
               order={order}
-              onNavigate={() => handleNavigateOrder(order)}
+              onCall={() => handleCall(order)}
+              onNavigate={() => void handleNavigateOrder(order)}
             />
           ))
         )}
+
+        {completed.length > 0 ? (
+          <>
+            <SectionHeader title={t('delivery.completedOrders')} count={completed.length} />
+            {completed.map((order) => (
+              <ActiveDeliveryCard
+                key={order.id}
+                order={order}
+                onCall={() => handleCall(order)}
+              />
+            ))}
+          </>
+        ) : null}
 
         <DevResetStorageButton />
       </ScrollView>

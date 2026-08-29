@@ -41,6 +41,11 @@ const toDetailPayload = (order, items, payment) => ({
   paymentStatus: order.paymentStatus,
   currency: order.currency,
   createdAt: order.createdAt,
+  deliveredAt: order.deliveredAt,
+  coords: {
+    latitude: order.latitude,
+    longitude: order.longitude,
+  },
   address: {
     receiverName: order.receiverName,
     mobile: order.mobile,
@@ -80,7 +85,35 @@ const toListPayload = (order, items) => {
     itemCount,
     firstItemName: items[0]?.name ?? null,
     createdAt: order.createdAt,
+    deliveredAt: order.deliveredAt,
   };
+};
+
+const toDeliveryPayload = (order, items) => {
+  const list = toListPayload(order, items);
+  return {
+    ...list,
+    receiverName: order.receiverName,
+    mobile: order.mobile,
+    addressLine: order.addressLine,
+    flatNumber: order.flatNumber,
+    landmark: order.landmark,
+    coords: {
+      latitude: order.latitude,
+      longitude: order.longitude,
+    },
+  };
+};
+
+const hydrateDeliveryOrders = async (orders) => {
+  const items = await orderRepo.findItemsByOrderIds(orders.map((order) => order.id));
+  const byOrder = new Map();
+  for (const item of items) {
+    const list = byOrder.get(item.orderId) || [];
+    list.push(item);
+    byOrder.set(item.orderId, list);
+  }
+  return orders.map((order) => toDeliveryPayload(order, byOrder.get(order.id) || []));
 };
 
 const normalizeItems = (rawItems) => {
@@ -230,8 +263,11 @@ const listOrders = async (userId) => {
   return orders.map((order) => toListPayload(order, byOrder.get(order.id) || []));
 };
 
-const getOrder = async (userId, orderId) => {
-  const order = await orderRepo.findByIdAndUserId(orderId, userId);
+const getOrder = async (user, orderId) => {
+  const order =
+    user.role === 'delivery_agent'
+      ? await orderRepo.findById(orderId)
+      : await orderRepo.findByIdAndUserId(orderId, user.sub);
   if (!order) {
     throw new AppError(404, 'Order not found');
   }
@@ -242,8 +278,96 @@ const getOrder = async (userId, orderId) => {
   return toDetailPayload(order, items, payment);
 };
 
+const listDeliveryQueue = async () => {
+  const [active, completed] = await Promise.all([
+    orderRepo.findByStatuses(['confirmed', 'out_for_delivery']),
+    orderRepo.findRecentByStatus('delivered', 20),
+  ]);
+  const [activeRows, completedRows] = await Promise.all([
+    hydrateDeliveryOrders(active),
+    hydrateDeliveryOrders(completed),
+  ]);
+  return { active: activeRows, completed: completedRows };
+};
+
+const ALLOWED_TRANSITIONS = {
+  confirmed: ['out_for_delivery', 'delivered'],
+  out_for_delivery: ['delivered'],
+  delivered: ['delivered'],
+};
+
+const updateFulfillmentStatus = async (agentId, orderId, nextStatus) => {
+  const status = String(nextStatus ?? '').trim();
+  if (status !== 'out_for_delivery' && status !== 'delivered') {
+    throw new AppError(400, 'Invalid delivery status');
+  }
+
+  const connection = await db.getConnection();
+  try {
+    await connection.beginTransaction();
+    const order = await orderRepo.findByIdForUpdate(orderId, connection);
+    if (!order) {
+      throw new AppError(404, 'Order not found');
+    }
+    if (order.status === 'cancelled') {
+      throw new AppError(400, 'Cancelled orders cannot be updated');
+    }
+
+    if (order.status === status) {
+      await connection.commit();
+      const [items, payment] = await Promise.all([
+        orderRepo.findItemsByOrderId(order.id),
+        paymentRepo.findByOrderId(order.id),
+      ]);
+      return toDetailPayload(order, items, payment);
+    }
+
+    const allowed = ALLOWED_TRANSITIONS[order.status];
+    if (!allowed || !allowed.includes(status)) {
+      throw new AppError(400, `Cannot move order from ${order.status} to ${status}`);
+    }
+
+    if (
+      order.assignedAgentId &&
+      order.assignedAgentId !== String(agentId) &&
+      order.status === 'out_for_delivery'
+    ) {
+      throw new AppError(409, 'This order is already assigned to another delivery partner');
+    }
+
+    const updated = await orderRepo.updateFulfillment(
+      order.id,
+      {
+        status,
+        assignedAgentId: agentId,
+        paymentStatus: status === 'delivered' ? 'paid' : null,
+      },
+      connection,
+    );
+
+    if (status === 'delivered') {
+      await paymentRepo.markCollectedByOrderId(order.id, connection);
+    }
+
+    await connection.commit();
+
+    const [items, payment] = await Promise.all([
+      orderRepo.findItemsByOrderId(updated.id),
+      paymentRepo.findByOrderId(updated.id),
+    ]);
+    return toDetailPayload(updated, items, payment);
+  } catch (error) {
+    await connection.rollback();
+    throw error;
+  } finally {
+    connection.release();
+  }
+};
+
 module.exports = {
   createCheckoutOrder,
   listOrders,
   getOrder,
+  listDeliveryQueue,
+  updateFulfillmentStatus,
 };

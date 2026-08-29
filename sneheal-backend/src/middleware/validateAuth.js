@@ -117,8 +117,16 @@ const validateCompleteRegistration = (req, res, next) => {
   next();
 };
 
+const requireRole = (...roles) => (req, res, next) => {
+  if (!req.user?.role || !roles.includes(req.user.role)) {
+    return fail(res, 403, 'You are not allowed to perform this action');
+  }
+  next();
+};
+
 module.exports = {
   authenticateToken,
+  requireRole,
   validateSendOtp,
   validateVerifyOtp,
   validateRefreshToken,

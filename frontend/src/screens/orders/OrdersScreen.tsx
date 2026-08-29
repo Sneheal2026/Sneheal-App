@@ -17,7 +17,7 @@ import { fetchOrders, peekOrdersCache } from '@/services/orderService';
 import { ApiError } from '@/services/apiClient';
 import { formatInr } from '@/utils/cartBilling';
 import { getTabBarHeight } from '@/navigation/tabBarConfig';
-import type { OrderListItem } from '@/types/order.types';
+import type { OrderListItem, OrderStatus } from '@/types/order.types';
 import type { AuthStackParamList, TabScreenProps } from '@/navigation/types';
 import theme from '@/styles/theme';
 
@@ -26,6 +26,14 @@ const { colors, spacing, typography, borderRadius, moderateScale, shadows } = th
 const NO_ORDERS_PIC = require('../../../assets/images/No-Orders-Pic.webp');
 const PAGE_BG = '#F5F6F8';
 const CART_GREEN = '#111152';
+
+const STATUS_CHIP: Record<OrderStatus, { color: string; backgroundColor: string }> = {
+  awaiting_payment: { color: '#B45309', backgroundColor: '#FEF3C7' },
+  confirmed: { color: '#B45309', backgroundColor: '#FEF3C7' },
+  out_for_delivery: { color: '#1D4ED8', backgroundColor: '#DBEAFE' },
+  delivered: { color: '#047857', backgroundColor: '#D1FAE5' },
+  cancelled: { color: '#6B7280', backgroundColor: '#F3F4F6' },
+};
 
 const OrdersScreen = (_props: TabScreenProps<'Orders'>) => {
   const { t } = useTranslation();
@@ -103,7 +111,9 @@ const OrdersScreen = (_props: TabScreenProps<'Orders'>) => {
           >
             <View style={styles.cardTop}>
               <Text style={styles.publicId}>{item.publicId}</Text>
-              <Text style={styles.chip}>{t(`orders.status.${statusKey(item)}`)}</Text>
+              <Text style={[styles.chip, STATUS_CHIP[item.status]]}>
+                {t(`orders.status.${statusKey(item)}`)}
+              </Text>
             </View>
             <Text style={styles.itemName} numberOfLines={1}>
               {item.firstItemName}
@@ -186,7 +196,6 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 999,
     overflow: 'hidden',
-    textTransform: 'capitalize',
   },
   itemName: {
     ...typography.bodySmall,

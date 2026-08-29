@@ -52,8 +52,10 @@ export type AuthStackParamList = {
   DeliveryAgentMain: undefined;
   DeliveryNavigation: {
     orderId: string;
+    publicId?: string;
     customerAddress: string;
     customerCoords?: { latitude: number; longitude: number };
+    customerMobile?: string;
   };
   CustomerTracking: {
     orderId: string;

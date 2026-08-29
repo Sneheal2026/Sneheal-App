@@ -80,27 +80,33 @@ const ActiveDeliveryCard: React.FC<ActiveDeliveryCardProps> = ({
         </Text>
       </View>
 
+      {(onCall || onNavigate) ? (
       <View style={styles.actions}>
-        <Pressable
-          onPress={onCall}
-          style={({ pressed }) => [styles.secondaryBtn, pressed && styles.pressed]}
-          accessibilityRole="button"
-          accessibilityLabel={`Call ${order.customer}`}
-        >
-          <Ionicons name="call-outline" size={18} color={theme.colors.textPrimary} />
-          <Text style={styles.secondaryBtnText}>{t('common.call')}</Text>
-        </Pressable>
+        {onCall ? (
+          <Pressable
+            onPress={onCall}
+            style={({ pressed }) => [styles.secondaryBtn, pressed && styles.pressed]}
+            accessibilityRole="button"
+            accessibilityLabel={`Call ${order.customer}`}
+          >
+            <Ionicons name="call-outline" size={18} color={theme.colors.textPrimary} />
+            <Text style={styles.secondaryBtnText}>{t('common.call')}</Text>
+          </Pressable>
+        ) : null}
 
-        <Pressable
-          onPress={onNavigate}
-          style={({ pressed }) => [styles.primaryBtn, pressed && styles.pressed]}
-          accessibilityRole="button"
-          accessibilityLabel={`Navigate to ${order.orderId}`}
-        >
-          <Ionicons name="navigate-outline" size={18} color={theme.colors.textInverse} />
-          <Text style={styles.primaryBtnText}>{t('delivery.navigate')}</Text>
-        </Pressable>
+        {onNavigate ? (
+          <Pressable
+            onPress={onNavigate}
+            style={({ pressed }) => [styles.primaryBtn, pressed && styles.pressed]}
+            accessibilityRole="button"
+            accessibilityLabel={`Navigate to ${order.orderId}`}
+          >
+            <Ionicons name="navigate-outline" size={18} color={theme.colors.textInverse} />
+            <Text style={styles.primaryBtnText}>{t('delivery.navigate')}</Text>
+          </Pressable>
+        ) : null}
       </View>
+      ) : null}
     </View>
   );
 };

@@ -22,6 +22,8 @@ const mapOrder = (row) => {
     longitude: Number(row.longitude),
     status: row.status,
     paymentStatus: row.payment_status,
+    assignedAgentId: row.assigned_agent_id != null ? String(row.assigned_agent_id) : null,
+    deliveredAt: toIso(row.delivered_at),
     itemMrpPaise: Number(row.item_mrp_paise),
     itemSellingPaise: Number(row.item_selling_paise),
     discountPaise: Number(row.discount_paise),
@@ -56,6 +58,7 @@ const mapItem = (row) => {
 const ORDER_SELECT = `
   id, public_id, user_id, address_id, receiver_name, mobile, address_line,
   flat_number, landmark, latitude, longitude, status, payment_status,
+  assigned_agent_id, delivered_at,
   item_mrp_paise, item_selling_paise, discount_paise, promo_paise,
   handling_paise, delivery_paise, delivery_original_paise, gst_paise,
   grand_total_paise, currency, created_at, updated_at
@@ -154,6 +157,50 @@ const findItemsByOrderId = async (orderId, connection = db) => {
   return rows.map(mapItem);
 };
 
+const findByIdForUpdate = async (id, connection) => {
+  const [rows] = await connection.execute(
+    `SELECT ${ORDER_SELECT} FROM orders WHERE id = ? LIMIT 1 FOR UPDATE`,
+    [id],
+  );
+  return mapOrder(rows[0]);
+};
+
+const findByStatuses = async (statuses, connection = db) => {
+  if (!statuses.length) return [];
+  const placeholders = statuses.map(() => '?').join(',');
+  const [rows] = await connection.execute(
+    `SELECT ${ORDER_SELECT} FROM orders
+     WHERE status IN (${placeholders})
+     ORDER BY created_at ASC`,
+    statuses,
+  );
+  return rows.map(mapOrder);
+};
+
+const findRecentByStatus = async (status, limit = 20, connection = db) => {
+  const [rows] = await connection.execute(
+    `SELECT ${ORDER_SELECT} FROM orders
+     WHERE status = ?
+     ORDER BY delivered_at DESC, updated_at DESC
+     LIMIT ${Math.min(50, Math.max(1, Number(limit) || 20))}`,
+    [status],
+  );
+  return rows.map(mapOrder);
+};
+
+const updateFulfillment = async (id, data, connection = db) => {
+  await connection.execute(
+    `UPDATE orders
+     SET status = ?,
+         assigned_agent_id = COALESCE(?, assigned_agent_id),
+         payment_status = COALESCE(?, payment_status),
+         delivered_at = IF(? = 'delivered', COALESCE(delivered_at, CURRENT_TIMESTAMP), delivered_at)
+     WHERE id = ?`,
+    [data.status, data.assignedAgentId ?? null, data.paymentStatus ?? null, data.status, id],
+  );
+  return findById(id, connection);
+};
+
 const findItemsByOrderIds = async (orderIds, connection = db) => {
   if (!orderIds.length) return [];
   const placeholders = orderIds.map(() => '?').join(',');
@@ -176,7 +223,11 @@ module.exports = {
   create,
   findById,
   findByIdAndUserId,
+  findByIdForUpdate,
   findByUserId,
+  findByStatuses,
+  findRecentByStatus,
+  updateFulfillment,
   insertItems,
   findItemsByOrderId,
   findItemsByOrderIds,

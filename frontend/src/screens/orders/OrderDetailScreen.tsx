@@ -97,7 +97,9 @@ const OrderDetailScreen = () => {
           <View style={styles.card}>
             <Text style={styles.name}>{t('cart.codTitle')}</Text>
             <Text style={styles.meta}>
-              {t('orders.payOnDelivery', { amount: formatInr(order.grandTotal) })}
+              {order.paymentStatus === 'paid'
+                ? t('orders.paidAtDelivery')
+                : t('orders.payOnDelivery', { amount: formatInr(order.grandTotal) })}
             </Text>
           </View>
 

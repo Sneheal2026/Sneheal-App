@@ -20,6 +20,7 @@ const SQL_FILES = [
   '009_orders_payments.sql',
   '010_cod_payments.sql',
   '011_delete_unpaid_razorpay_drafts.sql',
+  '012_order_fulfillment_status.sql',
 ];
 
 const splitStatements = (sql) =>
@@ -44,7 +45,11 @@ async function runSqlFile(filename) {
       await db.execute(statement);
       console.log(`Migration ${filename}: applied statement`);
     } catch (err) {
-      if (err.code === 'ER_TABLE_EXISTS_ERROR' || err.code === 'ER_DUP_KEYNAME') {
+      if (
+        err.code === 'ER_TABLE_EXISTS_ERROR' ||
+        err.code === 'ER_DUP_KEYNAME' ||
+        err.code === 'ER_DUP_FIELDNAME'
+      ) {
         console.log(`Migration ${filename}: already applied (${err.code})`);
         continue;
       }

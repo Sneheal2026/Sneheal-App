@@ -18,6 +18,8 @@ export const orderStatusStep = (
   status: OrderStatus,
 ): number => {
   if (paymentStatus === 'failed' || status === 'cancelled') return -1;
+  if (status === 'delivered') return 3;
+  if (status === 'out_for_delivery') return 2;
   if (status === 'confirmed') return 1;
   return 0;
 };
@@ -43,7 +45,7 @@ const OrderStatusPanel = ({
   const insets = useSafeAreaInsets();
   const pulse = useRef(new Animated.Value(1)).current;
   const current = orderStatusStep(paymentStatus, status);
-  const inProgress = current >= 1 && status === 'confirmed';
+  const inProgress = current >= 1 && status !== 'delivered';
 
   useEffect(() => {
     if (!inProgress) return;
@@ -62,9 +64,13 @@ const OrderStatusPanel = ({
       ? { kicker: t('orders.status.cancelled'), title: t('orders.cancelledTitle'), sub: t('orders.cancelledSubtitle') }
       : paymentStatus === 'failed'
         ? { kicker: t('orders.status.failed'), title: t('orders.failedTitle'), sub: t('orders.failedSubtitle') }
-        : status === 'confirmed'
-          ? { kicker: t('orders.placedKicker'), title: t('orders.placedTitle'), sub: t('orders.placedSubtitle') }
-          : { kicker: t('orders.status.awaiting_payment'), title: t('orders.pendingTitle'), sub: t('orders.pendingSubtitle') };
+        : status === 'delivered'
+          ? { kicker: t('orders.status.delivered'), title: t('orders.completeTitle'), sub: t('orders.completeSubtitle') }
+          : status === 'out_for_delivery'
+            ? { kicker: t('orders.status.out_for_delivery'), title: t('orders.outForDeliveryTitle'), sub: t('orders.outForDeliverySubtitle') }
+            : status === 'confirmed'
+              ? { kicker: t('orders.placedKicker'), title: t('orders.placedTitle'), sub: t('orders.placedSubtitle') }
+              : { kicker: t('orders.status.awaiting_payment'), title: t('orders.pendingTitle'), sub: t('orders.pendingSubtitle') };
 
   return (
     <View>
