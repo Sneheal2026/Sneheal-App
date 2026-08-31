@@ -117,6 +117,12 @@ const SettingsScreen = () => {
     });
   };
 
+  // Temporary: delivery-agent "mark delivered" entry lives here for now.
+  // Move it into the delivery-agent app screens later.
+  const openDeliveryConfirm = () => {
+    navigation.navigate('DeliveryConfirm');
+  };
+
   // Customer-only for now — uncomment when doctor / delivery-agent apps ship
   // const demoNavigateDelivery = () => {
   //   navigation.navigate('DeliveryNavigation', {
@@ -256,6 +262,18 @@ const SettingsScreen = () => {
                   <Pressable onPress={demoNavigateCustomer} style={[styles.demoCustomerBtn, { backgroundColor: themeColors.primary }]}>
                     <Ionicons name="bicycle" size={18} color="#fff" />
                     <Text style={styles.demoBtnText}>{t('settings.demoCustomer')}</Text>
+                  </Pressable>
+
+                  <Pressable
+                    onPress={openDeliveryConfirm}
+                    style={[styles.demoDeliveryBtn, { borderColor: themeColors.primary }]}
+                    accessibilityRole="button"
+                    accessibilityLabel={t('settings.deliveryConfirm')}
+                  >
+                    <Ionicons name="checkmark-done" size={18} color={themeColors.primary} />
+                    <Text style={[styles.demoBtnText, { color: themeColors.primary }]}>
+                      {t('settings.deliveryConfirm')}
+                    </Text>
                   </Pressable>
 
                   {/* Customer-only for now — delivery-agent demo

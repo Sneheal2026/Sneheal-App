@@ -6,6 +6,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import OrderStatusPanel from '@/components/orders/OrderStatusPanel';
+import { useLiveOrderStatus } from '@/hooks/useLiveOrderStatus';
 import type { AuthStackParamList } from '@/navigation/types';
 import theme from '@/styles/theme';
 
@@ -20,6 +21,7 @@ const OrderPlacedScreen = () => {
   const navigation = useNavigation<Nav>();
   const { params } = useRoute<Rt>();
   const insets = useSafeAreaInsets();
+  const liveStatus = useLiveOrderStatus(params?.orderId, 'confirmed');
 
   const goOrders = useCallback(() => {
     navigation.reset({
@@ -44,7 +46,7 @@ const OrderPlacedScreen = () => {
         publicId={params?.publicId ?? ''}
         grandTotal={params?.grandTotal ?? 0}
         paymentStatus="pending"
-        status="confirmed"
+        status={liveStatus}
       />
       <View style={styles.footer}>
         <Pressable

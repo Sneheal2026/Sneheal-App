@@ -63,6 +63,22 @@ export const fetchOrders = (options?: { force?: boolean }): Promise<OrderListIte
 export const fetchOrderById = (orderId: string): Promise<OrderDetail> =>
   authenticatedApiRequest<OrderDetail>(`/api/orders/${orderId}`);
 
+export const fetchOrderByPublicId = (publicId: string): Promise<OrderDetail> =>
+  authenticatedApiRequest<OrderDetail>(
+    `/api/orders/public/${encodeURIComponent(publicId)}`,
+  );
+
+export const markOrderDeliveredByPublicId = (
+  publicId: string,
+): Promise<OrderDetail> =>
+  authenticatedApiRequest<OrderDetail>(
+    `/api/orders/public/${encodeURIComponent(publicId)}/status`,
+    {
+      method: 'PATCH',
+      body: { status: 'delivered' },
+    },
+  );
+
 export const fetchDeliveryQueue = (): Promise<DeliveryQueue> =>
   authenticatedApiRequest<DeliveryQueue>('/api/orders/delivery/queue');
 

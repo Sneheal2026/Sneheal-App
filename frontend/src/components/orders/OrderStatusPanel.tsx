@@ -11,16 +11,15 @@ import theme from '@/styles/theme';
 const { colors, spacing, typography, borderRadius, shadows } = theme;
 const NAVY = '#111152';
 const NAVY_SOFT = '#1C1C6A';
-const STEPS = ['placed', 'packed', 'onWay', 'delivered'] as const;
+const STEPS = ['ordered', 'outForDelivery', 'delivered'] as const;
 
 export const orderStatusStep = (
   paymentStatus: PaymentStatus,
   status: OrderStatus,
 ): number => {
   if (paymentStatus === 'failed' || status === 'cancelled') return -1;
-  if (status === 'delivered') return 3;
-  if (status === 'out_for_delivery') return 2;
-  if (status === 'confirmed') return 1;
+  if (status === 'delivered') return 2;
+  if (status === 'out_for_delivery') return 1;
   return 0;
 };
 
@@ -45,7 +44,9 @@ const OrderStatusPanel = ({
   const insets = useSafeAreaInsets();
   const pulse = useRef(new Animated.Value(1)).current;
   const current = orderStatusStep(paymentStatus, status);
-  const inProgress = current >= 1 && status !== 'delivered';
+  const inProgress =
+    paymentStatus !== 'failed' &&
+    (status === 'confirmed' || status === 'out_for_delivery');
 
   useEffect(() => {
     if (!inProgress) return;

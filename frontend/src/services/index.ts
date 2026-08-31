@@ -27,6 +27,8 @@ export {
   createCheckoutOrder,
   fetchOrders,
   fetchOrderById,
+  fetchOrderByPublicId,
+  markOrderDeliveredByPublicId,
   peekOrdersCache,
   invalidateOrdersCache,
   seedOrderInCache,

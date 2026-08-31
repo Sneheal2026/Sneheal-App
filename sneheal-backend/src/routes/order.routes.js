@@ -68,6 +68,40 @@ router.patch(
 
 /**
  * @swagger
+ * /api/orders/public/{publicId}:
+ *   get:
+ *     summary: Look up an order by its public ID (delivery confirmation)
+ *     tags: [Orders]
+ *     security:
+ *       - BearerAuth: []
+ */
+// NOTE: authenticated-only for now so it can be tested from the customer app.
+// Restrict with requireRole('delivery_agent') once this moves to the agent app.
+router.get(
+  '/public/:publicId',
+  authenticateToken,
+  asyncHandler(orderController.getOrderByPublicId),
+);
+
+/**
+ * @swagger
+ * /api/orders/public/{publicId}/status:
+ *   patch:
+ *     summary: Update fulfillment status by public ID (delivery confirmation)
+ *     tags: [Orders]
+ *     security:
+ *       - BearerAuth: []
+ */
+// NOTE: authenticated-only for now so it can be tested from the customer app.
+// Restrict with requireRole('delivery_agent') once this moves to the agent app.
+router.patch(
+  '/public/:publicId/status',
+  authenticateToken,
+  asyncHandler(orderController.updateStatusByPublicId),
+);
+
+/**
+ * @swagger
  * /api/orders/{id}:
  *   get:
  *     summary: Get a single order

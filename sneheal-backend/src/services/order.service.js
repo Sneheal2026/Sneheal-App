@@ -278,6 +278,34 @@ const getOrder = async (user, orderId) => {
   return toDetailPayload(order, items, payment);
 };
 
+const getOrderByPublicId = async (publicId) => {
+  const trimmed = String(publicId ?? '').trim();
+  if (!trimmed) {
+    throw new AppError(400, 'Order ID is required');
+  }
+  const order = await orderRepo.findByPublicId(trimmed);
+  if (!order) {
+    throw new AppError(404, 'Order not found');
+  }
+  const [items, payment] = await Promise.all([
+    orderRepo.findItemsByOrderId(order.id),
+    paymentRepo.findByOrderId(order.id),
+  ]);
+  return toDetailPayload(order, items, payment);
+};
+
+const updateFulfillmentByPublicId = async (agentId, publicId, nextStatus) => {
+  const trimmed = String(publicId ?? '').trim();
+  if (!trimmed) {
+    throw new AppError(400, 'Order ID is required');
+  }
+  const order = await orderRepo.findByPublicId(trimmed);
+  if (!order) {
+    throw new AppError(404, 'Order not found');
+  }
+  return updateFulfillmentStatus(agentId, order.id, nextStatus);
+};
+
 const listDeliveryQueue = async () => {
   const [active, completed] = await Promise.all([
     orderRepo.findByStatuses(['confirmed', 'out_for_delivery']),
@@ -368,6 +396,8 @@ module.exports = {
   createCheckoutOrder,
   listOrders,
   getOrder,
+  getOrderByPublicId,
   listDeliveryQueue,
   updateFulfillmentStatus,
+  updateFulfillmentByPublicId,
 };

@@ -50,6 +50,7 @@ export type AuthStackParamList = {
   EmergencyContacts: undefined;
   Prescriptions: undefined;
   DeliveryAgentMain: undefined;
+  DeliveryConfirm: undefined;
   DeliveryNavigation: {
     orderId: string;
     publicId?: string;

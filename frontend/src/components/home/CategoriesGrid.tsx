@@ -39,6 +39,11 @@ const CATEGORY_IMAGES = {
   ayurveda: require('../../../assets/images/Ayurveda.png'),
   painRelief: require('../../../assets/images/Pain-Relief.png'),
   feverCold: require('../../../assets/images/Fever-Cold.png'),
+  diaperWipes: require('../../../assets/images/Diapers-wipes.png'),
+  feedingEssentials: require('../../../assets/images/feeding-essentials.png'),
+  babySkinBath: require('../../../assets/images/Babyskin.png'),
+  healthDevices: require('../../../assets/images/Health-Devices.png'),
+  homeEssentials: require('../../../assets/images/Home-essentials.png'),
 } as const;
 
 // Bundled fallback art per category slug (used until real image_url values exist).
@@ -48,15 +53,15 @@ const CATEGORY_FALLBACK_BY_SLUG: Record<string, ImageSourcePropType> = {
   'oral-care': CATEGORY_IMAGES.oralCare,
   'hair-care': CATEGORY_IMAGES.hairCare,
   'feminine-hygiene': CATEGORY_IMAGES.feminineHygiene,
-  'diaper-wipes': CATEGORY_IMAGES.feverCold,
-  'feeding-essentials': CATEGORY_IMAGES.feverCold,
-  'baby-skin-bath': CATEGORY_IMAGES.feminineHygiene,
+  'diaper-wipes': CATEGORY_IMAGES.diaperWipes,
+  'feeding-essentials': CATEGORY_IMAGES.feedingEssentials,
+  'baby-skin-bath': CATEGORY_IMAGES.babySkinBath,
   'fitness-essentials': CATEGORY_IMAGES.fitness,
   'vitamins-minerals': CATEGORY_IMAGES.vitaminsMinerals,
   'nutritional-drinks': CATEGORY_IMAGES.nutritionDrinks,
   'ayurveda-essentials': CATEGORY_IMAGES.ayurveda,
-  'health-devices': CATEGORY_IMAGES.feverCold,
-  'home-essentials': CATEGORY_IMAGES.feverCold,
+  'health-devices': CATEGORY_IMAGES.healthDevices,
+  'home-essentials': CATEGORY_IMAGES.homeEssentials,
   'pain-relief': CATEGORY_IMAGES.painRelief,
   'fever-cold': CATEGORY_IMAGES.feverCold,
 };

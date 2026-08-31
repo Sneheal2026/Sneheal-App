@@ -106,6 +106,14 @@ const findById = async (id, connection = db) => {
   return mapOrder(rows[0]);
 };
 
+const findByPublicId = async (publicId, connection = db) => {
+  const [rows] = await connection.execute(
+    `SELECT ${ORDER_SELECT} FROM orders WHERE public_id = ? LIMIT 1`,
+    [publicId],
+  );
+  return mapOrder(rows[0]);
+};
+
 const findByIdAndUserId = async (id, userId, connection = db) => {
   const [rows] = await connection.execute(
     `SELECT ${ORDER_SELECT} FROM orders WHERE id = ? AND user_id = ? LIMIT 1`,
@@ -222,6 +230,7 @@ module.exports = {
   mapOrder,
   create,
   findById,
+  findByPublicId,
   findByIdAndUserId,
   findByIdForUpdate,
   findByUserId,

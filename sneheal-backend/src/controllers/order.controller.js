@@ -30,10 +30,26 @@ const updateStatus = async (req, res) => {
   return success(res, 'Order status updated', data);
 };
 
+const getOrderByPublicId = async (req, res) => {
+  const data = await orderService.getOrderByPublicId(req.params.publicId);
+  return success(res, 'Order fetched successfully', data);
+};
+
+const updateStatusByPublicId = async (req, res) => {
+  const data = await orderService.updateFulfillmentByPublicId(
+    req.user.sub,
+    req.params.publicId,
+    req.body?.status,
+  );
+  return success(res, 'Order status updated', data);
+};
+
 module.exports = {
   createOrder,
   listOrders,
   getOrder,
+  getOrderByPublicId,
   listDeliveryQueue,
   updateStatus,
+  updateStatusByPublicId,
 };

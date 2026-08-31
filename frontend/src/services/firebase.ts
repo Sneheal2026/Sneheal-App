@@ -36,6 +36,46 @@ export function clearOrderTracking(orderId: string) {
   return remove(orderRef);
 }
 
+export type LiveOrderStatus =
+  | 'confirmed'
+  | 'out_for_delivery'
+  | 'delivered'
+  | 'cancelled';
+
+export interface LiveOrderStatusPayload {
+  status: LiveOrderStatus;
+  updatedAt: number;
+}
+
+/**
+ * Push the order's fulfillment status so any customer screen watching this
+ * order updates live. This mirrors MySQL (the source of truth); it is not the
+ * store of record.
+ */
+export function setOrderStatus(orderId: string, status: LiveOrderStatus) {
+  const statusRef = ref(database, `liveOrders/${sanitizeKey(orderId)}/status`);
+  return set(statusRef, { status, updatedAt: Date.now() });
+}
+
+export function subscribeToOrderStatus(
+  orderId: string,
+  callback: (payload: LiveOrderStatusPayload | null) => void,
+): Unsubscribe {
+  const statusRef = ref(database, `liveOrders/${sanitizeKey(orderId)}/status`);
+  return onValue(
+    statusRef,
+    (snapshot) => {
+      callback(snapshot.exists() ? (snapshot.val() as LiveOrderStatusPayload) : null);
+    },
+    (error) => {
+      if (__DEV__) {
+        console.warn('[Firebase] Status listen error:', error.message);
+      }
+      callback(null);
+    },
+  );
+}
+
 export function subscribeToAgentLocation(
   orderId: string,
   callback: (location: AgentLocation | null) => void,

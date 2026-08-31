@@ -14,6 +14,7 @@ import type { RouteProp } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Loader from '@/components/common/Loader';
 import OrderStatusPanel from '@/components/orders/OrderStatusPanel';
+import { useLiveOrderStatus } from '@/hooks/useLiveOrderStatus';
 import { fetchOrderById } from '@/services/orderService';
 import { ApiError } from '@/services/apiClient';
 import { formatInr } from '@/utils/cartBilling';
@@ -59,6 +60,8 @@ const OrderDetailScreen = () => {
     void load();
   }, [load]);
 
+  const liveStatus = useLiveOrderStatus(params.orderId, order?.status ?? 'confirmed');
+
   if (loading && !order) {
     return (
       <View style={styles.root}>
@@ -87,7 +90,7 @@ const OrderDetailScreen = () => {
           publicId={order.publicId}
           grandTotal={order.grandTotal}
           paymentStatus={order.paymentStatus}
-          status={order.status}
+          status={liveStatus}
           showClose
           onClose={() => navigation.goBack()}
         />
