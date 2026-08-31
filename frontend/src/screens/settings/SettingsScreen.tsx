@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   ScrollView,
   Pressable,
   Image,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -17,6 +18,8 @@ import Constants from 'expo-constants';
 import { useTranslation } from 'react-i18next';
 import SettingsListItem from '@/components/settings/SettingsListItem';
 import SettingsQuickAction from '@/components/settings/SettingsQuickAction';
+import LogoutConfirmModal from '@/components/settings/LogoutConfirmModal';
+import { clearAllUserData } from '@/utils/logout';
 import theme from '@/styles/theme';
 import type { AuthStackParamList } from '@/navigation/types';
 import { getLanguageNativeLabel } from '@/constants/languages';
@@ -70,8 +73,10 @@ const SettingsScreen = () => {
   const navigation = useNavigation<NativeStackNavigationProp<AuthStackParamList>>();
   const { t } = useTranslation();
   const { language } = useLanguage();
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const { colors: themeColors, gradients, colorThemeId, customPrimary } = useTheme();
+  const [logoutVisible, setLogoutVisible] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
   const currentLanguageLabel = getLanguageNativeLabel(language);
   const currentColorLabel = getColorThemeOption(colorThemeId).label;
   const currentColorSwatch = getColorThemeSwatch(
@@ -106,8 +111,34 @@ const SettingsScreen = () => {
       navigation.navigate('LanguageSettings');
     } else if (id === 'color') {
       navigation.navigate('ColorSettings');
+    } else if (id === 'logout') {
+      setLogoutVisible(true);
     }
   };
+
+  const handleConfirmLogout = useCallback(async () => {
+    if (loggingOut) return;
+    setLoggingOut(true);
+
+    try {
+      await clearAllUserData();
+      await signOut();
+
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'PhoneNumber' }],
+      });
+    } catch {
+      setLoggingOut(false);
+      setLogoutVisible(false);
+      Alert.alert(t('settings.logOutFailedTitle'), t('settings.logOutFailedMessage'));
+    }
+  }, [loggingOut, navigation, signOut, t]);
+
+  const handleCancelLogout = useCallback(() => {
+    if (loggingOut) return;
+    setLogoutVisible(false);
+  }, [loggingOut]);
 
   const demoNavigateCustomer = () => {
     navigation.navigate('CustomerTracking', {
@@ -312,6 +343,13 @@ const SettingsScreen = () => {
           </Animated.View>
         </View>
       </ScrollView>
+
+      <LogoutConfirmModal
+        visible={logoutVisible}
+        loading={loggingOut}
+        onCancel={handleCancelLogout}
+        onConfirm={handleConfirmLogout}
+      />
     </View>
   );
 };

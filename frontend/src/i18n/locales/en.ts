@@ -326,6 +326,13 @@ const en = {
     languageSettings: 'Language settings',
     colorTheme: 'Color theme',
     logOut: 'Log out',
+    logOutTitle: 'Log out?',
+    logOutMessage:
+      "You'll be signed out and all data saved on this device will be removed. You'll need to log in again to continue.",
+    logOutConfirm: 'Log out',
+    logOutCancel: 'Cancel',
+    logOutFailedTitle: 'Logout failed',
+    logOutFailedMessage: 'Something went wrong while logging out. Please try again.',
     demoCustomer: 'Customer',
     demoDeliveryAgent: 'Delivery Agent',
     deliveryConfirm: 'Mark Delivered',

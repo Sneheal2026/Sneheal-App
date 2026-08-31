@@ -325,6 +325,13 @@ const hi: TranslationResources = {
     languageSettings: 'भाषा सेटिंग',
     colorTheme: 'रंग थीम',
     logOut: 'लॉग आउट',
+    logOutTitle: 'लॉग आउट करें?',
+    logOutMessage:
+      'आप साइन आउट हो जाएँगे और इस डिवाइस पर सहेजा गया सारा डेटा हटा दिया जाएगा। जारी रखने के लिए आपको फिर से लॉग इन करना होगा।',
+    logOutConfirm: 'लॉग आउट',
+    logOutCancel: 'रद्द करें',
+    logOutFailedTitle: 'लॉग आउट विफल',
+    logOutFailedMessage: 'लॉग आउट करते समय कुछ गलत हो गया। कृपया फिर से प्रयास करें।',
     demoCustomer: 'ग्राहक',
     demoDeliveryAgent: 'डिलीवरी एजेंट',
     deliveryConfirm: 'डिलीवर मार्क करें',
