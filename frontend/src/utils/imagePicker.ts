@@ -9,10 +9,22 @@ export interface PickedImage {
   height?: number;
 }
 
+export interface PickImageOptions {
+  /** When true, opens the native crop/edit UI after picking. */
+  allowsEditing?: boolean;
+  /** Locks the crop rectangle to this ratio, e.g. [1, 1] for a square avatar. */
+  aspect?: [number, number];
+  /** JPEG compression quality (0-1). Defaults to 0.9. */
+  quality?: number;
+}
+
 export async function pickImageFromSource(
   source: ImagePickSource,
   permissionMessage: string,
+  options: PickImageOptions = {},
 ): Promise<PickedImage | null> {
+  const { allowsEditing = false, aspect, quality = 0.9 } = options;
+
   const permission =
     source === 'camera'
       ? await ImagePicker.requestCameraPermissionsAsync()
@@ -26,18 +38,17 @@ export async function pickImageFromSource(
     return null;
   }
 
+  const pickerOptions: ImagePicker.ImagePickerOptions = {
+    mediaTypes: 'images',
+    allowsEditing,
+    quality,
+    ...(aspect ? { aspect } : {}),
+  };
+
   const result =
     source === 'camera'
-      ? await ImagePicker.launchCameraAsync({
-          mediaTypes: 'images',
-          allowsEditing: false,
-          quality: 0.9,
-        })
-      : await ImagePicker.launchImageLibraryAsync({
-          mediaTypes: 'images',
-          allowsEditing: false,
-          quality: 0.9,
-        });
+      ? await ImagePicker.launchCameraAsync(pickerOptions)
+      : await ImagePicker.launchImageLibraryAsync(pickerOptions);
 
   if (result.canceled || !result.assets[0]?.uri) {
     return null;

@@ -19,6 +19,8 @@ import { useTranslation } from 'react-i18next';
 import SettingsListItem from '@/components/settings/SettingsListItem';
 import SettingsQuickAction from '@/components/settings/SettingsQuickAction';
 import LogoutConfirmModal from '@/components/settings/LogoutConfirmModal';
+import ProfilePhotoPickerModal from '@/components/settings/ProfilePhotoPickerModal';
+import { useProfilePhoto } from '@/hooks/useProfilePhoto';
 import { clearAllUserData } from '@/utils/logout';
 import theme from '@/styles/theme';
 import type { AuthStackParamList } from '@/navigation/types';
@@ -33,7 +35,6 @@ import { toLocalPhone } from '@/utils/phone';
 const { colors, spacing, typography, borderRadius, shadows } = theme;
 
 const APP_VERSION = Constants.expoConfig?.version ?? '1.0.0';
-const ACCOUNT_AVATAR = require('../../../assets/images/Male_picture.webp');
 
 const QUICK_ACTIONS = [
   { id: 'orders', icon: 'receipt-outline' as const, labelKey: 'settings.myOrders' },
@@ -44,7 +45,6 @@ const QUICK_ACTIONS = [
 const YOUR_INFO_ITEMS = [
   { id: 'addresses', icon: 'location-outline' as const, labelKey: 'settings.savedAddresses' },
   { id: 'reminders', icon: 'alarm-outline' as const, labelKey: 'settings.medicineReminders' },
-  { id: 'lab-reports', icon: 'flask-outline' as const, labelKey: 'settings.labReports' },
   { id: 'family', icon: 'people-outline' as const, labelKey: 'settings.familyMembers' },
 ];
 
@@ -77,6 +77,9 @@ const SettingsScreen = () => {
   const { colors: themeColors, gradients, colorThemeId, customPrimary } = useTheme();
   const [logoutVisible, setLogoutVisible] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
+  const [photoPickerVisible, setPhotoPickerVisible] = useState(false);
+  const { selection: photoSelection, source: photoSource, setSelection: setPhotoSelection } =
+    useProfilePhoto();
   const currentLanguageLabel = getLanguageNativeLabel(language);
   const currentColorLabel = getColorThemeOption(colorThemeId).label;
   const currentColorSwatch = getColorThemeSwatch(
@@ -193,14 +196,33 @@ const SettingsScreen = () => {
               </Pressable>
 
               <Animated.View entering={FadeInDown.duration(400)} style={styles.profileBlock}>
-                <View style={styles.avatarRing}>
-                  <Image
-                    source={ACCOUNT_AVATAR}
-                    style={styles.avatar}
-                    resizeMode="cover"
-                    accessibilityLabel={t('settings.profilePhotoA11y')}
-                  />
-                </View>
+                <Pressable
+                  onPress={() => setPhotoPickerVisible(true)}
+                  style={({ pressed }) => [styles.avatarPress, pressed && styles.avatarPressed]}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('settings.editPhotoA11y')}
+                >
+                  <View style={styles.avatarRing}>
+                    {photoSource ? (
+                      <Image
+                        source={photoSource}
+                        style={styles.avatar}
+                        resizeMode="cover"
+                        accessibilityLabel={t('settings.profilePhotoA11y')}
+                      />
+                    ) : (
+                      <View
+                        style={[styles.avatar, styles.avatarPlaceholder]}
+                        accessibilityLabel={t('settings.profilePhotoA11y')}
+                      >
+                        <Ionicons name="person" size={48} color={themeColors.primary} />
+                      </View>
+                    )}
+                  </View>
+                  <View style={[styles.editBadge, { backgroundColor: themeColors.primary }]}>
+                    <Ionicons name="pencil" size={14} color={colors.white} />
+                  </View>
+                </Pressable>
                 <Text style={styles.accountTitle}>{displayName}</Text>
                 {displayPhone ? (
                   <Text style={styles.phoneText}>{displayPhone}</Text>
@@ -350,6 +372,13 @@ const SettingsScreen = () => {
         onCancel={handleCancelLogout}
         onConfirm={handleConfirmLogout}
       />
+
+      <ProfilePhotoPickerModal
+        visible={photoPickerVisible}
+        currentType={photoSelection.type}
+        onClose={() => setPhotoPickerVisible(false)}
+        onSelected={setPhotoSelection}
+      />
     </View>
   );
 };
@@ -388,11 +417,16 @@ const styles = StyleSheet.create({
   profileBlock: {
     alignItems: 'center',
   },
+  avatarPress: {
+    marginBottom: spacing.md,
+  },
+  avatarPressed: {
+    opacity: 0.85,
+  },
   avatarRing: {
     padding: 4,
     borderRadius: borderRadius.full,
     backgroundColor: 'rgba(255,255,255,0.6)',
-    marginBottom: spacing.md,
   },
   avatar: {
     width: 88,
@@ -400,6 +434,24 @@ const styles = StyleSheet.create({
     borderRadius: 44,
     backgroundColor: colors.white,
     overflow: 'hidden',
+    ...shadows.sm,
+  },
+  avatarPlaceholder: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surfaceSecondary,
+  },
+  editBadge: {
+    position: 'absolute',
+    right: 0,
+    bottom: 4,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2.5,
+    borderColor: colors.white,
     ...shadows.sm,
   },
   accountTitle: {

@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
 import { invalidateOrdersCache } from '@/services/orderService';
+import { clearProfilePhoto } from '@/services/profilePhotoStorage';
 import { devLog } from '@/utils/devLogger';
 
 /**
@@ -17,6 +18,12 @@ export const clearAllUserData = async (): Promise<void> => {
     await Notifications.cancelAllScheduledNotificationsAsync();
   } catch (error) {
     devLog('Logout', 'Failed to cancel scheduled notifications', error);
+  }
+
+  try {
+    await clearProfilePhoto();
+  } catch (error) {
+    devLog('Logout', 'Failed to clear profile photo file', error);
   }
 
   await AsyncStorage.clear();
