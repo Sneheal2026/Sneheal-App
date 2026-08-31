@@ -76,7 +76,7 @@ const DevResetStorageButton = () => {
 
   return (
     <View style={styles.row}>
-      <Pressable
+      {/* <Pressable
         onPress={handleViewStorage}
         style={({ pressed }) => [styles.viewButton, pressed && styles.buttonPressed]}
         accessibilityRole="button"
@@ -104,7 +104,7 @@ const DevResetStorageButton = () => {
         <Text style={styles.clearLabel}>
           {isClearing ? 'Clearing…' : 'Dev: Clear storage'}
         </Text>
-      </Pressable>
+      </Pressable> */}
     </View>
   );
 };

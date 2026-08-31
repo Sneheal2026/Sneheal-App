@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -6,7 +6,7 @@ import {
   Image,
   ScrollView,
   Pressable,
-  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
@@ -20,8 +20,6 @@ import { useSavedAddresses } from '@/hooks/useSavedAddresses';
 import { computeCartBill, formatInr } from '@/utils/cartBilling';
 import { resolveCatalogImage } from '@/utils/productImage';
 import { getTabBarHeight } from '@/navigation/tabBarConfig';
-import { createCheckoutOrder, seedOrderInCache } from '@/services/orderService';
-import { ApiError } from '@/services/apiClient';
 import type { AuthStackParamList, TabScreenProps } from '@/navigation/types';
 import theme from '@/styles/theme';
 
@@ -36,10 +34,9 @@ const CartScreen = ({ navigation: tabNavigation }: TabScreenProps<'Cart'>) => {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const tabBarHeight = getTabBarHeight(insets.bottom);
-  const { lines, totalItems, increment, decrement, clearCart } = useCart();
+  const { lines, totalItems, increment, decrement } = useCart();
   const { selectedAddress, addresses, refresh } = useSavedAddresses();
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [addressMissing, setAddressMissing] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -100,6 +97,10 @@ const CartScreen = ({ navigation: tabNavigation }: TabScreenProps<'Cart'>) => {
       : selectedAddress.type.charAt(0).toUpperCase() + selectedAddress.type.slice(1)
     : null;
 
+  useEffect(() => {
+    if (selectedAddress) setAddressMissing(false);
+  }, [selectedAddress]);
+
   const openAddresses = useCallback(() => {
     const parent = navigation.getParent<NativeStackNavigationProp<AuthStackParamList>>();
     if (addresses.length > 0) {
@@ -113,37 +114,19 @@ const CartScreen = ({ navigation: tabNavigation }: TabScreenProps<'Cart'>) => {
     tabNavigation.navigate('Home');
   }, [tabNavigation]);
 
-  const onPlaceOrder = useCallback(async () => {
-    if (submitting) return;
-    setError(null);
-
+  const onContinue = useCallback(() => {
     if (!selectedAddress) {
-      openAddresses();
+      setAddressMissing(true);
+      Alert.alert(t('cart.addressRequiredTitle'), t('cart.addressRequiredBody'), [
+        { text: t('common.cancel'), style: 'cancel' },
+        { text: t('cart.addAddress'), onPress: openAddresses },
+      ]);
       return;
     }
 
-    setSubmitting(true);
-    try {
-      const order = await createCheckoutOrder(
-        selectedAddress.id,
-        lines.map((line) => ({ productId: line.productId, quantity: line.quantity })),
-      );
-      seedOrderInCache(order);
-      clearCart();
-      const parent = navigation.getParent<NativeStackNavigationProp<AuthStackParamList>>();
-      parent?.replace('OrderPlaced', {
-        orderId: order.id,
-        publicId: order.publicId,
-        grandTotal: order.grandTotal,
-      });
-    } catch (err) {
-      const message =
-        err instanceof ApiError ? err.message : t('cart.placeOrderFailed');
-      setError(message);
-    } finally {
-      setSubmitting(false);
-    }
-  }, [clearCart, lines, navigation, openAddresses, selectedAddress, submitting, t]);
+    const parent = navigation.getParent<NativeStackNavigationProp<AuthStackParamList>>();
+    parent?.navigate('PaymentMethod');
+  }, [navigation, openAddresses, selectedAddress, t]);
 
   const subtitle =
     totalItems > 0
@@ -178,13 +161,21 @@ const CartScreen = ({ navigation: tabNavigation }: TabScreenProps<'Cart'>) => {
         >
             <Pressable
               onPress={openAddresses}
-              style={({ pressed }) => [styles.addressCard, pressed && styles.pressed]}
+              style={({ pressed }) => [
+                styles.addressCard,
+                addressMissing && styles.addressCardWarn,
+                pressed && styles.pressed,
+              ]}
             >
-              <View style={styles.addressIcon}>
-                <Ionicons name="location" size={16} color={CART_GREEN} />
+              <View style={[styles.addressIcon, addressMissing && styles.addressIconWarn]}>
+                <Ionicons
+                  name={addressMissing ? 'alert-circle' : 'location'}
+                  size={16}
+                  color={addressMissing ? colors.error : CART_GREEN}
+                />
               </View>
               <View style={styles.addressText}>
-                <Text style={styles.addressKicker}>
+                <Text style={[styles.addressKicker, addressMissing && styles.addressKickerWarn]}>
                   {addressTag
                     ? `${t('cart.deliverTo')} ${addressTag}`
                     : t('cart.addAddress')}
@@ -193,8 +184,16 @@ const CartScreen = ({ navigation: tabNavigation }: TabScreenProps<'Cart'>) => {
                   {addressLabel ?? t('cart.addAddress')}
                 </Text>
               </View>
-              <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+              <Ionicons
+                name="chevron-forward"
+                size={16}
+                color={addressMissing ? colors.error : colors.textMuted}
+              />
             </Pressable>
+
+            {addressMissing ? (
+              <Text style={styles.addressWarnText}>{t('cart.addressNeededHint')}</Text>
+            ) : null}
 
             <Text style={styles.sectionTitle}>{t('cart.itemsInCart')}</Text>
             <View style={styles.itemsList}>
@@ -219,45 +218,19 @@ const CartScreen = ({ navigation: tabNavigation }: TabScreenProps<'Cart'>) => {
               grandTotal={bill.grandTotal}
             />
 
-            <View style={styles.codCard}>
-              <View style={styles.codIcon}>
-                <Ionicons name="cash-outline" size={18} color={CART_GREEN} />
-              </View>
-              <View style={styles.codText}>
-                <Text style={styles.codTitle}>{t('cart.codTitle')}</Text>
-                <Text style={styles.codHint}>{t('cart.codHint')}</Text>
-              </View>
-              <View style={styles.codCheck}>
-                <Ionicons name="checkmark" size={14} color={colors.white} />
-              </View>
-            </View>
-
-            {error ? <Text style={styles.errorText}>{error}</Text> : null}
-
             <View style={styles.checkoutBar}>
               <View>
                 <Text style={styles.checkoutKicker}>{t('cart.toPay')}</Text>
                 <Text style={styles.checkoutTotal}>{formatInr(bill.grandTotal)}</Text>
               </View>
               <Pressable
-                onPress={() => {
-                  void onPlaceOrder();
-                }}
-                disabled={submitting}
-                style={({ pressed }) => [
-                  styles.proceedBtn,
-                  pressed && styles.pressed,
-                  submitting && styles.proceedDisabled,
-                ]}
+                onPress={onContinue}
+                style={({ pressed }) => [styles.proceedBtn, pressed && styles.pressed]}
+                accessibilityRole="button"
+                accessibilityLabel={t('common.continue')}
               >
-                {submitting ? (
-                  <ActivityIndicator color={colors.white} size="small" />
-                ) : (
-                  <>
-                    <Text style={styles.proceedText}>{t('cart.placeOrder')}</Text>
-                    <Ionicons name="arrow-forward" size={16} color={colors.white} />
-                  </>
-                )}
+                <Text style={styles.proceedText}>{t('common.continue')}</Text>
+                <Ionicons name="arrow-forward" size={16} color={colors.white} />
               </Pressable>
             </View>
           </ScrollView>
@@ -329,6 +302,10 @@ const styles = StyleSheet.create({
     borderColor: colors.borderLight,
     ...shadows.sm,
   },
+  addressCardWarn: {
+    borderColor: colors.error,
+    backgroundColor: colors.errorLight,
+  },
   pressed: {
     opacity: 0.85,
   },
@@ -340,6 +317,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  addressIconWarn: {
+    backgroundColor: colors.errorLight,
+  },
   addressText: {
     flex: 1,
     minWidth: 0,
@@ -350,10 +330,20 @@ const styles = StyleSheet.create({
     color: CART_GREEN,
     textTransform: 'capitalize',
   },
+  addressKickerWarn: {
+    color: colors.error,
+  },
   addressLine: {
     ...typography.bodySmall,
     color: colors.textSecondary,
     marginTop: 1,
+  },
+  addressWarnText: {
+    ...typography.caption,
+    color: colors.error,
+    fontWeight: '600',
+    marginTop: -spacing.xs,
+    paddingHorizontal: spacing.xs,
   },
   sectionTitle: {
     ...typography.bodySmall,
@@ -363,52 +353,6 @@ const styles = StyleSheet.create({
   },
   itemsList: {
     gap: spacing.sm,
-  },
-  codCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.white,
-    borderRadius: borderRadius.lg,
-    padding: spacing.md,
-    gap: spacing.sm,
-    borderWidth: 1,
-    borderColor: colors.borderLight,
-    ...shadows.sm,
-  },
-  codIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#EEF0FF',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  codText: {
-    flex: 1,
-    minWidth: 0,
-  },
-  codTitle: {
-    ...typography.bodySmall,
-    fontWeight: '700',
-    color: colors.textPrimary,
-  },
-  codHint: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    marginTop: 2,
-  },
-  codCheck: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: CART_GREEN,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  errorText: {
-    ...typography.bodySmall,
-    color: colors.error,
-    fontWeight: '600',
   },
   checkoutBar: {
     flexDirection: 'row',
@@ -443,9 +387,6 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     minWidth: 120,
     justifyContent: 'center',
-  },
-  proceedDisabled: {
-    opacity: 0.7,
   },
   proceedText: {
     ...typography.bodySmall,

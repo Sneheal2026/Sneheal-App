@@ -4,29 +4,34 @@ import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/hooks/useTheme';
+import PharmacyAssistCard from './PharmacyAssistCard';
 
 interface SearchEmptyStateProps {
+  query?: string;
   onBrowse: () => void;
 }
 
-const SearchEmptyState: React.FC<SearchEmptyStateProps> = ({ onBrowse }) => {
+const SearchEmptyState: React.FC<SearchEmptyStateProps> = ({ query, onBrowse }) => {
   const { t } = useTranslation();
-  const { colors, spacing, typography, borderRadius, moderateScale } = useTheme();
+  const { colors, spacing, typography, moderateScale } = useTheme();
+  const trimmedQuery = query?.trim() ?? '';
 
   const styles = useMemo(
     () =>
       StyleSheet.create({
         wrap: {
+          gap: spacing.lg,
+          paddingVertical: spacing.md,
+        },
+        header: {
           alignItems: 'center',
-          paddingVertical: spacing.xxl,
-          paddingHorizontal: spacing.lg,
-          gap: spacing.sm,
+          gap: spacing.xs,
         },
         iconWrap: {
-          width: moderateScale(72),
-          height: moderateScale(72),
-          borderRadius: moderateScale(36),
-          backgroundColor: colors.surfaceSecondary,
+          width: moderateScale(56),
+          height: moderateScale(56),
+          borderRadius: moderateScale(28),
+          backgroundColor: colors.surface,
           alignItems: 'center',
           justifyContent: 'center',
           marginBottom: spacing.xs,
@@ -35,50 +40,55 @@ const SearchEmptyState: React.FC<SearchEmptyStateProps> = ({ onBrowse }) => {
           ...typography.body,
           fontWeight: '700',
           color: colors.textPrimary,
+          textAlign: 'center',
         },
         subtitle: {
           ...typography.caption,
           color: colors.textSecondary,
           textAlign: 'center',
           lineHeight: moderateScale(18),
-          maxWidth: moderateScale(250),
         },
-        cta: {
-          marginTop: spacing.sm,
-          paddingHorizontal: spacing.xl,
+        browse: {
+          alignSelf: 'center',
           paddingVertical: spacing.sm,
-          borderRadius: borderRadius.full,
-          backgroundColor: colors.primary,
+          paddingHorizontal: spacing.md,
         },
-        ctaPressed: {
-          opacity: 0.8,
+        browsePressed: {
+          opacity: 0.7,
         },
-        ctaText: {
+        browseText: {
           ...typography.caption,
           fontWeight: '700',
-          color: colors.textInverse,
+          color: colors.primary,
         },
       }),
-    [borderRadius, colors, moderateScale, spacing, typography],
+    [colors, moderateScale, spacing, typography],
   );
 
   return (
-    <Animated.View entering={FadeInDown.duration(320)} style={styles.wrap}>
-      <View style={styles.iconWrap}>
-        <Ionicons name="search-outline" size={moderateScale(30)} color={colors.textMuted} />
-      </View>
-      <Text style={styles.title} numberOfLines={1}>
-        {t('search.noResultsTitle')}
-      </Text>
-      <Text style={styles.subtitle}>{t('search.noResultsSubtitle')}</Text>
+    <View style={styles.wrap}>
+      <Animated.View entering={FadeInDown.duration(320)} style={styles.header}>
+        <View style={styles.iconWrap}>
+          <Ionicons name="search-outline" size={moderateScale(24)} color={colors.textMuted} />
+        </View>
+        <Text style={styles.title} numberOfLines={2}>
+          {trimmedQuery
+            ? t('search.noResultsTitle', { query: trimmedQuery })
+            : t('search.noResultsTitleFallback')}
+        </Text>
+        <Text style={styles.subtitle}>{t('search.noResultsSubtitle')}</Text>
+      </Animated.View>
+
+      <PharmacyAssistCard variant="hero" query={trimmedQuery} />
+
       <Pressable
         onPress={onBrowse}
-        style={({ pressed }) => [styles.cta, pressed && styles.ctaPressed]}
+        style={({ pressed }) => [styles.browse, pressed && styles.browsePressed]}
         accessibilityRole="button"
       >
-        <Text style={styles.ctaText}>{t('search.browseCta')}</Text>
+        <Text style={styles.browseText}>{t('search.browseCta')}</Text>
       </Pressable>
-    </Animated.View>
+    </View>
   );
 };
 

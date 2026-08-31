@@ -25,6 +25,7 @@ import { useTranslation } from 'react-i18next';
 import SearchBar from '@/components/home/SearchBar';
 import {
   CategoryTile,
+  PharmacyAssistCard,
   SearchEmptyState,
   SearchPill,
   SearchResultRow,
@@ -281,6 +282,10 @@ const SearchScreen = () => {
           textAlign: 'center',
           paddingVertical: spacing.md,
         },
+        assistFooter: {
+          gap: spacing.md,
+          paddingTop: spacing.md,
+        },
       }),
     [borderRadius, colors, moderateScale, spacing, typography],
   );
@@ -399,28 +404,31 @@ const SearchScreen = () => {
         </View>
       );
     }
-    return <SearchEmptyState onBrowse={() => setQuery('')} />;
-  }, [colors.primary, hasQuery, searchLoading, styles.loadingBox]);
+    return <SearchEmptyState query={query} onBrowse={() => setQuery('')} />;
+  }, [colors.primary, hasQuery, query, searchLoading, styles.loadingBox]);
 
   const listFooter = useMemo(() => {
     if (!hasQuery || results.length === 0) return null;
-    if (loadingMore) {
-      return (
-        <View style={styles.footerLoading}>
-          <ActivityIndicator size="small" color={colors.primary} />
-        </View>
-      );
-    }
-    if (!hasMore && results.length > 0) {
-      return <Text style={styles.endOfList}>{t('search.endOfResults')}</Text>;
-    }
-    return null;
+
+    return (
+      <View style={styles.assistFooter}>
+        {loadingMore ? (
+          <View style={styles.footerLoading}>
+            <ActivityIndicator size="small" color={colors.primary} />
+          </View>
+        ) : !hasMore ? (
+          <Text style={styles.endOfList}>{t('search.endOfResults')}</Text>
+        ) : null}
+        <PharmacyAssistCard variant="compact" />
+      </View>
+    );
   }, [
     colors.primary,
     hasMore,
     hasQuery,
     loadingMore,
     results.length,
+    styles.assistFooter,
     styles.endOfList,
     styles.footerLoading,
     t,

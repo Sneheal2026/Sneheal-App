@@ -40,6 +40,7 @@ const AUTO_PLAY_MS = 3800;
 const SCROLL_DURATION = 1300;
 const SMOOTH_EASING = Easing.bezier(0.22, 1, 0.36, 1);
 const VELOCITY_THRESHOLD = 450;
+const TAP_MOVE_THRESHOLD = 10;
 
 type IoniconName = ComponentProps<typeof Ionicons>['name'];
 type PromoRoute =
@@ -346,9 +347,23 @@ const SlidePattern = React.memo(({ slide }: { slide: ResolvedSlide }) => {
 SlidePattern.displayName = 'SlidePattern';
 
 const PromoSlideCard = React.memo(
-  ({ slide, onPress }: { slide: ResolvedSlide; onPress: (route: PromoRoute) => void }) => (
+  ({ slide, onPress }: { slide: ResolvedSlide; onPress: (route: PromoRoute) => void }) => {
+    const touchStart = useRef({ x: 0, y: 0 });
+
+    return (
     <Pressable
-      onPress={() => onPress(slide.route)}
+      onPressIn={(event) => {
+        touchStart.current = {
+          x: event.nativeEvent.pageX,
+          y: event.nativeEvent.pageY,
+        };
+      }}
+      onPress={(event) => {
+        const dx = Math.abs(event.nativeEvent.pageX - touchStart.current.x);
+        const dy = Math.abs(event.nativeEvent.pageY - touchStart.current.y);
+        if (dx > TAP_MOVE_THRESHOLD || dy > TAP_MOVE_THRESHOLD) return;
+        onPress(slide.route);
+      }}
       style={styles.slide}
       accessibilityRole="button"
       accessibilityLabel={`${slide.title}. ${slide.detail}`}
@@ -401,7 +416,8 @@ const PromoSlideCard = React.memo(
         </View>
       </View>
     </Pressable>
-  ),
+    );
+  },
 );
 
 PromoSlideCard.displayName = 'PromoSlideCard';
@@ -439,8 +455,12 @@ const PromoBanner = ({ isScrolling = false }: PromoBannerProps) => {
 
   const loopSlides = useMemo(() => [...slides, slides[0]], [slides]);
 
+  const suppressPressRef = useRef(false);
+
   const handleSlidePress = useCallback(
     (route: PromoRoute) => {
+      if (suppressPressRef.current) return;
+
       if (route === 'Search') {
         navigation.navigate('Search');
         return;
@@ -506,6 +526,7 @@ const PromoBanner = ({ isScrolling = false }: PromoBannerProps) => {
   snapToIndexRef.current = snapToIndex;
 
   const onDragStart = useCallback(() => {
+    suppressPressRef.current = true;
     clearTimer();
     isAnimatingRef.current = true;
   }, [clearTimer]);
@@ -523,6 +544,11 @@ const PromoBanner = ({ isScrolling = false }: PromoBannerProps) => {
     }
 
     snapToIndexRef.current(targetIndex);
+
+    // Pressable can still fire onPress after a pan ends; keep it suppressed briefly.
+    setTimeout(() => {
+      suppressPressRef.current = false;
+    }, 80);
   }, []);
 
   const panGesture = useMemo(

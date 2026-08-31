@@ -10,6 +10,7 @@ import DoctorHomeScreen from '@/screens/doctor/DoctorHomeScreen';
 import PatientDetailsScreen from '@/screens/doctor/PatientDetailsScreen';
 import OrderPlacedScreen from '@/screens/orders/OrderPlacedScreen';
 import OrderDetailScreen from '@/screens/orders/OrderDetailScreen';
+import PaymentMethodScreen from '@/screens/cart/PaymentMethodScreen';
 import AppNavigator from './AppNavigator';
 import SettingsScreen from '@/screens/settings/SettingsScreen';
 import NotificationsScreen from '@/screens/notifications/NotificationsScreen';
@@ -71,6 +72,7 @@ const AuthNavigator = () => {
       <Stack.Screen name="DeliveryNavigation" component={DeliveryNavigationScreen} />
       <Stack.Screen name="DoctorMain" component={DoctorHomeScreen} />
       <Stack.Screen name="PatientDetails" component={PatientDetailsScreen} />
+      <Stack.Screen name="PaymentMethod" component={PaymentMethodScreen} />
       <Stack.Screen
         name="OrderPlaced"
         component={OrderPlacedScreen}

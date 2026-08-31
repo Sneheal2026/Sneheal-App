@@ -7,13 +7,15 @@ import {
   View,
 } from 'react-native';
 import { AuthScreenLayout, AuthPrimaryButton } from '@/components/auth';
-import { useAuth } from '@/context/AuthContext';
+// Customer-only for now — preview skip-login
+// import { useAuth } from '@/context/AuthContext';
 import theme from '@/styles/theme';
 import { APP_CONFIG } from '@/constants';
 import { sendOtp } from '@/services/authService';
 import { ApiError } from '@/services/apiClient';
 import { devLog } from '@/utils/devLogger';
-import { createPreviewSession, isSkipAuthEnabled } from '@/utils/previewAuth';
+// Customer-only for now — preview skip-login
+// import { createPreviewSession, isSkipAuthEnabled } from '@/utils/previewAuth';
 import type { AuthScreenProps } from '@/navigation/types';
 import { useTranslation } from 'react-i18next';
 
@@ -27,15 +29,16 @@ const formatPhoneDisplay = (digits: string): string => {
 
 const PhoneNumberScreen = ({ navigation }: AuthScreenProps<'PhoneNumber'>) => {
   const { t } = useTranslation();
-  const { signIn } = useAuth();
+  // Customer-only for now — preview skip-login
+  // const { signIn } = useAuth();
   const [phoneNumber, setPhoneNumber] = useState('');
   const [isFocused, setIsFocused] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [isSkipping, setIsSkipping] = useState(false);
+  // const [isSkipping, setIsSkipping] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
   const inputRef = useRef<TextInput>(null);
 
-  const showSkipAuth = isSkipAuthEnabled();
+  // const showSkipAuth = isSkipAuthEnabled();
 
   const isValid = phoneNumber.length === 10;
   const showError = phoneNumber.length > 0 && !isValid;
@@ -74,24 +77,25 @@ const PhoneNumberScreen = ({ navigation }: AuthScreenProps<'PhoneNumber'>) => {
     }
   };
 
-  const handleSkipAuth = async () => {
-    if (isSkipping || isLoading) return;
-
-    setIsSkipping(true);
-    setApiError(null);
-
-    try {
-      await signIn(createPreviewSession());
-      navigation.reset({
-        index: 0,
-        routes: [{ name: 'Main' }],
-      });
-    } catch {
-      setApiError('Unable to enter preview mode. Please try again.');
-    } finally {
-      setIsSkipping(false);
-    }
-  };
+  // Customer-only for now — preview skip-login
+  // const handleSkipAuth = async () => {
+  //   if (isSkipping || isLoading) return;
+  //
+  //   setIsSkipping(true);
+  //   setApiError(null);
+  //
+  //   try {
+  //     await signIn(createPreviewSession());
+  //     navigation.reset({
+  //       index: 0,
+  //       routes: [{ name: 'Main' }],
+  //     });
+  //   } catch {
+  //     setApiError('Unable to enter preview mode. Please try again.');
+  //   } finally {
+  //     setIsSkipping(false);
+  //   }
+  // };
 
   return (
     <AuthScreenLayout
@@ -103,6 +107,7 @@ const PhoneNumberScreen = ({ navigation }: AuthScreenProps<'PhoneNumber'>) => {
             disabled={!isValid}
             loading={isLoading}
           />
+          {/* Customer-only for now — continue without login preview
           {showSkipAuth ? (
             <Pressable
               onPress={() => void handleSkipAuth()}
@@ -120,6 +125,7 @@ const PhoneNumberScreen = ({ navigation }: AuthScreenProps<'PhoneNumber'>) => {
               </Text>
             </Pressable>
           ) : null}
+          */}
           <Text style={styles.termsText}>
             {t('auth.termsPrefix')}{' '}
             <Text style={styles.termsLink}>{t('auth.termsOfService')}</Text>

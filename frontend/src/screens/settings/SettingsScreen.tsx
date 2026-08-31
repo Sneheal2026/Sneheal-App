@@ -117,17 +117,18 @@ const SettingsScreen = () => {
     });
   };
 
-  const demoNavigateDelivery = () => {
-    navigation.navigate('DeliveryNavigation', {
-      orderId: DEMO_ORDER.orderId,
-      customerAddress: DEMO_ORDER.customerAddress,
-      customerCoords: DEMO_ORDER.customerCoords,
-    });
-  };
-
-  const demoNavigateDoctor = () => {
-    navigation.navigate('DoctorMain');
-  };
+  // Customer-only for now — uncomment when doctor / delivery-agent apps ship
+  // const demoNavigateDelivery = () => {
+  //   navigation.navigate('DeliveryNavigation', {
+  //     orderId: DEMO_ORDER.orderId,
+  //     customerAddress: DEMO_ORDER.customerAddress,
+  //     customerCoords: DEMO_ORDER.customerCoords,
+  //   });
+  // };
+  //
+  // const demoNavigateDoctor = () => {
+  //   navigation.navigate('DoctorMain');
+  // };
 
   return (
     <View style={styles.root}>
@@ -257,6 +258,7 @@ const SettingsScreen = () => {
                     <Text style={styles.demoBtnText}>{t('settings.demoCustomer')}</Text>
                   </Pressable>
 
+                  {/* Customer-only for now — delivery-agent demo
                   <Pressable
                     onPress={demoNavigateDelivery}
                     style={[styles.demoDeliveryBtn, { borderColor: themeColors.primary }]}
@@ -266,8 +268,10 @@ const SettingsScreen = () => {
                       {t('settings.demoDeliveryAgent')}
                     </Text>
                   </Pressable>
+                  */}
                 </View>
 
+                {/* Customer-only for now — doctor demo
                 <Pressable
                   onPress={demoNavigateDoctor}
                   style={[styles.demoDoctorBtn, { borderColor: themeColors.primary }]}
@@ -279,6 +283,7 @@ const SettingsScreen = () => {
                     {t('settings.shiftToDoctorBtn')}
                   </Text>
                 </Pressable>
+                */}
               </View>
             </View>
           </Animated.View>

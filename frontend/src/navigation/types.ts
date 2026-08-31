@@ -65,6 +65,7 @@ export type AuthStackParamList = {
   DoctorMain: undefined;
   PatientDetails: { patientId: string };
   OrderPlaced: { orderId: string; publicId: string; grandTotal: number };
+  PaymentMethod: undefined;
   OrderDetail: { orderId: string };
 };
 

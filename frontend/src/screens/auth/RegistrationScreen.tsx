@@ -39,8 +39,9 @@ const LANGUAGES: { value: AppLanguage; label: string }[] = [
 
 const ROLES: { value: UserRole; labelKey: string; icon: keyof typeof Ionicons.glyphMap }[] = [
   { value: 'customer', labelKey: 'auth.roleCustomer', icon: 'person-outline' },
-  { value: 'delivery_agent', labelKey: 'auth.roleDeliveryAgent', icon: 'bicycle-outline' },
-  { value: 'doctor', labelKey: 'auth.roleDoctor', icon: 'medkit-outline' },
+  // Customer-only for now — uncomment when doctor / delivery-agent apps ship
+  // { value: 'delivery_agent', labelKey: 'auth.roleDeliveryAgent', icon: 'bicycle-outline' },
+  // { value: 'doctor', labelKey: 'auth.roleDoctor', icon: 'medkit-outline' },
 ];
 
 type DocumentKey = 'aadhar' | 'license';
@@ -371,7 +372,7 @@ const RegistrationScreen = ({
 
   const [username, setUsername] = useState('');
   const [language, setLanguage] = useState<AppLanguage | null>(null);
-  const [role, setRole] = useState<UserRole | null>(null);
+  const [role, setRole] = useState<UserRole | null>('customer');
   const [aadharUri, setAadharUri] = useState<string | null>(null);
   const [licenseUri, setLicenseUri] = useState<string | null>(null);
   const [addressLine, setAddressLine] = useState('');
@@ -840,6 +841,7 @@ const RegistrationScreen = ({
         })}
       </View>
 
+      {/* Customer-only for now — delivery-agent document uploads
       {role === 'delivery_agent' ? (
         <Animated.View layout={LinearTransition.springify().damping(20).stiffness(150)}>
           <Animated.View
@@ -902,7 +904,9 @@ const RegistrationScreen = ({
           </Animated.View>
         </Animated.View>
       ) : null}
+      */}
 
+      {/* Customer-only for now — doctor clinic address inputs
       {role === 'doctor' ? (
         <Animated.View layout={LinearTransition.springify().damping(20).stiffness(150)}>
           <Animated.View
@@ -973,6 +977,7 @@ const RegistrationScreen = ({
           </Animated.View>
         </Animated.View>
       ) : null}
+      */}
 
       <Text style={styles.phoneNote}>
         {t('auth.registerWith', {
