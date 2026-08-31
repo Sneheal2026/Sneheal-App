@@ -67,8 +67,8 @@ export const HELP_FAQ: FaqItem[] = [
 ];
 
 export const SUPPORT_CONTACT = {
-  email: 'support@sneheal.com',
-  phone: '+91 1800-123-4567',
+  email: 'sneheal.info@gmail.com',
+  phone: '+91 75174 34152',
   /** Dedicated pharmacy desk for out-of-stock medicine requests. */
-  pharmacyPhone: '+91 63031 10547',
+  pharmacyPhone: '+91 75174 34152',
 } as const;

@@ -427,7 +427,7 @@ const en = {
       'This Privacy Policy explains how Sneheal (“we”, “us”, or “our”) collects, uses, stores, and protects your personal data when you use the Sneheal mobile application in India. We process personal data in line with the Digital Personal Data Protection Act, 2023 (DPDP Act) and other applicable Indian laws.',
     introductionTitle: '1. Who we are',
     introductionBody:
-      'Sneheal is a healthcare companion app that helps you order medicines, upload prescriptions, set reminders, manage family health details, and receive delivery updates. For privacy questions, contact us at support@sneheal.com.',
+      'Sneheal is a healthcare companion app that helps you order medicines, upload prescriptions, set reminders, manage family health details, and receive delivery updates. For privacy questions, contact us at sneheal.info@gmail.com.',
     dataWeCollectTitle: '2. Information we collect',
     dataWeCollectBody:
       'Depending on how you use the app, we may collect: (a) Account details — mobile number, OTP verification data, username, preferred language, and role; (b) Delivery & address data — saved addresses, landmarks, receiver name/mobile, and approximate location; (c) Health-related data — prescription images, medicine names from scans, reminders, family member details (name, relationship, age, gender, blood group, allergies, conditions, medicines), and emergency contacts; (d) Order & usage data — cart and order information, device preferences such as language and colour theme; (e) Role-specific data — for delivery partners, identity documents you upload (for example Aadhaar or driving licence images); for doctors, clinic or professional details you provide; (f) Technical data — app version and basic device information needed to run the service securely.',
@@ -451,7 +451,7 @@ const en = {
       'We retain personal data only as long as needed to provide the service, meet legal, tax, or regulatory requirements, resolve disputes, and enforce our policies. You may request deletion of your account data subject to lawful retention needs (for example completed order records).',
     yourRightsTitle: '9. Your rights (DPDP Act)',
     yourRightsBody:
-      'As a Data Principal under Indian law, you may have the right to: access your personal data; correct inaccurate or incomplete data; withdraw consent for processing that relies on consent; request erasure of data that is no longer needed, subject to legal exceptions; and raise a grievance with us. To exercise these rights, email support@sneheal.com. We will respond within a reasonable time as required by law.',
+      'As a Data Principal under Indian law, you may have the right to: access your personal data; correct inaccurate or incomplete data; withdraw consent for processing that relies on consent; request erasure of data that is no longer needed, subject to legal exceptions; and raise a grievance with us. To exercise these rights, email sneheal.info@gmail.com. We will respond within a reasonable time as required by law.',
     childrenTitle: '10. Children',
     childrenBody:
       'Sneheal is intended for use by adults. If a parent or guardian manages health information for a child or family member, they are responsible for providing accurate details and for having the legal authority to do so. We do not knowingly allow children to create accounts without parental guidance.',
