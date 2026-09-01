@@ -83,9 +83,10 @@
       ],
       "@react-native-community/datetimepicker"
     ],
+    "owner": "sneheal-medtech-private-limited",
     "extra": {
       "eas": {
-        "projectId": "524aaef6-ed32-40a3-a976-30bf6133d0c7"
+        "projectId": "0ecd72c6-b621-4e90-bbae-2cb584ae8f61"
       }
     }
   }
