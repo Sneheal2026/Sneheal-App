@@ -8,6 +8,8 @@ const sendSms = async (phone, otp) => {
   console.log('');
 };
 
-const isDevMode = () => process.env.NODE_ENV !== 'production';
+/** Dummy OTP on the app screen. Set SHOW_DEV_OTP=true on Railway until MSG91. */
+const isDevMode = () =>
+  process.env.NODE_ENV !== 'production' || process.env.SHOW_DEV_OTP === 'true';
 
 module.exports = { sendSms, isDevMode };
