@@ -2,7 +2,12 @@ import { Platform } from 'react-native';
 import type { ApiErrorResponse, ApiSuccessResponse } from '@/types/auth';
 import { devLog } from '@/utils/devLogger';
 
+const PRODUCTION_API_URL = 'https://sneheal-app-production.up.railway.app';
+
 const getDefaultBaseUrl = (): string => {
+  if (!__DEV__) {
+    return PRODUCTION_API_URL;
+  }
   if (Platform.OS === 'android') {
     return 'http://10.0.2.2:5000';
   }
