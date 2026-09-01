@@ -97,7 +97,11 @@ const PaymentMethodScreen = () => {
       });
     } catch (err) {
       const message =
-        err instanceof ApiError ? err.message : t('cart.placeOrderFailed');
+        err instanceof ApiError && err.status === 401
+          ? t('auth.sessionExpiredBody')
+          : err instanceof ApiError
+            ? err.message
+            : t('cart.placeOrderFailed');
       setError(message);
     } finally {
       setSubmitting(false);

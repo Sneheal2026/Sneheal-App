@@ -8,12 +8,18 @@ const {
   validateRefreshToken,
   validateCompleteRegistration,
 } = require('../middleware/validateAuth');
+const { otpLimiter, refreshLimiter } = require('../middleware/rateLimiter');
 
 const router = express.Router();
 
-router.post('/send-otp', validateSendOtp, asyncHandler(authController.sendOtp));
-router.post('/verify-otp', validateVerifyOtp, asyncHandler(authController.verifyOtp));
-router.post('/refresh', validateRefreshToken, asyncHandler(authController.refreshSession));
+router.post('/send-otp', otpLimiter, validateSendOtp, asyncHandler(authController.sendOtp));
+router.post('/verify-otp', otpLimiter, validateVerifyOtp, asyncHandler(authController.verifyOtp));
+router.post(
+  '/refresh',
+  refreshLimiter,
+  validateRefreshToken,
+  asyncHandler(authController.refreshSession),
+);
 router.post(
   '/complete-registration',
   authenticateToken,

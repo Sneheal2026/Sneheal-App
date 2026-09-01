@@ -1,32 +1,28 @@
-export const isTokenExpired = (token: string): boolean => {
+const decodeJwtPayload = (token: string): { exp?: number } | null => {
   try {
     const segment = token.split('.')[1];
-    if (!segment) return true;
+    if (!segment) return null;
 
     const base64 = segment.replace(/-/g, '+').replace(/_/g, '/');
     const padded = base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), '=');
-    const payload = JSON.parse(atob(padded)) as { exp?: number };
+    const binary = globalThis.atob?.(padded);
+    if (!binary) return null;
 
-    if (!payload.exp) return true;
-    return payload.exp * 1000 < Date.now();
+    return JSON.parse(binary) as { exp?: number };
   } catch {
-    return true;
+    return null;
   }
+};
+
+export const isTokenExpired = (token: string): boolean => {
+  const payload = decodeJwtPayload(token);
+  if (!payload?.exp) return false;
+  return payload.exp * 1000 < Date.now();
 };
 
 /** True if token is expired or will expire within the buffer window. */
 export const isTokenExpiringSoon = (token: string, bufferMs = 60_000): boolean => {
-  try {
-    const segment = token.split('.')[1];
-    if (!segment) return true;
-
-    const base64 = segment.replace(/-/g, '+').replace(/_/g, '/');
-    const padded = base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), '=');
-    const payload = JSON.parse(atob(padded)) as { exp?: number };
-
-    if (!payload.exp) return true;
-    return payload.exp * 1000 <= Date.now() + bufferMs;
-  } catch {
-    return true;
-  }
+  const payload = decodeJwtPayload(token);
+  if (!payload?.exp) return false;
+  return payload.exp * 1000 <= Date.now() + bufferMs;
 };

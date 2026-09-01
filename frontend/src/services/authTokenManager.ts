@@ -6,7 +6,7 @@ import {
   type AuthSession,
 } from './tokenStorage';
 import { apiRequest, ApiError, getApiBaseUrl } from './apiClient';
-import { isTokenExpiringSoon } from '@/utils/jwt';
+import { isTokenExpired, isTokenExpiringSoon } from '@/utils/jwt';
 import { devLog } from '@/utils/devLogger';
 
 type SessionListener = (session: AuthSession | null) => void;
@@ -65,7 +65,18 @@ export const refreshAuthSession = async (): Promise<string | null> => {
       return nextSession.accessToken;
     } catch (error) {
       devLog('Auth', 'Refresh failed', error);
-      await clearSession();
+      const isInvalidRefresh =
+        error instanceof ApiError && (error.status === 401 || error.status === 400);
+
+      if (isInvalidRefresh) {
+        await clearSession();
+        return null;
+      }
+
+      if (stored.accessToken && !isTokenExpired(stored.accessToken)) {
+        return stored.accessToken;
+      }
+
       return null;
     }
   })().finally(() => {
@@ -89,7 +100,16 @@ export const getValidAccessToken = async (): Promise<string | null> => {
     return stored.accessToken;
   }
 
-  return refreshAuthSession();
+  const refreshed = await refreshAuthSession();
+  if (refreshed) {
+    return refreshed;
+  }
+
+  if (!isTokenExpired(stored.accessToken)) {
+    return stored.accessToken;
+  }
+
+  return null;
 };
 
 /**
@@ -135,6 +155,10 @@ export const authenticatedApiRequest = async <T>(
   let token = await getValidAccessToken();
 
   if (!token) {
+    const stored = await loadAuthSession();
+    if (stored) {
+      throw new ApiError(503, 'Could not refresh your session. Please try again.');
+    }
     throw new ApiError(401, 'Authentication required');
   }
 
@@ -163,6 +187,10 @@ export const authenticatedFetch = async (
   let token = await getValidAccessToken();
 
   if (!token) {
+    const stored = await loadAuthSession();
+    if (stored) {
+      throw new ApiError(503, 'Could not refresh your session. Please try again.');
+    }
     throw new ApiError(401, 'Authentication required');
   }
 

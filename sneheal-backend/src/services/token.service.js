@@ -11,7 +11,7 @@ const signAccessToken = (user) => {
       role: user.role,
     },
     process.env.JWT_SECRET,
-    { expiresIn: process.env.JWT_ACCESS_EXPIRES || '15m' }
+    { expiresIn: process.env.JWT_ACCESS_EXPIRES || '7d' }
   );
 };
 
@@ -26,8 +26,10 @@ const getRefreshExpiry = () => {
   return expiresAt;
 };
 
-const issueTokens = async (user, connection) => {
-  await refreshTokenRepo.deleteByUserId(user.id, connection);
+const issueTokens = async (user, connection, replaceToken) => {
+  if (replaceToken) {
+    await refreshTokenRepo.deleteByToken(replaceToken, connection);
+  }
 
   const accessToken = signAccessToken(user);
   const refreshToken = generateRefreshToken();

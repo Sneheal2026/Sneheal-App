@@ -83,7 +83,7 @@ const refreshSession = async (refreshToken) => {
       throw new AppError(401, 'User not found');
     }
 
-    const tokens = await tokenService.issueTokens(user, connection);
+    const tokens = await tokenService.issueTokens(user, connection, refreshToken);
 
     await connection.commit();
 

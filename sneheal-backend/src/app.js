@@ -13,7 +13,6 @@ const addressRoutes = require('./routes/address.routes');
 const productRoutes = require('./routes/product.routes');
 const categoryRoutes = require('./routes/category.routes');
 const orderRoutes = require('./routes/order.routes');
-const { authLimiter } = require('./middleware/rateLimiter');
 const errorHandler = require('./middleware/errorHandler');
 const { success } = require('./utils/response');
 
@@ -21,6 +20,8 @@ validateEnv();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+app.set('trust proxy', 1);
 
 app.use(
   helmet({
@@ -43,7 +44,7 @@ app.get('/health', (_req, res) => {
   return success(res, 'Sneheal API is running');
 });
 
-app.use('/api/auth', authLimiter, authRoutes);
+app.use('/api/auth', authRoutes);
 app.use('/api/prescriptions', prescriptionRoutes);
 app.use('/api/addresses', addressRoutes);
 app.use('/api/products', productRoutes);
