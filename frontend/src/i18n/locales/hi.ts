@@ -299,6 +299,12 @@ const hi: TranslationResources = {
     successTitle: 'डिलीवर के रूप में चिह्नित',
     successBody: 'ऑर्डर {{publicId}} अब डिलीवर हो गया है।',
   },
+  category: {
+    productsCount: '{{count}} उत्पाद',
+    empty: 'इस श्रेणी में अभी कोई उत्पाद नहीं है',
+    emptySubtitle: 'बाद में देखें या अन्य श्रेणियाँ ब्राउज़ करें।',
+    browseCta: 'दवाइयाँ ब्राउज़ करें',
+  },
   product: {
     notFound: 'उत्पाद नहीं मिला।',
     goBack: 'वापस जाएँ',

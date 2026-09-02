@@ -40,6 +40,7 @@ import { resolveCatalogImage } from '@/utils/productImage';
 import theme from '@/styles/theme';
 import globalStyles from '@/styles/globalStyles';
 import { useTheme } from '@/hooks/useTheme';
+import type { Category } from '@/types/product.types';
 import type { AuthStackParamList, TabParamList } from '@/navigation/types';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -122,6 +123,14 @@ const HomeScreen = () => {
   const handleOpenProduct = useCallback((id: string) => {
     const parent = navigation.getParent<NativeStackNavigationProp<AuthStackParamList>>();
     parent?.navigate('ProductDetails', { productId: id });
+  }, [navigation]);
+
+  const handleOpenCategory = useCallback((category: Category) => {
+    const parent = navigation.getParent<NativeStackNavigationProp<AuthStackParamList>>();
+    parent?.navigate('CategoryProducts', {
+      categoryId: category.id,
+      categoryName: category.name,
+    });
   }, [navigation]);
 
   const { status: locationStatus, location, refresh: refreshLocation } = useLiveLocation(true);
@@ -297,7 +306,7 @@ const HomeScreen = () => {
           />
 
           <View style={styles.contentSection}>
-            <CategoriesGrid />
+            <CategoriesGrid onPressCategory={handleOpenCategory} />
             <PromoBanner isScrolling={isScrolling} />
             <FeaturedProducts
               products={featuredProducts}

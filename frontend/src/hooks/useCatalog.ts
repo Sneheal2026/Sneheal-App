@@ -3,6 +3,7 @@ import {
   fetchCategories,
   fetchProductById,
   fetchProducts,
+  fetchProductsPage,
   fetchSimilarProducts,
   searchProductsPage,
 } from '@/services/productService';
@@ -277,4 +278,94 @@ export const useCategories = () => {
   }, [load]);
 
   return { ...state, refetch: load };
+};
+
+const CATEGORY_PAGE_SIZE = 20;
+
+/** Paginated products for a single category. */
+export const useCategoryProducts = (categoryId: string) => {
+  const [items, setItems] = useState<Product[]>([]);
+  const [total, setTotal] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const mountedRef = useRef(true);
+  const loadingMoreRef = useRef(false);
+  const offsetRef = useRef(0);
+  const hasMoreRef = useRef(false);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    setItems([]);
+    setTotal(0);
+    setHasMore(false);
+    hasMoreRef.current = false;
+    offsetRef.current = 0;
+
+    try {
+      const page = await fetchProductsPage({
+        categoryId,
+        limit: CATEGORY_PAGE_SIZE,
+        offset: 0,
+      });
+      if (!mountedRef.current) return;
+
+      setItems(page.items);
+      setTotal(page.total);
+      setHasMore(page.hasMore);
+      hasMoreRef.current = page.hasMore;
+      offsetRef.current = page.items.length;
+      setLoading(false);
+    } catch (err) {
+      if (!mountedRef.current) return;
+      setLoading(false);
+      setError(toMessage(err));
+    }
+  }, [categoryId]);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    void load();
+    return () => {
+      mountedRef.current = false;
+    };
+  }, [load]);
+
+  const loadMore = useCallback(async () => {
+    if (!hasMoreRef.current || loadingMoreRef.current) return;
+
+    loadingMoreRef.current = true;
+    setLoadingMore(true);
+
+    try {
+      const page = await fetchProductsPage({
+        categoryId,
+        limit: CATEGORY_PAGE_SIZE,
+        offset: offsetRef.current,
+      });
+      if (!mountedRef.current) return;
+
+      setItems((prev) => {
+        const seen = new Set(prev.map((p) => p.id));
+        const next = page.items.filter((p) => !seen.has(p.id));
+        const merged = [...prev, ...next];
+        offsetRef.current = merged.length;
+        return merged;
+      });
+      setTotal(page.total);
+      setHasMore(page.hasMore);
+      hasMoreRef.current = page.hasMore;
+    } catch (err) {
+      if (!mountedRef.current) return;
+      setError(toMessage(err));
+    } finally {
+      loadingMoreRef.current = false;
+      setLoadingMore(false);
+    }
+  }, [categoryId]);
+
+  return { data: items, total, hasMore, loading, loadingMore, error, refetch: load, loadMore };
 };

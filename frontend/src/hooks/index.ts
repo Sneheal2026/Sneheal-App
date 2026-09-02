@@ -7,6 +7,7 @@ export {
   useSimilarProducts,
   useProductSearch,
   useCategories,
+  useCategoryProducts,
 } from './useCatalog';
 export { useNetworkStatus } from './useNetworkStatus';
 export { useTheme } from './useTheme';

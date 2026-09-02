@@ -300,6 +300,12 @@ const en = {
     successTitle: 'Marked as delivered',
     successBody: 'Order {{publicId}} is now delivered.',
   },
+  category: {
+    productsCount: '{{count}} products',
+    empty: 'No products in this category yet',
+    emptySubtitle: 'Check back later or browse other categories.',
+    browseCta: 'Browse medicines',
+  },
   product: {
     notFound: 'Product not found.',
     goBack: 'Go back',

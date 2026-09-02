@@ -299,6 +299,12 @@ const mr: TranslationResources = {
     successTitle: 'डिलिव्हर म्हणून चिन्हांकित',
     successBody: 'ऑर्डर {{publicId}} आता डिलिव्हर झाली आहे.',
   },
+  category: {
+    productsCount: '{{count}} उत्पादने',
+    empty: 'या श्रेणीत अजून उत्पादने नाहीत',
+    emptySubtitle: 'नंतर पहा किंवा इतर श्रेणी ब्राउझ करा.',
+    browseCta: 'औषधे ब्राउझ करा',
+  },
   product: {
     notFound: 'उत्पादन सापडले नाही.',
     goBack: 'मागे जा',

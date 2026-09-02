@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -96,23 +96,29 @@ const CategoryImage = React.memo(({ source }: { source: ImageSourcePropType }) =
 
 CategoryImage.displayName = 'CategoryImage';
 
-const CategoryCard = React.memo(({ item }: { item: Category }) => (
-  <TouchableOpacity style={styles.gridItem} activeOpacity={0.85}>
-    <View style={styles.imageBox}>
-      <CategoryImage source={resolveCategoryImage(item)} />
-      {item.offerLabel ? (
-        <View style={styles.offerBanner}>
-          <Text style={styles.offerText} numberOfLines={1}>
-            {item.offerLabel}
-          </Text>
-        </View>
-      ) : null}
-    </View>
-    <Text style={styles.itemName} numberOfLines={2}>
-      {item.name}
-    </Text>
-  </TouchableOpacity>
-));
+const CategoryCard = React.memo(
+  ({ item, onPress }: { item: Category; onPress: (item: Category) => void }) => (
+    <TouchableOpacity
+      style={styles.gridItem}
+      activeOpacity={0.85}
+      onPress={() => onPress(item)}
+    >
+      <View style={styles.imageBox}>
+        <CategoryImage source={resolveCategoryImage(item)} />
+        {item.offerLabel ? (
+          <View style={styles.offerBanner}>
+            <Text style={styles.offerText} numberOfLines={1}>
+              {item.offerLabel}
+            </Text>
+          </View>
+        ) : null}
+      </View>
+      <Text style={styles.itemName} numberOfLines={2}>
+        {item.name}
+      </Text>
+    </TouchableOpacity>
+  ),
+);
 
 CategoryCard.displayName = 'CategoryCard';
 
@@ -127,9 +133,18 @@ const CategorySkeleton = () => (
   </View>
 );
 
-const CategoriesGrid = () => {
+interface CategoriesGridProps {
+  onPressCategory?: (category: Category) => void;
+}
+
+const CategoriesGrid = ({ onPressCategory }: CategoriesGridProps) => {
   const { t } = useTranslation();
   const { data: categories, loading } = useCategories();
+
+  const handlePress = useCallback(
+    (item: Category) => onPressCategory?.(item),
+    [onPressCategory],
+  );
 
   return (
   <View style={styles.section}>
@@ -140,7 +155,7 @@ const CategoriesGrid = () => {
             <CategorySkeleton key={index} />
           ))
         : categories.map((item) => (
-            <CategoryCard key={item.id} item={item} />
+            <CategoryCard key={item.id} item={item} onPress={handlePress} />
           ))}
     </View>
   </View>

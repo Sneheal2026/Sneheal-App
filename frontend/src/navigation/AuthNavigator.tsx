@@ -24,6 +24,7 @@ import LanguageSettingsScreen from '@/screens/settings/LanguageSettingsScreen';
 import ColorSettingsScreen from '@/screens/settings/ColorSettingsScreen';
 import MedicineScanScreen from '@/screens/scan/MedicineScanScreen';
 import ProductDetailsScreen from '@/screens/product/ProductDetailsScreen';
+import CategoryProductsScreen from '@/screens/categories/CategoryProductsScreen';
 import MapScreen from '@/screens/map/MapScreen';
 import AddressDetailsScreen from '@/screens/address/AddressDetailsScreen';
 import SavedAddressesScreen from '@/screens/address/SavedAddressesScreen';
@@ -61,6 +62,7 @@ const AuthNavigator = () => {
       <Stack.Screen name="ColorSettings" component={ColorSettingsScreen} />
       <Stack.Screen name="MedicineScan" component={MedicineScanScreen} />
       <Stack.Screen name="ProductDetails" component={ProductDetailsScreen} />
+      <Stack.Screen name="CategoryProducts" component={CategoryProductsScreen} />
       <Stack.Screen name="LocationMap" component={MapScreen} />
       <Stack.Screen name="AddressDetails" component={AddressDetailsScreen} />
       <Stack.Screen name="SavedAddresses" component={SavedAddressesScreen} />

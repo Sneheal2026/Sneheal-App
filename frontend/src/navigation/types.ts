@@ -38,6 +38,7 @@ export type AuthStackParamList = {
   ColorSettings: undefined;
   MedicineScan: undefined;
   ProductDetails: { productId: string };
+  CategoryProducts: { categoryId: string; categoryName: string };
   LocationMap: { editAddress?: SavedAddress; returnTo?: 'Main' | 'SavedAddresses' } | undefined;
   AddressDetails: {
     draft: AddressDraft;
