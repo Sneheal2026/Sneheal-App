@@ -12,7 +12,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Loader from '@/components/common/Loader';
+import OrderLoader from '@/components/orders/OrderLoader';
 import OrderStatusPanel from '@/components/orders/OrderStatusPanel';
 import { useLiveOrderStatus } from '@/hooks/useLiveOrderStatus';
 import { fetchOrderById } from '@/services/orderService';
@@ -64,8 +64,8 @@ const OrderDetailScreen = () => {
 
   if (loading && !order) {
     return (
-      <View style={styles.root}>
-        <Loader message={t('common.loading')} />
+      <View style={styles.centered}>
+        <OrderLoader />
       </View>
     );
   }

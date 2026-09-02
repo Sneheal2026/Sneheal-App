@@ -13,6 +13,7 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ScreenHeader from '@/components/common/ScreenHeader';
+import OrderLoader from '@/components/orders/OrderLoader';
 import { fetchOrders, peekOrdersCache } from '@/services/orderService';
 import { ApiError } from '@/services/apiClient';
 import { formatInr } from '@/utils/cartBilling';
@@ -96,7 +97,9 @@ const OrdersScreen = (_props: TabScreenProps<'Orders'>) => {
         }
         ListEmptyComponent={
           loading ? (
-            <Text style={styles.emptyText}>{t('common.loading')}</Text>
+            <View style={styles.loaderWrap}>
+              <OrderLoader />
+            </View>
           ) : (
             <View style={styles.emptyState}>
               <Image source={NO_ORDERS_PIC} style={styles.emptyImage} resizeMode="contain" />
@@ -148,6 +151,12 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  loaderWrap: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.xxl,
   },
   emptyState: {
     alignItems: 'center',

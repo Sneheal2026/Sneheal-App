@@ -7,11 +7,11 @@ import {
   StyleSheet,
   Image,
   ActivityIndicator,
+  ScrollView,
   type ImageSourcePropType,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, { FadeIn, FadeOut, SlideInDown, SlideOutDown } from 'react-native-reanimated';
 import { useTranslation } from 'react-i18next';
 import theme from '@/styles/theme';
 import { useTheme } from '@/hooks/useTheme';
@@ -24,7 +24,7 @@ import {
 import { PRESET_PROFILE_SOURCES } from '@/hooks/useProfilePhoto';
 import { devLog } from '@/utils/devLogger';
 
-const { colors, spacing, typography, borderRadius, shadows } = theme;
+const { colors, spacing, typography, borderRadius } = theme;
 
 interface ProfilePhotoPickerModalProps {
   visible: boolean;
@@ -38,9 +38,33 @@ const ProfilePhotoPickerModal: React.FC<ProfilePhotoPickerModalProps> = ({
   currentType,
   onClose,
   onSelected,
+}) => (
+  <Modal
+    visible={visible}
+    transparent
+    statusBarTranslucent
+    navigationBarTranslucent
+    animationType="fade"
+    onRequestClose={onClose}
+  >
+    <SafeAreaProvider>
+      <ProfilePhotoPickerSheet
+        currentType={currentType}
+        onClose={onClose}
+        onSelected={onSelected}
+      />
+    </SafeAreaProvider>
+  </Modal>
+);
+
+const ProfilePhotoPickerSheet: React.FC<Omit<ProfilePhotoPickerModalProps, 'visible'>> = ({
+  currentType,
+  onClose,
+  onSelected,
 }) => {
   const { t } = useTranslation();
   const { colors: themeColors } = useTheme();
+  const insets = useSafeAreaInsets();
   const [busy, setBusy] = useState(false);
 
   const handlePreset = async (type: 'male' | 'female') => {
@@ -94,18 +118,7 @@ const ProfilePhotoPickerModal: React.FC<ProfilePhotoPickerModalProps> = ({
   };
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      statusBarTranslucent
-      animationType="none"
-      onRequestClose={busy ? undefined : onClose}
-    >
-      <Animated.View
-        entering={FadeIn.duration(180)}
-        exiting={FadeOut.duration(150)}
-        style={styles.backdrop}
-      >
+    <View style={styles.overlay}>
         <Pressable
           style={StyleSheet.absoluteFill}
           onPress={busy ? undefined : onClose}
@@ -113,19 +126,35 @@ const ProfilePhotoPickerModal: React.FC<ProfilePhotoPickerModalProps> = ({
           importantForAccessibility="no-hide-descendants"
         />
 
-        <Animated.View
-          entering={SlideInDown.springify().damping(20).mass(0.8)}
-          exiting={SlideOutDown.duration(200)}
-          style={styles.sheet}
+        <View
+          style={[
+            styles.sheet,
+            { paddingBottom: Math.max(insets.bottom, spacing.md) + spacing.sm },
+          ]}
         >
-          <SafeAreaView edges={['bottom']}>
-            <View style={styles.handle} />
+          <View style={styles.handle} />
 
-            <View style={styles.header}>
+          <View style={styles.header}>
+            <View style={styles.headerCopy}>
               <Text style={styles.title}>{t('settings.editPhotoTitle')}</Text>
               <Text style={styles.subtitle}>{t('settings.editPhotoSubtitle')}</Text>
             </View>
+            <Pressable
+              onPress={busy ? undefined : onClose}
+              hitSlop={8}
+              style={({ pressed }) => [styles.closeBtn, pressed && styles.pressed]}
+              accessibilityRole="button"
+              accessibilityLabel={t('common.close')}
+            >
+              <Ionicons name="close" size={20} color={colors.textSecondary} />
+            </Pressable>
+          </View>
 
+          <ScrollView
+            bounces={false}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
             <View style={styles.presetRow}>
               <PresetOption
                 label={t('settings.photoMale')}
@@ -145,51 +174,51 @@ const ProfilePhotoPickerModal: React.FC<ProfilePhotoPickerModalProps> = ({
               />
             </View>
 
-            <View style={styles.actions}>
+            <View style={styles.actionCard}>
               <ActionRow
                 icon="image-outline"
                 label={t('settings.photoFromGallery')}
-                accent={themeColors.primary}
                 onPress={() => handlePickCustom('gallery')}
                 disabled={busy}
               />
+              <View style={styles.divider} />
               <ActionRow
                 icon="camera-outline"
                 label={t('settings.photoTakePhoto')}
-                accent={themeColors.primary}
                 onPress={() => handlePickCustom('camera')}
                 disabled={busy}
               />
               {currentType !== 'default' ? (
-                <ActionRow
-                  icon="trash-outline"
-                  label={t('settings.photoRemove')}
-                  accent={colors.error}
-                  destructive
-                  onPress={handleDefault}
-                  disabled={busy}
-                />
+                <>
+                  <View style={styles.divider} />
+                  <ActionRow
+                    icon="trash-outline"
+                    label={t('settings.photoRemove')}
+                    destructive
+                    onPress={handleDefault}
+                    disabled={busy}
+                  />
+                </>
               ) : null}
             </View>
+          </ScrollView>
 
-            <Pressable
-              onPress={busy ? undefined : onClose}
-              style={({ pressed }) => [styles.cancelBtn, pressed && styles.pressed]}
-              accessibilityRole="button"
-              accessibilityLabel={t('common.cancel')}
-            >
-              <Text style={styles.cancelText}>{t('common.cancel')}</Text>
-            </Pressable>
-          </SafeAreaView>
+          <Pressable
+            onPress={busy ? undefined : onClose}
+            style={({ pressed }) => [styles.cancelBtn, pressed && styles.pressed]}
+            accessibilityRole="button"
+            accessibilityLabel={t('common.cancel')}
+          >
+            <Text style={styles.cancelText}>{t('common.cancel')}</Text>
+          </Pressable>
 
           {busy ? (
             <View style={styles.busyOverlay} pointerEvents="auto">
               <ActivityIndicator size="large" color={themeColors.primary} />
             </View>
           ) : null}
-        </Animated.View>
-      </Animated.View>
-    </Modal>
+        </View>
+      </View>
   );
 };
 
@@ -221,7 +250,7 @@ const PresetOption: React.FC<PresetOptionProps> = ({
       <Image source={image} style={styles.presetImage} resizeMode="cover" />
       {selected ? (
         <View style={[styles.presetCheck, { backgroundColor: accent }]}>
-          <Ionicons name="checkmark" size={14} color={colors.white} />
+          <Ionicons name="checkmark" size={12} color={colors.white} />
         </View>
       ) : null}
     </View>
@@ -232,7 +261,6 @@ const PresetOption: React.FC<PresetOptionProps> = ({
 interface ActionRowProps {
   icon: keyof typeof Ionicons.glyphMap;
   label: string;
-  accent: string;
   destructive?: boolean;
   disabled: boolean;
   onPress: () => void;
@@ -241,72 +269,83 @@ interface ActionRowProps {
 const ActionRow: React.FC<ActionRowProps> = ({
   icon,
   label,
-  accent,
   destructive = false,
   disabled,
   onPress,
 }) => (
   <Pressable
     onPress={disabled ? undefined : onPress}
+    android_ripple={{ color: colors.borderLight }}
     style={({ pressed }) => [styles.actionRow, pressed && styles.pressed]}
     accessibilityRole="button"
     accessibilityLabel={label}
   >
-    <View
-      style={[
-        styles.actionIcon,
-        { backgroundColor: destructive ? colors.errorLight : `${accent}1A` },
-      ]}
-    >
-      <Ionicons name={icon} size={20} color={accent} />
+    <View style={[styles.actionIcon, destructive && styles.actionIconDestructive]}>
+      <Ionicons
+        name={icon}
+        size={18}
+        color={destructive ? colors.error : colors.textPrimary}
+      />
     </View>
-    <Text style={[styles.actionLabel, destructive && { color: colors.error }]}>{label}</Text>
-    <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+    <Text style={[styles.actionLabel, destructive && styles.actionLabelDestructive]}>
+      {label}
+    </Text>
+    <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
   </Pressable>
 );
 
 const styles = StyleSheet.create({
-  backdrop: {
+  overlay: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.55)',
     justifyContent: 'flex-end',
+    backgroundColor: 'rgba(15, 23, 42, 0.4)',
   },
   sheet: {
     backgroundColor: colors.white,
-    borderTopLeftRadius: borderRadius.xxl,
-    borderTopRightRadius: borderRadius.xxl,
-    paddingHorizontal: spacing.xl,
+    borderTopLeftRadius: borderRadius.xl,
+    borderTopRightRadius: borderRadius.xl,
+    paddingHorizontal: spacing.lg,
     paddingTop: spacing.sm,
-    paddingBottom: spacing.md,
-    ...shadows.lg,
+    maxHeight: '92%',
   },
   handle: {
     alignSelf: 'center',
-    width: 44,
-    height: 5,
-    borderRadius: 3,
+    width: 36,
+    height: 4,
+    borderRadius: 2,
     backgroundColor: colors.border,
-    marginBottom: spacing.lg,
+    marginBottom: spacing.md,
   },
   header: {
-    alignItems: 'center',
+    flexDirection: 'row',
+    alignItems: 'flex-start',
     marginBottom: spacing.lg,
+    gap: spacing.md,
+  },
+  headerCopy: {
+    flex: 1,
   },
   title: {
-    ...typography.h3,
-    fontSize: 20,
+    ...typography.h4,
     color: colors.textPrimary,
-    marginBottom: spacing.xxs,
   },
   subtitle: {
     ...typography.bodySmall,
     color: colors.textSecondary,
-    textAlign: 'center',
+    marginTop: 2,
+  },
+  closeBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: colors.surfaceSecondary,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   presetRow: {
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: spacing.xxl,
+    gap: spacing.xxxxl,
     marginBottom: spacing.lg,
   },
   presetItem: {
@@ -314,85 +353,97 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   presetImageRing: {
-    width: 84,
-    height: 84,
-    borderRadius: 42,
-    borderWidth: 3,
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    borderWidth: 2,
     borderColor: colors.border,
-    padding: 3,
+    padding: 2,
     backgroundColor: colors.surfaceSecondary,
   },
   presetImage: {
     width: '100%',
     height: '100%',
-    borderRadius: 42,
+    borderRadius: 36,
   },
   presetCheck: {
     position: 'absolute',
-    right: 0,
-    bottom: 0,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    right: -1,
+    bottom: -1,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
     borderColor: colors.white,
   },
   presetLabel: {
-    ...typography.bodySmall,
+    ...typography.caption,
     fontWeight: '600',
     color: colors.textPrimary,
   },
-  actions: {
-    gap: spacing.xs,
+  actionCard: {
+    backgroundColor: colors.surfaceSecondary,
+    borderRadius: borderRadius.lg,
+    overflow: 'hidden',
     marginBottom: spacing.md,
   },
   actionRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.xs,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
   },
   actionIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 32,
+    height: 32,
+    borderRadius: borderRadius.sm,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  actionIconDestructive: {
+    backgroundColor: colors.errorLight,
+  },
   actionLabel: {
-    ...typography.body,
+    ...typography.bodySmall,
     flex: 1,
-    fontWeight: '600',
+    fontWeight: '500',
     color: colors.textPrimary,
   },
+  actionLabelDestructive: {
+    color: colors.error,
+    fontWeight: '600',
+  },
+  divider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: colors.border,
+    marginLeft: spacing.md + 32 + spacing.md,
+  },
   cancelBtn: {
-    height: 52,
+    height: 48,
     borderRadius: borderRadius.lg,
     backgroundColor: colors.surfaceSecondary,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
   },
   cancelText: {
     ...typography.button,
     fontSize: 15,
-    fontWeight: '700',
-    color: colors.textSecondary,
+    fontWeight: '600',
+    color: colors.textPrimary,
   },
   pressed: {
     opacity: 0.7,
   },
   busyOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(255,255,255,0.6)',
+    backgroundColor: 'rgba(255,255,255,0.65)',
     alignItems: 'center',
     justifyContent: 'center',
-    borderTopLeftRadius: borderRadius.xxl,
-    borderTopRightRadius: borderRadius.xxl,
+    borderTopLeftRadius: borderRadius.xl,
+    borderTopRightRadius: borderRadius.xl,
   },
 });
 

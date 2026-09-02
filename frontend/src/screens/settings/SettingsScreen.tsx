@@ -37,7 +37,6 @@ const { colors, spacing, typography, borderRadius, shadows } = theme;
 const APP_VERSION = Constants.expoConfig?.version ?? '1.0.0';
 
 const QUICK_ACTIONS = [
-  { id: 'orders', icon: 'receipt-outline' as const, labelKey: 'settings.myOrders' },
   { id: 'prescriptions', icon: 'document-text-outline' as const, labelKey: 'settings.prescriptions' },
   { id: 'help', icon: 'chatbubble-ellipses-outline' as const, labelKey: 'settings.needHelp' },
 ];
@@ -49,7 +48,6 @@ const YOUR_INFO_ITEMS = [
 ];
 
 const HEALTH_ITEMS = [
-  { id: 'order-history', icon: 'time-outline' as const, labelKey: 'settings.orderHistory' },
   { id: 'upload-rx', icon: 'cloud-upload-outline' as const, labelKey: 'settings.uploadPrescription' },
   { id: 'emergency', icon: 'medkit-outline' as const, labelKey: 'settings.emergencyContacts' },
 ];
