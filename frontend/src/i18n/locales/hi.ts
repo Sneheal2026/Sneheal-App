@@ -75,6 +75,8 @@ const hi: TranslationResources = {
     changePhoto: 'बदलें',
     phoneError: 'मान्य 10 अंकों का मोबाइल नंबर दर्ज करें',
     openingHome: 'होम खोला जा रहा है...',
+    restoringTitle: 'आपकी फार्मेसी तैयार हो रही है',
+    restoringMessage: 'आपका सत्र वापस लाया जा रहा है...',
     continuePreviewShort: 'बिना लॉगिन जारी रखें (प्रीव्यू)',
     termsPrefix: 'जारी रखकर, आप हमारी',
     termsOfService: 'सेवा की शर्तें',

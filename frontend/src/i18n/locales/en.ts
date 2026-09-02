@@ -76,6 +76,8 @@ const en = {
     changePhoto: 'Change',
     phoneError: 'Enter a valid 10-digit mobile number',
     openingHome: 'Opening home...',
+    restoringTitle: 'Getting your pharmacy ready',
+    restoringMessage: 'Restoring your session...',
     continuePreviewShort: 'Continue without login (preview)',
     termsPrefix: 'By continuing, you agree to our',
     termsOfService: 'Terms of Service',

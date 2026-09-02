@@ -75,6 +75,8 @@ const mr: TranslationResources = {
     changePhoto: 'बदला',
     phoneError: 'वैध 10 अंकी मोबाइल नंबर टाका',
     openingHome: 'होम उघडत आहे...',
+    restoringTitle: 'तुमची फार्मसी तयार होत आहे',
+    restoringMessage: 'तुमचे सत्र पुनर्स्थापित करत आहोत...',
     continuePreviewShort: 'लॉगिनशिवाय सुरू ठेवा (प्रीव्यू)',
     termsPrefix: 'सुरू ठेवून, तुम्ही आमच्या',
     termsOfService: 'सेवा अटी',
