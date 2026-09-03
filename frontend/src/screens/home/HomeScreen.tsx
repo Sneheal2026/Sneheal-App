@@ -28,7 +28,7 @@ import {
   CategoriesGrid,
   FeaturedProducts,
 } from '@/components/home';
-import FloatingCartBar from '@/components/cart/FloatingCartBar';
+import FloatingCartBar, { FLOATING_CART_BAR_HEIGHT } from '@/components/cart/FloatingCartBar';
 import DevResetStorageButton from '@/components/common/DevResetStorageButton';
 import { useTabBarScrollState } from '@/hooks/useTabBarScrollHandler';
 import { useLiveLocation } from '@/hooks/useLiveLocation';
@@ -278,7 +278,7 @@ const HomeScreen = () => {
             styles.scrollContent,
             {
               paddingBottom: totalItems > 0
-                ? tabBarHeight + spacing.xxxxxl + spacing.xxl + spacing.md
+                ? tabBarHeight + FLOATING_CART_BAR_HEIGHT + spacing.xl
                 : tabBarHeight,
             },
           ]}
