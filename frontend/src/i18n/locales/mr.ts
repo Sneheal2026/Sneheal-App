@@ -381,6 +381,7 @@ const mr: TranslationResources = {
     photoRemove: 'फोटो काढून टाका',
     photoPermissionMessage:
       'प्रोफाइल फोटो सेट करण्यासाठी कृपया परवानगी द्या.',
+    madeInSolapurA11y: 'सोलापूरमध्ये प्रेमाने बनवले',
   },
   language: {
     title: 'भाषा सेटिंग',

@@ -7,8 +7,9 @@ import {
   Pressable,
   Image,
   Alert,
+  Dimensions,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
@@ -35,6 +36,10 @@ import { toLocalPhone } from '@/utils/phone';
 const { colors, spacing, typography, borderRadius, shadows } = theme;
 
 const APP_VERSION = Constants.expoConfig?.version ?? '1.0.0';
+const SOLAPUR_IMAGE = require('../../../assets/images/Solapur.webp');
+const SCREEN_WIDTH = Dimensions.get('window').width;
+const SOLAPUR_WIDTH = SCREEN_WIDTH;
+const SOLAPUR_HEIGHT = Math.round(SCREEN_WIDTH * (511 / 1457));
 
 const QUICK_ACTIONS = [
   { id: 'prescriptions', icon: 'document-text-outline' as const, labelKey: 'settings.prescriptions' },
@@ -76,6 +81,7 @@ const SettingsScreen = () => {
   const [logoutVisible, setLogoutVisible] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const [photoPickerVisible, setPhotoPickerVisible] = useState(false);
+  const insets = useSafeAreaInsets();
   const { selection: photoSelection, source: photoSource, setSelection: setPhotoSelection } =
     useProfilePhoto();
   const currentLanguageLabel = getLanguageNativeLabel(language);
@@ -172,7 +178,10 @@ const SettingsScreen = () => {
     <View style={styles.root}>
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: spacing.sm + insets.bottom },
+        ]}
         showsVerticalScrollIndicator={false}
         bounces
       >
@@ -356,12 +365,20 @@ const SettingsScreen = () => {
               </View>
             </View>
           </Animated.View>
-
-          <Animated.View entering={FadeInDown.delay(300).duration(400)} style={styles.footer}>
-            <Text style={styles.brandName}>sneheal</Text>
-            <Text style={styles.versionText}>v{APP_VERSION}</Text>
-          </Animated.View>
         </View>
+
+        <Animated.View entering={FadeInDown.delay(300).duration(400)} style={styles.footer}>
+          <Text style={styles.brandName}>sneheal</Text>
+          <Text style={styles.versionText}>v{APP_VERSION}</Text>
+          <Image
+            source={SOLAPUR_IMAGE}
+            style={styles.solapurImage}
+            resizeMode="contain"
+            accessibilityRole="image"
+            accessibilityLabel={t('settings.madeInSolapurA11y')}
+            accessibilityIgnoresInvertColors
+          />
+        </Animated.View>
       </ScrollView>
 
       <LogoutConfirmModal
@@ -390,7 +407,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: spacing.xxxxxl,
+    paddingBottom: 0,
   },
   heroGradient: {
     paddingBottom: spacing.xxl,
@@ -495,6 +512,7 @@ const styles = StyleSheet.create({
   footer: {
     alignItems: 'center',
     paddingTop: spacing.md,
+    paddingBottom: 0,
     gap: spacing.xxs,
   },
   brandName: {
@@ -506,6 +524,11 @@ const styles = StyleSheet.create({
   versionText: {
     ...typography.caption,
     color: colors.textMuted,
+  },
+  solapurImage: {
+    width: SOLAPUR_WIDTH,
+    height: SOLAPUR_HEIGHT,
+    marginTop: spacing.sm,
   },
   languageTrailing: {
     flexDirection: 'row',

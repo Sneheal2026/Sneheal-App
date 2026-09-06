@@ -382,6 +382,7 @@ const en = {
     photoRemove: 'Remove photo',
     photoPermissionMessage:
       'Please allow access so you can set a profile photo.',
+    madeInSolapurA11y: 'Made with love in Solapur',
   },
   language: {
     title: 'Language settings',
