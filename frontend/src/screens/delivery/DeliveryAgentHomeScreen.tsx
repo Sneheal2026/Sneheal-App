@@ -18,6 +18,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import type { AuthStackParamList } from '@/navigation/types';
+import { useAuth } from '@/context/AuthContext';
 import theme from '@/styles/theme';
 import {
   DeliveryHomeHeader,
@@ -64,6 +65,7 @@ const DeliveryAgentHomeScreen = () => {
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
   const navigation = useNavigation<NativeStackNavigationProp<AuthStackParamList>>();
+  const { user } = useAuth();
   const [isOnline, setIsOnline] = useState(true);
   // const [active, setActive] = useState<DeliveryOrder[]>([]);
   // const [completed, setCompleted] = useState<DeliveryOrder[]>([]);
@@ -146,7 +148,9 @@ const DeliveryAgentHomeScreen = () => {
 
       <DeliveryHomeHeader
         greeting={greeting}
+        agentName={user?.username?.trim() || undefined}
         isOnline={isOnline}
+        onProfilePress={() => navigation.navigate('DeliveryAgentProfile')}
         onNotificationsPress={() => navigation.navigate('Notifications' as never)}
       />
 

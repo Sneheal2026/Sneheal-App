@@ -4,6 +4,7 @@ import PhoneNumberScreen from '@/screens/auth/PhoneNumberScreen';
 import OtpScreen from '@/screens/auth/OtpScreen';
 import RegistrationScreen from '@/screens/auth/RegistrationScreen';
 import DeliveryAgentHomeScreen from '@/screens/delivery/DeliveryAgentHomeScreen';
+import DeliveryAgentProfileScreen from '@/screens/delivery/DeliveryAgentProfileScreen';
 import DeliveryConfirmScreen from '@/screens/delivery/DeliveryConfirmScreen';
 import DeliveryNavigationScreen from '@/screens/delivery/DeliveryNavigationScreen';
 import CustomerTrackingScreen from '@/screens/tracking/CustomerTrackingScreen';
@@ -72,6 +73,7 @@ const AuthNavigator = () => {
       <Stack.Screen name="Prescriptions" component={PrescriptionsScreen} />
       <Stack.Screen name="CustomerTracking" component={CustomerTrackingScreen} />
       <Stack.Screen name="DeliveryAgentMain" component={DeliveryAgentHomeScreen} />
+      <Stack.Screen name="DeliveryAgentProfile" component={DeliveryAgentProfileScreen} />
       <Stack.Screen name="DeliveryConfirm" component={DeliveryConfirmScreen} />
       <Stack.Screen name="DeliveryNavigation" component={DeliveryNavigationScreen} />
       <Stack.Screen name="DoctorMain" component={DoctorHomeScreen} />

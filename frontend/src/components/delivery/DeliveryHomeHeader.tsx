@@ -12,6 +12,7 @@ interface DeliveryHomeHeaderProps {
   greeting: string;
   agentName?: string;
   isOnline: boolean;
+  onProfilePress: () => void;
   onNotificationsPress: () => void;
   hasNotifications?: boolean;
 }
@@ -20,6 +21,7 @@ const DeliveryHomeHeader: React.FC<DeliveryHomeHeaderProps> = ({
   greeting,
   agentName,
   isOnline,
+  onProfilePress,
   onNotificationsPress,
   hasNotifications = true,
 }) => {
@@ -46,15 +48,25 @@ const DeliveryHomeHeader: React.FC<DeliveryHomeHeaderProps> = ({
           </View>
         </View>
 
-        <Pressable
-          onPress={onNotificationsPress}
-          style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}
-          accessibilityRole="button"
-          accessibilityLabel={t('delivery.notificationsA11y')}
-        >
-          <Ionicons name="notifications-outline" size={22} color={deliveryTheme.textOnDark} />
-          {hasNotifications ? <View style={styles.dot} /> : null}
-        </Pressable>
+        <View style={styles.headerActions}>
+          <Pressable
+            onPress={onProfilePress}
+            style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}
+            accessibilityRole="button"
+            accessibilityLabel={t('delivery.profileA11y')}
+          >
+            <Ionicons name="person-outline" size={22} color={deliveryTheme.textOnDark} />
+          </Pressable>
+          <Pressable
+            onPress={onNotificationsPress}
+            style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}
+            accessibilityRole="button"
+            accessibilityLabel={t('delivery.notificationsA11y')}
+          >
+            <Ionicons name="notifications-outline" size={22} color={deliveryTheme.textOnDark} />
+            {hasNotifications ? <View style={styles.dot} /> : null}
+          </Pressable>
+        </View>
       </View>
 
       <View style={styles.statusPill}>
@@ -106,6 +118,11 @@ const styles = StyleSheet.create({
     ...typography.h4,
     color: deliveryTheme.textOnDark,
     fontWeight: '700',
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
   },
   iconBtn: {
     width: 44,
