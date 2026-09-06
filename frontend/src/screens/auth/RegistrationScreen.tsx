@@ -7,6 +7,7 @@ import {
   Pressable,
   Image,
   Alert,
+  KeyboardTypeOptions,
 } from 'react-native';
 import Animated, {
   FadeIn,
@@ -33,18 +34,48 @@ import { useLanguage } from '@/context/LanguageContext';
 
 const LANGUAGES: { value: AppLanguage; label: string }[] = [
   { value: 'ENGLISH', label: 'English' },
-  { value: 'HINDI', label: 'Hindi' },
-  { value: 'MARATHI', label: 'Marathi' },
+  { value: 'HINDI', label: 'हिन्दी' },
+  { value: 'MARATHI', label: 'मराठी' },
 ];
 
-const ROLES: { value: UserRole; labelKey: string; icon: keyof typeof Ionicons.glyphMap }[] = [
-  { value: 'customer', labelKey: 'auth.roleCustomer', icon: 'person-outline' },
-  // Customer-only for now — uncomment when doctor / delivery-agent apps ship
-  // { value: 'delivery_agent', labelKey: 'auth.roleDeliveryAgent', icon: 'bicycle-outline' },
-  // { value: 'doctor', labelKey: 'auth.roleDoctor', icon: 'medkit-outline' },
+const ROLES: {
+  value: UserRole;
+  labelKey: string;
+  hintKey: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  iconFilled: keyof typeof Ionicons.glyphMap;
+}[] = [
+  {
+    value: 'customer',
+    labelKey: 'auth.roleCustomer',
+    hintKey: 'auth.roleCustomerHint',
+    icon: 'bag-handle-outline',
+    iconFilled: 'bag-handle',
+  },
+  {
+    value: 'delivery_agent',
+    labelKey: 'auth.roleDeliveryAgent',
+    hintKey: 'auth.roleDeliveryHint',
+    icon: 'bicycle-outline',
+    iconFilled: 'bicycle',
+  },
+  {
+    value: 'doctor',
+    labelKey: 'auth.roleDoctor',
+    hintKey: 'auth.roleDoctorHint',
+    icon: 'medkit-outline',
+    iconFilled: 'medkit',
+  },
 ];
 
 type DocumentKey = 'aadhar' | 'license';
+type FieldKey =
+  | 'username'
+  | 'address'
+  | 'city'
+  | 'state'
+  | 'pincode'
+  | 'landmark';
 
 const MAX_IMAGE_SIZE_BYTES = 1 * 1024 * 1024; // 1 MB
 const MAX_IMAGE_SIZE_MB = 1;
@@ -130,15 +161,12 @@ async function readImageAsBase64(uri: string): Promise<ImageDocument | null> {
 interface DocumentUploadFieldProps {
   label: string;
   hint: string;
+  sizeHint: string;
   icon: keyof typeof Ionicons.glyphMap;
   uri: string | null;
   error: string | null;
   onPick: (source: 'camera' | 'gallery') => void;
   colors: ReturnType<typeof useTheme>['colors'];
-  spacing: ReturnType<typeof useTheme>['spacing'];
-  typography: ReturnType<typeof useTheme>['typography'];
-  borderRadius: ReturnType<typeof useTheme>['borderRadius'];
-  shadows: ReturnType<typeof useTheme>['shadows'];
   changeLabel: string;
   tapToUploadLabel: string;
   cameraLabel: string;
@@ -148,15 +176,12 @@ interface DocumentUploadFieldProps {
 const DocumentUploadField = ({
   label,
   hint,
+  sizeHint,
   icon,
   uri,
   error,
   onPick,
   colors,
-  spacing,
-  typography,
-  borderRadius,
-  shadows,
   changeLabel,
   tapToUploadLabel,
   cameraLabel,
@@ -166,37 +191,36 @@ const DocumentUploadField = ({
     style={[
       docStyles.card,
       {
-        marginBottom: spacing.md,
-        borderRadius: borderRadius.lg,
         backgroundColor: colors.white,
-        borderColor: uri ? colors.primary : `${colors.primary}18`,
-        padding: spacing.lg,
+        borderColor: uri ? colors.primary : `${colors.primary}22`,
       },
-      shadows.sm,
     ]}
   >
     <View style={docStyles.labelRow}>
       <View
         style={[
           docStyles.labelIcon,
-          {
-            backgroundColor: uri ? colors.successLight : colors.infoLight,
-            borderRadius: borderRadius.full,
-          },
+          { backgroundColor: uri ? colors.successLight : `${colors.primary}14` },
         ]}
       >
         <Ionicons
-          name={uri ? 'checkmark-circle' : icon}
-          size={18}
+          name={uri ? 'checkmark' : icon}
+          size={14}
           color={uri ? colors.success : colors.primary}
         />
       </View>
       <View style={docStyles.labelTextWrap}>
-        <Text style={[docStyles.label, typography.bodySmall, { color: colors.textPrimary }]}>
+        <Text
+          style={[docStyles.label, { color: colors.textPrimary }]}
+          numberOfLines={1}
+        >
           {label}
         </Text>
-        <Text style={[docStyles.hint, typography.caption, { color: colors.textSecondary }]}>
-          {hint}
+        <Text
+          style={[docStyles.sizeHint, { color: colors.textMuted }]}
+          numberOfLines={1}
+        >
+          {sizeHint}
         </Text>
       </View>
     </View>
@@ -206,26 +230,32 @@ const DocumentUploadField = ({
       style={({ pressed }) => [
         docStyles.uploadBox,
         {
-          borderRadius: borderRadius.lg,
-          backgroundColor: colors.white,
-          borderColor: uri ? colors.primary : colors.border,
+          backgroundColor: uri ? colors.white : `${colors.primary}08`,
+          borderColor: uri ? colors.primary : `${colors.primary}40`,
         },
         uri && docStyles.uploadBoxFilled,
-        pressed && { opacity: 0.7 },
+        pressed && { opacity: 0.78 },
       ]}
       accessibilityLabel={uri ? `Change ${label}` : `Upload ${label}`}
+      accessibilityHint={hint}
     >
       {uri ? (
         <>
           <Image source={{ uri }} style={docStyles.preview} />
           <View style={docStyles.overlay}>
-            <Ionicons name="camera" size={18} color={colors.textInverse} />
-            <Text style={[docStyles.overlayText, { color: colors.textInverse }]}>{changeLabel}</Text>
+            <Ionicons name="camera" size={16} color={colors.textInverse} />
+            <Text style={[docStyles.overlayText, { color: colors.textInverse }]}>
+              {changeLabel}
+            </Text>
           </View>
         </>
       ) : (
         <View style={docStyles.placeholder}>
-          <Ionicons name="cloud-upload-outline" size={26} color={colors.primary} />
+          <View
+            style={[docStyles.placeholderIcon, { backgroundColor: colors.white }]}
+          >
+            <Ionicons name="cloud-upload-outline" size={22} color={colors.primary} />
+          </View>
           <Text style={[docStyles.placeholderTitle, { color: colors.textPrimary }]}>
             {tapToUploadLabel}
           </Text>
@@ -233,62 +263,60 @@ const DocumentUploadField = ({
       )}
     </Pressable>
 
-    <View style={[docStyles.actions, { gap: spacing.sm, marginTop: spacing.sm }]}>
+    <View style={docStyles.actions}>
       <Pressable
         style={({ pressed }) => [
           docStyles.actionBtn,
           {
-            borderRadius: borderRadius.full,
-            borderColor: colors.border,
-            backgroundColor: colors.white,
+            borderColor: `${colors.primary}28`,
+            backgroundColor: `${colors.primary}0A`,
           },
           pressed && { opacity: 0.7 },
         ]}
         onPress={() => onPick('camera')}
+        accessibilityLabel={cameraLabel}
       >
-        <Ionicons name="camera-outline" size={17} color={colors.primary} />
-        <Text style={[docStyles.actionText, typography.caption, { color: colors.textSecondary }]}>
-          {cameraLabel}
-        </Text>
+        <Ionicons name="camera-outline" size={16} color={colors.primary} />
       </Pressable>
       <Pressable
         style={({ pressed }) => [
           docStyles.actionBtn,
           {
-            borderRadius: borderRadius.full,
-            borderColor: colors.border,
-            backgroundColor: colors.white,
+            borderColor: `${colors.primary}28`,
+            backgroundColor: `${colors.primary}0A`,
           },
           pressed && { opacity: 0.7 },
         ]}
         onPress={() => onPick('gallery')}
+        accessibilityLabel={galleryLabel}
       >
-        <Ionicons name="images-outline" size={17} color={colors.primary} />
-        <Text style={[docStyles.actionText, typography.caption, { color: colors.textSecondary }]}>
-          {galleryLabel}
-        </Text>
+        <Ionicons name="images-outline" size={16} color={colors.primary} />
       </Pressable>
     </View>
 
     {error ? (
-      <Text style={[docStyles.error, typography.caption, { color: colors.error }]}>{error}</Text>
+      <Text style={[docStyles.error, { color: colors.error }]}>{error}</Text>
     ) : null}
   </View>
 );
 
 const docStyles = StyleSheet.create({
   card: {
-    borderWidth: 1,
+    flex: 1,
+    borderWidth: 1.5,
+    borderRadius: 18,
+    padding: 12,
   },
   labelRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     marginBottom: 10,
-    gap: 10,
+    gap: 8,
   },
   labelIcon: {
-    width: 36,
-    height: 36,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -296,67 +324,184 @@ const docStyles = StyleSheet.create({
     flex: 1,
   },
   label: {
+    fontSize: 13,
     fontWeight: '700',
-    marginBottom: 2,
+    letterSpacing: -0.2,
   },
-  hint: {
-    lineHeight: 17,
+  sizeHint: {
+    fontSize: 10,
+    fontWeight: '600',
+    marginTop: 1,
   },
   uploadBox: {
-    borderWidth: 1,
-    minHeight: 130,
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
+    borderRadius: 14,
+    minHeight: 108,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
   },
   uploadBoxFilled: {
-    minHeight: 150,
-    padding: 0,
+    minHeight: 108,
+    borderStyle: 'solid',
   },
   placeholder: {
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 20,
+    paddingVertical: 14,
+    paddingHorizontal: 8,
     gap: 8,
   },
+  placeholderIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   placeholderTitle: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 11,
+    fontWeight: '700',
+    textAlign: 'center',
   },
   preview: {
     width: '100%',
-    height: 150,
+    height: 108,
     resizeMode: 'cover',
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.28)',
+    backgroundColor: 'rgba(15, 23, 42, 0.38)',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 4,
+    gap: 3,
   },
   overlayText: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: 11,
+    fontWeight: '700',
   },
   actions: {
     flexDirection: 'row',
+    gap: 8,
+    marginTop: 10,
   },
   actionBtn: {
     flex: 1,
-    flexDirection: 'row',
+    height: 36,
+    borderRadius: 10,
+    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 10,
-    borderWidth: 1,
-  },
-  actionText: {
-    fontSize: 13,
-    fontWeight: '600',
   },
   error: {
-    marginTop: 6,
+    marginTop: 8,
+    fontSize: 11,
+    fontWeight: '600',
+    lineHeight: 15,
+  },
+});
+
+interface IconFieldProps {
+  icon: keyof typeof Ionicons.glyphMap;
+  value: string;
+  onChangeText: (text: string) => void;
+  placeholder: string;
+  focused: boolean;
+  onFocus: () => void;
+  onBlur: () => void;
+  colors: ReturnType<typeof useTheme>['colors'];
+  valid?: boolean;
+  multiline?: boolean;
+  keyboardType?: KeyboardTypeOptions;
+  maxLength?: number;
+  autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
+  autoCorrect?: boolean;
+  accessibilityLabel?: string;
+}
+
+const IconField = ({
+  icon,
+  value,
+  onChangeText,
+  placeholder,
+  focused,
+  onFocus,
+  onBlur,
+  colors,
+  valid,
+  multiline,
+  keyboardType,
+  maxLength,
+  autoCapitalize,
+  autoCorrect,
+  accessibilityLabel,
+}: IconFieldProps) => (
+  <View
+    style={[
+      iconFieldStyles.shell,
+      {
+        backgroundColor: colors.white,
+        borderColor: focused
+          ? colors.primary
+          : valid
+            ? colors.success
+            : colors.border,
+        alignItems: multiline ? 'flex-start' : 'center',
+      },
+    ]}
+  >
+    <Ionicons
+      name={icon}
+      size={18}
+      color={focused ? colors.primary : valid ? colors.success : colors.textMuted}
+      style={multiline ? { marginTop: 2 } : undefined}
+    />
+    <TextInput
+      style={[
+        iconFieldStyles.input,
+        { color: colors.textPrimary },
+        multiline && iconFieldStyles.multiline,
+      ]}
+      placeholder={placeholder}
+      placeholderTextColor={colors.textMuted}
+      value={value}
+      onChangeText={onChangeText}
+      onFocus={onFocus}
+      onBlur={onBlur}
+      multiline={multiline}
+      numberOfLines={multiline ? 3 : 1}
+      textAlignVertical={multiline ? 'top' : 'center'}
+      keyboardType={keyboardType}
+      maxLength={maxLength}
+      autoCapitalize={autoCapitalize}
+      autoCorrect={autoCorrect}
+      accessibilityLabel={accessibilityLabel}
+    />
+    {valid ? (
+      <Ionicons name="checkmark-circle" size={18} color={colors.success} />
+    ) : null}
+  </View>
+);
+
+const iconFieldStyles = StyleSheet.create({
+  shell: {
+    flexDirection: 'row',
+    borderWidth: 1.5,
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    gap: 10,
+  },
+  input: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: '500',
+    padding: 0,
+    margin: 0,
+  },
+  multiline: {
+    minHeight: 72,
   },
 });
 
@@ -366,7 +511,7 @@ const RegistrationScreen = ({
 }: AuthScreenProps<'Registration'>) => {
   const { t } = useTranslation();
   const { phoneNumber } = route.params;
-  const { colors, spacing, typography, borderRadius, shadows } = useTheme();
+  const { colors, spacing, typography, borderRadius } = useTheme();
   const { accessToken, signIn } = useAuth();
   const { setLanguage: applyAppLanguage } = useLanguage();
 
@@ -381,6 +526,7 @@ const RegistrationScreen = ({
   const [pincode, setPincode] = useState('');
   const [landmark, setLandmark] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [focusedField, setFocusedField] = useState<FieldKey | null>(null);
   const [permissionErrors, setPermissionErrors] = useState<
     Record<DocumentKey, string | null>
   >({ aadhar: null, license: null });
@@ -407,6 +553,7 @@ const RegistrationScreen = ({
 
   const deliveryDocsCount =
     (aadharUri ? 1 : 0) + (licenseUri ? 1 : 0);
+  const docsComplete = deliveryDocsCount === 2;
 
   useEffect(() => {
     if (role !== 'delivery_agent') {
@@ -534,186 +681,229 @@ const RegistrationScreen = ({
   ]);
 
   const styles = StyleSheet.create({
+    intro: {
+      marginBottom: spacing.xl,
+    },
+    badge: {
+      width: 44,
+      height: 44,
+      borderRadius: 14,
+      backgroundColor: `${colors.primary}14`,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: spacing.md,
+    },
     title: {
-      fontSize: 22,
+      fontSize: 24,
       fontWeight: '800',
       color: colors.textPrimary,
-      marginBottom: spacing.xs,
-      letterSpacing: -0.4,
+      marginBottom: 6,
+      letterSpacing: -0.5,
     },
     subtitle: {
       ...typography.bodySmall,
       color: colors.textSecondary,
       lineHeight: 21,
-      marginBottom: spacing.xl,
+    },
+    section: {
+      marginBottom: spacing.lg,
     },
     label: {
       ...typography.bodySmall,
       fontWeight: '700',
       color: colors.textPrimary,
       marginBottom: spacing.sm,
-      marginTop: spacing.md,
     },
     fieldLabel: {
       ...typography.caption,
-      fontWeight: '600',
+      fontWeight: '700',
       color: colors.textSecondary,
-      marginBottom: spacing.xs,
+      marginBottom: 6,
       marginTop: spacing.sm,
     },
-    hint: {
-      ...typography.caption,
-      color: colors.textMuted,
-      marginBottom: spacing.md,
-      lineHeight: 18,
-    },
-    input: {
-      borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: borderRadius.lg,
-      backgroundColor: colors.white,
-      paddingHorizontal: spacing.lg,
-      paddingVertical: spacing.md,
-      fontSize: 15,
-      fontWeight: '500',
-      color: colors.textPrimary,
-      ...shadows.sm,
-    },
-    multilineInput: {
-      minHeight: 80,
-      paddingTop: spacing.md,
-    },
-    chipRow: {
+    langRow: {
       flexDirection: 'row',
-      flexWrap: 'wrap',
-      gap: spacing.sm,
-    },
-    chip: {
-      paddingHorizontal: spacing.md,
-      paddingVertical: spacing.sm,
-      borderRadius: borderRadius.full,
+      backgroundColor: colors.white,
+      borderRadius: 14,
       borderWidth: 1,
       borderColor: colors.border,
-      backgroundColor: colors.white,
+      padding: 4,
+      gap: 4,
     },
-    chipSelected: {
-      borderColor: colors.primary,
+    langChip: {
+      flex: 1,
+      paddingVertical: 10,
+      borderRadius: 10,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    langChipSelected: {
       backgroundColor: colors.primary,
     },
-    chipText: {
-      ...typography.caption,
-      fontWeight: '600',
+    langText: {
+      fontSize: 13,
+      fontWeight: '700',
       color: colors.textSecondary,
     },
-    chipTextSelected: {
+    langTextSelected: {
       color: colors.white,
-      fontWeight: '600',
     },
     roleList: {
-      gap: spacing.sm,
+      gap: 10,
     },
     roleCard: {
       flexDirection: 'row',
       alignItems: 'center',
-      padding: spacing.lg,
-      borderRadius: borderRadius.lg,
+      paddingVertical: 14,
+      paddingHorizontal: 14,
+      paddingLeft: 16,
+      borderRadius: 16,
       borderWidth: 1,
       borderColor: colors.border,
       backgroundColor: colors.white,
-      ...shadows.sm,
+      overflow: 'hidden',
     },
     roleCardSelected: {
       borderColor: colors.primary,
+      backgroundColor: `${colors.primary}08`,
+    },
+    roleAccent: {
+      position: 'absolute',
+      left: 0,
+      top: 12,
+      bottom: 12,
+      width: 3,
+      borderRadius: 2,
       backgroundColor: colors.primary,
     },
     roleIconWrap: {
-      width: 48,
-      height: 48,
-      borderRadius: borderRadius.full,
-      backgroundColor: colors.infoLight,
+      width: 44,
+      height: 44,
+      borderRadius: 12,
+      backgroundColor: colors.surfaceSecondary,
       alignItems: 'center',
       justifyContent: 'center',
-      marginRight: spacing.md,
+      marginRight: 12,
     },
     roleIconWrapSelected: {
-      backgroundColor: colors.white,
+      backgroundColor: `${colors.primary}18`,
+    },
+    roleCopy: {
+      flex: 1,
+      marginRight: 10,
     },
     roleLabel: {
-      flex: 1,
       fontSize: 15,
-      fontWeight: '600',
+      fontWeight: '700',
       color: colors.textPrimary,
+      letterSpacing: -0.2,
+      marginBottom: 2,
     },
     roleLabelSelected: {
-      fontWeight: '700',
-      color: colors.white,
+      color: colors.primary,
     },
-    checkWrap: {
-      width: 24,
-      height: 24,
-      borderRadius: 12,
+    roleHint: {
+      fontSize: 12,
+      fontWeight: '500',
+      color: colors.textSecondary,
+      lineHeight: 16,
+    },
+    roleRadio: {
+      width: 22,
+      height: 22,
+      borderRadius: 11,
       borderWidth: 1.5,
       borderColor: colors.border,
       alignItems: 'center',
       justifyContent: 'center',
     },
-    checkWrapSelected: {
-      borderColor: colors.white,
-      backgroundColor: colors.white,
+    roleRadioSelected: {
+      borderColor: colors.primary,
     },
-    conditionalSection: {
-      marginTop: spacing.sm,
-      overflow: 'hidden',
+    roleRadioDot: {
+      width: 10,
+      height: 10,
+      borderRadius: 5,
+      backgroundColor: colors.primary,
     },
-    addressCard: {
-      marginTop: spacing.sm,
-      overflow: 'hidden',
+    extraCard: {
+      marginTop: 4,
+      marginBottom: spacing.sm,
       backgroundColor: colors.white,
-      borderRadius: borderRadius.lg,
+      borderRadius: 20,
       padding: spacing.lg,
       borderWidth: 1,
       borderColor: `${colors.primary}18`,
-      ...shadows.sm,
     },
-    sectionHeader: {
+    extraHeader: {
       flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
+      alignItems: 'flex-start',
+      gap: 12,
       marginBottom: spacing.md,
-      marginTop: spacing.xs,
     },
-    sectionTitle: {
+    extraIcon: {
+      width: 40,
+      height: 40,
+      borderRadius: 12,
+      backgroundColor: `${colors.primary}14`,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    extraTitle: {
       fontSize: 16,
-      fontWeight: '700',
+      fontWeight: '800',
       color: colors.textPrimary,
-      letterSpacing: -0.2,
+      letterSpacing: -0.3,
+    },
+    extraHint: {
+      ...typography.caption,
+      color: colors.textSecondary,
+      lineHeight: 17,
+      marginTop: 2,
+    },
+    extraTitleWrap: {
+      flex: 1,
     },
     progressPill: {
-      paddingHorizontal: spacing.md,
+      paddingHorizontal: 10,
       paddingVertical: 4,
       borderRadius: borderRadius.full,
       backgroundColor: colors.infoLight,
+      alignSelf: 'flex-start',
+    },
+    progressPillDone: {
+      backgroundColor: colors.successLight,
     },
     progressText: {
       ...typography.caption,
-      fontWeight: '700',
+      fontWeight: '800',
       color: colors.primary,
     },
+    progressTextDone: {
+      color: colors.success,
+    },
     progressTrack: {
-      height: 4,
-      borderRadius: 2,
+      height: 5,
+      borderRadius: 3,
       backgroundColor: colors.surfaceSecondary,
       marginBottom: spacing.md,
       overflow: 'hidden',
     },
     progressFill: {
       height: '100%',
-      borderRadius: 2,
+      borderRadius: 3,
       backgroundColor: colors.primary,
+    },
+    progressFillDone: {
+      backgroundColor: colors.success,
+    },
+    docsRow: {
+      flexDirection: 'row',
+      gap: 10,
     },
     row: {
       flexDirection: 'row',
-      gap: spacing.md,
+      gap: spacing.sm,
     },
     halfField: {
       flex: 1,
@@ -721,14 +911,27 @@ const RegistrationScreen = ({
     errorText: {
       ...typography.caption,
       color: colors.error,
-      marginTop: spacing.xs,
+      marginTop: 6,
+      fontWeight: '600',
     },
     phoneNote: {
+      alignSelf: 'center',
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      marginTop: spacing.md,
+      marginBottom: spacing.sm,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      borderRadius: borderRadius.full,
+      backgroundColor: colors.white,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    phoneNoteText: {
       ...typography.caption,
-      color: colors.textMuted,
-      textAlign: 'center',
-      marginTop: spacing.xl,
-      marginBottom: spacing.md,
+      color: colors.textSecondary,
+      fontWeight: '600',
     },
   });
 
@@ -749,135 +952,157 @@ const RegistrationScreen = ({
         />
       }
     >
-      <Animated.Text entering={FadeIn.duration(400)} style={styles.title}>
-        {t('auth.registrationTitle')}
-      </Animated.Text>
-      <Animated.Text entering={FadeIn.duration(400).delay(60)} style={styles.subtitle}>
-        {t('auth.registrationSubtitle')}
-      </Animated.Text>
+      <Animated.View entering={FadeIn.duration(400)} style={styles.intro}>
+        <View style={styles.badge}>
+          <Ionicons name="person-add-outline" size={22} color={colors.primary} />
+        </View>
+        <Text style={styles.title}>{t('auth.registrationTitle')}</Text>
+        <Text style={styles.subtitle}>{t('auth.registrationSubtitle')}</Text>
+      </Animated.View>
 
-      <Text style={styles.label}>{t('auth.username')}</Text>
-      <TextInput
-        style={styles.input}
-        placeholder={t('auth.usernamePlaceholder')}
-        placeholderTextColor={colors.textMuted}
-        value={username}
-        onChangeText={setUsername}
-        autoCapitalize="none"
-        autoCorrect={false}
-        maxLength={30}
-        accessibilityLabel={t('auth.username')}
-      />
-      {username.length > 0 && !isUsernameValid ? (
-        <Text style={styles.errorText}>{t('auth.usernameError')}</Text>
-      ) : null}
+      <View style={styles.section}>
+        <Text style={styles.label}>{t('auth.username')}</Text>
+        <IconField
+          icon="person-outline"
+          value={username}
+          onChangeText={setUsername}
+          placeholder={t('auth.usernamePlaceholder')}
+          focused={focusedField === 'username'}
+          onFocus={() => setFocusedField('username')}
+          onBlur={() => setFocusedField(null)}
+          colors={colors}
+          valid={isUsernameValid}
+          autoCapitalize="none"
+          autoCorrect={false}
+          maxLength={30}
+          accessibilityLabel={t('auth.username')}
+        />
+        {username.length > 0 && !isUsernameValid ? (
+          <Text style={styles.errorText}>{t('auth.usernameError')}</Text>
+        ) : null}
+      </View>
 
-      <Text style={styles.label}>{t('auth.preferredLanguage')}</Text>
-      <View style={styles.chipRow}>
-        {LANGUAGES.map((lang, index) => {
-          const selected = language === lang.value;
-          return (
-            <Animated.View
-              key={lang.value}
-              entering={FadeIn.duration(300).delay(index * 40)}
-            >
+      <View style={styles.section}>
+        <Text style={styles.label}>{t('auth.preferredLanguage')}</Text>
+        <View style={styles.langRow}>
+          {LANGUAGES.map((lang) => {
+            const selected = language === lang.value;
+            return (
               <Pressable
+                key={lang.value}
                 onPress={() => setLanguage(lang.value)}
                 style={({ pressed }) => [
-                  styles.chip,
-                  selected && styles.chipSelected,
-                  pressed && { opacity: 0.7 },
+                  styles.langChip,
+                  selected && styles.langChipSelected,
+                  pressed && { opacity: 0.8 },
                 ]}
                 accessibilityRole="radio"
                 accessibilityState={{ selected }}
               >
-                <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
+                <Text style={[styles.langText, selected && styles.langTextSelected]}>
                   {lang.label}
                 </Text>
               </Pressable>
-            </Animated.View>
-          );
-        })}
+            );
+          })}
+        </View>
       </View>
 
-      <Text style={styles.label}>{t('auth.iAmA')}</Text>
-      <View style={styles.roleList}>
-        {ROLES.map((item, index) => {
-          const selected = role === item.value;
-          return (
-            <Animated.View
-              key={item.value}
-              entering={FadeInDown.duration(350).delay(index * 50).damping(20)}
-              layout={LinearTransition.springify().damping(20).stiffness(160)}
-            >
-              <Pressable
-                onPress={() => setRole(item.value)}
-                style={({ pressed }) => [
-                  styles.roleCard,
-                  selected && styles.roleCardSelected,
-                  pressed && { opacity: 0.7 },
-                ]}
-                accessibilityRole="radio"
-                accessibilityState={{ selected }}
-              >
-                <View style={[styles.roleIconWrap, selected && styles.roleIconWrapSelected]}>
-                  <Ionicons
-                    name={item.icon}
-                    size={22}
-                    color={colors.primary}
-                  />
-                </View>
-                <Text style={[styles.roleLabel, selected && styles.roleLabelSelected]}>
-                  {t(item.labelKey)}
-                </Text>
-                <View style={[styles.checkWrap, selected && styles.checkWrapSelected]}>
-                  {selected ? (
-                    <Ionicons name="checkmark" size={14} color={colors.primary} />
-                  ) : null}
-                </View>
-              </Pressable>
-            </Animated.View>
-          );
-        })}
-      </View>
-
-      {/* Customer-only for now — delivery-agent document uploads
-      {role === 'delivery_agent' ? (
-        <Animated.View layout={LinearTransition.springify().damping(20).stiffness(150)}>
-          <Animated.View
-            entering={enterAnim}
-            exiting={exitAnim}
-            style={styles.conditionalSection}
-          >
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>{t('auth.identityVerification')}</Text>
-              <View style={styles.progressPill}>
-                <Text style={styles.progressText}>{deliveryDocsCount}/2</Text>
-              </View>
-            </View>
-
-            <View style={styles.progressTrack}>
+      <View style={styles.section}>
+        <Text style={styles.label}>{t('auth.iAmA')}</Text>
+        <View style={styles.roleList}>
+          {ROLES.map((item, index) => {
+            const selected = role === item.value;
+            return (
               <Animated.View
-                style={[
-                  styles.progressFill,
-                  { width: `${(deliveryDocsCount / 2) * 100}%` },
-                ]}
-                layout={LinearTransition.springify()}
-              />
-            </View>
+                key={item.value}
+                entering={FadeInDown.duration(350).delay(index * 50).damping(20)}
+                layout={LinearTransition.springify().damping(20).stiffness(160)}
+              >
+                <Pressable
+                  onPress={() => setRole(item.value)}
+                  style={({ pressed }) => [
+                    styles.roleCard,
+                    selected && styles.roleCardSelected,
+                    pressed && { opacity: 0.88 },
+                  ]}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected }}
+                  accessibilityLabel={t(item.labelKey)}
+                  accessibilityHint={t(item.hintKey)}
+                >
+                  {selected ? <View style={styles.roleAccent} /> : null}
+                  <View style={[styles.roleIconWrap, selected && styles.roleIconWrapSelected]}>
+                    <Ionicons
+                      name={selected ? item.iconFilled : item.icon}
+                      size={20}
+                      color={selected ? colors.primary : colors.textSecondary}
+                    />
+                  </View>
+                  <View style={styles.roleCopy}>
+                    <Text
+                      style={[styles.roleLabel, selected && styles.roleLabelSelected]}
+                      numberOfLines={1}
+                    >
+                      {t(item.labelKey)}
+                    </Text>
+                    <Text style={styles.roleHint} numberOfLines={2}>
+                      {t(item.hintKey)}
+                    </Text>
+                  </View>
+                  <View style={[styles.roleRadio, selected && styles.roleRadioSelected]}>
+                    {selected ? <View style={styles.roleRadioDot} /> : null}
+                  </View>
+                </Pressable>
+              </Animated.View>
+            );
+          })}
+        </View>
+      </View>
 
+      {role === 'delivery_agent' ? (
+        <Animated.View
+          entering={enterAnim}
+          exiting={exitAnim}
+          layout={LinearTransition.springify().damping(20).stiffness(150)}
+          style={styles.extraCard}
+        >
+          <View style={styles.extraHeader}>
+            <View style={styles.extraIcon}>
+              <Ionicons name="shield-checkmark-outline" size={20} color={colors.primary} />
+            </View>
+            <View style={styles.extraTitleWrap}>
+              <Text style={styles.extraTitle}>{t('auth.identityVerification')}</Text>
+              <Text style={styles.extraHint}>{t('auth.identityHint')}</Text>
+            </View>
+            <View style={[styles.progressPill, docsComplete && styles.progressPillDone]}>
+              <Text style={[styles.progressText, docsComplete && styles.progressTextDone]}>
+                {deliveryDocsCount}/2
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.progressTrack}>
+            <Animated.View
+              style={[
+                styles.progressFill,
+                docsComplete && styles.progressFillDone,
+                { width: `${(deliveryDocsCount / 2) * 100}%` },
+              ]}
+              layout={LinearTransition.springify()}
+            />
+          </View>
+
+          <View style={styles.docsRow}>
             <DocumentUploadField
               label={t('auth.aadharLabel')}
               hint={t('auth.aadharHint')}
+              sizeHint={t('auth.docMaxSize')}
               icon="card-outline"
               uri={aadharUri}
               error={permissionErrors.aadhar}
               onPick={handlePickDocument('aadhar', 'Aadhar card')}
               colors={colors}
-              spacing={spacing}
-              typography={typography}
-              borderRadius={borderRadius}
-              shadows={shadows}
               changeLabel={t('auth.changePhoto')}
               tapToUploadLabel={t('auth.tapToUpload')}
               cameraLabel={t('scan.camera')}
@@ -887,103 +1112,123 @@ const RegistrationScreen = ({
             <DocumentUploadField
               label={t('auth.licenseLabel')}
               hint={t('auth.licenseHint')}
+              sizeHint={t('auth.docMaxSize')}
               icon="car-outline"
               uri={licenseUri}
               error={permissionErrors.license}
               onPick={handlePickDocument('license', 'driving license')}
               colors={colors}
-              spacing={spacing}
-              typography={typography}
-              borderRadius={borderRadius}
-              shadows={shadows}
               changeLabel={t('auth.changePhoto')}
               tapToUploadLabel={t('auth.tapToUpload')}
               cameraLabel={t('scan.camera')}
               galleryLabel={t('scan.gallery')}
             />
-          </Animated.View>
+          </View>
         </Animated.View>
       ) : null}
-      */}
 
-      {/* Customer-only for now — doctor clinic address inputs
       {role === 'doctor' ? (
-        <Animated.View layout={LinearTransition.springify().damping(20).stiffness(150)}>
-          <Animated.View
-            entering={enterAnim}
-            exiting={exitAnim}
-            style={styles.addressCard}
-          >
-            <Text style={styles.label}>{t('auth.clinicAddress')}</Text>
-            <Text style={styles.hint}>{t('auth.clinicAddressHint')}</Text>
-
-            <Text style={styles.fieldLabel}>{t('auth.fullAddress')}</Text>
-            <TextInput
-              style={[styles.input, styles.multilineInput]}
-              placeholder={t('auth.addressPlaceholder')}
-              placeholderTextColor={colors.textMuted}
-              value={addressLine}
-              onChangeText={setAddressLine}
-              multiline
-              numberOfLines={3}
-              textAlignVertical="top"
-            />
-
-            <View style={styles.row}>
-              <View style={styles.halfField}>
-                <Text style={styles.fieldLabel}>{t('auth.city')}</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder={t('auth.city')}
-                  placeholderTextColor={colors.textMuted}
-                  value={city}
-                  onChangeText={setCity}
-                />
-              </View>
-              <View style={styles.halfField}>
-                <Text style={styles.fieldLabel}>{t('auth.state')}</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder={t('auth.state')}
-                  placeholderTextColor={colors.textMuted}
-                  value={state}
-                  onChangeText={setState}
-                />
-              </View>
+        <Animated.View
+          entering={enterAnim}
+          exiting={exitAnim}
+          layout={LinearTransition.springify().damping(20).stiffness(150)}
+          style={styles.extraCard}
+        >
+          <View style={styles.extraHeader}>
+            <View style={styles.extraIcon}>
+              <Ionicons name="location-outline" size={20} color={colors.primary} />
             </View>
+            <View style={styles.extraTitleWrap}>
+              <Text style={styles.extraTitle}>{t('auth.clinicAddress')}</Text>
+              <Text style={styles.extraHint}>{t('auth.clinicAddressHint')}</Text>
+            </View>
+          </View>
 
-            <Text style={styles.fieldLabel}>{t('auth.pincode')}</Text>
-            <TextInput
-              style={styles.input}
-              placeholder={t('auth.pincodePlaceholder')}
-              placeholderTextColor={colors.textMuted}
-              value={pincode}
-              onChangeText={(t) => setPincode(t.replace(/\D/g, '').slice(0, 6))}
-              keyboardType="number-pad"
-              maxLength={6}
-            />
-            {pincode.length > 0 && !/^\d{6}$/.test(pincode) ? (
-              <Text style={styles.errorText}>{t('auth.pincodeError')}</Text>
-            ) : null}
+          <Text style={styles.fieldLabel}>{t('auth.fullAddress')}</Text>
+          <IconField
+            icon="home-outline"
+            value={addressLine}
+            onChangeText={setAddressLine}
+            placeholder={t('auth.addressPlaceholder')}
+            focused={focusedField === 'address'}
+            onFocus={() => setFocusedField('address')}
+            onBlur={() => setFocusedField(null)}
+            colors={colors}
+            valid={addressLine.trim().length >= 5}
+            multiline
+          />
 
-            <Text style={styles.fieldLabel}>{t('auth.landmarkOptional')}</Text>
-            <TextInput
-              style={styles.input}
-              placeholder={t('auth.landmarkPlaceholder')}
-              placeholderTextColor={colors.textMuted}
-              value={landmark}
-              onChangeText={setLandmark}
-            />
-          </Animated.View>
+          <View style={styles.row}>
+            <View style={styles.halfField}>
+              <Text style={styles.fieldLabel}>{t('auth.city')}</Text>
+              <IconField
+                icon="business-outline"
+                value={city}
+                onChangeText={setCity}
+                placeholder={t('auth.city')}
+                focused={focusedField === 'city'}
+                onFocus={() => setFocusedField('city')}
+                onBlur={() => setFocusedField(null)}
+                colors={colors}
+                valid={city.trim().length >= 2}
+              />
+            </View>
+            <View style={styles.halfField}>
+              <Text style={styles.fieldLabel}>{t('auth.state')}</Text>
+              <IconField
+                icon="map-outline"
+                value={state}
+                onChangeText={setState}
+                placeholder={t('auth.state')}
+                focused={focusedField === 'state'}
+                onFocus={() => setFocusedField('state')}
+                onBlur={() => setFocusedField(null)}
+                colors={colors}
+                valid={state.trim().length >= 2}
+              />
+            </View>
+          </View>
+
+          <Text style={styles.fieldLabel}>{t('auth.pincode')}</Text>
+          <IconField
+            icon="keypad-outline"
+            value={pincode}
+            onChangeText={(digits) => setPincode(digits.replace(/\D/g, '').slice(0, 6))}
+            placeholder={t('auth.pincodePlaceholder')}
+            focused={focusedField === 'pincode'}
+            onFocus={() => setFocusedField('pincode')}
+            onBlur={() => setFocusedField(null)}
+            colors={colors}
+            valid={/^\d{6}$/.test(pincode)}
+            keyboardType="number-pad"
+            maxLength={6}
+          />
+          {pincode.length > 0 && !/^\d{6}$/.test(pincode) ? (
+            <Text style={styles.errorText}>{t('auth.pincodeError')}</Text>
+          ) : null}
+
+          <Text style={styles.fieldLabel}>{t('auth.landmarkOptional')}</Text>
+          <IconField
+            icon="flag-outline"
+            value={landmark}
+            onChangeText={setLandmark}
+            placeholder={t('auth.landmarkPlaceholder')}
+            focused={focusedField === 'landmark'}
+            onFocus={() => setFocusedField('landmark')}
+            onBlur={() => setFocusedField(null)}
+            colors={colors}
+          />
         </Animated.View>
       ) : null}
-      */}
 
-      <Text style={styles.phoneNote}>
-        {t('auth.registerWith', {
-          phone: phoneNumber.replace(/(\d{5})(\d{5})/, '$1 $2'),
-        })}
-      </Text>
+      <View style={styles.phoneNote}>
+        <Ionicons name="lock-closed-outline" size={13} color={colors.textMuted} />
+        <Text style={styles.phoneNoteText}>
+          {t('auth.registerWith', {
+            phone: phoneNumber.replace(/(\d{5})(\d{5})/, '$1 $2'),
+          })}
+        </Text>
+      </View>
     </AuthScreenLayout>
   );
 };
