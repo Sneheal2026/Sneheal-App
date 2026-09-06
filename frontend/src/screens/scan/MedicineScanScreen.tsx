@@ -37,16 +37,40 @@ import type { ScannedMedicine, ImageType } from '@/types/prescription';
 import { ScannedMedicineCard } from '@/components/scan';
 import { useTranslation } from 'react-i18next';
 
-const { colors, spacing, typography, borderRadius, shadows, moderateScale } = theme;
+const { spacing, typography, borderRadius, moderateScale } = theme;
 
-const PAGE_BG = '#F5F6F8';
-const ACCENT = colors.primary;
-const ACCENT_DARK = colors.primaryDark;
+/** Unique palette for the scan screen — independent of app-wide brand colors. */
+const SCAN = {
+  page: '#F4F0FF',
+  ink: '#1B1238',
+  inkSoft: '#4A3B6E',
+  muted: '#8B7AA8',
+  surface: '#FFFFFF',
+  violet: '#7C3AED',
+  violetDeep: '#5B21B6',
+  violetSoft: '#EDE9FE',
+  cyan: '#06B6D4',
+  cyanDeep: '#0E7490',
+  cyanSoft: '#CFFAFE',
+  rose: '#F43F5E',
+  roseDeep: '#BE123C',
+  roseSoft: '#FFE4E6',
+  mint: '#059669',
+  mintDeep: '#047857',
+  mintSoft: '#D1FAE5',
+  amber: '#D97706',
+  amberSoft: '#FEF3C7',
+  scanner: '#120B24',
+  scannerMid: '#1C1436',
+  white: '#FFFFFF',
+  error: '#E11D48',
+  errorSoft: '#FFE4E6',
+} as const;
 
 const SCAN_TIPS = [
-  { icon: 'sunny-outline' as const, labelKey: 'scan.tipGoodLight', descKey: 'scan.tipGoodLightDesc' },
-  { icon: 'scan-outline' as const, labelKey: 'scan.tipFullFrame', descKey: 'scan.tipFullFrameDesc' },
-  { icon: 'document-text' as const, labelKey: 'scan.tipDoctorSign', descKey: 'scan.tipDoctorSignDesc' },
+  { icon: 'sunny-outline' as const, labelKey: 'scan.tipGoodLight', descKey: 'scan.tipGoodLightDesc', tint: SCAN.amber, bg: SCAN.amberSoft },
+  { icon: 'scan-outline' as const, labelKey: 'scan.tipFullFrame', descKey: 'scan.tipFullFrameDesc', tint: SCAN.violet, bg: SCAN.violetSoft },
+  { icon: 'document-text' as const, labelKey: 'scan.tipDoctorSign', descKey: 'scan.tipDoctorSignDesc', tint: SCAN.cyanDeep, bg: SCAN.cyanSoft },
 ];
 
 const SCAN_STEPS = [
@@ -56,9 +80,9 @@ const SCAN_STEPS = [
 ];
 
 const FEATURE_HIGHLIGHTS = [
-  { icon: 'sparkles' as const, titleKey: 'scan.featureAiDetection', subtitleKey: 'scan.featureAiDetectionSub', tint: ACCENT, bg: colors.infoLight },
-  { icon: 'create-outline' as const, titleKey: 'scan.featureAutoCorrect', subtitleKey: 'scan.featureAutoCorrectSub', tint: colors.warning, bg: colors.warningLight },
-  { icon: 'flash-outline' as const, titleKey: 'scan.featureInstant', subtitleKey: 'scan.featureInstantSub', tint: colors.secondary, bg: '#CCFBF1' },
+  { icon: 'sparkles' as const, titleKey: 'scan.featureAiDetection', subtitleKey: 'scan.featureAiDetectionSub', tint: SCAN.violet, bg: SCAN.violetSoft },
+  { icon: 'create-outline' as const, titleKey: 'scan.featureAutoCorrect', subtitleKey: 'scan.featureAutoCorrectSub', tint: SCAN.rose, bg: SCAN.roseSoft },
+  { icon: 'flash-outline' as const, titleKey: 'scan.featureInstant', subtitleKey: 'scan.featureInstantSub', tint: SCAN.cyanDeep, bg: SCAN.cyanSoft },
 ];
 
 const SCAN_BEAM_DURATION_MS = 2800;
@@ -111,23 +135,31 @@ const StepIndicator = ({ hasImage, isScanning, hasResults }: StepIndicatorProps)
         return (
           <React.Fragment key={step.key}>
             <View style={styles.stepItem}>
-              <View
+              <LinearGradient
+                colors={
+                  state === 'complete'
+                    ? [SCAN.mint, SCAN.mintDeep]
+                    : state === 'active'
+                      ? [SCAN.violet, SCAN.cyan]
+                      : [SCAN.surface, SCAN.violetSoft]
+                }
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
                 style={[
                   styles.stepCircle,
-                  state === 'complete' && styles.stepCircleComplete,
-                  state === 'active' && styles.stepCircleActive,
+                  state === 'pending' && styles.stepCirclePending,
                 ]}
               >
                 {state === 'complete' ? (
-                  <Ionicons name="checkmark" size={13} color={colors.white} />
+                  <Ionicons name="checkmark" size={13} color={SCAN.white} />
                 ) : (
                   <Ionicons
                     name={step.icon}
                     size={13}
-                    color={state === 'active' ? colors.white : colors.textMuted}
+                    color={state === 'active' ? SCAN.white : SCAN.muted}
                   />
                 )}
-              </View>
+              </LinearGradient>
               <Text
                 style={[
                   styles.stepLabel,
@@ -224,14 +256,14 @@ const ScanBeamOverlay = ({ active, insetX = SCAN_ZONE_INSET }: ScanBeamOverlayPr
     <View style={styles.scanOverlay} onLayout={handleZoneLayout} pointerEvents="none">
       <Animated.View style={[styles.scanBeamWrap, { left: insetX, right: insetX }, beamStyle]}>
         <LinearGradient
-          colors={['rgba(26,115,232,0)', 'rgba(26,115,232,0.95)', 'rgba(26,115,232,0)']}
+          colors={['rgba(6,182,212,0)', 'rgba(196,181,253,0.95)', 'rgba(6,182,212,0)']}
           start={{ x: 0, y: 0.5 }}
           end={{ x: 1, y: 0.5 }}
           style={styles.scanBeamLine}
         />
         <Animated.View style={[styles.scanBeamTrailWrap, trailStyle]}>
           <LinearGradient
-            colors={['rgba(26,115,232,0.42)', 'rgba(26,115,232,0.14)', 'rgba(26,115,232,0)']}
+            colors={['rgba(124,58,237,0.45)', 'rgba(6,182,212,0.16)', 'rgba(6,182,212,0)']}
             style={styles.scanBeamTrail}
           />
         </Animated.View>
@@ -395,16 +427,22 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
     [navigation],
   );
 
+  const sourcesDisabled = isPicking || isScanning;
+
   return (
     <View style={styles.root}>
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent={Platform.OS === 'android'} />
 
-      <LinearGradient
-        colors={['#E8F1FE', '#F0F5FF', PAGE_BG]}
-        locations={[0, 0.35, 0.65]}
-        style={styles.pageGradient}
-        pointerEvents="none"
-      />
+      <View style={styles.atmosphere} pointerEvents="none">
+        <LinearGradient
+          colors={['#E9D5FF', '#F4F0FF', '#ECFEFF']}
+          locations={[0, 0.42, 1]}
+          style={styles.pageGradient}
+        />
+        <View style={styles.orbViolet} />
+        <View style={styles.orbCyan} />
+        <View style={styles.orbRose} />
+      </View>
 
       <SafeAreaView edges={['top']} style={styles.safeTop}>
         <View style={styles.topBar}>
@@ -415,14 +453,19 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
             accessibilityLabel={t('common.back')}
             accessibilityRole="button"
           >
-            <Ionicons name="arrow-back" size={22} color={colors.textPrimary} />
+            <Ionicons name="arrow-back" size={22} color={SCAN.ink} />
           </Pressable>
           <View style={styles.topTitleWrap}>
             <Text style={styles.topTitle}>{t('scan.title')}</Text>
-            <View style={styles.aiBadge}>
-              <Ionicons name="sparkles" size={10} color={ACCENT} />
+            <LinearGradient
+              colors={[SCAN.violetSoft, SCAN.cyanSoft]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.aiBadge}
+            >
+              <Ionicons name="sparkles" size={10} color={SCAN.violet} />
               <Text style={styles.aiBadgeText}>{t('scan.aiPowered')}</Text>
-            </View>
+            </LinearGradient>
           </View>
           <Pressable
             onPress={handleClearImage}
@@ -437,7 +480,7 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
             <Ionicons
               name="trash-outline"
               size={18}
-              color={pickedImage ? colors.error : colors.textMuted}
+              color={pickedImage ? SCAN.rose : SCAN.muted}
             />
           </Pressable>
         </View>
@@ -453,23 +496,6 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
         keyboardShouldPersistTaps="handled"
       >
         <Animated.View entering={FadeInDown.duration(400)} style={styles.heroBlock}>
-          {/* <View style={styles.heroIconRow}>
-            <LinearGradient
-              colors={[colors.infoLight, '#E0EDFF']}
-              style={styles.heroIcon}
-            >
-              <Ionicons name="document-text-outline" size={18} color={ACCENT} />
-            </LinearGradient>
-            <LinearGradient
-              colors={['#CCFBF1', '#E6FFFA']}
-              style={styles.heroIcon}
-            >
-              <Ionicons name="medkit-outline" size={18} color={colors.secondary} />
-            </LinearGradient>
-            <View style={styles.heroIconDivider} />
-            <Text style={styles.heroTagline}>Prescription · Medicine pack · Strip</Text>
-          </View> */}
-          
           <Text style={styles.heroTitle}>
             {t('scan.heroTitle')}{' '}
             <Text style={styles.heroTitleAccent}>{t('scan.heroTitleAccent')}</Text>
@@ -479,7 +505,7 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
           <View style={styles.featureRow}>
             {FEATURE_HIGHLIGHTS.map((feature) => (
               <View key={feature.titleKey} style={[styles.featureCard, { backgroundColor: feature.bg }]}>
-                <View style={[styles.featureIconWrap, { backgroundColor: colors.white }]}>
+                <View style={styles.featureIconWrap}>
                   <Ionicons name={feature.icon} size={16} color={feature.tint} />
                 </View>
                 <Text style={styles.featureTitle}>{t(feature.titleKey)}</Text>
@@ -499,129 +525,141 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
 
         <Animated.View entering={FadeIn.delay(100).duration(350)}>
           <LinearGradient
-            colors={pickedImage ? [ACCENT, colors.secondary] : ['#CBD5E1', '#E2E8F0']}
+            colors={pickedImage ? [SCAN.violet, SCAN.cyan] : ['#C4B5FD', '#A5F3FC']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.previewCardBorder}
           >
             <View style={styles.previewCard}>
-          <Pressable
-            onPress={() => {
-              if (!pickedImage) void handlePick('camera');
-              else handleReplace();
-            }}
-            style={({ pressed }) => [pressed && styles.pressed]}
-            accessibilityRole="button"
-            accessibilityLabel={pickedImage ? t('scan.replacePhotoA11y') : t('scan.addPhotoA11y')}
-          >
-            <View style={[styles.previewFrame, { height: previewHeight }]}>
-              {pickedImage ? (
-                <>
-                  <Image
-                    source={{ uri: pickedImage.uri }}
-                    style={styles.previewImage}
-                    contentFit="cover"
-                    transition={220}
-                  />
-                  {isScanning ? (
-                    <View style={styles.scanningOverlay}>
+              <Pressable
+                onPress={() => {
+                  if (!pickedImage) void handlePick('camera');
+                  else handleReplace();
+                }}
+                style={({ pressed }) => [pressed && styles.pressed]}
+                accessibilityRole="button"
+                accessibilityLabel={pickedImage ? t('scan.replacePhotoA11y') : t('scan.addPhotoA11y')}
+              >
+                <View style={[styles.previewFrame, { height: previewHeight }]}>
+                  {pickedImage ? (
+                    <>
+                      <Image
+                        source={{ uri: pickedImage.uri }}
+                        style={styles.previewImage}
+                        contentFit="cover"
+                        transition={220}
+                      />
+                      {isScanning ? (
+                        <View style={styles.scanningOverlay}>
+                          <ScanBeamOverlay active />
+                          <View style={styles.scanningStatus}>
+                            <View style={styles.scanningDot} />
+                            <Text style={styles.scanningStatusText}>{t('scan.analyzing')}</Text>
+                          </View>
+                        </View>
+                      ) : (
+                        <LinearGradient
+                          colors={['transparent', 'rgba(18,11,36,0.78)']}
+                          style={styles.previewGradient}
+                        >
+                          <View style={styles.readyPill}>
+                            <Ionicons name="checkmark-circle" size={14} color={SCAN.mint} />
+                            <Text style={styles.readyPillText}>{t('scan.ready')}</Text>
+                          </View>
+                        </LinearGradient>
+                      )}
+                    </>
+                  ) : (
+                    <View style={styles.emptyWrap}>
+                      <Animated.View style={[styles.bracketGlow, bracketGlowStyle]}>
+                        <CornerBracket position="tl" />
+                        <CornerBracket position="tr" />
+                        <CornerBracket position="bl" />
+                        <CornerBracket position="br" />
+                      </Animated.View>
                       <ScanBeamOverlay active />
-                      <View style={styles.scanningStatus}>
-                        <View style={styles.scanningDot} />
-                        <Text style={styles.scanningStatusText}>{t('scan.analyzing')}</Text>
+                      <View style={styles.emptyIcon}>
+                        <LinearGradient
+                          colors={[SCAN.violet, SCAN.cyan]}
+                          start={{ x: 0, y: 0 }}
+                          end={{ x: 1, y: 1 }}
+                          style={styles.emptyIconRing}
+                        >
+                          <View style={styles.emptyIconInner}>
+                            <Ionicons name="scan-outline" size={moderateScale(30)} color={SCAN.white} />
+                          </View>
+                        </LinearGradient>
+                      </View>
+                      <Text style={styles.emptyTitle}>{t('scan.tapToAdd')}</Text>
+                      <Text style={styles.emptySubtitle}>{t('scan.emptyPhotoSubtitle')}</Text>
+                    </View>
+                  )}
+                </View>
+              </Pressable>
+
+              <View style={styles.sourceRow}>
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.sourceBtn,
+                    pressed && styles.pressed,
+                    sourcesDisabled && styles.sourceBtnDisabled,
+                  ]}
+                  onPress={() => void handlePick('camera')}
+                  disabled={sourcesDisabled}
+                >
+                  <LinearGradient
+                    colors={[SCAN.rose, SCAN.roseDeep]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.camTile}
+                  >
+                    <View style={styles.shutterOuter}>
+                      <View style={styles.shutterInner}>
+                        <Ionicons name="camera" size={20} color={SCAN.rose} />
                       </View>
                     </View>
-                  ) : (
-                    <LinearGradient
-                      colors={['transparent', 'rgba(15,23,42,0.72)']}
-                      style={styles.previewGradient}
-                    >
-                      <View style={styles.readyPill}>
-                        <Ionicons name="checkmark-circle" size={14} color={colors.success} />
-                        <Text style={styles.readyPillText}>{t('scan.ready')}</Text>
-                      </View>
-                    </LinearGradient>
-                  )}
-                </>
-              ) : (
-                <View style={styles.emptyWrap}>
-                  <Animated.View style={[styles.bracketGlow, bracketGlowStyle]}>
-                    <CornerBracket position="tl" />
-                    <CornerBracket position="tr" />
-                    <CornerBracket position="bl" />
-                    <CornerBracket position="br" />
-                  </Animated.View>
-                  <ScanBeamOverlay active />
-                  <View style={styles.emptyIcon}>
-                    <LinearGradient
-                      colors={[colors.infoLight, '#E0EDFF']}
-                      style={styles.emptyIconGradient}
-                    >
-                      <Ionicons name="scan-outline" size={moderateScale(36)} color={ACCENT} />
-                    </LinearGradient>
-                  </View>
-                  <Text style={styles.emptyTitle}>{t('scan.tapToAdd')}</Text>
-                  <Text style={styles.emptySubtitle}>{t('scan.emptyPhotoSubtitle')}</Text>
-                </View>
-              )}
-            </View>
-          </Pressable>
+                    <Text style={styles.camTileText}>{t('scan.camera')}</Text>
+                  </LinearGradient>
+                </Pressable>
 
-          <View style={styles.sourceRow}>
-            <Pressable
-              style={({ pressed }) => [
-                styles.sourceBtn,
-                pressed && styles.pressed,
-                (isPicking || isScanning) && styles.sourceBtnDisabled,
-              ]}
-              onPress={() => void handlePick('camera')}
-              disabled={isPicking || isScanning}
-            >
-              <LinearGradient
-                colors={[ACCENT, ACCENT_DARK]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.sourceBtnGradient}
-              >
-                <View style={styles.sourceIconCircle}>
-                  <Ionicons name="camera" size={18} color={colors.white} />
-                </View>
-                <Text style={styles.sourceBtnPrimaryText}>{t('scan.camera')}</Text>
-              </LinearGradient>
-            </Pressable>
-
-            <Pressable
-              style={({ pressed }) => [
-                styles.sourceBtn,
-                styles.sourceBtnSecondary,
-                pressed && styles.pressed,
-                (isPicking || isScanning) && styles.sourceBtnDisabled,
-              ]}
-              onPress={() => void handlePick('gallery')}
-              disabled={isPicking || isScanning}
-            >
-              <View style={[styles.sourceIconCircle, styles.sourceIconCircleAlt]}>
-                <Ionicons name="images-outline" size={18} color={ACCENT} />
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.sourceBtn,
+                    pressed && styles.pressed,
+                    sourcesDisabled && styles.sourceBtnDisabled,
+                  ]}
+                  onPress={() => void handlePick('gallery')}
+                  disabled={sourcesDisabled}
+                >
+                  <LinearGradient
+                    colors={[SCAN.violet, SCAN.violetDeep]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.galleryTile}
+                  >
+                    <View style={styles.galleryIconWrap}>
+                      <Ionicons name="images" size={18} color={SCAN.white} />
+                    </View>
+                    <Text style={styles.galleryTileText}>{t('scan.gallery')}</Text>
+                  </LinearGradient>
+                </Pressable>
               </View>
-              <Text style={styles.sourceBtnSecondaryText}>{t('scan.gallery')}</Text>
-            </Pressable>
-          </View>
             </View>
           </LinearGradient>
         </Animated.View>
 
         <Animated.View entering={FadeInUp.delay(180).duration(400)} style={styles.tipsCard}>
           <View style={styles.tipsHeader}>
-            <View style={styles.tipsHeaderIcon}>
-              <Ionicons name="bulb-outline" size={16} color={colors.warning} />
-            </View>
+            <LinearGradient colors={[SCAN.amberSoft, '#FFF7ED']} style={styles.tipsHeaderIcon}>
+              <Ionicons name="bulb" size={16} color={SCAN.amber} />
+            </LinearGradient>
             <Text style={styles.tipsHeaderText}>{t('scan.tipsHeader')}</Text>
           </View>
           <View style={styles.tipsRow}>
             {SCAN_TIPS.map((tip) => (
-              <View key={tip.labelKey} style={styles.tipChip}>
+              <View key={tip.labelKey} style={[styles.tipChip, { backgroundColor: tip.bg }]}>
                 <View style={styles.tipIconWrap}>
-                  <Ionicons name={tip.icon} size={14} color={ACCENT} />
+                  <Ionicons name={tip.icon} size={14} color={tip.tint} />
                 </View>
                 <Text style={styles.tipChipText}>{t(tip.labelKey)}</Text>
                 <Text style={styles.tipChipDesc}>{t(tip.descKey)}</Text>
@@ -633,46 +671,48 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
         {medicines.length > 0 && (
           <Animated.View entering={FadeInUp.duration(350)} style={styles.medicineBox}>
             <LinearGradient
-              colors={[colors.successLight, colors.white]}
+              colors={[SCAN.mintSoft, SCAN.surface]}
               start={{ x: 0, y: 0 }}
               end={{ x: 0, y: 1 }}
               style={styles.medicineBoxGradient}
             >
-            <View style={styles.medicineHeader}>
-              <View style={styles.medicineHeaderLeft}>
-                <Ionicons name="medical" size={20} color={colors.success} />
-                <Text style={styles.medicineTitle}>
-                  {imageType === 'prescription'
-                    ? 'Medicines detected'
-                    : imageType === 'medicine_pack' || imageType === 'medicine_strip' || imageType === 'medicine_bottle'
-                      ? 'Medicine identified'
-                      : 'Medicines detected'}
-                </Text>
+              <View style={styles.medicineHeader}>
+                <View style={styles.medicineHeaderLeft}>
+                  <LinearGradient colors={[SCAN.mint, SCAN.mintDeep]} style={styles.medicineHeaderIcon}>
+                    <Ionicons name="medical" size={16} color={SCAN.white} />
+                  </LinearGradient>
+                  <Text style={styles.medicineTitle}>
+                    {imageType === 'prescription'
+                      ? 'Medicines detected'
+                      : imageType === 'medicine_pack' || imageType === 'medicine_strip' || imageType === 'medicine_bottle'
+                        ? 'Medicine identified'
+                        : 'Medicines detected'}
+                  </Text>
+                </View>
+                <View style={styles.medicineBadge}>
+                  <Text style={styles.medicineBadgeText}>{medicines.length}</Text>
+                </View>
               </View>
-              <View style={styles.medicineBadge}>
-                <Text style={styles.medicineBadgeText}>{medicines.length}</Text>
+
+              <View style={styles.medicineList}>
+                {medicines.map((med, index) => (
+                  <ScannedMedicineCard
+                    key={`${med.correctedName}-${index}`}
+                    medicine={med}
+                    index={index}
+                    onSearchPress={handleSearchMedicine}
+                  />
+                ))}
               </View>
-            </View>
 
-            <View style={styles.medicineList}>
-              {medicines.map((med, index) => (
-                <ScannedMedicineCard
-                  key={`${med.correctedName}-${index}`}
-                  medicine={med}
-                  index={index}
-                  onSearchPress={handleSearchMedicine}
-                />
-              ))}
-            </View>
-
-            <Text style={styles.medicineFooter}>{t('scan.aiVerifyFooter')}</Text>
+              <Text style={styles.medicineFooter}>{t('scan.aiVerifyFooter')}</Text>
             </LinearGradient>
           </Animated.View>
         )}
 
         {hasScanned && !isSaved && (
           <Animated.View entering={FadeInUp.duration(350)} style={styles.saveHintCard}>
-            <Ionicons name="cloud-upload-outline" size={18} color={ACCENT} />
+            <Ionicons name="cloud-upload-outline" size={18} color={SCAN.violet} />
             <Text style={styles.saveHintText}>{t('scan.saveHint')}</Text>
           </Animated.View>
         )}
@@ -680,7 +720,7 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
         {scanError && (
           <Animated.View entering={FadeInUp.duration(350)} style={styles.errorCard}>
             <View style={styles.errorIcon}>
-              <Ionicons name="alert-circle" size={20} color={colors.error} />
+              <Ionicons name="alert-circle" size={20} color={SCAN.error} />
             </View>
             <View style={styles.errorCopy}>
               <Text style={styles.errorTitle}>{t('scan.scanFailed')}</Text>
@@ -693,19 +733,19 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
       <View style={[styles.footer, { paddingBottom: insets.bottom + spacing.sm }]}>
         {canSave ? (
           <View style={styles.footerHint}>
-            <Ionicons name="cloud-upload-outline" size={14} color={ACCENT} />
-            <Text style={[styles.footerHintText, { color: ACCENT }]}>
+            <Ionicons name="cloud-upload-outline" size={14} color={SCAN.violet} />
+            <Text style={[styles.footerHintText, { color: SCAN.violet }]}>
               {t('scan.readyToSaveFooter')}
             </Text>
           </View>
         ) : canScan && !hasScanned ? (
           <View style={styles.footerHint}>
-            <Ionicons name="checkmark-circle" size={14} color={colors.success} />
+            <Ionicons name="checkmark-circle" size={14} color={SCAN.mint} />
             <Text style={styles.footerHintText}>{t('scan.photoReady')}</Text>
           </View>
         ) : isSaved ? (
           <View style={styles.footerHint}>
-            <Ionicons name="checkmark-circle" size={14} color={colors.success} />
+            <Ionicons name="checkmark-circle" size={14} color={SCAN.mint} />
             <Text style={styles.footerHintText}>{t('scan.prescriptionSaved')}</Text>
           </View>
         ) : null}
@@ -723,7 +763,7 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
               accessibilityRole="button"
               accessibilityLabel={t('scan.scanAgainA11y')}
             >
-              <Ionicons name="scan" size={18} color={ACCENT} />
+              <Ionicons name="scan" size={18} color={SCAN.violet} />
               <Text style={styles.secondaryBtnText}>
                 {isScanning ? t('scan.analyzingShort') : t('scan.rescan')}
               </Text>
@@ -745,10 +785,10 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
               <LinearGradient
                 colors={
                   isSaved
-                    ? [colors.success, '#15803D']
+                    ? [SCAN.mint, SCAN.mintDeep]
                     : canSave
-                      ? [ACCENT, ACCENT_DARK]
-                      : ['#CBD5E1', '#94A3B8']
+                      ? [SCAN.violet, SCAN.cyan]
+                      : ['#D8D0EC', '#B8AEC8']
                 }
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
@@ -758,7 +798,7 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
                   <Ionicons
                     name={isSaved ? 'checkmark' : 'cloud-upload-outline'}
                     size={20}
-                    color={colors.white}
+                    color={SCAN.white}
                   />
                 </View>
                 <Text style={styles.scanBtnText}>
@@ -785,13 +825,13 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
             accessibilityLabel={t('scan.scanPhotoA11y')}
           >
             <LinearGradient
-              colors={canScan ? [ACCENT, ACCENT_DARK] : ['#CBD5E1', '#94A3B8']}
+              colors={canScan ? [SCAN.violet, SCAN.cyan] : ['#D8D0EC', '#B8AEC8']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={styles.scanBtnInner}
             >
               <View style={styles.scanBtnIconWrap}>
-                <Ionicons name="scan" size={20} color={colors.white} />
+                <Ionicons name="scan" size={20} color={SCAN.white} />
               </View>
               <Text style={styles.scanBtnText}>
                 {isScanning ? t('scan.analyzingShort') : t('scan.tapToScan')}
@@ -803,7 +843,6 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
           </Pressable>
         )}
       </View>
-
     </View>
   );
 };
@@ -814,13 +853,46 @@ const BRACKET_THICK = 3;
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: PAGE_BG,
+    backgroundColor: SCAN.page,
+  },
+  atmosphere: {
+    ...StyleSheet.absoluteFillObject,
   },
   pageGradient: {
     ...StyleSheet.absoluteFillObject,
   },
+  orbViolet: {
+    position: 'absolute',
+    width: moderateScale(240),
+    height: moderateScale(240),
+    borderRadius: moderateScale(120),
+    backgroundColor: '#C4B5FD',
+    opacity: 0.42,
+    top: -moderateScale(60),
+    right: -moderateScale(70),
+  },
+  orbCyan: {
+    position: 'absolute',
+    width: moderateScale(200),
+    height: moderateScale(200),
+    borderRadius: moderateScale(100),
+    backgroundColor: '#A5F3FC',
+    opacity: 0.34,
+    top: moderateScale(210),
+    left: -moderateScale(80),
+  },
+  orbRose: {
+    position: 'absolute',
+    width: moderateScale(140),
+    height: moderateScale(140),
+    borderRadius: moderateScale(70),
+    backgroundColor: '#FECDD3',
+    opacity: 0.28,
+    top: moderateScale(80),
+    left: moderateScale(40),
+  },
   safeTop: {
-    backgroundColor: 'rgba(255,255,255,0.92)',
+    backgroundColor: 'transparent',
   },
   topBar: {
     flexDirection: 'row',
@@ -828,9 +900,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
-    backgroundColor: 'transparent',
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(226,232,240,0.7)',
   },
   topTitleWrap: {
     alignItems: 'center',
@@ -840,42 +909,50 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: colors.infoLight,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
+    paddingHorizontal: spacing.sm + 2,
+    paddingVertical: 3,
     borderRadius: borderRadius.full,
     borderWidth: 1,
-    borderColor: 'rgba(26,115,232,0.15)',
+    borderColor: 'rgba(124,58,237,0.18)',
   },
   aiBadgeText: {
     fontSize: moderateScale(10),
-    fontWeight: '700',
-    color: ACCENT,
-    letterSpacing: 0.3,
+    fontWeight: '800',
+    color: SCAN.violet,
+    letterSpacing: 0.4,
   },
   backBtn: {
-    width: moderateScale(40),
-    height: moderateScale(40),
-    borderRadius: moderateScale(12),
-    backgroundColor: PAGE_BG,
+    width: moderateScale(42),
+    height: moderateScale(42),
+    borderRadius: moderateScale(21),
+    backgroundColor: SCAN.surface,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(124,58,237,0.12)',
+    shadowColor: SCAN.violet,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 3,
   },
   clearBtn: {
-    width: moderateScale(40),
-    height: moderateScale(40),
-    borderRadius: moderateScale(12),
-    backgroundColor: colors.errorLight,
+    width: moderateScale(42),
+    height: moderateScale(42),
+    borderRadius: moderateScale(21),
+    backgroundColor: SCAN.roseSoft,
     alignItems: 'center',
     justifyContent: 'center',
   },
   clearBtnDisabled: {
-    backgroundColor: PAGE_BG,
+    backgroundColor: SCAN.surface,
+    borderWidth: 1,
+    borderColor: 'rgba(124,58,237,0.12)',
   },
   topTitle: {
     ...typography.body,
     fontWeight: '800',
-    color: colors.textPrimary,
+    color: SCAN.ink,
     letterSpacing: -0.2,
   },
   pressed: {
@@ -892,48 +969,20 @@ const styles = StyleSheet.create({
   heroBlock: {
     marginBottom: spacing.md,
   },
-  heroIconRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-    marginBottom: spacing.md,
-  },
-  heroIcon: {
-    width: moderateScale(38),
-    height: moderateScale(38),
-    borderRadius: moderateScale(12),
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...shadows.sm,
-  },
-  heroIconDivider: {
-    width: 1,
-    height: moderateScale(20),
-    backgroundColor: colors.border,
-    marginHorizontal: spacing.xs,
-  },
-  heroTagline: {
-    ...typography.caption,
-    fontWeight: '600',
-    color: colors.textMuted,
-    flex: 1,
-    minWidth: moderateScale(140),
-  },
   heroTitle: {
     fontSize: moderateScale(26),
     fontWeight: '800',
-    color: colors.textPrimary,
+    color: SCAN.ink,
     letterSpacing: -0.5,
     marginBottom: spacing.sm,
     lineHeight: moderateScale(32),
   },
   heroTitleAccent: {
-    color: ACCENT,
+    color: SCAN.violet,
   },
   heroSubtitle: {
     ...typography.bodySmall,
-    color: colors.textSecondary,
+    color: SCAN.inkSoft,
     lineHeight: moderateScale(22),
     marginBottom: spacing.lg,
   },
@@ -943,32 +992,36 @@ const styles = StyleSheet.create({
   },
   featureCard: {
     flex: 1,
-    borderRadius: borderRadius.lg,
+    borderRadius: borderRadius.xl,
     padding: spacing.sm + 2,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.8)',
-    ...shadows.sm,
+    borderColor: 'rgba(255,255,255,0.9)',
   },
   featureIconWrap: {
-    width: moderateScale(30),
-    height: moderateScale(30),
-    borderRadius: moderateScale(10),
+    width: moderateScale(32),
+    height: moderateScale(32),
+    borderRadius: moderateScale(16),
+    backgroundColor: SCAN.surface,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.xs,
-    ...shadows.sm,
+    shadowColor: SCAN.ink,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
   },
   featureTitle: {
     fontSize: moderateScale(11),
     fontWeight: '800',
-    color: colors.textPrimary,
+    color: SCAN.ink,
     textAlign: 'center',
   },
   featureSubtitle: {
     fontSize: moderateScale(9),
     fontWeight: '500',
-    color: colors.textMuted,
+    color: SCAN.muted,
     textAlign: 'center',
     marginTop: 1,
   },
@@ -984,65 +1037,61 @@ const styles = StyleSheet.create({
     width: moderateScale(68),
   },
   stepCircle: {
-    width: moderateScale(32),
-    height: moderateScale(32),
-    borderRadius: moderateScale(16),
-    backgroundColor: colors.white,
-    borderWidth: 2,
-    borderColor: colors.border,
+    width: moderateScale(34),
+    height: moderateScale(34),
+    borderRadius: moderateScale(17),
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.xs,
-    ...shadows.sm,
   },
-  stepCircleActive: {
-    backgroundColor: ACCENT,
-    borderColor: ACCENT,
-  },
-  stepCircleComplete: {
-    backgroundColor: colors.success,
-    borderColor: colors.success,
+  stepCirclePending: {
+    borderWidth: 1.5,
+    borderColor: 'rgba(124,58,237,0.18)',
   },
   stepLabel: {
     fontSize: moderateScale(10),
     fontWeight: '600',
-    color: colors.textMuted,
+    color: SCAN.muted,
     textAlign: 'center',
   },
   stepLabelActive: {
-    color: ACCENT,
+    color: SCAN.violet,
     fontWeight: '800',
   },
   stepLabelComplete: {
-    color: colors.success,
+    color: SCAN.mint,
     fontWeight: '700',
   },
   stepConnector: {
     flex: 1,
-    height: 2,
-    backgroundColor: colors.border,
-    marginTop: moderateScale(15),
+    height: 3,
+    backgroundColor: 'rgba(124,58,237,0.14)',
+    marginTop: moderateScale(16),
     marginHorizontal: -spacing.xs,
-    borderRadius: 1,
+    borderRadius: 2,
   },
   stepConnectorActive: {
-    backgroundColor: colors.success,
+    backgroundColor: SCAN.mint,
   },
   previewCardBorder: {
-    borderRadius: borderRadius.xxl + 2,
+    borderRadius: borderRadius.xxl + 4,
     padding: 2,
     marginBottom: spacing.lg,
-    ...shadows.md,
+    shadowColor: SCAN.violet,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.18,
+    shadowRadius: 20,
+    elevation: 8,
   },
   previewCard: {
-    backgroundColor: colors.white,
-    borderRadius: borderRadius.xxl,
+    backgroundColor: SCAN.scanner,
+    borderRadius: borderRadius.xxl + 2,
     padding: spacing.md,
   },
   previewFrame: {
     borderRadius: borderRadius.xl,
     overflow: 'hidden',
-    backgroundColor: PAGE_BG,
+    backgroundColor: SCAN.scannerMid,
     marginBottom: spacing.md,
   },
   previewImage: {
@@ -1059,7 +1108,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     alignSelf: 'flex-start',
     gap: spacing.xs,
-    backgroundColor: 'rgba(255,255,255,0.94)',
+    backgroundColor: 'rgba(255,255,255,0.96)',
     paddingHorizontal: spacing.sm + 2,
     paddingVertical: spacing.xs + 1,
     borderRadius: borderRadius.full,
@@ -1067,7 +1116,7 @@ const styles = StyleSheet.create({
   readyPillText: {
     ...typography.caption,
     fontWeight: '700',
-    color: colors.textPrimary,
+    color: SCAN.ink,
   },
   emptyWrap: {
     flex: 1,
@@ -1099,7 +1148,7 @@ const styles = StyleSheet.create({
   },
   scanningOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(15,23,42,0.38)',
+    backgroundColor: 'rgba(18,11,36,0.42)',
     overflow: 'hidden',
   },
   scanningStatus: {
@@ -1111,7 +1160,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     alignSelf: 'center',
     gap: spacing.sm,
-    backgroundColor: 'rgba(255,255,255,0.94)',
+    backgroundColor: 'rgba(255,255,255,0.96)',
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     borderRadius: borderRadius.full,
@@ -1120,18 +1169,18 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: ACCENT,
+    backgroundColor: SCAN.cyan,
   },
   scanningStatusText: {
     ...typography.caption,
     fontWeight: '700',
-    color: colors.textPrimary,
+    color: SCAN.ink,
   },
   bracket: {
     position: 'absolute',
     width: BRACKET,
     height: BRACKET,
-    borderColor: ACCENT,
+    borderColor: SCAN.cyan,
   },
   bracketTL: {
     top: spacing.lg,
@@ -1164,23 +1213,31 @@ const styles = StyleSheet.create({
   emptyIcon: {
     marginBottom: spacing.md,
   },
-  emptyIconGradient: {
-    width: moderateScale(72),
-    height: moderateScale(72),
-    borderRadius: moderateScale(22),
+  emptyIconRing: {
+    width: moderateScale(78),
+    height: moderateScale(78),
+    borderRadius: moderateScale(39),
     alignItems: 'center',
     justifyContent: 'center',
-    ...shadows.md,
+    padding: 3,
+  },
+  emptyIconInner: {
+    width: '100%',
+    height: '100%',
+    borderRadius: moderateScale(36),
+    backgroundColor: 'rgba(255,255,255,0.14)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   emptyTitle: {
     ...typography.body,
     fontWeight: '700',
-    color: colors.textPrimary,
+    color: SCAN.white,
     marginBottom: spacing.xs,
   },
   emptySubtitle: {
     ...typography.caption,
-    color: colors.textSecondary,
+    color: 'rgba(255,255,255,0.68)',
     textAlign: 'center',
     lineHeight: moderateScale(18),
   },
@@ -1190,61 +1247,77 @@ const styles = StyleSheet.create({
   },
   sourceBtn: {
     flex: 1,
-    borderRadius: borderRadius.lg,
+    borderRadius: borderRadius.full,
     overflow: 'hidden',
-    minHeight: moderateScale(50),
+    minHeight: moderateScale(56),
   },
-  sourceBtnGradient: {
+  camTile: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
-    minHeight: moderateScale(50),
+    minHeight: moderateScale(56),
     paddingHorizontal: spacing.md,
+    borderRadius: borderRadius.full,
   },
-  sourceIconCircle: {
-    width: moderateScale(32),
-    height: moderateScale(32),
-    borderRadius: moderateScale(10),
-    backgroundColor: 'rgba(255,255,255,0.22)',
+  shutterOuter: {
+    width: moderateScale(34),
+    height: moderateScale(34),
+    borderRadius: moderateScale(17),
+    backgroundColor: 'rgba(255,255,255,0.24)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.55)',
+  },
+  shutterInner: {
+    width: moderateScale(24),
+    height: moderateScale(24),
+    borderRadius: moderateScale(12),
+    backgroundColor: SCAN.white,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  sourceIconCircleAlt: {
-    backgroundColor: colors.infoLight,
+  camTileText: {
+    ...typography.bodySmall,
+    fontWeight: '800',
+    color: SCAN.white,
+    letterSpacing: 0.2,
   },
-  sourceBtnSecondary: {
+  galleryTile: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
-    backgroundColor: colors.white,
-    borderWidth: 1.5,
-    borderColor: '#BFDBFE',
+    minHeight: moderateScale(56),
     paddingHorizontal: spacing.md,
-    ...shadows.sm,
+    borderRadius: borderRadius.full,
+  },
+  galleryIconWrap: {
+    width: moderateScale(32),
+    height: moderateScale(32),
+    borderRadius: moderateScale(10),
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  galleryTileText: {
+    ...typography.bodySmall,
+    fontWeight: '800',
+    color: SCAN.white,
+    letterSpacing: 0.2,
   },
   sourceBtnDisabled: {
     opacity: 0.65,
   },
-  sourceBtnPrimaryText: {
-    ...typography.bodySmall,
-    fontWeight: '700',
-    color: colors.white,
-  },
-  sourceBtnSecondaryText: {
-    ...typography.bodySmall,
-    fontWeight: '700',
-    color: ACCENT,
-  },
   tipsCard: {
-    backgroundColor: colors.white,
-    borderRadius: borderRadius.xl,
+    backgroundColor: SCAN.surface,
+    borderRadius: borderRadius.xxl,
     padding: spacing.md,
     borderWidth: 1,
-    borderColor: colors.borderLight,
-    ...shadows.sm,
+    borderColor: 'rgba(124,58,237,0.1)',
     marginBottom: spacing.lg,
   },
   tipsHeader: {
@@ -1254,17 +1327,16 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   tipsHeaderIcon: {
-    width: moderateScale(28),
-    height: moderateScale(28),
-    borderRadius: moderateScale(8),
-    backgroundColor: colors.warningLight,
+    width: moderateScale(30),
+    height: moderateScale(30),
+    borderRadius: moderateScale(15),
     alignItems: 'center',
     justifyContent: 'center',
   },
   tipsHeaderText: {
     ...typography.bodySmall,
     fontWeight: '800',
-    color: colors.textPrimary,
+    color: SCAN.ink,
   },
   tipsRow: {
     flexDirection: 'row',
@@ -1273,18 +1345,15 @@ const styles = StyleSheet.create({
   tipChip: {
     flex: 1,
     alignItems: 'center',
-    backgroundColor: PAGE_BG,
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.md,
-    borderRadius: borderRadius.lg,
-    borderWidth: 1,
-    borderColor: colors.borderLight,
+    borderRadius: borderRadius.xl,
   },
   tipIconWrap: {
     width: moderateScale(30),
     height: moderateScale(30),
     borderRadius: moderateScale(15),
-    backgroundColor: colors.infoLight,
+    backgroundColor: SCAN.surface,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.xs,
@@ -1292,22 +1361,21 @@ const styles = StyleSheet.create({
   tipChipText: {
     ...typography.caption,
     fontWeight: '700',
-    color: colors.textPrimary,
+    color: SCAN.ink,
     textAlign: 'center',
     marginBottom: 2,
   },
   tipChipDesc: {
     fontSize: moderateScale(9),
     fontWeight: '500',
-    color: colors.textMuted,
+    color: SCAN.muted,
     textAlign: 'center',
   },
   medicineBox: {
-    borderRadius: borderRadius.xl,
+    borderRadius: borderRadius.xxl,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: colors.successLight,
-    ...shadows.md,
+    borderColor: 'rgba(5,150,105,0.18)',
     marginBottom: spacing.md,
   },
   medicineBoxGradient: {
@@ -1323,14 +1391,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
+    flex: 1,
+  },
+  medicineHeaderIcon: {
+    width: moderateScale(30),
+    height: moderateScale(30),
+    borderRadius: moderateScale(10),
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   medicineTitle: {
     ...typography.body,
     fontWeight: '800',
-    color: colors.textPrimary,
+    color: SCAN.ink,
+    flex: 1,
   },
   medicineBadge: {
-    backgroundColor: colors.successLight,
+    backgroundColor: SCAN.mint,
     paddingHorizontal: spacing.sm + 2,
     paddingVertical: spacing.xs,
     borderRadius: borderRadius.full,
@@ -1340,36 +1417,35 @@ const styles = StyleSheet.create({
   medicineBadgeText: {
     ...typography.caption,
     fontWeight: '800',
-    color: colors.success,
+    color: SCAN.white,
   },
   medicineList: {
     gap: spacing.md,
   },
   medicineFooter: {
     ...typography.caption,
-    color: colors.textSecondary,
+    color: SCAN.inkSoft,
     marginTop: spacing.md,
     paddingTop: spacing.md,
     borderTopWidth: 1,
-    borderTopColor: colors.borderLight,
+    borderTopColor: 'rgba(5,150,105,0.16)',
     textAlign: 'center',
   },
   errorCard: {
     flexDirection: 'row',
     gap: spacing.md,
-    backgroundColor: colors.white,
+    backgroundColor: SCAN.surface,
     borderRadius: borderRadius.xl,
     padding: spacing.lg,
     borderWidth: 1,
-    borderColor: colors.errorLight,
-    ...shadows.sm,
+    borderColor: SCAN.errorSoft,
     marginBottom: spacing.md,
   },
   errorIcon: {
     width: moderateScale(38),
     height: moderateScale(38),
-    borderRadius: moderateScale(12),
-    backgroundColor: colors.errorLight,
+    borderRadius: moderateScale(19),
+    backgroundColor: SCAN.errorSoft,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
@@ -1380,45 +1456,12 @@ const styles = StyleSheet.create({
   errorTitle: {
     ...typography.bodySmall,
     fontWeight: '800',
-    color: colors.error,
+    color: SCAN.error,
     marginBottom: spacing.xs,
   },
   errorBody: {
     ...typography.caption,
-    color: colors.textSecondary,
-    lineHeight: moderateScale(18),
-  },
-  resultCard: {
-    flexDirection: 'row',
-    gap: spacing.md,
-    backgroundColor: colors.white,
-    borderRadius: borderRadius.xl,
-    padding: spacing.lg,
-    borderWidth: 1,
-    borderColor: colors.successLight,
-    ...shadows.sm,
-  },
-  resultIcon: {
-    width: moderateScale(38),
-    height: moderateScale(38),
-    borderRadius: moderateScale(12),
-    backgroundColor: colors.successLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-  resultCopy: {
-    flex: 1,
-  },
-  resultTitle: {
-    ...typography.bodySmall,
-    fontWeight: '800',
-    color: colors.textPrimary,
-    marginBottom: spacing.xs,
-  },
-  resultBody: {
-    ...typography.caption,
-    color: colors.textSecondary,
+    color: SCAN.inkSoft,
     lineHeight: moderateScale(18),
   },
   footer: {
@@ -1428,10 +1471,9 @@ const styles = StyleSheet.create({
     bottom: 0,
     paddingHorizontal: spacing.xl,
     paddingTop: spacing.sm,
-    backgroundColor: 'rgba(255,255,255,0.96)',
+    backgroundColor: 'rgba(244,240,255,0.96)',
     borderTopWidth: 1,
-    borderTopColor: 'rgba(226,232,240,0.8)',
-    ...shadows.lg,
+    borderTopColor: 'rgba(124,58,237,0.12)',
   },
   footerHint: {
     flexDirection: 'row',
@@ -1443,42 +1485,43 @@ const styles = StyleSheet.create({
   footerHintText: {
     ...typography.caption,
     fontWeight: '600',
-    color: colors.success,
+    color: SCAN.mint,
   },
   scanBtn: {
-    borderRadius: borderRadius.xl,
+    borderRadius: borderRadius.full,
     overflow: 'hidden',
   },
   scanBtnReady: {
-    ...shadows.lg,
-    shadowColor: ACCENT,
-    shadowOpacity: 0.35,
-    shadowRadius: 12,
-    elevation: 8,
+    shadowColor: SCAN.violet,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.38,
+    shadowRadius: 14,
+    elevation: 10,
   },
   scanBtnDisabled: {
     opacity: 0.85,
-    ...shadows.sm,
   },
   scanBtnInner: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
-    minHeight: moderateScale(56),
+    minHeight: moderateScale(58),
     paddingHorizontal: spacing.xl,
+    borderRadius: borderRadius.full,
   },
   scanBtnIconWrap: {
     width: moderateScale(34),
     height: moderateScale(34),
-    borderRadius: moderateScale(10),
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderRadius: moderateScale(17),
+    backgroundColor: 'rgba(255,255,255,0.22)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   scanBtnText: {
     ...typography.button,
-    color: colors.white,
+    color: SCAN.white,
+    fontWeight: '800',
   },
   footerActions: {
     flexDirection: 'row',
@@ -1490,16 +1533,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.xs,
-    minHeight: moderateScale(56),
+    minHeight: moderateScale(58),
     paddingHorizontal: spacing.md,
-    borderRadius: borderRadius.xl,
+    borderRadius: borderRadius.full,
     borderWidth: 1.5,
-    borderColor: ACCENT,
-    backgroundColor: colors.white,
+    borderColor: SCAN.violet,
+    backgroundColor: SCAN.surface,
   },
   secondaryBtnText: {
     ...typography.button,
-    color: ACCENT,
+    color: SCAN.violet,
     fontSize: moderateScale(14),
   },
   saveBtnFlex: {
@@ -1511,14 +1554,14 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     marginTop: spacing.md,
     padding: spacing.md,
-    borderRadius: borderRadius.lg,
-    backgroundColor: 'rgba(37, 99, 235, 0.08)',
+    borderRadius: borderRadius.xl,
+    backgroundColor: SCAN.violetSoft,
     borderWidth: 1,
-    borderColor: 'rgba(37, 99, 235, 0.15)',
+    borderColor: 'rgba(124,58,237,0.16)',
   },
   saveHintText: {
     ...typography.bodySmall,
-    color: colors.textSecondary,
+    color: SCAN.inkSoft,
     flex: 1,
     lineHeight: moderateScale(18),
   },

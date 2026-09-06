@@ -5,8 +5,22 @@ import { useTranslation } from 'react-i18next';
 import theme from '@/styles/theme';
 import type { ScannedMedicine } from '@/types/prescription';
 
-const { colors, spacing, typography, borderRadius, shadows, moderateScale } = theme;
-const ACCENT = colors.primary;
+const { spacing, typography, borderRadius, moderateScale } = theme;
+
+const SCAN = {
+  ink: '#1B1238',
+  inkSoft: '#4A3B6E',
+  muted: '#8B7AA8',
+  surface: '#FFFFFF',
+  violet: '#7C3AED',
+  violetSoft: '#EDE9FE',
+  cyanSoft: '#CFFAFE',
+  mint: '#059669',
+  mintSoft: '#D1FAE5',
+  amber: '#D97706',
+  amberSoft: '#FEF3C7',
+  rose: '#E11D48',
+} as const;
 
 export const getMedicineSearchQuery = (medicine: ScannedMedicine): string =>
   (medicine.correctedName || medicine.brandName || medicine.detectedName || '').trim();
@@ -52,13 +66,13 @@ const ScannedMedicineCard = ({ medicine, index, onSearchPress }: ScannedMedicine
               accessibilityLabel={t('scan.searchMedicineA11y', { name: searchQuery || medicine.correctedName })}
               accessibilityState={{ disabled: !canSearch }}
             >
-              <Ionicons name="search" size={moderateScale(15)} color={ACCENT} />
+              <Ionicons name="search" size={moderateScale(15)} color={SCAN.violet} />
             </Pressable>
           </View>
 
           {medicine.hasSpellingError && medicine.detectedName !== medicine.correctedName ? (
             <View style={styles.correctionRow}>
-              <Ionicons name="sparkles" size={12} color={colors.warning} />
+              <Ionicons name="sparkles" size={12} color={SCAN.amber} />
               <Text style={styles.correctionText}>
                 Detected as "<Text style={styles.correctionStrike}>{medicine.detectedName}</Text>" — auto-corrected
               </Text>
@@ -67,7 +81,7 @@ const ScannedMedicineCard = ({ medicine, index, onSearchPress }: ScannedMedicine
 
           {medicine.genericName ? (
             <View style={styles.genericRow}>
-              <Ionicons name="flask-outline" size={12} color={colors.textMuted} />
+              <Ionicons name="flask-outline" size={12} color={SCAN.muted} />
               <Text style={styles.genericText}>{medicine.genericName}</Text>
             </View>
           ) : null}
@@ -97,14 +111,13 @@ const ScannedMedicineCard = ({ medicine, index, onSearchPress }: ScannedMedicine
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: colors.white,
-    borderRadius: borderRadius.lg,
+    backgroundColor: SCAN.surface,
+    borderRadius: borderRadius.xl,
     padding: spacing.md,
     borderWidth: 1,
-    borderColor: colors.borderLight,
+    borderColor: 'rgba(124,58,237,0.12)',
     borderLeftWidth: 3,
-    borderLeftColor: ACCENT,
-    ...shadows.sm,
+    borderLeftColor: SCAN.violet,
   },
   top: {
     flexDirection: 'row',
@@ -123,18 +136,18 @@ const styles = StyleSheet.create({
   name: {
     ...typography.body,
     fontWeight: '600',
-    color: colors.textPrimary,
+    color: SCAN.ink,
     flex: 1,
   },
   searchBtn: {
     width: moderateScale(34),
     height: moderateScale(34),
-    borderRadius: moderateScale(10),
-    backgroundColor: colors.infoLight,
+    borderRadius: moderateScale(17),
+    backgroundColor: SCAN.violetSoft,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(26,115,232,0.16)',
+    borderColor: 'rgba(124,58,237,0.16)',
     flexShrink: 0,
   },
   searchBtnPressed: {
@@ -148,7 +161,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
-    backgroundColor: '#FFF8E1',
+    backgroundColor: SCAN.amberSoft,
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs,
     borderRadius: borderRadius.md,
@@ -156,13 +169,13 @@ const styles = StyleSheet.create({
   },
   correctionText: {
     fontSize: moderateScale(11),
-    color: '#B45309',
+    color: SCAN.amber,
     fontWeight: '500',
     flex: 1,
   },
   correctionStrike: {
     textDecorationLine: 'line-through',
-    color: '#DC2626',
+    color: SCAN.rose,
   },
   genericRow: {
     flexDirection: 'row',
@@ -171,7 +184,7 @@ const styles = StyleSheet.create({
   },
   genericText: {
     ...typography.caption,
-    color: colors.textSecondary,
+    color: SCAN.inkSoft,
     fontWeight: '500',
     flex: 1,
   },
@@ -182,7 +195,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   brandTag: {
-    backgroundColor: colors.infoLight,
+    backgroundColor: SCAN.violetSoft,
     paddingHorizontal: spacing.sm,
     paddingVertical: 2,
     borderRadius: borderRadius.full,
@@ -190,10 +203,10 @@ const styles = StyleSheet.create({
   brandTagText: {
     fontSize: moderateScale(10),
     fontWeight: '700',
-    color: ACCENT,
+    color: SCAN.violet,
   },
   formTag: {
-    backgroundColor: '#F0FDF4',
+    backgroundColor: SCAN.mintSoft,
     paddingHorizontal: spacing.sm,
     paddingVertical: 2,
     borderRadius: borderRadius.full,
@@ -201,10 +214,10 @@ const styles = StyleSheet.create({
   formTagText: {
     fontSize: moderateScale(10),
     fontWeight: '600',
-    color: colors.success,
+    color: SCAN.mint,
   },
   mfgTag: {
-    backgroundColor: '#F5F3FF',
+    backgroundColor: SCAN.cyanSoft,
     paddingHorizontal: spacing.sm,
     paddingVertical: 2,
     borderRadius: borderRadius.full,
@@ -212,20 +225,20 @@ const styles = StyleSheet.create({
   mfgTagText: {
     fontSize: moderateScale(10),
     fontWeight: '600',
-    color: '#7C3AED',
+    color: '#0E7490',
   },
   number: {
-    width: moderateScale(26),
-    height: moderateScale(26),
-    borderRadius: moderateScale(13),
-    backgroundColor: colors.infoLight,
+    width: moderateScale(28),
+    height: moderateScale(28),
+    borderRadius: moderateScale(14),
+    backgroundColor: SCAN.violet,
     alignItems: 'center',
     justifyContent: 'center',
   },
   numberText: {
     ...typography.caption,
     fontWeight: '800',
-    color: ACCENT,
+    color: SCAN.surface,
   },
 });
 
