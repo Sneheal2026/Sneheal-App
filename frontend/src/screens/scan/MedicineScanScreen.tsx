@@ -303,6 +303,8 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
   }, [bracketPulse]);
 
   const mountedRef = useRef(true);
+  const scanGenerationRef = useRef(0);
+  const scanInFlightRef = useRef(false);
   useEffect(() => {
     mountedRef.current = true;
     return () => {
@@ -317,6 +319,39 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
   const canScan = Boolean(pickedImage) && !isScanning && !isPicking && !isSaving;
   const canSave =
     Boolean(pickedImage) && hasScanned && !isScanning && !isPicking && !isSaving && !isSaved;
+  const showFooter = Boolean(pickedImage) || isScanning;
+
+  const runScan = useCallback(async (imageUri: string) => {
+    if (!imageUri || scanInFlightRef.current || isSaving) return;
+
+    const generation = ++scanGenerationRef.current;
+    scanInFlightRef.current = true;
+    setIsScanning(true);
+    setMedicines([]);
+    setScanError(null);
+    setHasScanned(false);
+    setIsSaved(false);
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+    try {
+      const result = await scanPrescription(imageUri);
+      if (!mountedRef.current || generation !== scanGenerationRef.current) return;
+      setMedicines(result.medicines || []);
+      setImageType(result.imageType || 'prescription');
+      setHasScanned(true);
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (error: any) {
+      if (!mountedRef.current || generation !== scanGenerationRef.current) return;
+      const errorMessage = error?.message || 'Failed to scan image';
+      setScanError(errorMessage);
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    } finally {
+      if (generation === scanGenerationRef.current) {
+        scanInFlightRef.current = false;
+        if (mountedRef.current) setIsScanning(false);
+      }
+    }
+  }, [isSaving]);
 
   const handlePick = useCallback(
     async (source: 'camera' | 'gallery') => {
@@ -328,8 +363,9 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
       setHasScanned(false);
       setIsSaved(false);
 
+      let image: PickedImage | null = null;
       try {
-        const image = await pickImageFromSource(source, t('scan.permissionMessage'));
+        image = await pickImageFromSource(source, t('scan.permissionMessage'));
         if (!mountedRef.current) return;
         if (image) {
           setPickedImage(image);
@@ -338,45 +374,30 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
       } finally {
         if (mountedRef.current) setIsPicking(false);
       }
+
+      if (image && mountedRef.current) {
+        void runScan(image.uri);
+      }
     },
-    [isPicking, isScanning, isSaving, t],
+    [isPicking, isScanning, isSaving, runScan, t],
   );
 
   const handleClearImage = useCallback(() => {
+    scanGenerationRef.current += 1;
+    scanInFlightRef.current = false;
     setPickedImage(null);
     setMedicines([]);
     setScanError(null);
     setImageType('prescription');
     setHasScanned(false);
     setIsSaved(false);
+    setIsScanning(false);
   }, []);
 
-  const handleScan = useCallback(async () => {
-    if (!pickedImage || isScanning || isSaving) return;
-
-    setIsScanning(true);
-    setMedicines([]);
-    setScanError(null);
-    setHasScanned(false);
-    setIsSaved(false);
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-
-    try {
-      const result = await scanPrescription(pickedImage.uri);
-      if (!mountedRef.current) return;
-      setMedicines(result.medicines || []);
-      setImageType(result.imageType || 'prescription');
-      setHasScanned(true);
-      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    } catch (error: any) {
-      if (!mountedRef.current) return;
-      const errorMessage = error?.message || 'Failed to scan image';
-      setScanError(errorMessage);
-      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-    } finally {
-      if (mountedRef.current) setIsScanning(false);
-    }
-  }, [isScanning, isSaving, pickedImage]);
+  const handleScan = useCallback(() => {
+    if (!pickedImage) return;
+    void runScan(pickedImage.uri);
+  }, [pickedImage, runScan]);
 
   const handleSave = useCallback(async () => {
     if (!pickedImage || !canSave) return;
@@ -533,6 +554,7 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
             <View style={styles.previewCard}>
               <Pressable
                 onPress={() => {
+                  if (isScanning || isSaving) return;
                   if (!pickedImage) void handlePick('camera');
                   else handleReplace();
                 }}
@@ -730,119 +752,111 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
         )}
       </ScrollView>
 
-      <View style={[styles.footer, { paddingBottom: insets.bottom + spacing.sm }]}>
-        {canSave ? (
-          <View style={styles.footerHint}>
-            <Ionicons name="cloud-upload-outline" size={14} color={SCAN.violet} />
-            <Text style={[styles.footerHintText, { color: SCAN.violet }]}>
-              {t('scan.readyToSaveFooter')}
-            </Text>
-          </View>
-        ) : canScan && !hasScanned ? (
-          <View style={styles.footerHint}>
-            <Ionicons name="checkmark-circle" size={14} color={SCAN.mint} />
-            <Text style={styles.footerHintText}>{t('scan.photoReady')}</Text>
-          </View>
-        ) : isSaved ? (
-          <View style={styles.footerHint}>
-            <Ionicons name="checkmark-circle" size={14} color={SCAN.mint} />
-            <Text style={styles.footerHintText}>{t('scan.prescriptionSaved')}</Text>
-          </View>
-        ) : null}
-
-        {hasScanned ? (
-          <View style={styles.footerActions}>
-            <Pressable
-              onPress={() => void handleScan()}
-              disabled={!canScan || isSaving}
-              style={({ pressed }) => [
-                styles.secondaryBtn,
-                pressed && canScan && styles.pressed,
-                (!canScan || isSaving) && styles.scanBtnDisabled,
-              ]}
-              accessibilityRole="button"
-              accessibilityLabel={t('scan.scanAgainA11y')}
-            >
-              <Ionicons name="scan" size={18} color={SCAN.violet} />
-              <Text style={styles.secondaryBtnText}>
-                {isScanning ? t('scan.analyzingShort') : t('scan.rescan')}
+      {showFooter ? (
+        <View style={[styles.footer, { paddingBottom: insets.bottom + spacing.sm }]}>
+          {isScanning ? (
+            <View style={styles.footerHint}>
+              <Ionicons name="sparkles" size={14} color={SCAN.violet} />
+              <Text style={[styles.footerHintText, { color: SCAN.violet }]}>
+                {t('scan.analyzing')}
               </Text>
-            </Pressable>
+            </View>
+          ) : canSave ? (
+            <View style={styles.footerHint}>
+              <Ionicons name="cloud-upload-outline" size={14} color={SCAN.violet} />
+              <Text style={[styles.footerHintText, { color: SCAN.violet }]}>
+                {t('scan.readyToSaveFooter')}
+              </Text>
+            </View>
+          ) : isSaved ? (
+            <View style={styles.footerHint}>
+              <Ionicons name="checkmark-circle" size={14} color={SCAN.mint} />
+              <Text style={styles.footerHintText}>{t('scan.prescriptionSaved')}</Text>
+            </View>
+          ) : null}
 
+          {isScanning ? (
             <Pressable
-              onPress={() => void handleSave()}
-              disabled={!canSave && !isSaved}
-              style={({ pressed }) => [
-                styles.scanBtn,
-                styles.saveBtnFlex,
-                (canSave || isSaved) && styles.scanBtnReady,
-                !canSave && !isSaved && styles.scanBtnDisabled,
-                pressed && canSave && styles.pressed,
-              ]}
+              disabled
+              style={[styles.scanBtn, styles.scanBtnDisabled]}
               accessibilityRole="button"
-              accessibilityLabel={t('scan.savePrescriptionA11y')}
+              accessibilityState={{ busy: true, disabled: true }}
+              accessibilityLabel={t('scan.analyzing')}
             >
               <LinearGradient
-                colors={
-                  isSaved
-                    ? [SCAN.mint, SCAN.mintDeep]
-                    : canSave
-                      ? [SCAN.violet, SCAN.cyan]
-                      : ['#D8D0EC', '#B8AEC8']
-                }
+                colors={[SCAN.violet, SCAN.cyan]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={styles.scanBtnInner}
               >
                 <View style={styles.scanBtnIconWrap}>
-                  <Ionicons
-                    name={isSaved ? 'checkmark' : 'cloud-upload-outline'}
-                    size={20}
-                    color={SCAN.white}
-                  />
+                  <Ionicons name="scan" size={20} color={SCAN.white} />
                 </View>
-                <Text style={styles.scanBtnText}>
-                  {isSaving
-                    ? t('scan.saving')
-                    : isSaved
-                      ? t('scan.saved')
-                      : t('scan.savePrescription')}
-                </Text>
+                <Text style={styles.scanBtnText}>{t('scan.analyzingShort')}</Text>
               </LinearGradient>
             </Pressable>
-          </View>
-        ) : (
-          <Pressable
-            onPress={() => void handleScan()}
-            disabled={!canScan}
-            style={({ pressed }) => [
-              styles.scanBtn,
-              canScan && styles.scanBtnReady,
-              !canScan && styles.scanBtnDisabled,
-              pressed && canScan && styles.pressed,
-            ]}
-            accessibilityRole="button"
-            accessibilityLabel={t('scan.scanPhotoA11y')}
-          >
-            <LinearGradient
-              colors={canScan ? [SCAN.violet, SCAN.cyan] : ['#D8D0EC', '#B8AEC8']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.scanBtnInner}
-            >
-              <View style={styles.scanBtnIconWrap}>
-                <Ionicons name="scan" size={20} color={SCAN.white} />
-              </View>
-              <Text style={styles.scanBtnText}>
-                {isScanning ? t('scan.analyzingShort') : t('scan.tapToScan')}
-              </Text>
-              {canScan && !isScanning ? (
-                <Ionicons name="arrow-forward" size={18} color="rgba(255,255,255,0.85)" />
-              ) : null}
-            </LinearGradient>
-          </Pressable>
-        )}
-      </View>
+          ) : (
+            <View style={styles.footerActions}>
+              <Pressable
+                onPress={handleScan}
+                disabled={!canScan || isSaving}
+                style={({ pressed }) => [
+                  styles.secondaryBtn,
+                  pressed && canScan && styles.pressed,
+                  (!canScan || isSaving) && styles.scanBtnDisabled,
+                ]}
+                accessibilityRole="button"
+                accessibilityLabel={t('scan.scanAgainA11y')}
+              >
+                <Ionicons name="scan" size={18} color={SCAN.violet} />
+                <Text style={styles.secondaryBtnText}>{t('scan.rescan')}</Text>
+              </Pressable>
+
+              <Pressable
+                onPress={() => void handleSave()}
+                disabled={!canSave && !isSaved}
+                style={({ pressed }) => [
+                  styles.scanBtn,
+                  styles.saveBtnFlex,
+                  (canSave || isSaved) && styles.scanBtnReady,
+                  !canSave && !isSaved && styles.scanBtnDisabled,
+                  pressed && canSave && styles.pressed,
+                ]}
+                accessibilityRole="button"
+                accessibilityLabel={t('scan.savePrescriptionA11y')}
+              >
+                <LinearGradient
+                  colors={
+                    isSaved
+                      ? [SCAN.mint, SCAN.mintDeep]
+                      : canSave
+                        ? [SCAN.violet, SCAN.cyan]
+                        : ['#D8D0EC', '#B8AEC8']
+                  }
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.scanBtnInner}
+                >
+                  <View style={styles.scanBtnIconWrap}>
+                    <Ionicons
+                      name={isSaved ? 'checkmark' : 'cloud-upload-outline'}
+                      size={20}
+                      color={SCAN.white}
+                    />
+                  </View>
+                  <Text style={styles.scanBtnText}>
+                    {isSaving
+                      ? t('scan.saving')
+                      : isSaved
+                        ? t('scan.saved')
+                        : t('scan.savePrescription')}
+                  </Text>
+                </LinearGradient>
+              </Pressable>
+            </View>
+          )}
+        </View>
+      ) : null}
     </View>
   );
 };
