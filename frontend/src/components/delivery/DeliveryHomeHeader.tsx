@@ -13,8 +13,6 @@ interface DeliveryHomeHeaderProps {
   agentName?: string;
   isOnline: boolean;
   onProfilePress: () => void;
-  onNotificationsPress: () => void;
-  hasNotifications?: boolean;
 }
 
 const DeliveryHomeHeader: React.FC<DeliveryHomeHeaderProps> = ({
@@ -22,8 +20,6 @@ const DeliveryHomeHeader: React.FC<DeliveryHomeHeaderProps> = ({
   agentName,
   isOnline,
   onProfilePress,
-  onNotificationsPress,
-  hasNotifications = true,
 }) => {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
@@ -48,25 +44,14 @@ const DeliveryHomeHeader: React.FC<DeliveryHomeHeaderProps> = ({
           </View>
         </View>
 
-        <View style={styles.headerActions}>
-          <Pressable
-            onPress={onProfilePress}
-            style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}
-            accessibilityRole="button"
-            accessibilityLabel={t('delivery.profileA11y')}
-          >
-            <Ionicons name="person-outline" size={22} color={deliveryTheme.textOnDark} />
-          </Pressable>
-          <Pressable
-            onPress={onNotificationsPress}
-            style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}
-            accessibilityRole="button"
-            accessibilityLabel={t('delivery.notificationsA11y')}
-          >
-            <Ionicons name="notifications-outline" size={22} color={deliveryTheme.textOnDark} />
-            {hasNotifications ? <View style={styles.dot} /> : null}
-          </Pressable>
-        </View>
+        <Pressable
+          onPress={onProfilePress}
+          style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}
+          accessibilityRole="button"
+          accessibilityLabel={t('delivery.profileA11y')}
+        >
+          <Ionicons name="person-outline" size={22} color={deliveryTheme.textOnDark} />
+        </Pressable>
       </View>
 
       <View style={styles.statusPill}>
@@ -119,11 +104,6 @@ const styles = StyleSheet.create({
     color: deliveryTheme.textOnDark,
     fontWeight: '700',
   },
-  headerActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
   iconBtn: {
     width: 44,
     height: 44,
@@ -131,17 +111,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.08)',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  dot: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: theme.colors.error,
-    borderWidth: 1.5,
-    borderColor: deliveryTheme.primary,
   },
   statusPill: {
     flexDirection: 'row',

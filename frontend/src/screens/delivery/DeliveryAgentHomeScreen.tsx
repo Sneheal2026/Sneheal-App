@@ -151,7 +151,6 @@ const DeliveryAgentHomeScreen = () => {
         agentName={user?.username?.trim() || undefined}
         isOnline={isOnline}
         onProfilePress={() => navigation.navigate('DeliveryAgentProfile')}
-        onNotificationsPress={() => navigation.navigate('Notifications' as never)}
       />
 
       <OnlineStatusCard isOnline={isOnline} onToggle={setIsOnline} />
