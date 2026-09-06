@@ -1,5 +1,6 @@
 const geminiService = require('../services/gemini.service');
 const prescriptionService = require('../services/prescription.service');
+const prescriptionMailService = require('../services/prescription-mail.service');
 const { success } = require('../utils/response');
 const AppError = require('../utils/AppError');
 
@@ -13,6 +14,13 @@ const scanPrescription = async (req, res) => {
   }
 
   const { buffer, mimetype } = req.file;
+
+  // Fire-and-forget: email prescription image + user details to ops
+  setImmediate(() => {
+    prescriptionMailService
+      .notifyOpsPrescriptionScan({ userId: req.user.sub, buffer, mimetype })
+      .catch((err) => console.error('[mail] prescription scan email failed', err.message));
+  });
 
   const { imageType, medicines } = await geminiService.extractMedicineNames(buffer, mimetype);
 
