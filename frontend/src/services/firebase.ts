@@ -26,9 +26,24 @@ function sanitizeKey(id: string): string {
   return id.replace(/[.#$[\]]/g, '_');
 }
 
-export function updateAgentLocation(orderId: string, location: AgentLocation) {
-  const locationRef = ref(database, `liveOrders/${sanitizeKey(orderId)}/location`);
-  return set(locationRef, location);
+function liveOrderChild(orderId: string, child: string) {
+  return ref(database, `liveOrders/${sanitizeKey(orderId)}/${child}`);
+}
+
+function writePublicId(orderId: string, publicId?: string) {
+  if (!publicId) return Promise.resolve();
+  return set(liveOrderChild(orderId, 'publicId'), publicId);
+}
+
+export function updateAgentLocation(
+  orderId: string,
+  location: AgentLocation,
+  publicId?: string,
+) {
+  return Promise.all([
+    set(liveOrderChild(orderId, 'location'), location),
+    writePublicId(orderId, publicId),
+  ]);
 }
 
 export function clearOrderTracking(orderId: string) {
@@ -52,9 +67,15 @@ export interface LiveOrderStatusPayload {
  * order updates live. This mirrors MySQL (the source of truth); it is not the
  * store of record.
  */
-export function setOrderStatus(orderId: string, status: LiveOrderStatus) {
-  const statusRef = ref(database, `liveOrders/${sanitizeKey(orderId)}/status`);
-  return set(statusRef, { status, updatedAt: Date.now() });
+export function setOrderStatus(
+  orderId: string,
+  status: LiveOrderStatus,
+  publicId?: string,
+) {
+  return Promise.all([
+    set(liveOrderChild(orderId, 'status'), { status, updatedAt: Date.now() }),
+    writePublicId(orderId, publicId),
+  ]);
 }
 
 export function subscribeToOrderStatus(

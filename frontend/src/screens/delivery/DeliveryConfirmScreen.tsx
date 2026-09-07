@@ -88,7 +88,7 @@ const DeliveryConfirmScreen = () => {
       invalidateOrdersCache();
       // Live-mirror to Firebase so the customer's open tracker flips instantly.
       try {
-        await setOrderStatus(updated.id, 'delivered');
+        await setOrderStatus(updated.id, 'delivered', updated.publicId);
       } catch {
         // Non-fatal: MySQL is already updated; customer will see it on next load.
       }

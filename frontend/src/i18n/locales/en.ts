@@ -248,7 +248,7 @@ const en = {
     title: 'My Orders',
     subtitle: 'Track and manage your orders',
     empty: 'No orders placed yet',
-    emptySubtitle: 'Browse medicines and place your first order — it will show up here.',
+    emptySubtitle: 'Browse medicines and place your order — it will show up here.',
     emptyFilter: 'No orders in this category',
     emptyActive: 'No active orders right now',
     emptyDelivered: 'No delivered orders yet',

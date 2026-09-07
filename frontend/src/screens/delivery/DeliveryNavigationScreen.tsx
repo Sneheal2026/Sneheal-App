@@ -417,17 +417,21 @@ const DeliveryNavigationScreen = () => {
         }
       }
 
-      updateAgentLocation(orderId, {
-        lat: displayPos.latitude,
-        lng: displayPos.longitude,
-        heading: newHeading,
-        updatedAt: Date.now(),
-        phase: phaseRef.current,
-      }).catch((err) => {
+      updateAgentLocation(
+        orderId,
+        {
+          lat: displayPos.latitude,
+          lng: displayPos.longitude,
+          heading: newHeading,
+          updatedAt: Date.now(),
+          phase: phaseRef.current,
+        },
+        publicId,
+      ).catch((err) => {
         if (__DEV__) console.warn('[DeliveryNav] Firebase write failed:', err);
       });
     },
-    [animatedCoord, followCamera, orderId, sheetAnim],
+    [animatedCoord, followCamera, orderId, publicId, sheetAnim],
   );
 
   // Keep a ref so the watcher always calls the latest version
