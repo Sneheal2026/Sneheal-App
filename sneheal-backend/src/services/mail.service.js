@@ -9,6 +9,15 @@ const escapeHtml = (value) =>
 
 const inr = (amount) => `₹${Number(amount || 0).toFixed(2)}`;
 
+const mapsUrlFromCoords = (coords) => {
+  const lat = Number(coords?.latitude);
+  const lng = Number(coords?.longitude);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+    return '';
+  }
+  return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`;
+};
+
 const isConfigured = () =>
   Boolean(
     process.env.BREVO_API_KEY &&
@@ -18,6 +27,7 @@ const isConfigured = () =>
 
 const buildBodies = (order) => {
   const address = order.address || {};
+  const mapsUrl = mapsUrlFromCoords(order.coords);
   const items = Array.isArray(order.items) ? order.items : [];
   const itemLines = items
     .map(
@@ -41,6 +51,7 @@ const buildBodies = (order) => {
     `Mobile: ${address.mobile || '-'}`,
     `Address: ${address.flatNumber || ''}, ${address.addressLine || ''}`,
     address.landmark ? `Landmark: ${address.landmark}` : '',
+    mapsUrl ? `Go to location: ${mapsUrl}` : '',
     '',
     'Items:',
     itemLines || '(none)',
@@ -55,7 +66,8 @@ const buildBodies = (order) => {
     <p><strong>Customer:</strong> ${escapeHtml(address.receiverName)}<br/>
     <strong>Mobile:</strong> ${escapeHtml(address.mobile)}<br/>
     <strong>Address:</strong> ${escapeHtml(address.flatNumber)}, ${escapeHtml(address.addressLine)}
-    ${address.landmark ? `<br/><strong>Landmark:</strong> ${escapeHtml(address.landmark)}` : ''}</p>
+    ${address.landmark ? `<br/><strong>Landmark:</strong> ${escapeHtml(address.landmark)}` : ''}
+    ${mapsUrl ? `<br/><strong>Go to location:</strong> <a href="${escapeHtml(mapsUrl)}">Open in Google Maps</a>` : ''}</p>
     <table border="1" cellpadding="6" cellspacing="0">
       <tr><th>Item</th><th>Qty</th><th>Total</th></tr>
       ${itemRows}
