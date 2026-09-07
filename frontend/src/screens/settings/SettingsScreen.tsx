@@ -66,11 +66,12 @@ const ACCOUNT_ITEMS = [
   { id: 'logout', icon: 'log-out-outline' as const, labelKey: 'settings.logOut', destructive: true },
 ];
 
-const DEMO_ORDER = {
-  orderId: '#SNH-4821',
-  customerAddress: 'Nizamabad Bus Stop, Nizamabad, Telangana',
-  customerCoords: { latitude: 18.6725, longitude: 78.0941 },
-} as const;
+// Temporary: customer / mark-delivered demo entries — restore later.
+// const DEMO_ORDER = {
+//   orderId: '#SNH-4821',
+//   customerAddress: 'Nizamabad Bus Stop, Nizamabad, Telangana',
+//   customerCoords: { latitude: 18.6725, longitude: 78.0941 },
+// } as const;
 
 const SettingsScreen = () => {
   const navigation = useNavigation<NativeStackNavigationProp<AuthStackParamList>>();
@@ -147,21 +148,19 @@ const SettingsScreen = () => {
     setLogoutVisible(false);
   }, [loggingOut]);
 
-  const demoNavigateCustomer = () => {
-    navigation.navigate('CustomerTracking', {
-      orderId: DEMO_ORDER.orderId,
-      customerCoords: DEMO_ORDER.customerCoords,
-      customerAddress: DEMO_ORDER.customerAddress,
-    });
-  };
-
-  // Temporary: delivery-agent "mark delivered" entry lives here for now.
-  // Move it into the delivery-agent app screens later.
-  const openDeliveryConfirm = () => {
-    navigation.navigate('DeliveryConfirm');
-  };
-
-  // Customer-only for now — uncomment when doctor / delivery-agent apps ship
+  // Temporary: customer / mark-delivered demo entries — restore later.
+  // const demoNavigateCustomer = () => {
+  //   navigation.navigate('CustomerTracking', {
+  //     orderId: DEMO_ORDER.orderId,
+  //     customerCoords: DEMO_ORDER.customerCoords,
+  //     customerAddress: DEMO_ORDER.customerAddress,
+  //   });
+  // };
+  //
+  // const openDeliveryConfirm = () => {
+  //   navigation.navigate('DeliveryConfirm');
+  // };
+  //
   // const demoNavigateDelivery = () => {
   //   navigation.navigate('DeliveryNavigation', {
   //     orderId: DEMO_ORDER.orderId,
@@ -317,6 +316,7 @@ const SettingsScreen = () => {
                 />
               ))}
 
+              {/* Temporary: customer / mark-delivered demo entries — restore later.
               <View style={styles.demoActionsBlock}>
                 <View style={styles.demoActions}>
                   <Pressable onPress={demoNavigateCustomer} style={[styles.demoCustomerBtn, { backgroundColor: themeColors.primary }]}>
@@ -336,7 +336,6 @@ const SettingsScreen = () => {
                     </Text>
                   </Pressable>
 
-                  {/* Customer-only for now — delivery-agent demo
                   <Pressable
                     onPress={demoNavigateDelivery}
                     style={[styles.demoDeliveryBtn, { borderColor: themeColors.primary }]}
@@ -346,10 +345,8 @@ const SettingsScreen = () => {
                       {t('settings.demoDeliveryAgent')}
                     </Text>
                   </Pressable>
-                  */}
                 </View>
 
-                {/* Customer-only for now — doctor demo
                 <Pressable
                   onPress={demoNavigateDoctor}
                   style={[styles.demoDoctorBtn, { borderColor: themeColors.primary }]}
@@ -361,8 +358,8 @@ const SettingsScreen = () => {
                     {t('settings.shiftToDoctorBtn')}
                   </Text>
                 </Pressable>
-                */}
               </View>
+              */}
             </View>
           </Animated.View>
         </View>
