@@ -59,14 +59,13 @@ const ROLES: {
     icon: 'bicycle-outline',
     iconFilled: 'bicycle',
   },
-  // Doctor registration is temporarily hidden until those screens are ready.
-  // {
-  //   value: 'doctor',
-  //   labelKey: 'auth.roleDoctor',
-  //   hintKey: 'auth.roleDoctorHint',
-  //   icon: 'medkit-outline',
-  //   iconFilled: 'medkit',
-  // },
+  {
+    value: 'doctor',
+    labelKey: 'auth.roleDoctor',
+    hintKey: 'auth.roleDoctorHint',
+    icon: 'medkit-outline',
+    iconFilled: 'medkit',
+  },
 ];
 
 type DocumentKey = 'aadhar' | 'license';
