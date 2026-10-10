@@ -184,6 +184,8 @@ const mr: TranslationResources = {
     stepCall: 'कॉल करा',
     stepShare: 'यादी सांगा',
     stepDeliver: 'आम्ही पोहोचवू',
+    backToScanResults: 'स्कॅन निकालावर परत जा',
+    backToScanResultsA11y: 'प्रिस्क्रिप्शन स्कॅन निकालावर परत जा',
     compactTitle: 'योग्य औषध सापडले नाही?',
     compactSubtitle: 'फार्मासिस्टला कॉल करा — आम्ही डिलिव्हर करू.',
     compactCta: 'आता कॉल करा',

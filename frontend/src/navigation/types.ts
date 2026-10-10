@@ -11,6 +11,7 @@ export type SearchTabParams = {
   query?: string;
   autofocus?: boolean;
   startVoice?: boolean;
+  fromScan?: boolean;
 };
 
 export type TabParamList = {

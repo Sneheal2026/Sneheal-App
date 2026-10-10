@@ -19,7 +19,9 @@ import {
 } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useScanDraft } from '@/context/ScanDraftContext';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useTranslation } from 'react-i18next';
 import SearchBar from '@/components/home/SearchBar';
@@ -60,8 +62,10 @@ const SearchScreen = () => {
   const startListeningRef = useRef<() => Promise<void>>(async () => {});
   paramsRef.current = route.params;
 
+  const { hasActiveDraft } = useScanDraft();
   const [query, setQuery] = useState('');
   const [history, setHistory] = useState<string[]>([]);
+  const [showBackToScan, setShowBackToScan] = useState(false);
 
   const {
     data: results,
@@ -95,16 +99,22 @@ const SearchScreen = () => {
       const incomingQuery = params?.query?.trim();
       const shouldFocus = Boolean(params?.autofocus);
       const shouldStartVoice = Boolean(params?.startVoice);
+      const fromScan = Boolean(params?.fromScan);
 
       if (incomingQuery) {
         setQuery(incomingQuery);
       }
 
-      if (shouldFocus || shouldStartVoice || incomingQuery) {
+      if (fromScan && hasActiveDraft) {
+        setShowBackToScan(true);
+      }
+
+      if (shouldFocus || shouldStartVoice || incomingQuery || fromScan) {
         navigation.setParams({
           query: undefined,
           autofocus: undefined,
           startVoice: undefined,
+          fromScan: undefined,
         });
       }
 
@@ -129,8 +139,12 @@ const SearchScreen = () => {
         interactionTask.cancel();
         if (voiceTimer) clearTimeout(voiceTimer);
       };
-    }, [navigation]),
+    }, [hasActiveDraft, navigation]),
   );
+
+  const handleBackToScan = useCallback(() => {
+    navigation.navigate('MedicineScan');
+  }, [navigation]);
 
   useEffect(() => {
     const incomingQuery = route.params?.query?.trim();
@@ -285,6 +299,24 @@ const SearchScreen = () => {
         assistFooter: {
           gap: spacing.md,
           paddingTop: spacing.md,
+        },
+        backToScanBtn: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: spacing.sm,
+          marginBottom: spacing.sm,
+          paddingVertical: spacing.sm,
+          paddingHorizontal: spacing.md,
+          borderRadius: borderRadius.lg,
+          backgroundColor: 'rgba(255,255,255,0.18)',
+          borderWidth: 1,
+          borderColor: 'rgba(255,255,255,0.35)',
+        },
+        backToScanText: {
+          ...typography.caption,
+          fontWeight: '700',
+          color: colors.white,
+          flex: 1,
         },
       }),
     [borderRadius, colors, moderateScale, spacing, typography],
@@ -445,6 +477,18 @@ const SearchScreen = () => {
           <View style={styles.heroInner}>
             <Text style={styles.heroTitle}>{t('search.heroTitle')}</Text>
             <Text style={styles.heroSubtitle}>{t('search.heroSubtitle')}</Text>
+
+            {showBackToScan && hasActiveDraft ? (
+              <Pressable
+                onPress={handleBackToScan}
+                style={({ pressed }) => [styles.backToScanBtn, pressed && styles.pressed]}
+                accessibilityRole="button"
+                accessibilityLabel={t('search.backToScanResultsA11y')}
+              >
+                <Ionicons name="arrow-back" size={moderateScale(16)} color={colors.white} />
+                <Text style={styles.backToScanText}>{t('search.backToScanResults')}</Text>
+              </Pressable>
+            ) : null}
 
             <SearchBar
               ref={searchInputRef}

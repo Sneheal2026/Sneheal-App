@@ -1,4 +1,5 @@
 const db = require('../config/db');
+const { buildNameSearch, planMedicineSearch } = require('../utils/medicineSearch');
 
 const parseJsonField = (value, fallback) => {
   if (value == null) return fallback;
@@ -131,29 +132,25 @@ const findByIds = async (ids, connection = db) => {
 
 const search = async (query, { limit = 20, offset = 0 } = {}, connection = db) => {
   const term = String(query || '').trim();
-  if (!term) {
-    return buildPage([], 0, clampInt(limit, 20, 1, 50), clampInt(offset, 0, 0, 1000000));
-  }
-
-  const like = `%${term}%`;
   const safeLimit = clampInt(limit, 20, 1, 50);
   const safeOffset = clampInt(offset, 0, 0, 1000000);
 
-  // Avoid CAST(uses AS CHAR) — too expensive at 5k+ rows.
-  const whereSql = `
-    is_active = 1
-    AND (
-      name LIKE ?
-      OR manufacturer LIKE ?
-      OR brand_name LIKE ?
-      OR generic_name LIKE ?
-    )
-  `;
-  const whereParams = [like, like, like, like];
+  if (!term) {
+    return buildPage([], 0, safeLimit, safeOffset);
+  }
+
+  const plan = planMedicineSearch(term);
+  const nameSearch = buildNameSearch(plan);
+
+  if (!nameSearch) {
+    return buildPage([], 0, safeLimit, safeOffset);
+  }
+
+  const whereSql = `is_active = 1 AND (${nameSearch.whereSql})`;
 
   const [countRows] = await connection.execute(
     `SELECT COUNT(*) AS total FROM products WHERE ${whereSql}`,
-    whereParams,
+    nameSearch.whereParams,
   );
   const total = Number(countRows[0]?.total) || 0;
 
@@ -161,17 +158,9 @@ const search = async (query, { limit = 20, offset = 0 } = {}, connection = db) =
     `SELECT ${PRODUCT_SELECT}
      FROM products
      WHERE ${whereSql}
-     ORDER BY
-       CASE
-         WHEN name LIKE ? THEN 0
-         WHEN brand_name LIKE ? THEN 1
-         WHEN generic_name LIKE ? THEN 2
-         ELSE 3
-       END,
-       rating DESC,
-       name ASC
+     ORDER BY (${nameSearch.scoreSql}) DESC, rating DESC, name ASC
      LIMIT ${safeLimit} OFFSET ${safeOffset}`,
-    [...whereParams, like, like, like],
+    [...nameSearch.whereParams, ...nameSearch.scoreParams],
   );
 
   return buildPage(rows.map(mapProduct), total, safeLimit, safeOffset);

@@ -22,8 +22,25 @@ const SCAN = {
   rose: '#E11D48',
 } as const;
 
-export const getMedicineSearchQuery = (medicine: ScannedMedicine): string =>
-  (medicine.correctedName || medicine.brandName || medicine.detectedName || '').trim();
+const STRENGTH_OR_FORM =
+  /\b(?:\d+(?:\.\d+)?\s*(?:micrograms?|milligrams?|millilit(?:re|er)s?|mcg|mg|gms?|ug|g|ml|iu|%)|tablets?|capsules?|syrups?|injections?|drops|creams?|ointments?|gels?|suspensions?|inhalers?|sachets?)\b/gi;
+
+/** Search box uses the medicine name. Strength and form are not part of the query. */
+export const getMedicineSearchQuery = (medicine: ScannedMedicine): string => {
+  const brand = (medicine.brandName || '').trim();
+  const generic = (medicine.genericName || '').trim();
+  const corrected = (medicine.correctedName || '').trim();
+  const detected = (medicine.detectedName || '').trim();
+  const brandWords = brand.split(/\s+/).filter(Boolean);
+
+  if (brand.length >= 2 && brandWords.length <= 3) {
+    return brand;
+  }
+
+  const source = corrected || generic || detected;
+  const name = source.replace(STRENGTH_OR_FORM, ' ').replace(/\s+/g, ' ').trim();
+  return name || source;
+};
 
 interface ScannedMedicineCardProps {
   medicine: ScannedMedicine;
@@ -42,7 +59,18 @@ const ScannedMedicineCard = ({ medicine, index, onSearchPress }: ScannedMedicine
   }, [canSearch, onSearchPress, searchQuery]);
 
   return (
-    <View style={styles.card}>
+    <Pressable
+      onPress={handleSearch}
+      disabled={!canSearch}
+      style={({ pressed }) => [
+        styles.card,
+        canSearch && pressed && styles.cardPressed,
+        !canSearch && styles.cardDisabled,
+      ]}
+      accessibilityRole="button"
+      accessibilityLabel={t('scan.searchMedicineA11y', { name: searchQuery || medicine.correctedName })}
+      accessibilityState={{ disabled: !canSearch }}
+    >
       <View style={styles.top}>
         <View style={styles.number}>
           <Text style={styles.numberText}>{index + 1}</Text>
@@ -53,21 +81,12 @@ const ScannedMedicineCard = ({ medicine, index, onSearchPress }: ScannedMedicine
             <Text style={styles.name} numberOfLines={2}>
               {medicine.correctedName}
             </Text>
-            <Pressable
-              onPress={handleSearch}
-              disabled={!canSearch}
-              hitSlop={6}
-              style={({ pressed }) => [
-                styles.searchBtn,
-                pressed && canSearch && styles.searchBtnPressed,
-                !canSearch && styles.searchBtnDisabled,
-              ]}
-              accessibilityRole="button"
-              accessibilityLabel={t('scan.searchMedicineA11y', { name: searchQuery || medicine.correctedName })}
-              accessibilityState={{ disabled: !canSearch }}
+            <View
+              style={[styles.searchBtn, !canSearch && styles.searchBtnDisabled]}
+              importantForAccessibility="no-hide-descendants"
             >
               <Ionicons name="search" size={moderateScale(15)} color={SCAN.violet} />
-            </Pressable>
+            </View>
           </View>
 
           {medicine.hasSpellingError && medicine.detectedName !== medicine.correctedName ? (
@@ -105,7 +124,7 @@ const ScannedMedicineCard = ({ medicine, index, onSearchPress }: ScannedMedicine
           </View>
         </View>
       </View>
-    </View>
+    </Pressable>
   );
 };
 
@@ -118,6 +137,12 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(124,58,237,0.12)',
     borderLeftWidth: 3,
     borderLeftColor: SCAN.violet,
+  },
+  cardPressed: {
+    opacity: 0.92,
+  },
+  cardDisabled: {
+    opacity: 0.85,
   },
   top: {
     flexDirection: 'row',

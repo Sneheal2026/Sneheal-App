@@ -35,6 +35,7 @@ import type { AuthScreenProps } from '@/navigation/types';
 import { scanPrescription, savePrescription } from '@/services/prescriptionService';
 import type { ScannedMedicine, ImageType } from '@/types/prescription';
 import { ScannedMedicineCard } from '@/components/scan';
+import { useScanDraft } from '@/context/ScanDraftContext';
 import { useTranslation } from 'react-i18next';
 
 const { spacing, typography, borderRadius, moderateScale } = theme;
@@ -274,6 +275,7 @@ const ScanBeamOverlay = ({ active, insetX = SCAN_ZONE_INSET }: ScanBeamOverlayPr
 
 const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => {
   const { t } = useTranslation();
+  const { draft, setDraft, clearDraft } = useScanDraft();
   const insets = useSafeAreaInsets();
   const { width: screenWidth } = useWindowDimensions();
   const previewHeight = Math.min(screenWidth - spacing.xl * 2, moderateScale(300));
@@ -305,6 +307,37 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
   const mountedRef = useRef(true);
   const scanGenerationRef = useRef(0);
   const scanInFlightRef = useRef(false);
+  const hydratedFromDraftRef = useRef(false);
+
+  useEffect(() => {
+    if (hydratedFromDraftRef.current || !draft?.pickedImage) return;
+    hydratedFromDraftRef.current = true;
+    setPickedImage(draft.pickedImage);
+    setMedicines(draft.medicines);
+    setHasScanned(draft.hasScanned);
+    setImageType(draft.imageType);
+    setScanError(draft.scanError);
+    setIsSaved(draft.isSaved);
+  }, [draft]);
+
+  useEffect(() => {
+    if (!hydratedFromDraftRef.current && !draft?.pickedImage && !pickedImage) {
+      hydratedFromDraftRef.current = true;
+    }
+    if (!hydratedFromDraftRef.current) return;
+    if (!pickedImage) {
+      return;
+    }
+    setDraft({
+      pickedImage,
+      medicines,
+      hasScanned,
+      imageType,
+      scanError,
+      isSaved,
+    });
+  }, [pickedImage, medicines, hasScanned, imageType, scanError, isSaved, setDraft, draft?.pickedImage]);
+
   useEffect(() => {
     mountedRef.current = true;
     return () => {
@@ -385,6 +418,7 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
   const handleClearImage = useCallback(() => {
     scanGenerationRef.current += 1;
     scanInFlightRef.current = false;
+    clearDraft();
     setPickedImage(null);
     setMedicines([]);
     setScanError(null);
@@ -392,7 +426,7 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
     setHasScanned(false);
     setIsSaved(false);
     setIsScanning(false);
-  }, []);
+  }, [clearDraft]);
 
   const handleScan = useCallback(() => {
     if (!pickedImage) return;
@@ -440,12 +474,31 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
       const term = query.trim();
       if (!term) return;
       void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      if (pickedImage) {
+        setDraft({
+          pickedImage,
+          medicines,
+          hasScanned,
+          imageType,
+          scanError,
+          isSaved,
+        });
+      }
       navigation.navigate('Main', {
         screen: 'Search',
-        params: { query: term, autofocus: true },
+        params: { query: term, autofocus: true, fromScan: true },
       });
     },
-    [navigation],
+    [
+      navigation,
+      pickedImage,
+      medicines,
+      hasScanned,
+      imageType,
+      scanError,
+      isSaved,
+      setDraft,
+    ],
   );
 
   const sourcesDisabled = isPicking || isScanning;

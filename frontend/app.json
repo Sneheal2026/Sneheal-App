@@ -22,6 +22,7 @@
     },
     "android": {
       "package": "com.sneheal.app",
+      "versionCode": 5,
       "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/icon.png",
