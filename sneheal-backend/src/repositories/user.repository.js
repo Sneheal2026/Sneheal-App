@@ -47,6 +47,47 @@ const completeProfile = async (userId, { username, language, role }, connection 
   return findById(userId, connection);
 };
 
+const maskPhone = (phone) => {
+  const digits = String(phone || '').replace(/\D/g, '');
+  if (digits.length < 4) return '••••';
+  return `•••• ${digits.slice(-4)}`;
+};
+
+const mapCustomerSummary = (row) => {
+  if (!row) return null;
+  return {
+    id: String(row.id),
+    username: row.username || 'Customer',
+    phoneMasked: maskPhone(row.phone),
+  };
+};
+
+const searchCustomers = async ({ id, usernameLike }, connection = db) => {
+  if (id) {
+    const [rows] = await connection.execute(
+      `SELECT id, phone, username
+       FROM users
+       WHERE role = 'customer' AND profile_completed = 1
+         AND (id = ? OR username = ?)
+       ORDER BY username ASC
+       LIMIT 15`,
+      [id, id],
+    );
+    return rows.map(mapCustomerSummary);
+  }
+
+  const [rows] = await connection.execute(
+    `SELECT id, phone, username
+     FROM users
+     WHERE role = 'customer' AND profile_completed = 1
+       AND username LIKE ? ESCAPE '\\\\'
+     ORDER BY username ASC
+     LIMIT 15`,
+    [usernameLike],
+  );
+  return rows.map(mapCustomerSummary);
+};
+
 const findByIdForUpdate = async (id, connection) => {
   const [rows] = await connection.execute(
     'SELECT id, phone, username, language, role, profile_completed, created_at FROM users WHERE id = ? FOR UPDATE',
@@ -58,6 +99,7 @@ const findByIdForUpdate = async (id, connection) => {
 module.exports = {
   findByPhone,
   findById,
+  searchCustomers,
   findByIdForUpdate,
   createByPhone,
   completeProfile,

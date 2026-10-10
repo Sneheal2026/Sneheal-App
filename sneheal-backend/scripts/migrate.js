@@ -21,6 +21,7 @@ const SQL_FILES = [
   '010_cod_payments.sql',
   '011_delete_unpaid_razorpay_drafts.sql',
   '012_order_fulfillment_status.sql',
+  '013_health_reports.sql',
 ];
 
 const splitStatements = (sql) =>

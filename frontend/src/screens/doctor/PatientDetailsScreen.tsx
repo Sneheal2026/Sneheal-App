@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   View,
   Text,
@@ -7,178 +7,151 @@ import {
   Platform,
   Pressable,
   ScrollView,
-  ActivityIndicator,
-  Linking,
   Alert,
+  ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import type { RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import ConditionDonut from '@/components/doctor/ConditionDonut';
+import ChartSection from '@/components/doctor/ChartSection';
+import ImagePreviewModal from '@/components/doctor/ImagePreviewModal';
+import MedicineOrderCard from '@/components/doctor/MedicineOrderCard';
+import PrescriptionGallery from '@/components/doctor/PrescriptionGallery';
+import ReportFileRow from '@/components/doctor/ReportFileRow';
 import { doctorTheme } from '@/components/doctor/doctorTheme';
-import {
-  getDoctorPatientById,
-  type ConditionSeverity,
-  type PatientMedicineOrder,
-  type PatientTestReport,
-} from '@/constants/doctorPatients';
 import type { AuthStackParamList } from '@/navigation/types';
-import { openPatientReportPdf } from '@/utils/openPatientReportPdf';
+import type { DoctorCustomer, DoctorOrder, DoctorPrescription } from '@/types/doctor';
+import type { HealthReport } from '@/types/report';
+import { ApiError } from '@/services/apiClient';
+import {
+  fetchDoctorCustomer,
+  fetchDoctorOrders,
+  fetchDoctorPrescriptions,
+  fetchDoctorReports,
+} from '@/services/doctorService';
+import { openRemoteFile } from '@/utils/openRemoteFile';
 import theme from '@/styles/theme';
 import { useTranslation } from 'react-i18next';
 
 const { spacing, typography, borderRadius } = theme;
 
-const severityColor = (severity: ConditionSeverity) => {
-  if (severity === 'severe') return doctorTheme.severitySevere;
-  if (severity === 'moderate') return doctorTheme.severityModerate;
-  return doctorTheme.severityMild;
+const formatDate = (iso: string) => {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toLocaleDateString('en-IN', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
 };
 
-const severityLabel = (severity: ConditionSeverity) =>
-  severity.charAt(0).toUpperCase() + severity.slice(1);
+const initialsFor = (name: string) =>
+  name
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part.charAt(0).toUpperCase())
+    .join('') || 'C';
 
-const MedicineOrderRow = ({ order }: { order: PatientMedicineOrder }) => {
-  const isDelivered = order.status === 'Delivered';
-  return (
-    <View style={styles.orderRow}>
-      <View style={styles.orderTop}>
-        <View style={styles.orderIds}>
-          <Text style={styles.orderId}>{order.orderId}</Text>
-          <Text style={styles.orderDate}>{order.dateLabel}</Text>
-        </View>
-        <View
-          style={[
-            styles.statusPill,
-            {
-              backgroundColor: isDelivered
-                ? 'rgba(5,150,105,0.1)'
-                : 'rgba(148,163,184,0.15)',
-            },
-          ]}
-        >
-          <Text
-            style={[
-              styles.statusText,
-              {
-                color: isDelivered
-                  ? doctorTheme.orderDelivered
-                  : doctorTheme.orderCancelled,
-              },
-            ]}
-          >
-            {order.status}
-          </Text>
-        </View>
-      </View>
-      <View style={styles.medList}>
-        {order.medicines.map((med) => (
-          <Text key={`${order.id}-${med.name}`} style={styles.medLine}>
-            {med.name}
-            <Text style={styles.medQty}> × {med.quantity}</Text>
-          </Text>
-        ))}
-      </View>
-    </View>
-  );
-};
-
-const TestReportRow = ({
-  report,
-  opening,
-  onOpen,
-  viewLabel,
-}: {
-  report: PatientTestReport;
-  opening: boolean;
-  onOpen: () => void;
-  viewLabel: string;
-}) => (
-  <Pressable
-    onPress={onOpen}
-    disabled={opening}
-    style={({ pressed }) => [styles.reportRow, pressed && styles.pressed]}
-    accessibilityRole="button"
-    accessibilityLabel={`Open ${report.title}`}
-  >
-    <View style={styles.reportIcon}>
-      <Ionicons name="document-text" size={22} color={doctorTheme.reportAccent} />
-    </View>
-    <View style={styles.reportInfo}>
-      <Text style={styles.reportTitle}>{report.title}</Text>
-      <Text style={styles.reportMeta}>
-        {report.dateLabel} · PDF
-      </Text>
-    </View>
-    {opening ? (
-      <ActivityIndicator size="small" color={doctorTheme.reportAccent} />
-    ) : (
-      <View style={styles.viewBtn}>
-        <Ionicons name="eye-outline" size={16} color={doctorTheme.reportAccent} />
-        <Text style={styles.viewBtnText}>{viewLabel}</Text>
-      </View>
-    )}
-  </Pressable>
-);
+const isImageMime = (mimeType: string) => mimeType.startsWith('image/');
 
 const PatientDetailsScreen = () => {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const route = useRoute<RouteProp<AuthStackParamList, 'PatientDetails'>>();
-  const patient = getDoctorPatientById(route.params.patientId);
-  const [openingReportId, setOpeningReportId] = useState<string | null>(null);
+  const userId = route.params.userId;
+
+  const [customer, setCustomer] = useState<DoctorCustomer | null>(null);
+  const [orders, setOrders] = useState<DoctorOrder[]>([]);
+  const [prescriptions, setPrescriptions] = useState<DoctorPrescription[]>([]);
+  const [reports, setReports] = useState<HealthReport[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [missing, setMissing] = useState(false);
+  const [error, setError] = useState('');
+  const [previewUri, setPreviewUri] = useState<string | null>(null);
+  const [openingId, setOpeningId] = useState<string | null>(null);
 
   const topInset = Math.max(
     insets.top,
     Platform.OS === 'android' ? StatusBar.currentHeight ?? 0 : 0,
   );
 
-  const sexLabel = useMemo(() => {
-    if (!patient) return '';
-    if (patient.sex === 'F') return 'Female';
-    if (patient.sex === 'M') return 'Male';
-    return 'Other';
-  }, [patient]);
+  const load = useCallback(
+    async (mode: 'initial' | 'refresh') => {
+      if (mode === 'refresh') setRefreshing(true);
+      else setLoading(true);
+      setError('');
+      setMissing(false);
 
-  const handleOpenReport = useCallback(async (report: PatientTestReport) => {
-    if (openingReportId) return;
-    setOpeningReportId(report.id);
-    try {
-      await openPatientReportPdf(report.asset, report.fileName);
-    } finally {
-      setOpeningReportId(null);
+      try {
+        const [profile, orderRows, rxRows, reportRows] = await Promise.all([
+          fetchDoctorCustomer(userId),
+          fetchDoctorOrders(userId),
+          fetchDoctorPrescriptions(userId),
+          fetchDoctorReports(userId),
+        ]);
+        setCustomer(profile);
+        setOrders(orderRows ?? []);
+        setPrescriptions(rxRows ?? []);
+        setReports(reportRows ?? []);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : t('doctor.couldNotLoadChart');
+        if (mode === 'refresh') {
+          Alert.alert(t('doctor.couldNotLoadChart'), message);
+          return;
+        }
+        setCustomer(null);
+        if (err instanceof ApiError && err.status === 404) {
+          setMissing(true);
+        } else {
+          setError(message);
+        }
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
+      }
+    },
+    [t, userId],
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      void load('initial');
+    }, [load]),
+  );
+
+  const statusLabel = (status: string) => {
+    if (status === 'delivered') return t('doctor.statusDelivered');
+    if (status === 'out_for_delivery') return t('doctor.statusOutForDelivery');
+    if (status === 'confirmed') return t('doctor.statusConfirmed');
+    if (status === 'cancelled') return t('doctor.statusCancelled');
+    return status.replace(/_/g, ' ');
+  };
+
+  const statusTone = (status: string): 'done' | 'active' | 'muted' => {
+    if (status === 'delivered') return 'done';
+    if (status === 'cancelled') return 'muted';
+    return 'active';
+  };
+
+  const openReport = async (report: HealthReport) => {
+    if (isImageMime(report.mimeType)) {
+      setPreviewUri(report.fileUrl);
+      return;
     }
-  }, [openingReportId]);
 
-  if (!patient) {
-    return (
-      <View style={[styles.root, { paddingTop: topInset + spacing.lg }]}>
-        <StatusBar
-          barStyle="light-content"
-          backgroundColor={doctorTheme.primary}
-          translucent={Platform.OS === 'android'}
-        />
-        <View style={styles.header}>
-          <Pressable
-            onPress={() => navigation.goBack()}
-            style={({ pressed }) => [styles.backBtn, pressed && styles.pressed]}
-            accessibilityRole="button"
-            accessibilityLabel="Go back"
-          >
-            <Ionicons name="arrow-back" size={22} color={doctorTheme.textOnDark} />
-          </Pressable>
-          <Text style={styles.headerTitle}>{t('doctor.patientProfile')}</Text>
-        </View>
-        <View style={styles.missing}>
-          <Text style={styles.missingText}>{t('doctor.patientNotFound')}</Text>
-        </View>
-      </View>
-    );
-  }
-
-  const activeConditions = patient.conditions.filter((c) => c.name !== 'Other');
+    setOpeningId(report.id);
+    try {
+      const extension = report.mimeType === 'application/pdf' ? 'pdf' : 'file';
+      await openRemoteFile(report.fileUrl, `${report.title}.${extension}`, report.mimeType);
+    } finally {
+      setOpeningId(null);
+    }
+  };
 
   return (
     <View style={styles.root}>
@@ -191,239 +164,127 @@ const PatientDetailsScreen = () => {
       <View style={[styles.header, { paddingTop: topInset + spacing.sm }]}>
         <Pressable
           onPress={() => navigation.goBack()}
-          style={({ pressed }) => [styles.backBtn, pressed && styles.pressed]}
+          style={({ pressed }) => [styles.back, pressed && styles.pressed]}
           accessibilityRole="button"
-          accessibilityLabel="Go back"
+          accessibilityLabel={t('common.back')}
         >
-          <Ionicons name="arrow-back" size={22} color={doctorTheme.textOnDark} />
+          <Ionicons name="chevron-back" size={22} color={doctorTheme.textOnDark} />
         </Pressable>
         <Text style={styles.headerTitle}>{t('doctor.patientProfile')}</Text>
-        <View style={styles.headerSpacer} />
+        <View style={styles.back} />
       </View>
 
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={{
-          paddingBottom: insets.bottom + spacing.xxl,
-        }}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Identity */}
-        <View style={styles.identityBlock}>
-          <View style={styles.identityAvatar}>
-            <Text style={styles.identityInitials}>{patient.initials}</Text>
-          </View>
-          <Text style={styles.patientName}>{patient.name}</Text>
-          <Text style={styles.patientMeta}>
-            {patient.age} {t('doctor.yrs')} · {sexLabel} · {t('doctor.blood')} {patient.bloodGroup}
-          </Text>
-          <Text style={styles.lastVisit}>{t('doctor.lastVisit')} · {patient.lastVisitLabel}</Text>
+      {loading && !customer ? (
+        <View style={styles.centered}>
+          <ActivityIndicator size="large" color={doctorTheme.primary} />
         </View>
-
-        {/* Vitals */}
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>{t('doctor.vitals')}</Text>
-          <View style={styles.vitalsStrip}>
-            {patient.vitals.map((vital, index) => (
-              <React.Fragment key={vital.id}>
-                {index > 0 ? <View style={styles.vitalDivider} /> : null}
-                <View style={styles.vitalCell}>
-                  <Text style={styles.vitalValue}>{vital.value}</Text>
-                  <Text style={styles.vitalLabel}>{vital.label}</Text>
-                  {vital.unit ? (
-                    <Text style={styles.vitalUnit}>{vital.unit}</Text>
-                  ) : null}
-                </View>
-              </React.Fragment>
-            ))}
-          </View>
+      ) : missing ? (
+        <View style={styles.centered}>
+          <Text style={styles.emptyTitle}>{t('doctor.patientNotFound')}</Text>
         </View>
-
-        {/* Condition mix */}
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>{t('doctor.conditionMix')}</Text>
-          <Text style={styles.sectionHint}>{t('doctor.conditionMixHint')}</Text>
-          <View style={styles.chartBlock}>
-            <ConditionDonut conditions={patient.conditions} />
-          </View>
-
-          <View style={styles.conditionList}>
-            {activeConditions.map((condition) => (
-              <View key={condition.id} style={styles.conditionRow}>
-                <View style={styles.conditionLeft}>
-                  <View
-                    style={[styles.conditionDot, { backgroundColor: condition.color }]}
-                  />
-                  <Text style={styles.conditionName}>{condition.name}</Text>
-                </View>
-                <View
-                  style={[
-                    styles.severityPill,
-                    { backgroundColor: `${severityColor(condition.severity)}18` },
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.severityText,
-                      { color: severityColor(condition.severity) },
-                    ]}
-                  >
-                    {severityLabel(condition.severity)}
-                  </Text>
-                </View>
-              </View>
-            ))}
-          </View>
+      ) : error && !customer ? (
+        <View style={styles.centered}>
+          <Text style={styles.emptyTitle}>{error}</Text>
+          <Pressable onPress={() => void load('initial')} style={styles.retry}>
+            <Text style={styles.retryText}>{t('doctor.tryAgain')}</Text>
+          </Pressable>
         </View>
-
-        {/* Lab / test reports */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionLabel, styles.reportSectionLabel]}>{t('doctor.labReports')}</Text>
-          <Text style={[styles.sectionHint, styles.reportSectionHint]}>
-            {t('doctor.labReportsHint')}
-          </Text>
-          <View style={styles.reportsList}>
-            {patient.testReports.map((report) => (
-              <TestReportRow
-                key={report.id}
-                report={report}
-                opening={openingReportId === report.id}
-                onOpen={() => {
-                  void handleOpenReport(report);
-                }}
-                viewLabel={t('common.view')}
-              />
-            ))}
-          </View>
-        </View>
-
-        {/* Past medicine orders */}
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>{t('doctor.pastOrders')}</Text>
-          <View style={styles.ordersList}>
-            {patient.medicineOrders.map((order) => (
-              <MedicineOrderRow key={order.id} order={order} />
-            ))}
-          </View>
-        </View>
-
-        {/* Contact — last */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionLabel, styles.contactSectionLabel]}>{t('doctor.contact')}</Text>
-          <View style={styles.contactCard}>
-            <Pressable
-              onPress={() => {
-                void (async () => {
-                  const url = `tel:${patient.phone.replace(/\s/g, '')}`;
-                  try {
-                    const ok = await Linking.canOpenURL(url);
-                    if (!ok) {
-                      Alert.alert(t('doctor.unableToCall'), t('doctor.callingUnsupported'));
-                      return;
-                    }
-                    await Linking.openURL(url);
-                  } catch {
-                    Alert.alert(t('doctor.unableToCall'), t('doctor.tryAgain'));
-                  }
-                })();
-              }}
-              style={({ pressed }) => [styles.contactRow, pressed && styles.pressed]}
-              accessibilityRole="button"
-              accessibilityLabel={`Call ${patient.phone}`}
-            >
-              <View style={styles.contactIcon}>
-                <Ionicons name="call-outline" size={18} color={doctorTheme.contactAccent} />
+      ) : (
+        <ScrollView
+          contentContainerStyle={{
+            paddingHorizontal: spacing.xl,
+            paddingTop: spacing.lg,
+            paddingBottom: insets.bottom + spacing.xxl,
+          }}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={() => void load('refresh')}
+              tintColor={doctorTheme.primary}
+              colors={[doctorTheme.primary]}
+            />
+          }
+          showsVerticalScrollIndicator={false}
+        >
+          {customer ? (
+            <View style={styles.identityCard}>
+              <View style={styles.patientAvatar}>
+                <Text style={styles.patientInitials}>{initialsFor(customer.username)}</Text>
               </View>
-              <View style={styles.contactText}>
-                <Text style={styles.contactLabel}>{t('doctor.phone')}</Text>
-                <Text style={styles.contactValue}>{patient.phone}</Text>
-              </View>
-            </Pressable>
-
-            <View style={styles.contactDivider} />
-
-            <Pressable
-              onPress={() => {
-                void (async () => {
-                  const url = `mailto:${patient.email}`;
-                  try {
-                    const ok = await Linking.canOpenURL(url);
-                    if (!ok) {
-                      Alert.alert(t('doctor.unableToEmail'), t('doctor.emailUnsupported'));
-                      return;
-                    }
-                    await Linking.openURL(url);
-                  } catch {
-                    Alert.alert(t('doctor.unableToEmail'), t('doctor.tryAgain'));
-                  }
-                })();
-              }}
-              style={({ pressed }) => [styles.contactRow, pressed && styles.pressed]}
-              accessibilityRole="button"
-              accessibilityLabel={`Email ${patient.email}`}
-            >
-              <View style={styles.contactIcon}>
-                <Ionicons name="mail-outline" size={18} color={doctorTheme.contactAccent} />
-              </View>
-              <View style={styles.contactText}>
-                <Text style={styles.contactLabel}>{t('doctor.email')}</Text>
-                <Text style={styles.contactValue}>{patient.email}</Text>
-              </View>
-            </Pressable>
-
-            <View style={styles.contactDivider} />
-
-            <View style={styles.contactRow}>
-              <View style={styles.contactIcon}>
-                <Ionicons name="location-outline" size={18} color={doctorTheme.contactAccent} />
-              </View>
-              <View style={styles.contactText}>
-                <Text style={styles.contactLabel}>{t('doctor.address')}</Text>
-                <Text style={styles.contactValue}>{patient.address}</Text>
+              <View style={styles.identityText}>
+                <Text style={styles.patientName}>{customer.username}</Text>
+                <Text style={styles.patientMeta}>
+                  {t('doctor.customerId')} {customer.id}
+                </Text>
+                <Text style={styles.patientMeta}>{customer.phoneMasked}</Text>
               </View>
             </View>
+          ) : null}
 
-            {patient.emergencyContact ? (
-              <>
-                <View style={styles.contactDivider} />
-                <Pressable
-                  onPress={() => {
-                    void (async () => {
-                      const phone = patient.emergencyContact!.phone.replace(/\s/g, '');
-                      const url = `tel:${phone}`;
-                      try {
-                        const ok = await Linking.canOpenURL(url);
-                        if (!ok) {
-                          Alert.alert(t('doctor.unableToCall'), t('doctor.callingUnsupported'));
-                          return;
-                        }
-                        await Linking.openURL(url);
-                      } catch {
-                        Alert.alert(t('doctor.unableToCall'), t('doctor.tryAgain'));
-                      }
-                    })();
-                  }}
-                  style={({ pressed }) => [styles.contactRow, pressed && styles.pressed]}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Call emergency contact ${patient.emergencyContact!.name}`}
-                >
-                  <View style={styles.contactIcon}>
-                    <Ionicons name="people-outline" size={18} color={doctorTheme.contactAccent} />
-                  </View>
-                  <View style={styles.contactText}>
-                    <Text style={styles.contactLabel}>
-                      Emergency · {patient.emergencyContact.relation}
-                    </Text>
-                    <Text style={styles.contactValue}>
-                      {patient.emergencyContact.name} · {patient.emergencyContact.phone}
-                    </Text>
-                  </View>
-                </Pressable>
-              </>
-            ) : null}
-          </View>
-        </View>
-      </ScrollView>
+          <ChartSection
+            title={t('doctor.pastOrders')}
+            hint={t('doctor.ordersHint')}
+            empty={orders.length === 0}
+            emptyLabel={t('doctor.noOrders')}
+          >
+            {orders.map((order) => (
+              <MedicineOrderCard
+                key={order.id}
+                publicId={order.publicId}
+                dateLabel={formatDate(order.createdAt)}
+                statusLabel={statusLabel(order.status)}
+                tone={statusTone(order.status)}
+                lines={order.items}
+              />
+            ))}
+          </ChartSection>
+
+          <ChartSection
+            title={t('doctor.prescriptions')}
+            hint={t('doctor.prescriptionsHint')}
+            empty={prescriptions.length === 0}
+            emptyLabel={t('doctor.noPrescriptions')}
+          >
+            <PrescriptionGallery
+              items={prescriptions}
+              onOpen={(id) => {
+                const match = prescriptions.find((item) => item.id === id);
+                if (match) setPreviewUri(match.imageUrl);
+              }}
+            />
+          </ChartSection>
+
+          <ChartSection
+            title={t('doctor.labReports')}
+            hint={t('doctor.reportsHint')}
+            empty={reports.length === 0}
+            emptyLabel={t('doctor.noReports')}
+          >
+            {reports.map((report) => (
+              <ReportFileRow
+                key={report.id}
+                title={report.title}
+                meta={`${formatDate(report.createdAt)} · ${
+                  isImageMime(report.mimeType) ? 'Image' : 'PDF'
+                }`}
+                isImage={isImageMime(report.mimeType)}
+                opening={openingId === report.id}
+                actionLabel={t('doctor.view')}
+                onPress={() => {
+                  void openReport(report);
+                }}
+              />
+            ))}
+          </ChartSection>
+        </ScrollView>
+      )}
+
+      <ImagePreviewModal
+        visible={previewUri != null}
+        uri={previewUri}
+        onClose={() => setPreviewUri(null)}
+        closeLabel={t('common.close')}
+      />
     </View>
   );
 };
@@ -436,331 +297,84 @@ const styles = StyleSheet.create({
   header: {
     backgroundColor: doctorTheme.primary,
     paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.md,
+    paddingBottom: spacing.lg,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
   },
-  backBtn: {
+  back: {
     width: 40,
     height: 40,
-    borderRadius: borderRadius.lg,
-    backgroundColor: 'rgba(255,255,255,0.1)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   headerTitle: {
-    flex: 1,
-    textAlign: 'center',
-    fontSize: 17,
-    fontWeight: '700',
+    ...typography.button,
     color: doctorTheme.textOnDark,
-  },
-  headerSpacer: {
-    width: 40,
-  },
-  scroll: {
-    flex: 1,
-  },
-  identityBlock: {
-    alignItems: 'center',
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.xl,
-    paddingBottom: spacing.lg,
-  },
-  identityAvatar: {
-    width: 64,
-    height: 64,
-    borderRadius: borderRadius.xl,
-    backgroundColor: doctorTheme.accentMuted,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.md,
-  },
-  identityInitials: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: doctorTheme.primary,
-  },
-  patientName: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: doctorTheme.textPrimary,
-    letterSpacing: -0.3,
-    marginBottom: spacing.xxs,
-  },
-  patientMeta: {
-    ...typography.bodySmall,
-    color: doctorTheme.textSecondary,
-    marginBottom: spacing.xs,
-  },
-  lastVisit: {
-    ...typography.caption,
-    color: doctorTheme.primarySoft,
-    fontWeight: '600',
-  },
-  contactSectionLabel: {
-    color: doctorTheme.contactMuted,
-  },
-  contactCard: {
-    backgroundColor: doctorTheme.contactBg,
-    borderRadius: borderRadius.lg,
-    borderWidth: 1.5,
-    borderColor: doctorTheme.contactBorder,
-    overflow: 'hidden',
-  },
-  contactRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    gap: spacing.md,
-  },
-  contactIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: borderRadius.md,
-    backgroundColor: doctorTheme.contactIconBg,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 1,
-  },
-  contactText: {
-    flex: 1,
-  },
-  contactLabel: {
-    ...typography.caption,
-    color: doctorTheme.contactAccentSoft,
-    marginBottom: 2,
-  },
-  contactValue: {
-    ...typography.bodySmall,
-    color: doctorTheme.contactMuted,
-    fontWeight: '600',
-    lineHeight: 20,
-  },
-  contactDivider: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: doctorTheme.contactBorder,
-    marginLeft: spacing.md + 36 + spacing.md,
-  },
-  section: {
-    paddingHorizontal: spacing.xl,
-    marginBottom: spacing.xl,
-  },
-  sectionLabel: {
-    ...typography.caption,
-    fontWeight: '700',
-    color: doctorTheme.textSecondary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.6,
-    marginBottom: spacing.sm,
-  },
-  sectionHint: {
-    ...typography.caption,
-    color: doctorTheme.textSecondary,
-    marginBottom: spacing.md,
-    marginTop: -spacing.xs,
-  },
-  vitalsStrip: {
-    flexDirection: 'row',
-    backgroundColor: doctorTheme.surface,
-    borderRadius: borderRadius.lg,
-    borderWidth: 1,
-    borderColor: doctorTheme.border,
-    paddingVertical: spacing.md,
-  },
-  vitalCell: {
-    flex: 1,
-    alignItems: 'center',
-    paddingHorizontal: spacing.xs,
-  },
-  vitalDivider: {
-    width: StyleSheet.hairlineWidth,
-    backgroundColor: doctorTheme.border,
-    alignSelf: 'stretch',
-  },
-  vitalValue: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: doctorTheme.textPrimary,
-    marginBottom: 2,
-  },
-  vitalLabel: {
-    ...typography.caption,
-    color: doctorTheme.textSecondary,
-    textAlign: 'center',
-  },
-  vitalUnit: {
-    fontSize: 10,
-    color: doctorTheme.textSecondary,
-    marginTop: 1,
-  },
-  chartBlock: {
-    backgroundColor: doctorTheme.surface,
-    borderRadius: borderRadius.lg,
-    borderWidth: 1,
-    borderColor: doctorTheme.border,
-    padding: spacing.lg,
-    marginBottom: spacing.md,
-  },
-  conditionList: {
-    gap: spacing.sm,
-  },
-  conditionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: doctorTheme.surface,
-    borderRadius: borderRadius.md,
-    borderWidth: 1,
-    borderColor: doctorTheme.border,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm + 2,
-  },
-  conditionLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    flex: 1,
-  },
-  conditionDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  conditionName: {
-    ...typography.bodySmall,
-    fontWeight: '600',
-    color: doctorTheme.textPrimary,
-  },
-  severityPill: {
-    borderRadius: borderRadius.full,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 3,
-  },
-  severityText: {
-    fontSize: 11,
     fontWeight: '700',
   },
-  ordersList: {
-    gap: spacing.sm,
-  },
-  reportsList: {
-    gap: spacing.sm,
-  },
-  reportSectionLabel: {
-    color: doctorTheme.reportMuted,
-  },
-  reportSectionHint: {
-    color: doctorTheme.reportAccentSoft,
-  },
-  reportRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: doctorTheme.reportBg,
-    borderRadius: borderRadius.lg,
-    borderWidth: 1.5,
-    borderColor: doctorTheme.reportBorder,
-    padding: spacing.md,
-    gap: spacing.md,
-  },
-  reportIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: borderRadius.md,
-    backgroundColor: doctorTheme.reportIconBg,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  reportInfo: {
-    flex: 1,
-  },
-  reportTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: doctorTheme.reportMuted,
-    marginBottom: 2,
-  },
-  reportMeta: {
-    ...typography.caption,
-    color: doctorTheme.reportAccentSoft,
-  },
-  viewBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-    borderRadius: borderRadius.full,
-    backgroundColor: doctorTheme.reportIconBg,
-    borderWidth: 1,
-    borderColor: doctorTheme.reportBorder,
-  },
-  viewBtnText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: doctorTheme.reportAccent,
-  },
-  orderRow: {
-    backgroundColor: doctorTheme.surface,
-    borderRadius: borderRadius.lg,
-    borderWidth: 1,
-    borderColor: doctorTheme.border,
-    padding: spacing.md,
-  },
-  orderTop: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    marginBottom: spacing.sm,
-  },
-  orderIds: {
-    flex: 1,
-    marginRight: spacing.sm,
-  },
-  orderId: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: doctorTheme.textPrimary,
-    marginBottom: 2,
-  },
-  orderDate: {
-    ...typography.caption,
-    color: doctorTheme.textSecondary,
-  },
-  statusPill: {
-    borderRadius: borderRadius.full,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 3,
-  },
-  statusText: {
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  medList: {
-    gap: 4,
-  },
-  medLine: {
-    ...typography.bodySmall,
-    color: doctorTheme.textPrimary,
-    fontWeight: '500',
-  },
-  medQty: {
-    color: doctorTheme.textSecondary,
-    fontWeight: '400',
-  },
-  missing: {
+  centered: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     padding: spacing.xl,
   },
-  missingText: {
+  emptyTitle: {
     ...typography.body,
+    color: doctorTheme.textPrimary,
+    textAlign: 'center',
+  },
+  retry: {
+    marginTop: spacing.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.lg,
+    backgroundColor: doctorTheme.primary,
+  },
+  retryText: {
+    ...typography.button,
+    fontSize: 14,
+    color: doctorTheme.textOnDark,
+  },
+  identityCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    backgroundColor: doctorTheme.surface,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    borderColor: doctorTheme.border,
+    padding: spacing.md,
+    marginBottom: spacing.xl,
+  },
+  patientAvatar: {
+    width: 56,
+    height: 56,
+    borderRadius: borderRadius.lg,
+    backgroundColor: doctorTheme.accentMuted,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  patientInitials: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: doctorTheme.primary,
+  },
+  identityText: {
+    flex: 1,
+  },
+  patientName: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: doctorTheme.textPrimary,
+  },
+  patientMeta: {
+    ...typography.caption,
     color: doctorTheme.textSecondary,
+    marginTop: 2,
   },
   pressed: {
-    opacity: 0.85,
+    opacity: 0.8,
   },
 });
 

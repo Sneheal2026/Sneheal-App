@@ -13,6 +13,8 @@ const addressRoutes = require('./routes/address.routes');
 const productRoutes = require('./routes/product.routes');
 const categoryRoutes = require('./routes/category.routes');
 const orderRoutes = require('./routes/order.routes');
+const healthReportRoutes = require('./routes/healthReport.routes');
+const doctorRoutes = require('./routes/doctor.routes');
 const errorHandler = require('./middleware/errorHandler');
 const { success } = require('./utils/response');
 
@@ -50,6 +52,8 @@ app.use('/api/addresses', addressRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/orders', orderRoutes);
+app.use('/api/reports', healthReportRoutes);
+app.use('/api/doctor', doctorRoutes);
 
 app.use((_req, res) => {
   return res.status(404).json({ success: false, message: 'Route not found' });

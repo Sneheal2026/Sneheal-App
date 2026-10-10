@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -15,19 +15,33 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/context/AuthContext';
 import DevResetStorageButton from '@/components/common/DevResetStorageButton';
 import { doctorTheme } from '@/components/doctor/doctorTheme';
-import { DOCTOR_PATIENTS } from '@/constants/doctorPatients';
+import PatientSearchBar from '@/components/doctor/PatientSearchBar';
 import type { AuthStackParamList } from '@/navigation/types';
+import type { DoctorCustomer } from '@/types/doctor';
+import { ApiError } from '@/services/apiClient';
+import { searchCustomers } from '@/services/doctorService';
 import theme from '@/styles/theme';
 import { useTranslation } from 'react-i18next';
 
 const { spacing, typography, borderRadius } = theme;
+
+const initialsFor = (name: string) =>
+  name
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part.charAt(0).toUpperCase())
+    .join('') || 'C';
 
 const DoctorHomeScreen = () => {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NativeStackNavigationProp<AuthStackParamList>>();
   const { user } = useAuth();
-  const patient = DOCTOR_PATIENTS[0];
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState<DoctorCustomer[]>([]);
+  const [message, setMessage] = useState('');
+  const [searching, setSearching] = useState(false);
 
   const topInset = Math.max(
     insets.top,
@@ -43,8 +57,37 @@ const DoctorHomeScreen = () => {
 
   const displayName = user?.username ? `Dr. ${user.username}` : 'Doctor';
 
-  const shiftToCustomer = () => {
-    navigation.navigate('Main');
+  const openCustomer = (customerId: string) => {
+    navigation.navigate('PatientDetails', { userId: customerId });
+  };
+
+  const onSearch = async () => {
+    const trimmed = query.trim();
+    if (!trimmed) {
+      setResults([]);
+      setMessage(t('doctor.lookupNeedMore'));
+      return;
+    }
+
+    setSearching(true);
+    setMessage('');
+
+    try {
+      const customers = await searchCustomers(trimmed);
+      setResults(customers);
+      if (customers.length === 1) {
+        openCustomer(customers[0].id);
+        return;
+      }
+      if (customers.length === 0) {
+        setMessage(t('doctor.lookupEmpty'));
+      }
+    } catch (error) {
+      setResults([]);
+      setMessage(error instanceof ApiError ? error.message : t('doctor.lookupFailed'));
+    } finally {
+      setSearching(false);
+    }
   };
 
   return (
@@ -73,6 +116,7 @@ const DoctorHomeScreen = () => {
 
       <ScrollView
         style={styles.scroll}
+        keyboardShouldPersistTaps="handled"
         contentContainerStyle={{
           paddingHorizontal: spacing.xl,
           paddingTop: spacing.xl,
@@ -80,28 +124,53 @@ const DoctorHomeScreen = () => {
         }}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.sectionLabel}>{t('doctor.yourPatient')}</Text>
+        <Text style={styles.sectionLabel}>{t('doctor.lookupTitle')}</Text>
+        <Text style={styles.lookupHint}>{t('doctor.lookupHint')}</Text>
+
+        <PatientSearchBar
+          value={query}
+          placeholder={t('doctor.lookupPlaceholder')}
+          actionLabel={t('doctor.lookupAction')}
+          loading={searching}
+          onChange={(value) => {
+            setQuery(value);
+            setMessage('');
+            setResults([]);
+          }}
+          onSubmit={() => {
+            void onSearch();
+          }}
+        />
+
+        {message ? <Text style={styles.message}>{message}</Text> : null}
+
+        {results.length > 1 ? (
+          <View style={styles.results}>
+            {results.map((customer) => (
+              <Pressable
+                key={customer.id}
+                onPress={() => openCustomer(customer.id)}
+                style={({ pressed }) => [styles.patientRow, pressed && styles.pressed]}
+                accessibilityRole="button"
+                accessibilityLabel={`Open profile for ${customer.username}`}
+              >
+                <View style={styles.patientAvatar}>
+                  <Text style={styles.patientInitials}>{initialsFor(customer.username)}</Text>
+                </View>
+                <View style={styles.patientInfo}>
+                  <Text style={styles.patientName}>{customer.username}</Text>
+                  <Text style={styles.patientMeta}>
+                    {t('doctor.customerId')} {customer.id} · {customer.phoneMasked}
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color={doctorTheme.textSecondary} />
+              </Pressable>
+            ))}
+          </View>
+        ) : null}
 
         <Pressable
-          onPress={() => navigation.navigate('PatientDetails', { patientId: patient.id })}
-          style={({ pressed }) => [styles.patientRow, pressed && styles.pressed]}
-          accessibilityRole="button"
-          accessibilityLabel={`Open profile for ${patient.name}`}
-        >
-          <View style={styles.patientAvatar}>
-            <Text style={styles.patientInitials}>{patient.initials}</Text>
-          </View>
-          <View style={styles.patientInfo}>
-            <Text style={styles.patientName}>{patient.name}</Text>
-            <Text style={styles.patientMeta}>
-              {patient.age} · {patient.sex} · Last visit {patient.lastVisitLabel}
-            </Text>
-          </View>
-          <Ionicons name="chevron-forward" size={20} color={doctorTheme.textSecondary} />
-        </Pressable>
-
-        <Pressable
-          onPress={shiftToCustomer}
+          onPress={() => navigation.navigate('Main')}
           style={({ pressed }) => [styles.shiftToCustomerBtn, pressed && styles.pressed]}
           accessibilityRole="button"
           accessibilityLabel={t('doctor.shiftToCustomerA11y')}
@@ -161,6 +230,28 @@ const styles = StyleSheet.create({
   scroll: {
     flex: 1,
   },
+  sectionLabel: {
+    ...typography.caption,
+    fontWeight: '700',
+    color: doctorTheme.textSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+    marginBottom: spacing.xs,
+  },
+  lookupHint: {
+    ...typography.bodySmall,
+    color: doctorTheme.textSecondary,
+    marginBottom: spacing.md,
+  },
+  message: {
+    ...typography.bodySmall,
+    color: doctorTheme.textPrimary,
+    marginTop: spacing.md,
+  },
+  results: {
+    marginTop: spacing.lg,
+    gap: spacing.sm,
+  },
   shiftToCustomerBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -178,14 +269,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     color: doctorTheme.primary,
-  },
-  sectionLabel: {
-    ...typography.caption,
-    fontWeight: '700',
-    color: doctorTheme.textSecondary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.6,
-    marginBottom: spacing.md,
   },
   patientRow: {
     flexDirection: 'row',

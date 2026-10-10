@@ -54,6 +54,7 @@ const YOUR_INFO_ITEMS = [
 
 const HEALTH_ITEMS = [
   { id: 'upload-rx', icon: 'cloud-upload-outline' as const, labelKey: 'settings.uploadPrescription' },
+  { id: 'lab-reports', icon: 'document-attach-outline' as const, labelKey: 'settings.labReports' },
   { id: 'emergency', icon: 'medkit-outline' as const, labelKey: 'settings.emergencyContacts' },
 ];
 
@@ -107,6 +108,8 @@ const SettingsScreen = () => {
       navigation.navigate('EmergencyContacts');
     } else if (id === 'prescriptions' || id === 'upload-rx') {
       navigation.navigate('Prescriptions');
+    } else if (id === 'lab-reports') {
+      navigation.navigate('LabReports');
     } else if (id === 'help') {
       navigation.navigate('HelpAndSupport' as never);
     } else if (id === 'share') {

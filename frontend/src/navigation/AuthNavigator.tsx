@@ -33,6 +33,7 @@ import MedicineRemindersScreen from '@/screens/reminders/MedicineRemindersScreen
 import FamilyMembersScreen from '@/screens/family/FamilyMembersScreen';
 import EmergencyContactsScreen from '@/screens/emergency/EmergencyContactsScreen';
 import PrescriptionsScreen from '@/screens/prescriptions/PrescriptionsScreen';
+import LabReportsScreen from '@/screens/reports/LabReportsScreen';
 import type { AuthStackParamList } from './types';
 import theme from '@/styles/theme';
 
@@ -71,6 +72,7 @@ const AuthNavigator = () => {
       <Stack.Screen name="FamilyMembers" component={FamilyMembersScreen} />
       <Stack.Screen name="EmergencyContacts" component={EmergencyContactsScreen} />
       <Stack.Screen name="Prescriptions" component={PrescriptionsScreen} />
+      <Stack.Screen name="LabReports" component={LabReportsScreen} />
       <Stack.Screen name="CustomerTracking" component={CustomerTrackingScreen} />
       <Stack.Screen name="DeliveryAgentMain" component={DeliveryAgentHomeScreen} />
       <Stack.Screen name="DeliveryAgentProfile" component={DeliveryAgentProfileScreen} />

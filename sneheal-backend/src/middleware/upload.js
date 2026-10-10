@@ -52,8 +52,37 @@ const uploadPrescriptionImage = (req, res, next) => {
   });
 };
 
+const reportFileFilter = (req, file, cb) => {
+  const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
+
+  if (allowedTypes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new AppError(400, 'Only PDF, JPEG, and PNG files are allowed'), false);
+  }
+};
+
+const reportUpload = multer({
+  storage,
+  fileFilter: reportFileFilter,
+  limits: {
+    fileSize: 10 * 1024 * 1024,
+  },
+});
+
+const uploadHealthReport = (req, res, next) => {
+  reportUpload.single('file')(req, res, (err) => {
+    if (err) {
+      return handleUploadError(err, req, res, next);
+    }
+
+    return next();
+  });
+};
+
 module.exports = {
   upload,
   uploadPrescriptionImage,
+  uploadHealthReport,
   handleUploadError,
 };

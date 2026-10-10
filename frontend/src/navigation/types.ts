@@ -51,6 +51,7 @@ export type AuthStackParamList = {
   FamilyMembers: undefined;
   EmergencyContacts: undefined;
   Prescriptions: undefined;
+  LabReports: undefined;
   DeliveryAgentMain: undefined;
   DeliveryAgentProfile: undefined;
   DeliveryConfirm: undefined;
@@ -67,7 +68,7 @@ export type AuthStackParamList = {
     customerAddress: string;
   };
   DoctorMain: undefined;
-  PatientDetails: { patientId: string };
+  PatientDetails: { userId: string };
   OrderPlaced: { orderId: string; publicId: string; grandTotal: number };
   PaymentMethod: undefined;
   OrderDetail: { orderId: string };
