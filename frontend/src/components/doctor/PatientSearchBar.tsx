@@ -1,10 +1,21 @@
 import React from 'react';
-import { View, Text, TextInput, Pressable, ActivityIndicator, StyleSheet } from 'react-native';
+import {
+  View,
+  Text,
+  TextInput,
+  Pressable,
+  ActivityIndicator,
+  StyleSheet,
+  Platform,
+} from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { doctorTheme } from '@/components/doctor/doctorTheme';
 import theme from '@/styles/theme';
 
-const { spacing, typography, borderRadius } = theme;
+const { spacing, typography, borderRadius, shadows } = theme;
+
+const INPUT_FONT_SIZE = 16;
 
 type PatientSearchBarProps = {
   value: string;
@@ -22,77 +33,115 @@ const PatientSearchBar = ({
   loading,
   onChange,
   onSubmit,
-}: PatientSearchBarProps) => (
-  <View style={styles.wrap}>
-    <View style={styles.field}>
-      <Ionicons name="search" size={18} color={doctorTheme.textSecondary} />
-      <TextInput
-        value={value}
-        onChangeText={onChange}
-        placeholder={placeholder}
-        placeholderTextColor={doctorTheme.textSecondary}
-        autoCapitalize="none"
-        autoCorrect={false}
-        returnKeyType="search"
-        onSubmitEditing={onSubmit}
-        style={styles.input}
-        accessibilityLabel={placeholder}
-      />
+}: PatientSearchBarProps) => {
+  const { t } = useTranslation();
+
+  return (
+    <View style={styles.wrap}>
+      <View style={styles.bar}>
+        <Ionicons name="search-outline" size={20} color={doctorTheme.primary} />
+        <TextInput
+          value={value}
+          onChangeText={onChange}
+          placeholder={placeholder}
+          placeholderTextColor="#7A9E99"
+          autoCapitalize="words"
+          autoCorrect={false}
+          returnKeyType="search"
+          onSubmitEditing={onSubmit}
+          style={styles.input}
+          accessibilityLabel={placeholder}
+          {...(Platform.OS === 'android' ? { includeFontPadding: false } : {})}
+        />
+        {value.length > 0 ? (
+          <Pressable
+            onPress={() => onChange('')}
+            hitSlop={8}
+            style={styles.clearBtn}
+            accessibilityRole="button"
+            accessibilityLabel={t('doctor.lookupClearA11y')}
+          >
+            <Ionicons name="close" size={18} color={doctorTheme.textSecondary} />
+          </Pressable>
+        ) : null}
+      </View>
+      <Pressable
+        onPress={onSubmit}
+        disabled={loading}
+        style={({ pressed }) => [
+          styles.action,
+          pressed && styles.pressed,
+          loading && styles.disabled,
+        ]}
+        accessibilityRole="button"
+        accessibilityLabel={actionLabel}
+      >
+        {loading ? (
+          <ActivityIndicator size="small" color={doctorTheme.textOnDark} />
+        ) : (
+          <>
+            <Ionicons name="arrow-forward" size={18} color={doctorTheme.textOnDark} />
+            <Text style={styles.actionText}>{actionLabel}</Text>
+          </>
+        )}
+      </Pressable>
     </View>
-    <Pressable
-      onPress={onSubmit}
-      disabled={loading}
-      style={({ pressed }) => [styles.button, pressed && styles.pressed, loading && styles.disabled]}
-      accessibilityRole="button"
-      accessibilityLabel={actionLabel}
-    >
-      {loading ? (
-        <ActivityIndicator size="small" color={doctorTheme.textOnDark} />
-      ) : (
-        <Text style={styles.buttonText}>{actionLabel}</Text>
-      )}
-    </Pressable>
-  </View>
-);
+  );
+};
 
 const styles = StyleSheet.create({
   wrap: {
-    gap: spacing.md,
+    gap: spacing.sm,
   },
-  field: {
+  bar: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
-    backgroundColor: doctorTheme.surface,
+    minHeight: 56,
+    backgroundColor: doctorTheme.background,
     borderRadius: borderRadius.lg,
     borderWidth: 1,
     borderColor: doctorTheme.border,
     paddingHorizontal: spacing.md,
-    minHeight: 52,
+    ...shadows.sm,
   },
   input: {
     flex: 1,
-    ...typography.body,
+    fontSize: INPUT_FONT_SIZE,
+    fontWeight: '400',
     color: doctorTheme.textPrimary,
-    paddingVertical: spacing.md,
+    paddingVertical: Platform.OS === 'android' ? 12 : 16,
+    paddingHorizontal: spacing.sm,
+    minWidth: 0,
+    margin: 0,
+    ...(Platform.OS === 'android'
+      ? { lineHeight: 22, textAlignVertical: 'center' as const }
+      : {}),
   },
-  button: {
+  clearBtn: {
+    paddingLeft: spacing.xs,
+    justifyContent: 'center',
+  },
+  action: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
     minHeight: 48,
     borderRadius: borderRadius.lg,
     backgroundColor: doctorTheme.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
+    ...shadows.sm,
   },
-  buttonText: {
+  actionText: {
     ...typography.button,
-    color: doctorTheme.textOnDark,
+    fontSize: 15,
     fontWeight: '700',
+    color: doctorTheme.textOnDark,
   },
   pressed: {
     opacity: 0.88,
   },
   disabled: {
-    opacity: 0.7,
+    opacity: 0.75,
   },
 });
 

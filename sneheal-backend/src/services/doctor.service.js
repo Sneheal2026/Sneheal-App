@@ -25,6 +25,7 @@ const getCustomer = async (userId) => {
   return {
     id: String(user.id),
     username: user.username || 'Customer',
+    phone: user.phone || '',
     phoneMasked: maskPhone(user.phone),
   };
 };
@@ -87,8 +88,11 @@ const listCustomerReports = async (userId) => {
   return healthReportRepo.findByUserId(userId);
 };
 
+const listEngagedPatients = async () => userRepo.listEngagedPatients();
+
 module.exports = {
   searchCustomers,
+  listEngagedPatients,
   getCustomer,
   listCustomerOrders,
   listCustomerPrescriptions,

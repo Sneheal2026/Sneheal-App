@@ -6,6 +6,11 @@ const searchCustomers = async (req, res) => {
   return success(res, 'Customers fetched successfully', customers);
 };
 
+const listPatients = async (req, res) => {
+  const patients = await doctorService.listEngagedPatients();
+  return success(res, 'Patients fetched successfully', patients);
+};
+
 const getCustomer = async (req, res) => {
   const customer = await doctorService.getCustomer(req.params.userId);
   return success(res, 'Customer fetched successfully', customer);
@@ -28,6 +33,7 @@ const listReports = async (req, res) => {
 
 module.exports = {
   searchCustomers,
+  listPatients,
   getCustomer,
   listOrders,
   listPrescriptions,

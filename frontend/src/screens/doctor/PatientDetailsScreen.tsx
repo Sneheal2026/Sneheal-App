@@ -10,6 +10,7 @@ import {
   Alert,
   ActivityIndicator,
   RefreshControl,
+  Linking,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
@@ -34,6 +35,7 @@ import {
 import { openRemoteFile } from '@/utils/openRemoteFile';
 import theme from '@/styles/theme';
 import { useTranslation } from 'react-i18next';
+import { formatDoctorPatientPhone } from '@/utils/doctorPatientPhone';
 
 const { spacing, typography, borderRadius } = theme;
 
@@ -214,9 +216,25 @@ const PatientDetailsScreen = () => {
               <View style={styles.identityText}>
                 <Text style={styles.patientName}>{customer.username}</Text>
                 <Text style={styles.patientMeta}>
-                  {t('doctor.customerId')} {customer.id}
+                  {t('doctor.patientId')} {customer.id}
                 </Text>
-                <Text style={styles.patientMeta}>{customer.phoneMasked}</Text>
+                <Pressable
+                  onPress={() => {
+                    const tel = customer.phone?.trim();
+                    if (!tel) return;
+                    void Linking.openURL(`tel:${tel}`).catch(() => {
+                      Alert.alert(t('doctor.unableToCall'), t('doctor.callingUnsupported'));
+                    });
+                  }}
+                  disabled={!customer.phone?.trim()}
+                  style={({ pressed }) => pressed && styles.pressed}
+                  accessibilityRole="link"
+                  accessibilityLabel={`${t('doctor.phone')}: ${formatDoctorPatientPhone(customer)}`}
+                >
+                  <Text style={[styles.patientMeta, customer.phone ? styles.patientPhoneLink : null]}>
+                    {t('doctor.phone')}: {formatDoctorPatientPhone(customer)}
+                  </Text>
+                </Pressable>
               </View>
             </View>
           ) : null}
@@ -372,6 +390,10 @@ const styles = StyleSheet.create({
     ...typography.caption,
     color: doctorTheme.textSecondary,
     marginTop: 2,
+  },
+  patientPhoneLink: {
+    color: doctorTheme.primary,
+    fontWeight: '600',
   },
   pressed: {
     opacity: 0.8,

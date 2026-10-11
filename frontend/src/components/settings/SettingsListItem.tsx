@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, View, Text, StyleSheet } from 'react-native';
+import { Pressable, View, Text, StyleSheet, Image, ImageSourcePropType } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import theme from '@/styles/theme';
 
@@ -12,6 +12,7 @@ interface SettingsListItemProps {
   showDivider?: boolean;
   destructive?: boolean;
   trailing?: React.ReactNode;
+  imageIcon?: ImageSourcePropType;
 }
 
 const SettingsListItem: React.FC<SettingsListItemProps> = ({
@@ -21,6 +22,7 @@ const SettingsListItem: React.FC<SettingsListItemProps> = ({
   showDivider = true,
   destructive = false,
   trailing,
+  imageIcon,
 }) => (
   <>
     <Pressable
@@ -30,11 +32,15 @@ const SettingsListItem: React.FC<SettingsListItemProps> = ({
       accessibilityLabel={label}
     >
       <View style={[styles.iconWrap, destructive && styles.iconWrapDestructive]}>
-        <Ionicons
-          name={icon}
-          size={18}
-          color={destructive ? colors.error : colors.textPrimary}
-        />
+        {imageIcon ? (
+          <Image source={imageIcon} style={styles.imageIcon} resizeMode="contain" />
+        ) : (
+          <Ionicons
+            name={icon}
+            size={18}
+            color={destructive ? colors.error : colors.textPrimary}
+          />
+        )}
       </View>
       <Text
         style={[styles.label, destructive && styles.labelDestructive]}
@@ -70,6 +76,11 @@ const styles = StyleSheet.create({
   },
   iconWrapDestructive: {
     backgroundColor: colors.errorLight,
+  },
+  imageIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: borderRadius.sm,
   },
   label: {
     ...typography.bodySmall,

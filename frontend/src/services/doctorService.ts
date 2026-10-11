@@ -1,9 +1,18 @@
-import type { DoctorCustomer, DoctorOrder, DoctorPrescription } from '@/types/doctor';
+import type {
+  DoctorCustomer,
+  DoctorEngagedPatient,
+  DoctorOrder,
+  DoctorPrescription,
+} from '@/types/doctor';
 import type { HealthReport } from '@/types/report';
 import { authenticatedApiRequest } from './authTokenManager';
 
 const customerPath = (userId: string) =>
   `/api/doctor/customers/${encodeURIComponent(userId)}`;
+
+export function fetchEngagedPatients(): Promise<DoctorEngagedPatient[]> {
+  return authenticatedApiRequest<DoctorEngagedPatient[]>('/api/doctor/patients');
+}
 
 export function searchCustomers(query: string): Promise<DoctorCustomer[]> {
   const q = encodeURIComponent(query.trim());

@@ -7,6 +7,7 @@ const router = express.Router();
 
 router.use(authenticateToken, requireRole('doctor'));
 
+router.get('/patients', asyncHandler(doctorController.listPatients));
 router.get('/customers', asyncHandler(doctorController.searchCustomers));
 router.get('/customers/:userId', asyncHandler(doctorController.getCustomer));
 router.get('/customers/:userId/orders', asyncHandler(doctorController.listOrders));

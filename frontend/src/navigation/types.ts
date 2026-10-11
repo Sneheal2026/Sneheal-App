@@ -68,6 +68,8 @@ export type AuthStackParamList = {
     customerAddress: string;
   };
   DoctorMain: undefined;
+  DoctorAccount: undefined;
+  DoctorPatients: undefined;
   PatientDetails: { userId: string };
   OrderPlaced: { orderId: string; publicId: string; grandTotal: number };
   PaymentMethod: undefined;

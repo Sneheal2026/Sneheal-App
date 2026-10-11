@@ -15,11 +15,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import {
-  APP_QR_IMAGE_URI,
+  APP_PLAY_STORE_URL,
   APP_SHARE_URL,
   WHATSAPP_SHARE_URL,
   WHATSAPP_WEB_SHARE_URL,
 } from '@/constants/appInfo';
+
+const SHARE_APP_HERO_IMAGE = require('../../../assets/images/shareApp.png');
 import { useTheme } from '@/hooks/useTheme';
 import { useTranslation } from 'react-i18next';
 
@@ -168,37 +170,18 @@ const ShareAppScreen = () => {
           alignItems: 'center',
           gap: spacing.lg,
         },
-        qrImageWrap: {
-          width: 210,
-          height: 210,
+        heroImageWrap: {
+          width: '100%',
+          maxWidth: 320,
+          aspectRatio: 1,
           position: 'relative',
           overflow: 'hidden',
           borderRadius: borderRadius.lg,
           backgroundColor: colors.white,
         },
-        qrImage: {
+        heroImage: {
           width: '100%',
           height: '100%',
-        },
-        qrLogoOverlay: {
-          ...StyleSheet.absoluteFillObject,
-          alignItems: 'center',
-          justifyContent: 'center',
-        },
-        qrLogoBadge: {
-          width: 48,
-          height: 48,
-          borderRadius: 14,
-          backgroundColor: colors.white,
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: 5,
-          ...shadows.md,
-        },
-        qrLogo: {
-          width: 36,
-          height: 36,
-          borderRadius: 9,
         },
         scanBadge: {
           flexDirection: 'row',
@@ -282,9 +265,17 @@ const ShareAppScreen = () => {
     [borderRadius, colors, moderateScale, shadows, spacing, typography],
   );
 
-  const handleQrPress = useCallback(() => {
-    void openWhatsAppShare();
-  }, [openWhatsAppShare]);
+  const openPlayStore = useCallback(async () => {
+    try {
+      await Linking.openURL(APP_PLAY_STORE_URL);
+    } catch {
+      Alert.alert(t('share.playStoreFailTitle'), t('share.playStoreFailBody'));
+    }
+  }, [t]);
+
+  const handleHeroPress = useCallback(() => {
+    void openPlayStore();
+  }, [openPlayStore]);
 
   return (
     <View style={styles.root}>
@@ -340,45 +331,41 @@ const ShareAppScreen = () => {
             style={styles.qrGradientRing}
           >
             <Pressable
-              onPress={handleQrPress}
+              onPress={handleHeroPress}
               style={({ pressed }) => [styles.qrCard, pressed && styles.qrCardPressed]}
               accessibilityRole="button"
-              accessibilityLabel={t('share.qrShareA11y')}
-              accessibilityHint={t('share.qrShareHint')}
+              accessibilityLabel={t('share.playStoreOpenA11y')}
+              accessibilityHint={t('share.playStoreOpenHint')}
             >
               <View style={styles.qrInner}>
-                <View style={styles.qrImageWrap}>
+                <View style={styles.heroImageWrap}>
                   <Image
-                    source={{ uri: APP_QR_IMAGE_URI }}
-                    style={styles.qrImage}
-                    resizeMode="cover"
-                    accessibilityLabel={t('share.qrCodeA11y')}
+                    source={SHARE_APP_HERO_IMAGE}
+                    style={styles.heroImage}
+                    resizeMode="contain"
+                    accessibilityLabel={t('share.heroImageA11y')}
                   />
-                  <View style={styles.qrLogoOverlay} pointerEvents="none">
-                    <View style={styles.qrLogoBadge}>
-                      <Image
-                        source={require('../../../assets/images/icon.png')}
-                        style={styles.qrLogo}
-                        resizeMode="contain"
-                      />
-                    </View>
-                  </View>
                 </View>
 
                 <View style={styles.scanBadge}>
                   <View style={styles.scanDot} />
-                  <Text style={styles.scanBadgeText}>{t('share.tapToShare')}</Text>
+                  <Text style={styles.scanBadgeText}>{t('share.tapPlayStore')}</Text>
                 </View>
               </View>
             </Pressable>
           </LinearGradient>
 
-          <View style={styles.urlPill}>
-            <Ionicons name="link-outline" size={14} color={colors.primary} />
-            <Text style={styles.urlText} numberOfLines={1}>
+          <Pressable
+            onPress={() => void openPlayStore()}
+            style={({ pressed }) => [styles.urlPill, pressed && styles.pressed]}
+            accessibilityRole="link"
+            accessibilityLabel={t('share.playStoreOpenA11y')}
+          >
+            <Ionicons name="logo-google-playstore" size={14} color={colors.primary} />
+            <Text style={styles.urlText} numberOfLines={2}>
               {APP_SHARE_URL}
             </Text>
-          </View>
+          </Pressable>
         </Animated.View>
 
         <Animated.View entering={FadeInDown.delay(140).duration(450)}>

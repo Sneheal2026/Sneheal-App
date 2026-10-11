@@ -37,6 +37,7 @@ const { colors, spacing, typography, borderRadius, shadows } = theme;
 
 const APP_VERSION = Constants.expoConfig?.version ?? '1.0.0';
 const SOLAPUR_IMAGE = require('../../../assets/images/Solapur.webp');
+const SHARE_APP_IMAGE = require('../../../assets/images/shareApp.png');
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const SOLAPUR_WIDTH = SCREEN_WIDTH;
 const SOLAPUR_HEIGHT = Math.round(SCREEN_WIDTH * (511 / 1457));
@@ -297,6 +298,7 @@ const SettingsScreen = () => {
                   onPress={() => handleItemPress(item.id)}
                   showDivider={index < ACCOUNT_ITEMS.length - 1}
                   destructive={'destructive' in item && item.destructive}
+                  imageIcon={item.id === 'share' ? SHARE_APP_IMAGE : undefined}
                   trailing={
                     item.id === 'language' ? (
                       <View style={styles.languageTrailing}>

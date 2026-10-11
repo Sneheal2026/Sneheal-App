@@ -12,6 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '@/context/AuthContext';
 import DevResetStorageButton from '@/components/common/DevResetStorageButton';
 import { doctorTheme } from '@/components/doctor/doctorTheme';
@@ -22,16 +23,9 @@ import { ApiError } from '@/services/apiClient';
 import { searchCustomers } from '@/services/doctorService';
 import theme from '@/styles/theme';
 import { useTranslation } from 'react-i18next';
+import { formatDoctorPatientPhone } from '@/utils/doctorPatientPhone';
 
-const { spacing, typography, borderRadius } = theme;
-
-const initialsFor = (name: string) =>
-  name
-    .trim()
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part.charAt(0).toUpperCase())
-    .join('') || 'C';
+const { spacing, typography, borderRadius, shadows } = theme;
 
 const DoctorHomeScreen = () => {
   const { t } = useTranslation();
@@ -41,6 +35,7 @@ const DoctorHomeScreen = () => {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<DoctorCustomer[]>([]);
   const [message, setMessage] = useState('');
+  const [messageIsError, setMessageIsError] = useState(false);
   const [searching, setSearching] = useState(false);
 
   const topInset = Math.max(
@@ -50,40 +45,47 @@ const DoctorHomeScreen = () => {
 
   const greeting = useMemo(() => {
     const hour = new Date().getHours();
-    if (hour < 12) return 'Good morning';
-    if (hour < 17) return 'Good afternoon';
-    return 'Good evening';
-  }, []);
+    if (hour < 12) return t('doctor.greetingMorning');
+    if (hour < 17) return t('doctor.greetingAfternoon');
+    return t('doctor.greetingEvening');
+  }, [t]);
 
-  const displayName = user?.username ? `Dr. ${user.username}` : 'Doctor';
+  const displayName = user?.username ? `Dr. ${user.username}` : t('doctor.accountDefaultName');
 
-  const openCustomer = (customerId: string) => {
-    navigation.navigate('PatientDetails', { userId: customerId });
+  const showIdleState =
+    !searching && results.length === 0 && !message && query.trim().length === 0;
+
+  const openPatient = (patientId: string) => {
+    navigation.navigate('PatientDetails', { userId: patientId });
   };
 
   const onSearch = async () => {
     const trimmed = query.trim();
     if (!trimmed) {
       setResults([]);
+      setMessageIsError(true);
       setMessage(t('doctor.lookupNeedMore'));
       return;
     }
 
     setSearching(true);
     setMessage('');
+    setMessageIsError(false);
 
     try {
-      const customers = await searchCustomers(trimmed);
-      setResults(customers);
-      if (customers.length === 1) {
-        openCustomer(customers[0].id);
+      const patients = await searchCustomers(trimmed);
+      setResults(patients);
+      if (patients.length === 1) {
+        openPatient(patients[0].id);
         return;
       }
-      if (customers.length === 0) {
+      if (patients.length === 0) {
+        setMessageIsError(true);
         setMessage(t('doctor.lookupEmpty'));
       }
     } catch (error) {
       setResults([]);
+      setMessageIsError(true);
       setMessage(error instanceof ApiError ? error.message : t('doctor.lookupFailed'));
     } finally {
       setSearching(false);
@@ -98,86 +100,147 @@ const DoctorHomeScreen = () => {
         translucent={Platform.OS === 'android'}
       />
 
-      <View style={[styles.header, { paddingTop: topInset + spacing.md }]}>
-        <View style={styles.headerRow}>
-          <View style={styles.identity}>
-            <View style={styles.avatar}>
-              <Ionicons name="medkit" size={22} color={doctorTheme.accent} />
-            </View>
-            <View style={styles.identityText}>
-              <Text style={styles.greeting}>{greeting}</Text>
-              <Text style={styles.name} numberOfLines={1}>
-                {displayName}
-              </Text>
-            </View>
+      <LinearGradient
+        colors={[doctorTheme.primary, doctorTheme.primarySoft]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={[styles.header, { paddingTop: topInset + spacing.md }]}
+      >
+        <View style={styles.headerTopRow}>
+          <View style={styles.workspaceBadge}>
+            <Ionicons name="medkit-outline" size={14} color={doctorTheme.accent} />
+            <Text style={styles.workspaceText}>{t('doctor.homeWorkspace')}</Text>
           </View>
+          <Pressable
+            onPress={() => navigation.navigate('DoctorAccount')}
+            style={({ pressed }) => [styles.accountBtn, pressed && styles.pressed]}
+            accessibilityRole="button"
+            accessibilityLabel={t('doctor.accountA11y')}
+          >
+            <Ionicons name="person-outline" size={20} color={doctorTheme.textOnDark} />
+          </Pressable>
         </View>
-      </View>
+
+        <Text style={styles.greeting}>{greeting}</Text>
+        <Text style={styles.name} numberOfLines={1}>{displayName}</Text>
+        <Text style={styles.tagline} numberOfLines={2}>{t('doctor.homeTagline')}</Text>
+      </LinearGradient>
 
       <ScrollView
         style={styles.scroll}
         keyboardShouldPersistTaps="handled"
-        contentContainerStyle={{
-          paddingHorizontal: spacing.xl,
-          paddingTop: spacing.xl,
-          paddingBottom: insets.bottom + spacing.xxl,
-        }}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: insets.bottom + spacing.xxl },
+        ]}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.sectionLabel}>{t('doctor.lookupTitle')}</Text>
-        <Text style={styles.lookupHint}>{t('doctor.lookupHint')}</Text>
+        <View style={styles.mainCard}>
+          <View style={styles.sectionHead}>
+            <View style={styles.sectionAccent} />
+            <View style={styles.sectionHeadText}>
+              <Text style={styles.sectionTitle}>{t('doctor.lookupTitle')}</Text>
+              <Text style={styles.sectionHint}>{t('doctor.lookupHint')}</Text>
+            </View>
+          </View>
 
-        <PatientSearchBar
-          value={query}
-          placeholder={t('doctor.lookupPlaceholder')}
-          actionLabel={t('doctor.lookupAction')}
-          loading={searching}
-          onChange={(value) => {
-            setQuery(value);
-            setMessage('');
-            setResults([]);
-          }}
-          onSubmit={() => {
-            void onSearch();
-          }}
-        />
+          <PatientSearchBar
+            value={query}
+            placeholder={t('doctor.lookupPlaceholder')}
+            actionLabel={t('doctor.lookupActionShort')}
+            loading={searching}
+            onChange={(value) => {
+              setQuery(value);
+              setMessage('');
+              setMessageIsError(false);
+              setResults([]);
+            }}
+            onSubmit={() => {
+              void onSearch();
+            }}
+          />
 
-        {message ? <Text style={styles.message}>{message}</Text> : null}
+          <View style={styles.tipRow}>
+            <View style={styles.tipBox}>
+              <Text style={styles.tipLabel}>{t('doctor.lookupTipId')}</Text>
+            </View>
+            <View style={styles.tipBox}>
+              <Text style={styles.tipLabel}>{t('doctor.lookupTipName')}</Text>
+            </View>
+          </View>
+
+          <Pressable
+            onPress={() => navigation.navigate('DoctorPatients')}
+            style={({ pressed }) => [styles.myPatientsLink, pressed && styles.pressed]}
+            accessibilityRole="button"
+            accessibilityLabel={t('doctor.menuMyPatients')}
+          >
+            <Ionicons name="people-outline" size={18} color={doctorTheme.primary} />
+            <Text style={styles.myPatientsLinkText}>{t('doctor.myPatientsOpenList')}</Text>
+            <Ionicons name="chevron-forward" size={16} color={doctorTheme.primary} />
+          </Pressable>
+
+          {message ? (
+            <View
+              style={[
+                styles.messageBanner,
+                messageIsError ? styles.messageBannerError : styles.messageBannerInfo,
+              ]}
+            >
+              <Text style={[styles.messageText, messageIsError && styles.messageTextError]}>
+                {message}
+              </Text>
+            </View>
+          ) : null}
+
+          {showIdleState ? (
+            <View style={styles.idleBox}>
+              <View style={styles.idleAccent} />
+              <View style={styles.idleContent}>
+                <Text style={styles.idleTitle}>{t('doctor.homeEmptyTitle')}</Text>
+                <Text style={styles.idleBody}>{t('doctor.homeEmptyBody')}</Text>
+              </View>
+            </View>
+          ) : null}
+        </View>
 
         {results.length > 1 ? (
-          <View style={styles.results}>
-            {results.map((customer) => (
-              <Pressable
-                key={customer.id}
-                onPress={() => openCustomer(customer.id)}
-                style={({ pressed }) => [styles.patientRow, pressed && styles.pressed]}
-                accessibilityRole="button"
-                accessibilityLabel={`Open profile for ${customer.username}`}
-              >
-                <View style={styles.patientAvatar}>
-                  <Text style={styles.patientInitials}>{initialsFor(customer.username)}</Text>
-                </View>
-                <View style={styles.patientInfo}>
-                  <Text style={styles.patientName}>{customer.username}</Text>
-                  <Text style={styles.patientMeta}>
-                    {t('doctor.customerId')} {customer.id} · {customer.phoneMasked}
-                  </Text>
-                </View>
-                <Ionicons name="chevron-forward" size={20} color={doctorTheme.textSecondary} />
-              </Pressable>
-            ))}
+          <View style={styles.resultsSection}>
+            <Text style={styles.resultsHeading}>
+              {t('doctor.resultsTitle', { count: results.length })}
+            </Text>
+            <View style={styles.resultsCard}>
+              {results.map((patient, index) => (
+                <Pressable
+                  key={patient.id}
+                  onPress={() => openPatient(patient.id)}
+                  style={({ pressed }) => [
+                    styles.patientRow,
+                    index < results.length - 1 && styles.patientRowBorder,
+                    pressed && styles.patientRowPressed,
+                  ]}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('doctor.openPatientA11y', { name: patient.username })}
+                >
+                  <View style={styles.patientAccent} />
+                  <View style={styles.patientCopy}>
+                    <Text style={styles.patientName}>{patient.username}</Text>
+                    <Text style={styles.patientMeta}>
+                      {t('doctor.patientId')} {patient.id}
+                    </Text>
+                    <Text style={styles.patientPhone}>
+                      {formatDoctorPatientPhone(patient)}
+                    </Text>
+                  </View>
+                  <View style={styles.openChart}>
+                    <Text style={styles.openChartText}>{t('doctor.viewChart')}</Text>
+                    <Ionicons name="chevron-forward" size={16} color={doctorTheme.primary} />
+                  </View>
+                </Pressable>
+              ))}
+            </View>
           </View>
         ) : null}
-
-        <Pressable
-          onPress={() => navigation.navigate('Main')}
-          style={({ pressed }) => [styles.shiftToCustomerBtn, pressed && styles.pressed]}
-          accessibilityRole="button"
-          accessibilityLabel={t('doctor.shiftToCustomerA11y')}
-        >
-          <Ionicons name="swap-horizontal" size={18} color={doctorTheme.primary} />
-          <Text style={styles.shiftToCustomerText}>{t('doctor.shiftToCustomer')}</Text>
-        </Pressable>
 
         <DevResetStorageButton />
       </ScrollView>
@@ -191,110 +254,233 @@ const styles = StyleSheet.create({
     backgroundColor: doctorTheme.background,
   },
   header: {
-    backgroundColor: doctorTheme.primary,
     paddingHorizontal: spacing.xl,
     paddingBottom: spacing.xl,
   },
-  headerRow: {
+  headerTopRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    marginBottom: spacing.lg,
   },
-  identity: {
+  workspaceBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    flex: 1,
+    gap: spacing.xs,
+    paddingHorizontal: spacing.sm + 2,
+    paddingVertical: spacing.xs + 2,
+    borderRadius: borderRadius.sm,
+    backgroundColor: 'rgba(0,0,0,0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
   },
-  avatar: {
-    width: 48,
-    height: 48,
-    borderRadius: borderRadius.lg,
-    backgroundColor: 'rgba(255,255,255,0.1)',
+  workspaceText: {
+    ...typography.caption,
+    fontWeight: '700',
+    color: doctorTheme.textOnDark,
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+  },
+  accountBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: borderRadius.md,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: spacing.md,
-  },
-  identityText: {
-    flex: 1,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
   },
   greeting: {
     ...typography.caption,
     color: doctorTheme.textMutedOnDark,
-    marginBottom: 2,
+    fontWeight: '600',
+    marginBottom: 4,
   },
   name: {
-    ...typography.h4,
+    fontSize: 26,
+    fontWeight: '800',
     color: doctorTheme.textOnDark,
-    fontWeight: '700',
+    letterSpacing: -0.5,
+    marginBottom: spacing.xs,
+  },
+  tagline: {
+    ...typography.bodySmall,
+    color: 'rgba(240, 253, 250, 0.88)',
+    lineHeight: 20,
+    maxWidth: 320,
   },
   scroll: {
     flex: 1,
   },
-  sectionLabel: {
+  scrollContent: {
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.lg,
+    gap: spacing.lg,
+  },
+  mainCard: {
+    backgroundColor: doctorTheme.surface,
+    borderRadius: borderRadius.xl,
+    borderWidth: 1,
+    borderColor: doctorTheme.border,
+    padding: spacing.lg,
+    gap: spacing.md,
+    ...shadows.md,
+  },
+  sectionHead: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  sectionAccent: {
+    width: 4,
+    borderRadius: 2,
+    backgroundColor: doctorTheme.accent,
+    alignSelf: 'stretch',
+  },
+  sectionHeadText: {
+    flex: 1,
+    gap: 4,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: doctorTheme.textPrimary,
+    letterSpacing: -0.3,
+  },
+  sectionHint: {
+    ...typography.bodySmall,
+    color: doctorTheme.textSecondary,
+    lineHeight: 20,
+  },
+  tipRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  tipBox: {
+    flex: 1,
+    paddingVertical: spacing.xs + 2,
+    paddingHorizontal: spacing.sm,
+    borderRadius: borderRadius.sm,
+    backgroundColor: doctorTheme.background,
+    borderWidth: 1,
+    borderColor: doctorTheme.border,
+  },
+  tipLabel: {
+    ...typography.caption,
+    fontWeight: '600',
+    color: doctorTheme.textSecondary,
+    textAlign: 'center',
+  },
+  myPatientsLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+    borderRadius: borderRadius.lg,
+    backgroundColor: doctorTheme.background,
+    borderWidth: 1,
+    borderColor: doctorTheme.border,
+  },
+  myPatientsLinkText: {
+    flex: 1,
+    ...typography.bodySmall,
+    fontWeight: '700',
+    color: doctorTheme.primary,
+  },
+  messageBanner: {
+    paddingVertical: spacing.sm + 2,
+    paddingHorizontal: spacing.md,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+  },
+  messageBannerError: {
+    backgroundColor: '#FEF2F2',
+    borderColor: '#FECACA',
+  },
+  messageBannerInfo: {
+    backgroundColor: doctorTheme.background,
+    borderColor: doctorTheme.border,
+  },
+  messageText: {
+    ...typography.bodySmall,
+    color: doctorTheme.textPrimary,
+    lineHeight: 20,
+  },
+  messageTextError: {
+    color: '#991B1B',
+  },
+  idleBox: {
+    flexDirection: 'row',
+    borderRadius: borderRadius.lg,
+    backgroundColor: doctorTheme.background,
+    borderWidth: 1,
+    borderColor: doctorTheme.border,
+    overflow: 'hidden',
+  },
+  idleAccent: {
+    width: 4,
+    backgroundColor: doctorTheme.primarySoft,
+  },
+  idleContent: {
+    flex: 1,
+    padding: spacing.md,
+    gap: spacing.xs,
+  },
+  idleTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: doctorTheme.textPrimary,
+  },
+  idleBody: {
+    ...typography.bodySmall,
+    color: doctorTheme.textSecondary,
+    lineHeight: 21,
+  },
+  resultsSection: {
+    gap: spacing.sm,
+  },
+  resultsHeading: {
     ...typography.caption,
     fontWeight: '700',
     color: doctorTheme.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 0.6,
-    marginBottom: spacing.xs,
+    marginLeft: spacing.xxs,
   },
-  lookupHint: {
-    ...typography.bodySmall,
-    color: doctorTheme.textSecondary,
-    marginBottom: spacing.md,
-  },
-  message: {
-    ...typography.bodySmall,
-    color: doctorTheme.textPrimary,
-    marginTop: spacing.md,
-  },
-  results: {
-    marginTop: spacing.lg,
-    gap: spacing.sm,
-  },
-  shiftToCustomerBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-    marginTop: spacing.xl,
-    paddingVertical: spacing.md,
-    borderRadius: borderRadius.lg,
-    borderWidth: 1.5,
-    borderColor: doctorTheme.primary,
+  resultsCard: {
     backgroundColor: doctorTheme.surface,
-  },
-  shiftToCustomerText: {
-    ...typography.button,
-    fontSize: 14,
-    fontWeight: '700',
-    color: doctorTheme.primary,
+    borderRadius: borderRadius.xl,
+    borderWidth: 1,
+    borderColor: doctorTheme.border,
+    overflow: 'hidden',
+    ...shadows.sm,
   },
   patientRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: doctorTheme.surface,
-    borderRadius: borderRadius.lg,
-    borderWidth: 1,
-    borderColor: doctorTheme.border,
-    padding: spacing.md,
-    gap: spacing.md,
+    paddingVertical: spacing.md,
+    paddingRight: spacing.md,
+    gap: spacing.sm,
   },
-  patientAvatar: {
-    width: 48,
-    height: 48,
-    borderRadius: borderRadius.lg,
-    backgroundColor: doctorTheme.accentMuted,
-    alignItems: 'center',
-    justifyContent: 'center',
+  patientRowBorder: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: doctorTheme.border,
   },
-  patientInitials: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: doctorTheme.primary,
+  patientRowPressed: {
+    backgroundColor: doctorTheme.background,
   },
-  patientInfo: {
+  patientAccent: {
+    width: 3,
+    alignSelf: 'stretch',
+    backgroundColor: doctorTheme.accent,
+    marginVertical: spacing.xs,
+    marginLeft: spacing.md,
+    borderRadius: 2,
+  },
+  patientCopy: {
     flex: 1,
+    minWidth: 0,
   },
   patientName: {
     fontSize: 16,
@@ -304,10 +490,26 @@ const styles = StyleSheet.create({
   },
   patientMeta: {
     ...typography.caption,
+    fontWeight: '600',
     color: doctorTheme.textSecondary,
   },
+  patientPhone: {
+    ...typography.caption,
+    color: doctorTheme.textSecondary,
+    marginTop: 1,
+  },
+  openChart: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
+  openChartText: {
+    ...typography.caption,
+    fontWeight: '700',
+    color: doctorTheme.primary,
+  },
   pressed: {
-    opacity: 0.88,
+    opacity: 0.8,
   },
 });
 
