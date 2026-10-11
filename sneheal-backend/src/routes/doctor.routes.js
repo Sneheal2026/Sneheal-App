@@ -13,5 +13,9 @@ router.get('/customers/:userId', asyncHandler(doctorController.getCustomer));
 router.get('/customers/:userId/orders', asyncHandler(doctorController.listOrders));
 router.get('/customers/:userId/prescriptions', asyncHandler(doctorController.listPrescriptions));
 router.get('/customers/:userId/reports', asyncHandler(doctorController.listReports));
+router.get(
+  '/customers/:userId/reports/:reportId/file',
+  asyncHandler(doctorController.downloadReportFile),
+);
 
 module.exports = router;

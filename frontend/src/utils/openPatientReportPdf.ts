@@ -1,7 +1,7 @@
 import { Asset } from 'expo-asset';
 import * as FileSystem from 'expo-file-system/legacy';
-import * as IntentLauncher from 'expo-intent-launcher';
 import { Alert, Platform, Share } from 'react-native';
+import { openLocalFileOnAndroid } from '@/utils/openLocalFileAndroid';
 
 /**
  * Copies a bundled PDF into cache and opens it in the system viewer
@@ -28,12 +28,7 @@ export async function openPatientReportPdf(
     }
 
     if (Platform.OS === 'android') {
-      const contentUri = await FileSystem.getContentUriAsync(dest);
-      await IntentLauncher.startActivityAsync('android.intent.action.VIEW', {
-        data: contentUri,
-        flags: 1,
-        type: 'application/pdf',
-      });
+      await openLocalFileOnAndroid(dest, 'application/pdf');
       return;
     }
 

@@ -31,6 +31,17 @@ const listReports = async (req, res) => {
   return success(res, 'Reports fetched successfully', reports);
 };
 
+const downloadReportFile = async (req, res) => {
+  const file = await doctorService.getCustomerReportFile(
+    req.params.userId,
+    req.params.reportId,
+  );
+  const safeName = String(file.title || 'report').replace(/[^\w.\-]+/g, '_') || 'report';
+  res.setHeader('Content-Type', file.mimeType);
+  res.setHeader('Content-Disposition', `attachment; filename="${safeName}"`);
+  return res.send(file.buffer);
+};
+
 module.exports = {
   searchCustomers,
   listPatients,
@@ -38,4 +49,5 @@ module.exports = {
   listOrders,
   listPrescriptions,
   listReports,
+  downloadReportFile,
 };

@@ -40,6 +40,18 @@ const findByUserId = async (userId, connection = db) => {
   return rows.map(mapReport);
 };
 
+const findByUserIdInternal = async (userId, connection = db) => {
+  const [rows] = await connection.execute(
+    `SELECT id, user_id, title, file_url, cloudinary_public_id, resource_type, mime_type, created_at
+     FROM health_reports
+     WHERE user_id = ?
+     ORDER BY created_at DESC`,
+    [userId],
+  );
+
+  return rows.map(mapReportInternal);
+};
+
 const countByUserId = async (userId, connection = db) => {
   const [rows] = await connection.execute(
     'SELECT COUNT(*) AS total FROM health_reports WHERE user_id = ?',
@@ -94,6 +106,7 @@ const remove = async (id, userId, connection = db) => {
 
 module.exports = {
   findByUserId,
+  findByUserIdInternal,
   countByUserId,
   findByIdAndUserId,
   create,

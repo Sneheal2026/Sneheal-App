@@ -79,7 +79,8 @@ const uploadHealthFile = (buffer, mimetype = 'application/pdf') => {
   ensureConfigured();
 
   const { folder } = getConfig();
-  const isPdf = mimetype === 'application/pdf';
+  const normalized = String(mimetype || '').toLowerCase();
+  const isPdf = normalized === 'application/pdf' || normalized === 'application/x-pdf';
   const isPng = mimetype.includes('png');
   const stamp = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
@@ -130,9 +131,25 @@ const deleteAsset = async (publicId, resourceType = 'image') => {
   }
 };
 
+/**
+ * Signed delivery URL for doctor/customer report access (raw PDFs often 401 without signing).
+ */
+const getSignedReportUrl = (publicId, resourceType = 'image') => {
+  if (!publicId) return null;
+  ensureConfigured();
+  const type = resourceType === 'raw' ? 'raw' : 'image';
+  return cloudinary.url(publicId, {
+    resource_type: type,
+    type: 'upload',
+    sign_url: true,
+    secure: true,
+  });
+};
+
 module.exports = {
   uploadImage,
   uploadHealthFile,
   deleteImage,
   deleteAsset,
+  getSignedReportUrl,
 };

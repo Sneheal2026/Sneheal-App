@@ -4,6 +4,19 @@ const AppError = require('../utils/AppError');
 
 const MAX_REPORTS = 40;
 
+const normalizeReportMime = (mimetype, originalname) => {
+  const mime = String(mimetype || '').trim().toLowerCase();
+  const name = String(originalname || '').toLowerCase();
+  if (mime === 'image/jpg') return 'image/jpeg';
+  if (mime === 'application/pdf' || mime === 'application/x-pdf') return 'application/pdf';
+  if (mime.startsWith('image/')) return mime;
+  if (name.endsWith('.pdf')) return 'application/pdf';
+  if (mime === 'application/octet-stream' && name.endsWith('.pdf')) {
+    return 'application/pdf';
+  }
+  return mime || 'application/pdf';
+};
+
 const cleanTitle = (value, fallbackName) => {
   const fromBody = typeof value === 'string' ? value : '';
   const fromFile = typeof fallbackName === 'string' ? fallbackName.replace(/\.[^.]+$/, '') : '';
@@ -23,14 +36,15 @@ const saveReport = async (userId, file, title) => {
     throw new AppError(400, `You can save up to ${MAX_REPORTS} reports`);
   }
 
-  const uploaded = await cloudinaryService.uploadHealthFile(file.buffer, file.mimetype);
+  const mimeType = normalizeReportMime(file.mimetype, file.originalname);
+  const uploaded = await cloudinaryService.uploadHealthFile(file.buffer, mimeType);
 
   return healthReportRepo.create(userId, {
     title: cleanTitle(title, file.originalname),
     fileUrl: uploaded.fileUrl,
     cloudinaryPublicId: uploaded.publicId,
     resourceType: uploaded.resourceType,
-    mimeType: file.mimetype === 'image/jpg' ? 'image/jpeg' : file.mimetype,
+    mimeType,
   });
 };
 

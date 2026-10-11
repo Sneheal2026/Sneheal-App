@@ -2,6 +2,7 @@ const userRepo = require('../repositories/user.repository');
 const orderRepo = require('../repositories/order.repository');
 const prescriptionRepo = require('../repositories/prescription.repository');
 const healthReportRepo = require('../repositories/healthReport.repository');
+const cloudinaryService = require('./cloudinary.service');
 const AppError = require('../utils/AppError');
 
 const escapeLike = (value) => value.replace(/[\\%_]/g, '\\$&');
@@ -83,9 +84,61 @@ const listCustomerPrescriptions = async (userId) => {
   return prescriptionRepo.findByUserId(userId);
 };
 
+const resolveReportFileUrl = (report) => {
+  if (report.cloudinaryPublicId) {
+    const signed = cloudinaryService.getSignedReportUrl(
+      report.cloudinaryPublicId,
+      report.resourceType,
+    );
+    if (signed) return signed;
+  }
+  return report.fileUrl;
+};
+
 const listCustomerReports = async (userId) => {
   await getCustomer(userId);
-  return healthReportRepo.findByUserId(userId);
+  const rows = await healthReportRepo.findByUserIdInternal(userId);
+  return rows.map((row) => ({
+    id: row.id,
+    title: row.title,
+    fileUrl: resolveReportFileUrl(row),
+    mimeType: row.mimeType,
+    createdAt: row.createdAt,
+  }));
+};
+
+const fetchRemoteReportBuffer = async (url) => {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new AppError(502, `Could not fetch report file (${response.status})`);
+  }
+  return Buffer.from(await response.arrayBuffer());
+};
+
+const getCustomerReportFile = async (userId, reportId) => {
+  await getCustomer(userId);
+  const report = await healthReportRepo.findByIdAndUserId(reportId, userId);
+  if (!report) {
+    throw new AppError(404, 'Report not found');
+  }
+
+  const primaryUrl = resolveReportFileUrl(report);
+  let buffer;
+  try {
+    buffer = await fetchRemoteReportBuffer(primaryUrl);
+  } catch {
+    if (primaryUrl !== report.fileUrl && report.fileUrl) {
+      buffer = await fetchRemoteReportBuffer(report.fileUrl);
+    } else {
+      throw new AppError(502, 'Could not download report file');
+    }
+  }
+
+  return {
+    buffer,
+    mimeType: report.mimeType || 'application/octet-stream',
+    title: report.title || 'report',
+  };
 };
 
 const listEngagedPatients = async () => userRepo.listEngagedPatients();
@@ -97,4 +150,5 @@ module.exports = {
   listCustomerOrders,
   listCustomerPrescriptions,
   listCustomerReports,
+  getCustomerReportFile,
 };

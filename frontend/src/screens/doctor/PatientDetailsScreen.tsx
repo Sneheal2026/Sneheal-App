@@ -32,7 +32,8 @@ import {
   fetchDoctorPrescriptions,
   fetchDoctorReports,
 } from '@/services/doctorService';
-import { openRemoteFile } from '@/utils/openRemoteFile';
+import { isHealthReportImage } from '@/utils/healthReportFile';
+import { downloadHealthReport } from '@/utils/downloadHealthReport';
 import theme from '@/styles/theme';
 import { useTranslation } from 'react-i18next';
 import { formatDoctorPatientPhone } from '@/utils/doctorPatientPhone';
@@ -57,8 +58,6 @@ const initialsFor = (name: string) =>
     .map((part) => part.charAt(0).toUpperCase())
     .join('') || 'C';
 
-const isImageMime = (mimeType: string) => mimeType.startsWith('image/');
-
 const PatientDetailsScreen = () => {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
@@ -75,7 +74,7 @@ const PatientDetailsScreen = () => {
   const [missing, setMissing] = useState(false);
   const [error, setError] = useState('');
   const [previewUri, setPreviewUri] = useState<string | null>(null);
-  const [openingId, setOpeningId] = useState<string | null>(null);
+  const [reportBusyId, setReportBusyId] = useState<string | null>(null);
 
   const topInset = Math.max(
     insets.top,
@@ -140,18 +139,25 @@ const PatientDetailsScreen = () => {
     return 'active';
   };
 
-  const openReport = async (report: HealthReport) => {
-    if (isImageMime(report.mimeType)) {
-      setPreviewUri(report.fileUrl);
-      return;
-    }
+  const previewReportImage = (report: HealthReport) => {
+    setPreviewUri(report.fileUrl);
+  };
 
-    setOpeningId(report.id);
+  const downloadReport = async (report: HealthReport) => {
+    setReportBusyId(report.id);
     try {
-      const extension = report.mimeType === 'application/pdf' ? 'pdf' : 'file';
-      await openRemoteFile(report.fileUrl, `${report.title}.${extension}`, report.mimeType);
+      await downloadHealthReport(
+        userId,
+        report.id,
+        report.title,
+        report.mimeType,
+        report.fileUrl,
+      );
+    } catch (err) {
+      const message = err instanceof Error ? err.message : t('doctor.reportDownloadFailed');
+      Alert.alert(t('doctor.reportDownloadFailedTitle'), message);
     } finally {
-      setOpeningId(null);
+      setReportBusyId(null);
     }
   };
 
@@ -283,13 +289,15 @@ const PatientDetailsScreen = () => {
                 key={report.id}
                 title={report.title}
                 meta={`${formatDate(report.createdAt)} · ${
-                  isImageMime(report.mimeType) ? 'Image' : 'PDF'
+                  isHealthReportImage(report.mimeType, report.fileUrl) ? 'Image' : 'PDF'
                 }`}
-                isImage={isImageMime(report.mimeType)}
-                opening={openingId === report.id}
-                actionLabel={t('doctor.view')}
-                onPress={() => {
-                  void openReport(report);
+                isImage={isHealthReportImage(report.mimeType, report.fileUrl)}
+                busy={reportBusyId === report.id}
+                viewLabel={t('doctor.view')}
+                downloadLabel={t('doctor.download')}
+                onView={() => previewReportImage(report)}
+                onDownload={() => {
+                  void downloadReport(report);
                 }}
               />
             ))}
