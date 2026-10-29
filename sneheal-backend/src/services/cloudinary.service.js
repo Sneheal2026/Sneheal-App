@@ -137,7 +137,8 @@ const deleteAsset = async (publicId, resourceType = 'image') => {
 const getSignedReportUrl = (publicId, resourceType = 'image') => {
   if (!publicId) return null;
   ensureConfigured();
-  const type = resourceType === 'raw' ? 'raw' : 'image';
+  const normalized = String(resourceType || '').trim().toLowerCase();
+  const type = normalized === 'raw' ? 'raw' : 'image';
   return cloudinary.url(publicId, {
     resource_type: type,
     type: 'upload',

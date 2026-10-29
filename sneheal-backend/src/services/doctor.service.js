@@ -84,15 +84,45 @@ const listCustomerPrescriptions = async (userId) => {
   return prescriptionRepo.findByUserId(userId);
 };
 
-const resolveReportFileUrl = (report) => {
+const inferReportResourceType = (report) => {
+  const stored = String(report.resourceType || '').trim().toLowerCase();
+  if (stored === 'raw') return 'raw';
+  if (stored === 'image') return 'image';
+
+  const mime = String(report.mimeType || '').trim().toLowerCase();
+  if (mime === 'application/pdf' || mime === 'application/x-pdf') return 'raw';
+
+  const url = String(report.fileUrl || '').toLowerCase();
+  if (url.includes('/raw/upload/') || /\.pdf(\?|$)/.test(url)) return 'raw';
+
+  return 'image';
+};
+
+const signedReportUrlsToTry = (report) => {
+  const urls = [];
+  const push = (value) => {
+    const trimmed = String(value || '').trim();
+    if (trimmed && !urls.includes(trimmed)) urls.push(trimmed);
+  };
+
   if (report.cloudinaryPublicId) {
-    const signed = cloudinaryService.getSignedReportUrl(
-      report.cloudinaryPublicId,
-      report.resourceType,
+    const inferred = inferReportResourceType(report);
+    push(cloudinaryService.getSignedReportUrl(report.cloudinaryPublicId, inferred));
+    push(
+      cloudinaryService.getSignedReportUrl(
+        report.cloudinaryPublicId,
+        inferred === 'raw' ? 'image' : 'raw',
+      ),
     );
-    if (signed) return signed;
   }
-  return report.fileUrl;
+
+  push(report.fileUrl);
+  return urls;
+};
+
+const resolveReportFileUrl = (report) => {
+  const candidates = signedReportUrlsToTry(report);
+  return candidates[0] || report.fileUrl;
 };
 
 const listCustomerReports = async (userId) => {
@@ -107,12 +137,21 @@ const listCustomerReports = async (userId) => {
   }));
 };
 
+const bufferLooksLikePdf = (buffer) =>
+  Buffer.isBuffer(buffer) && buffer.length >= 4 && buffer.subarray(0, 4).toString('utf8') === '%PDF';
+
 const fetchRemoteReportBuffer = async (url) => {
   const response = await fetch(url);
   if (!response.ok) {
     throw new AppError(502, `Could not fetch report file (${response.status})`);
   }
-  return Buffer.from(await response.arrayBuffer());
+  const buffer = Buffer.from(await response.arrayBuffer());
+  const mime = String(response.headers.get('content-type') || '').toLowerCase();
+  const isPdfRequest = url.toLowerCase().includes('.pdf') || url.includes('/raw/upload/');
+  if (isPdfRequest && !bufferLooksLikePdf(buffer) && mime.includes('text/html')) {
+    throw new AppError(502, 'Report file link returned an error page instead of a PDF');
+  }
+  return buffer;
 };
 
 const getCustomerReportFile = async (userId, reportId) => {
@@ -122,16 +161,31 @@ const getCustomerReportFile = async (userId, reportId) => {
     throw new AppError(404, 'Report not found');
   }
 
-  const primaryUrl = resolveReportFileUrl(report);
+  const mime = String(report.mimeType || '').trim().toLowerCase();
+  const expectPdf =
+    mime === 'application/pdf' ||
+    mime === 'application/x-pdf' ||
+    inferReportResourceType(report) === 'raw';
+
   let buffer;
-  try {
-    buffer = await fetchRemoteReportBuffer(primaryUrl);
-  } catch {
-    if (primaryUrl !== report.fileUrl && report.fileUrl) {
-      buffer = await fetchRemoteReportBuffer(report.fileUrl);
-    } else {
-      throw new AppError(502, 'Could not download report file');
+  let lastError;
+  for (const url of signedReportUrlsToTry(report)) {
+    try {
+      buffer = await fetchRemoteReportBuffer(url);
+      if (expectPdf && !bufferLooksLikePdf(buffer)) {
+        throw new AppError(502, 'Downloaded file is not a valid PDF');
+      }
+      lastError = null;
+      break;
+    } catch (err) {
+      lastError = err;
     }
+  }
+
+  if (!buffer) {
+    throw lastError instanceof AppError
+      ? lastError
+      : new AppError(502, 'Could not download report file');
   }
 
   return {

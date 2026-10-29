@@ -54,7 +54,7 @@ const ReportFileRow = ({
     </Pressable>
 
     <View style={styles.actions}>
-      {isImage && onView ? (
+      {onView ? (
         <Pressable
           onPress={onView}
           disabled={busy}

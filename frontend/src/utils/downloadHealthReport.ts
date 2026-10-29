@@ -4,11 +4,25 @@ import { Alert, Platform } from 'react-native';
 import { getApiBaseUrl } from '@/services/apiClient';
 import { getValidAccessToken } from '@/services/authTokenManager';
 import {
+  isHealthReportPdf,
   resolveHealthReportFileName,
   resolveHealthReportMime,
 } from '@/utils/healthReportFile';
+import { openLocalFileOnAndroid } from '@/utils/openLocalFileAndroid';
 
 const REPORTS_DIR = `${FileSystem.documentDirectory}patient-reports/`;
+
+const headerLooksLikePdf = async (uri: string): Promise<boolean> => {
+  try {
+    const prefix = await FileSystem.readAsStringAsync(uri, {
+      length: 4,
+      encoding: FileSystem.EncodingType.UTF8,
+    });
+    return prefix.startsWith('%PDF');
+  } catch {
+    return false;
+  }
+};
 
 export type DownloadHealthReportResult = {
   localUri: string;
@@ -55,8 +69,18 @@ export async function downloadHealthReport(
     throw new Error('Downloaded file is empty');
   }
 
+  const isPdf = isHealthReportPdf(mimeType, fileUrl);
+  if (isPdf && !(await headerLooksLikePdf(downloaded.uri))) {
+    throw new Error('The server did not return a valid PDF file');
+  }
+
   const finalDest = `${REPORTS_DIR}${safeName}`;
   await FileSystem.copyAsync({ from: downloaded.uri, to: finalDest });
+
+  if (Platform.OS === 'android' && isPdf) {
+    await openLocalFileOnAndroid(finalDest, resolvedMime, fileUrl);
+    return { localUri: finalDest, fileName: safeName };
+  }
 
   if (await Sharing.isAvailableAsync()) {
     await Sharing.shareAsync(finalDest, {
