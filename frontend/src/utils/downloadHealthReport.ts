@@ -24,28 +24,45 @@ const headerLooksLikePdf = async (uri: string): Promise<boolean> => {
   }
 };
 
+const readDownloadErrorMessage = async (uri: string, status: number): Promise<string> => {
+  let detail = `Download failed (${status})`;
+  try {
+    const body = await FileSystem.readAsStringAsync(uri);
+    const parsed = JSON.parse(body) as { message?: string };
+    if (typeof parsed?.message === 'string' && parsed.message.trim()) {
+      detail = parsed.message.trim();
+    }
+  } catch {
+    // Body was not JSON (or empty).
+  }
+  return detail;
+};
+
 export type DownloadHealthReportResult = {
   localUri: string;
   fileName: string;
 };
 
+type FetchDoctorReportOptions = {
+  patientUserId: string;
+  reportId: string;
+  title: string;
+  mimeType: string;
+  fileUrl: string;
+};
+
 /**
- * Downloads a patient lab report via the doctor API (Bearer token), then opens
- * the system share sheet to save to Files / Downloads.
+ * Downloads a report through the doctor API (Bearer auth) into app cache/documents.
  */
-export async function downloadHealthReport(
-  patientUserId: string,
-  reportId: string,
-  title: string,
-  mimeType: string,
-  fileUrl: string,
+export async function fetchDoctorReportFile(
+  options: FetchDoctorReportOptions,
 ): Promise<DownloadHealthReportResult> {
+  const { patientUserId, reportId, title, mimeType, fileUrl } = options;
   const token = await getValidAccessToken();
   if (!token) {
     throw new Error('Authentication required');
   }
 
-  const resolvedMime = resolveHealthReportMime(mimeType, fileUrl);
   const resolvedName = resolveHealthReportFileName(title, mimeType, fileUrl);
   const safeName = resolvedName.replace(/[^\w.\-]+/g, '_') || 'report.pdf';
 
@@ -61,7 +78,7 @@ export async function downloadHealthReport(
   });
 
   if (downloaded.status !== 200) {
-    throw new Error(`Download failed (${downloaded.status})`);
+    throw new Error(await readDownloadErrorMessage(downloaded.uri, downloaded.status));
   }
 
   const info = await FileSystem.getInfoAsync(downloaded.uri);
@@ -77,25 +94,67 @@ export async function downloadHealthReport(
   const finalDest = `${REPORTS_DIR}${safeName}`;
   await FileSystem.copyAsync({ from: downloaded.uri, to: finalDest });
 
-  if (Platform.OS === 'android' && isPdf) {
-    await openLocalFileOnAndroid(finalDest, resolvedMime, fileUrl);
-    return { localUri: finalDest, fileName: safeName };
+  return { localUri: finalDest, fileName: safeName };
+}
+
+/**
+ * View/open a report file on device (PDF viewer or image handler).
+ */
+export async function viewDoctorHealthReport(options: FetchDoctorReportOptions): Promise<void> {
+  const { mimeType, fileUrl } = options;
+  const { localUri } = await fetchDoctorReportFile(options);
+  const resolvedMime = resolveHealthReportMime(mimeType, fileUrl);
+  const isPdf = isHealthReportPdf(mimeType, fileUrl);
+
+  if (Platform.OS === 'android') {
+    await openLocalFileOnAndroid(localUri, resolvedMime);
+    return;
   }
 
   if (await Sharing.isAvailableAsync()) {
-    await Sharing.shareAsync(finalDest, {
+    await Sharing.shareAsync(localUri, {
+      mimeType: resolvedMime,
+      dialogTitle: 'Open report',
+      ...(Platform.OS === 'ios' && isPdf ? { UTI: 'com.adobe.pdf' as const } : {}),
+    });
+    return;
+  }
+
+  Alert.alert('Report saved', 'The file was saved in the app but could not be opened automatically.');
+}
+
+/**
+ * Downloads a patient lab report via the doctor API, then opens share/save or PDF viewer.
+ */
+export async function downloadHealthReport(
+  patientUserId: string,
+  reportId: string,
+  title: string,
+  mimeType: string,
+  fileUrl: string,
+): Promise<DownloadHealthReportResult> {
+  const options = { patientUserId, reportId, title, mimeType, fileUrl };
+  const result = await fetchDoctorReportFile(options);
+  const resolvedMime = resolveHealthReportMime(mimeType, fileUrl);
+  const isPdf = isHealthReportPdf(mimeType, fileUrl);
+
+  if (Platform.OS === 'android' && isPdf) {
+    await openLocalFileOnAndroid(result.localUri, resolvedMime);
+    return result;
+  }
+
+  if (await Sharing.isAvailableAsync()) {
+    await Sharing.shareAsync(result.localUri, {
       mimeType: resolvedMime,
       dialogTitle: 'Save report',
-      ...(Platform.OS === 'ios' && resolvedMime === 'application/pdf'
-        ? { UTI: 'com.adobe.pdf' as const }
-        : {}),
+      ...(Platform.OS === 'ios' && isPdf ? { UTI: 'com.adobe.pdf' as const } : {}),
     });
   } else if (Platform.OS === 'android') {
     Alert.alert(
       'Report saved',
-      `Saved in the app as ${safeName}. Use a file manager to copy from app storage if needed.`,
+      `Saved in the app as ${result.fileName}. Use a file manager to copy from app storage if needed.`,
     );
   }
 
-  return { localUri: finalDest, fileName: safeName };
+  return result;
 }

@@ -167,18 +167,33 @@ const getCustomerReportFile = async (userId, reportId) => {
     mime === 'application/x-pdf' ||
     inferReportResourceType(report) === 'raw';
 
+  const publicId =
+    report.cloudinaryPublicId ||
+    cloudinaryService.parsePublicIdFromDeliveryUrl(report.fileUrl);
+
   let buffer;
   let lastError;
-  for (const url of signedReportUrlsToTry(report)) {
+
+  if (publicId) {
     try {
-      buffer = await fetchRemoteReportBuffer(url);
-      if (expectPdf && !bufferLooksLikePdf(buffer)) {
-        throw new AppError(502, 'Downloaded file is not a valid PDF');
-      }
-      lastError = null;
-      break;
+      buffer = await cloudinaryService.fetchReportBuffer(
+        publicId,
+        inferReportResourceType(report),
+      );
     } catch (err) {
       lastError = err;
+    }
+  }
+
+  if (!buffer) {
+    for (const url of signedReportUrlsToTry(report)) {
+      try {
+        buffer = await fetchRemoteReportBuffer(url);
+        lastError = null;
+        break;
+      } catch (err) {
+        lastError = err;
+      }
     }
   }
 
@@ -186,6 +201,10 @@ const getCustomerReportFile = async (userId, reportId) => {
     throw lastError instanceof AppError
       ? lastError
       : new AppError(502, 'Could not download report file');
+  }
+
+  if (expectPdf && !bufferLooksLikePdf(buffer)) {
+    throw new AppError(502, 'Downloaded file is not a valid PDF');
   }
 
   return {

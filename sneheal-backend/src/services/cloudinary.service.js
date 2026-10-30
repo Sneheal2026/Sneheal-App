@@ -132,6 +132,76 @@ const deleteAsset = async (publicId, resourceType = 'image') => {
 };
 
 /**
+ * Extract Cloudinary public_id from a delivery URL (unsigned or signed).
+ */
+const parsePublicIdFromDeliveryUrl = (url) => {
+  if (!url) return null;
+
+  try {
+    let pathname = new URL(url).pathname;
+    // Signed delivery URLs embed `/s--{signature}--/` before the version/public_id segment.
+    pathname = pathname.replace(/\/s--[^/]+--\//, '/');
+    const match = pathname.match(/\/(?:image|raw)\/(upload|authenticated)\/(?:v\d+\/)?(.+)$/);
+    if (!match?.[2]) return null;
+    return decodeURIComponent(match[2]);
+  } catch {
+    return null;
+  }
+};
+
+const resourceTypesToTry = (hint) => {
+  const normalized = String(hint || '').trim().toLowerCase();
+  if (normalized === 'raw') return ['raw', 'image'];
+  if (normalized === 'image') return ['image', 'raw'];
+  return ['raw', 'image'];
+};
+
+/**
+ * Download report bytes via Cloudinary Admin API metadata (version + delivery type)
+ * so signed URLs match what Cloudinary expects.
+ */
+const fetchReportBuffer = async (publicId, resourceTypeHint = 'raw') => {
+  if (!publicId) {
+    throw new AppError(400, 'Report file reference is missing');
+  }
+
+  ensureConfigured();
+  let lastError;
+
+  for (const resourceType of resourceTypesToTry(resourceTypeHint)) {
+    try {
+      const meta = await cloudinary.api.resource(publicId, { resource_type: resourceType });
+      const deliveryType = meta.type || 'upload';
+      const signedUrl = cloudinary.url(meta.public_id, {
+        resource_type: meta.resource_type || resourceType,
+        type: deliveryType,
+        version: meta.version,
+        sign_url: true,
+        secure: true,
+      });
+
+      const response = await fetch(signedUrl);
+      if (!response.ok) {
+        throw new AppError(502, `Could not fetch report file (${response.status})`);
+      }
+
+      const buffer = Buffer.from(await response.arrayBuffer());
+      if (buffer.length < 32) {
+        throw new AppError(502, 'Downloaded report file is empty');
+      }
+
+      return buffer;
+    } catch (err) {
+      lastError = err;
+    }
+  }
+
+  if (lastError instanceof AppError) throw lastError;
+  const detail = lastError?.message ? `: ${lastError.message}` : '';
+  throw new AppError(502, `Could not download report from storage${detail}`);
+};
+
+/**
  * Signed delivery URL for doctor/customer report access (raw PDFs often 401 without signing).
  */
 const getSignedReportUrl = (publicId, resourceType = 'image') => {
@@ -153,4 +223,6 @@ module.exports = {
   deleteImage,
   deleteAsset,
   getSignedReportUrl,
+  parsePublicIdFromDeliveryUrl,
+  fetchReportBuffer,
 };

@@ -1,5 +1,5 @@
 import * as FileSystem from 'expo-file-system/legacy';
-import { Alert, Linking, Platform, Share } from 'react-native';
+import { Alert, Platform, Share } from 'react-native';
 import {
   resolveHealthReportFileName,
   resolveHealthReportMime,
@@ -55,9 +55,9 @@ export async function openRemoteFile(
 
     const isPdf = resolvedMime === 'application/pdf';
     if (isPdf && !(await headerLooksLikePdf(downloaded.uri))) {
-      // Cloudinary / CDN returned HTML or wrong body — open in browser instead.
-      await Linking.openURL(trimmedUrl);
-      return;
+      throw new Error(
+        'This file could not be opened. Ask the patient to re-upload the report, or try again later.',
+      );
     }
 
     if (Platform.OS === 'android') {
@@ -69,16 +69,11 @@ export async function openRemoteFile(
       url: downloaded.uri,
       title: safeName,
     });
-  } catch {
-    try {
-      await Linking.openURL(trimmedUrl);
-      return;
-    } catch {
-      // fall through
-    }
-    Alert.alert(
-      'Unable to open file',
-      'Install a PDF reader (e.g. Google PDF Viewer), or try again.',
-    );
+  } catch (err) {
+    const message =
+      err instanceof Error
+        ? err.message
+        : 'Install a PDF reader (e.g. Google PDF Viewer), or try again.';
+    Alert.alert('Unable to open file', message);
   }
 }

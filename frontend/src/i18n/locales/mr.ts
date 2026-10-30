@@ -750,7 +750,7 @@ const mr: TranslationResources = {
   },
   reports: {
     title: 'लॅब रिपोर्ट',
-    subtitleEmpty: 'डॉक्टरांसाठी PDF किंवा फोटो',
+    subtitleEmpty: 'डॉक्टरांसाठी PDF (जास्तीत जास्त १ MB) किंवा फोटो',
     savedCount: '{{count}} सेव्ह',
     empty: 'अजून रिपोर्ट नाहीत',
     emptySubtitle: 'लॅब रिपोर्ट, स्कॅन किंवा आरोग्य फाइल अपलोड करा.',
@@ -773,6 +773,7 @@ const mr: TranslationResources = {
     permissionCamera: 'रिपोर्टचा फोटो काढण्यासाठी कॅमेरा परवानगी द्या.',
     uploading: 'अपलोड होत आहे…',
     pdfUnavailable: 'PDF पिकर उघडला नाही. फोटो अजून अपलोड करू शकता.',
+    pdfTooLarge: 'ही PDF खूप मोठी आहे. {{maxMb}} MB किंवा त्यापेक्षा लहान फाइल वापरा.',
   },
   emergency: {
     title: 'आणीबाणी मदत',

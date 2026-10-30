@@ -751,7 +751,7 @@ const en = {
   },
   reports: {
     title: 'Lab reports',
-    subtitleEmpty: 'PDF or photo files for your doctor',
+    subtitleEmpty: 'PDF (max 1 MB) or photo for your doctor',
     savedCount: '{{count}} saved',
     empty: 'No reports yet',
     emptySubtitle: 'Upload a lab report, scan, or other health file.',
@@ -774,6 +774,7 @@ const en = {
     permissionCamera: 'Allow camera access to photograph a report.',
     uploading: 'Uploading…',
     pdfUnavailable: 'Could not open the PDF picker. You can still upload a photo.',
+    pdfTooLarge: 'This PDF is too large. Please use a file of {{maxMb}} MB or less.',
   },
   emergency: {
     title: 'Emergency help',

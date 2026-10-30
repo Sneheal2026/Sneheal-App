@@ -18,7 +18,9 @@ import { useTheme } from '@/hooks/useTheme';
 import { useTranslation } from 'react-i18next';
 import type { HealthReport } from '@/types/report';
 import { deleteReport, fetchReports, uploadReport, type ReportUploadFile } from '@/services/reportService';
+import { MAX_REPORT_PDF_BYTES, MAX_REPORT_PDF_MB } from '@/constants/healthReports';
 import { pickImageFromSource } from '@/utils/imagePicker';
+import * as FileSystem from 'expo-file-system/legacy';
 
 const formatDate = (iso: string) => {
   const date = new Date(iso);
@@ -96,6 +98,15 @@ const LabReportsScreen = () => {
     await sendFile(imageFileFromUri(image.uri));
   };
 
+  const resolvePdfByteSize = async (uri: string, reportedSize?: number | null) => {
+    if (typeof reportedSize === 'number' && reportedSize > 0) return reportedSize;
+    const info = await FileSystem.getInfoAsync(uri);
+    if (info.exists && 'size' in info && typeof info.size === 'number') {
+      return info.size;
+    }
+    return null;
+  };
+
   const pickPdf = async () => {
     try {
       const result = await DocumentPicker.getDocumentAsync({
@@ -105,6 +116,14 @@ const LabReportsScreen = () => {
       });
       if (result.canceled || !result.assets?.[0]?.uri) return;
       const asset = result.assets[0];
+      const byteSize = await resolvePdfByteSize(asset.uri, asset.size);
+      if (byteSize != null && byteSize > MAX_REPORT_PDF_BYTES) {
+        Alert.alert(
+          t('reports.uploadFailed'),
+          t('reports.pdfTooLarge', { maxMb: MAX_REPORT_PDF_MB }),
+        );
+        return;
+      }
       await sendFile({
         uri: asset.uri,
         name: asset.name || 'report.pdf',

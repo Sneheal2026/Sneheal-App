@@ -33,8 +33,7 @@ import {
   fetchDoctorReports,
 } from '@/services/doctorService';
 import { isHealthReportImage, isHealthReportPdf } from '@/utils/healthReportFile';
-import { downloadHealthReport } from '@/utils/downloadHealthReport';
-import { openRemoteFile } from '@/utils/openRemoteFile';
+import { downloadHealthReport, viewDoctorHealthReport } from '@/utils/downloadHealthReport';
 import theme from '@/styles/theme';
 import { useTranslation } from 'react-i18next';
 import { formatDoctorPatientPhone } from '@/utils/doctorPatientPhone';
@@ -147,7 +146,13 @@ const PatientDetailsScreen = () => {
   const openReportPdf = async (report: HealthReport) => {
     setReportBusyId(report.id);
     try {
-      await openRemoteFile(report.fileUrl, report.title, report.mimeType);
+      await viewDoctorHealthReport({
+        patientUserId: userId,
+        reportId: report.id,
+        title: report.title,
+        mimeType: report.mimeType,
+        fileUrl: report.fileUrl,
+      });
     } catch (err) {
       const message = err instanceof Error ? err.message : t('doctor.reportDownloadFailed');
       Alert.alert(t('doctor.reportDownloadFailedTitle'), message);

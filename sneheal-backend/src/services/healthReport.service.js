@@ -3,6 +3,8 @@ const cloudinaryService = require('./cloudinary.service');
 const AppError = require('../utils/AppError');
 
 const MAX_REPORTS = 40;
+const MAX_REPORT_PDF_BYTES = 1 * 1024 * 1024;
+const MAX_REPORT_IMAGE_BYTES = 10 * 1024 * 1024;
 
 const normalizeReportMime = (mimetype, originalname) => {
   const mime = String(mimetype || '').trim().toLowerCase();
@@ -37,6 +39,14 @@ const saveReport = async (userId, file, title) => {
   }
 
   const mimeType = normalizeReportMime(file.mimetype, file.originalname);
+  if (mimeType === 'application/pdf') {
+    if (file.buffer.length > MAX_REPORT_PDF_BYTES) {
+      throw new AppError(400, 'PDF must be 1 MB or smaller');
+    }
+  } else if (file.buffer.length > MAX_REPORT_IMAGE_BYTES) {
+    throw new AppError(400, 'Image must be 10 MB or smaller');
+  }
+
   const uploaded = await cloudinaryService.uploadHealthFile(file.buffer, mimeType);
 
   return healthReportRepo.create(userId, {
