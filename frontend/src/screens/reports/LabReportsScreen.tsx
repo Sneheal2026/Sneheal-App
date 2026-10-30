@@ -13,14 +13,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import * as DocumentPicker from 'expo-document-picker';
 import { useTheme } from '@/hooks/useTheme';
 import { useTranslation } from 'react-i18next';
 import type { HealthReport } from '@/types/report';
 import { deleteReport, fetchReports, uploadReport, type ReportUploadFile } from '@/services/reportService';
-import { MAX_REPORT_PDF_BYTES, MAX_REPORT_PDF_MB } from '@/constants/healthReports';
 import { pickImageFromSource } from '@/utils/imagePicker';
-import * as FileSystem from 'expo-file-system/legacy';
 
 const formatDate = (iso: string) => {
   const date = new Date(iso);
@@ -98,48 +95,11 @@ const LabReportsScreen = () => {
     await sendFile(imageFileFromUri(image.uri));
   };
 
-  const resolvePdfByteSize = async (uri: string, reportedSize?: number | null) => {
-    if (typeof reportedSize === 'number' && reportedSize > 0) return reportedSize;
-    const info = await FileSystem.getInfoAsync(uri);
-    if (info.exists && 'size' in info && typeof info.size === 'number') {
-      return info.size;
-    }
-    return null;
-  };
-
-  const pickPdf = async () => {
-    try {
-      const result = await DocumentPicker.getDocumentAsync({
-        type: 'application/pdf',
-        copyToCacheDirectory: true,
-        multiple: false,
-      });
-      if (result.canceled || !result.assets?.[0]?.uri) return;
-      const asset = result.assets[0];
-      const byteSize = await resolvePdfByteSize(asset.uri, asset.size);
-      if (byteSize != null && byteSize > MAX_REPORT_PDF_BYTES) {
-        Alert.alert(
-          t('reports.uploadFailed'),
-          t('reports.pdfTooLarge', { maxMb: MAX_REPORT_PDF_MB }),
-        );
-        return;
-      }
-      await sendFile({
-        uri: asset.uri,
-        name: asset.name || 'report.pdf',
-        mimeType: asset.mimeType || 'application/pdf',
-      });
-    } catch (error: any) {
-      Alert.alert(t('reports.uploadFailed'), error?.message || t('reports.pdfUnavailable'));
-    }
-  };
-
   const openPicker = () => {
     if (uploading) return;
-    Alert.alert(t('reports.pickTitle'), undefined, [
+    Alert.alert(t('reports.pickTitle'), t('reports.pickHint'), [
       { text: t('reports.pickPhoto'), onPress: () => void pickPhoto('gallery') },
       { text: t('reports.pickCamera'), onPress: () => void pickPhoto('camera') },
-      { text: t('reports.pickPdf'), onPress: () => void pickPdf() },
       { text: t('common.cancel'), style: 'cancel' },
     ]);
   };
@@ -314,7 +274,7 @@ const LabReportsScreen = () => {
             }
             ListEmptyComponent={
               <View style={styles.emptyWrap}>
-                <Ionicons name="document-attach-outline" size={42} color={colors.primary} />
+                <Ionicons name="image-outline" size={42} color={colors.primary} />
                 <Text style={styles.emptyTitle}>{t('reports.empty')}</Text>
                 <Text style={styles.emptySubtitle}>{t('reports.emptySubtitle')}</Text>
                 <Pressable
@@ -327,41 +287,34 @@ const LabReportsScreen = () => {
                 </Pressable>
               </View>
             }
-            renderItem={({ item }) => {
-              const isImage = item.mimeType.startsWith('image/');
-              return (
-                <View style={styles.card}>
-                  <View style={styles.fileIcon}>
-                    <Ionicons
-                      name={isImage ? 'image-outline' : 'document-text-outline'}
-                      size={22}
-                      color={colors.primary}
-                    />
-                  </View>
-                  <View style={styles.cardText}>
-                    <Text style={styles.cardTitle} numberOfLines={1}>
-                      {item.title}
-                    </Text>
-                    <Text style={styles.cardMeta}>
-                      {formatDate(item.createdAt)} · {isImage ? 'Image' : 'PDF'}
-                    </Text>
-                  </View>
-                  <Pressable
-                    onPress={() => confirmDelete(item)}
-                    disabled={deletingId === item.id}
-                    accessibilityRole="button"
-                    accessibilityLabel={t('reports.deleteA11y')}
-                    hitSlop={8}
-                  >
-                    {deletingId === item.id ? (
-                      <ActivityIndicator size="small" color={colors.error ?? colors.primary} />
-                    ) : (
-                      <Ionicons name="trash-outline" size={20} color={colors.textSecondary} />
-                    )}
-                  </Pressable>
+            renderItem={({ item }) => (
+              <View style={styles.card}>
+                <View style={styles.fileIcon}>
+                  <Ionicons name="image-outline" size={22} color={colors.primary} />
                 </View>
-              );
-            }}
+                <View style={styles.cardText}>
+                  <Text style={styles.cardTitle} numberOfLines={1}>
+                    {item.title}
+                  </Text>
+                  <Text style={styles.cardMeta}>
+                    {formatDate(item.createdAt)} · {t('reports.fileTypePhoto')}
+                  </Text>
+                </View>
+                <Pressable
+                  onPress={() => confirmDelete(item)}
+                  disabled={deletingId === item.id}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('reports.deleteA11y')}
+                  hitSlop={8}
+                >
+                  {deletingId === item.id ? (
+                    <ActivityIndicator size="small" color={colors.error ?? colors.primary} />
+                  ) : (
+                    <Ionicons name="trash-outline" size={20} color={colors.textSecondary} />
+                  )}
+                </Pressable>
+              </View>
+            )}
           />
         )}
       </View>

@@ -64,7 +64,7 @@ export async function fetchDoctorReportFile(
   }
 
   const resolvedName = resolveHealthReportFileName(title, mimeType, fileUrl);
-  const safeName = resolvedName.replace(/[^\w.\-]+/g, '_') || 'report.pdf';
+  const safeName = resolvedName.replace(/[^\w.\-]+/g, '_') || 'report.jpg';
 
   await FileSystem.makeDirectoryAsync(REPORTS_DIR, { intermediates: true });
 
@@ -98,33 +98,7 @@ export async function fetchDoctorReportFile(
 }
 
 /**
- * View/open a report file on device (PDF viewer or image handler).
- */
-export async function viewDoctorHealthReport(options: FetchDoctorReportOptions): Promise<void> {
-  const { mimeType, fileUrl } = options;
-  const { localUri } = await fetchDoctorReportFile(options);
-  const resolvedMime = resolveHealthReportMime(mimeType, fileUrl);
-  const isPdf = isHealthReportPdf(mimeType, fileUrl);
-
-  if (Platform.OS === 'android') {
-    await openLocalFileOnAndroid(localUri, resolvedMime);
-    return;
-  }
-
-  if (await Sharing.isAvailableAsync()) {
-    await Sharing.shareAsync(localUri, {
-      mimeType: resolvedMime,
-      dialogTitle: 'Open report',
-      ...(Platform.OS === 'ios' && isPdf ? { UTI: 'com.adobe.pdf' as const } : {}),
-    });
-    return;
-  }
-
-  Alert.alert('Report saved', 'The file was saved in the app but could not be opened automatically.');
-}
-
-/**
- * Downloads a patient lab report via the doctor API, then opens share/save or PDF viewer.
+ * Downloads a patient lab report photo via the doctor API, then opens share/save or viewer.
  */
 export async function downloadHealthReport(
   patientUserId: string,
@@ -138,7 +112,7 @@ export async function downloadHealthReport(
   const resolvedMime = resolveHealthReportMime(mimeType, fileUrl);
   const isPdf = isHealthReportPdf(mimeType, fileUrl);
 
-  if (Platform.OS === 'android' && isPdf) {
+  if (Platform.OS === 'android') {
     await openLocalFileOnAndroid(result.localUri, resolvedMime);
     return result;
   }

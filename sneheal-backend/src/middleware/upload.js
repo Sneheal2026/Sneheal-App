@@ -53,20 +53,14 @@ const uploadPrescriptionImage = (req, res, next) => {
 };
 
 const reportFileFilter = (req, file, cb) => {
-  const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
-  const name = String(file.originalname || '').toLowerCase();
+  const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
 
   if (allowedTypes.includes(file.mimetype)) {
     cb(null, true);
     return;
   }
 
-  if (file.mimetype === 'application/octet-stream' && name.endsWith('.pdf')) {
-    cb(null, true);
-    return;
-  }
-
-  cb(new AppError(400, 'Only PDF, JPEG, and PNG files are allowed'), false);
+  cb(new AppError(400, 'Only JPEG and PNG photos are allowed'), false);
 };
 
 const reportUpload = multer({

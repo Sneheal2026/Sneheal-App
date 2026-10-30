@@ -3,20 +3,26 @@ const cloudinaryService = require('./cloudinary.service');
 const AppError = require('../utils/AppError');
 
 const MAX_REPORTS = 40;
-const MAX_REPORT_PDF_BYTES = 1 * 1024 * 1024;
 const MAX_REPORT_IMAGE_BYTES = 10 * 1024 * 1024;
+
+const ALLOWED_IMAGE_MIMES = new Set(['image/jpeg', 'image/jpg', 'image/png']);
 
 const normalizeReportMime = (mimetype, originalname) => {
   const mime = String(mimetype || '').trim().toLowerCase();
   const name = String(originalname || '').toLowerCase();
   if (mime === 'image/jpg') return 'image/jpeg';
-  if (mime === 'application/pdf' || mime === 'application/x-pdf') return 'application/pdf';
-  if (mime.startsWith('image/')) return mime;
-  if (name.endsWith('.pdf')) return 'application/pdf';
-  if (mime === 'application/octet-stream' && name.endsWith('.pdf')) {
-    return 'application/pdf';
+  if (ALLOWED_IMAGE_MIMES.has(mime)) return mime === 'image/jpg' ? 'image/jpeg' : mime;
+  if (name.endsWith('.png')) return 'image/png';
+  if (name.endsWith('.jpg') || name.endsWith('.jpeg')) return 'image/jpeg';
+  return mime;
+};
+
+const assertImageReport = (mimetype, originalname) => {
+  const normalized = normalizeReportMime(mimetype, originalname);
+  if (normalized === 'image/jpeg' || normalized === 'image/png') {
+    return normalized;
   }
-  return mime || 'application/pdf';
+  throw new AppError(400, 'Only JPEG and PNG photos are allowed for lab reports');
 };
 
 const cleanTitle = (value, fallbackName) => {
@@ -38,24 +44,26 @@ const saveReport = async (userId, file, title) => {
     throw new AppError(400, `You can save up to ${MAX_REPORTS} reports`);
   }
 
-  const mimeType = normalizeReportMime(file.mimetype, file.originalname);
-  if (mimeType === 'application/pdf') {
-    if (file.buffer.length > MAX_REPORT_PDF_BYTES) {
-      throw new AppError(400, 'PDF must be 1 MB or smaller');
-    }
-  } else if (file.buffer.length > MAX_REPORT_IMAGE_BYTES) {
+  const mimeType = assertImageReport(file.mimetype, file.originalname);
+
+  if (file.buffer.length > MAX_REPORT_IMAGE_BYTES) {
     throw new AppError(400, 'Image must be 10 MB or smaller');
   }
 
   const uploaded = await cloudinaryService.uploadHealthFile(file.buffer, mimeType);
 
-  return healthReportRepo.create(userId, {
-    title: cleanTitle(title, file.originalname),
-    fileUrl: uploaded.fileUrl,
-    cloudinaryPublicId: uploaded.publicId,
-    resourceType: uploaded.resourceType,
-    mimeType,
-  });
+  try {
+    return await healthReportRepo.create(userId, {
+      title: cleanTitle(title, file.originalname),
+      fileUrl: uploaded.fileUrl,
+      cloudinaryPublicId: uploaded.publicId,
+      resourceType: uploaded.resourceType,
+      mimeType,
+    });
+  } catch (err) {
+    await cloudinaryService.deleteAsset(uploaded.publicId, uploaded.resourceType);
+    throw err;
+  }
 };
 
 const deleteReport = async (userId, id) => {

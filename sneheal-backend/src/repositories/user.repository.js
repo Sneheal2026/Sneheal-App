@@ -99,7 +99,7 @@ const mapEngagedPatient = (row) => ({
   lastActivityAt: row.last_activity,
 });
 
-/** Customers with at least one order or uploaded prescription. */
+/** Customers with at least one order, prescription, or uploaded lab report. */
 const listEngagedPatients = async (connection = db) => {
   const [rows] = await connection.execute(
     `SELECT
@@ -110,13 +110,16 @@ const listEngagedPatients = async (connection = db) => {
        COALESCE(p_stats.prescription_count, 0) AS prescription_count,
        GREATEST(
          COALESCE(o_stats.last_order_at, '1970-01-01 00:00:00'),
-         COALESCE(p_stats.last_prescription_at, '1970-01-01 00:00:00')
+         COALESCE(p_stats.last_prescription_at, '1970-01-01 00:00:00'),
+         COALESCE(r_stats.last_report_at, '1970-01-01 00:00:00')
        ) AS last_activity
      FROM users u
      INNER JOIN (
        SELECT user_id FROM orders
        UNION
        SELECT user_id FROM prescriptions
+       UNION
+       SELECT user_id FROM health_reports
      ) engaged ON engaged.user_id = u.id
      LEFT JOIN (
        SELECT user_id, COUNT(*) AS order_count, MAX(created_at) AS last_order_at
@@ -128,6 +131,11 @@ const listEngagedPatients = async (connection = db) => {
        FROM prescriptions
        GROUP BY user_id
      ) p_stats ON p_stats.user_id = u.id
+     LEFT JOIN (
+       SELECT user_id, MAX(created_at) AS last_report_at
+       FROM health_reports
+       GROUP BY user_id
+     ) r_stats ON r_stats.user_id = u.id
      WHERE u.role = 'customer' AND u.profile_completed = 1
      ORDER BY last_activity DESC, u.username ASC
      LIMIT 500`,

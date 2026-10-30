@@ -204,7 +204,10 @@ const getCustomerReportFile = async (userId, reportId) => {
   }
 
   if (expectPdf && !bufferLooksLikePdf(buffer)) {
-    throw new AppError(502, 'Downloaded file is not a valid PDF');
+    // Legacy PDF rows may remain in DB; images skip this check.
+    if (inferReportResourceType(report) === 'raw') {
+      throw new AppError(502, 'Downloaded file is not a valid PDF');
+    }
   }
 
   return {

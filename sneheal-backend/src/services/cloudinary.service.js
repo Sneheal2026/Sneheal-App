@@ -72,29 +72,35 @@ const uploadImage = (buffer, mimetype = 'image/jpeg') => {
 const deleteImage = async (publicId) => deleteAsset(publicId, 'image');
 
 /**
- * Upload a lab report (JPEG, PNG, or PDF) into the reports folder.
- * @returns {{ fileUrl: string, publicId: string, resourceType: 'image' | 'raw' }}
+ * Upload a lab report photo (JPEG or PNG) into the reports folder.
+ * @returns {{ fileUrl: string, publicId: string, resourceType: 'image' }}
  */
-const uploadHealthFile = (buffer, mimetype = 'application/pdf') => {
+const uploadHealthFile = (buffer, mimetype = 'image/jpeg') => {
   ensureConfigured();
 
   const { folder } = getConfig();
   const normalized = String(mimetype || '').toLowerCase();
-  const isPdf = normalized === 'application/pdf' || normalized === 'application/x-pdf';
-  const isPng = mimetype.includes('png');
-  const stamp = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  if (normalized === 'application/pdf' || normalized === 'application/x-pdf') {
+    throw new AppError(400, 'PDF uploads are not supported. Please upload a JPEG or PNG photo.');
+  }
 
-  const options = isPdf
-    ? {
-        resource_type: 'raw',
-        public_id: `${folder}/reports/${stamp}.pdf`,
-        unique_filename: false,
-      }
-    : {
-        folder: `${folder}/reports`,
-        resource_type: 'image',
-        format: isPng ? 'png' : 'jpg',
-      };
+  const isPng = normalized.includes('png');
+  const isJpeg =
+    normalized === 'image/jpeg' ||
+    normalized === 'image/jpg' ||
+    (!isPng && normalized.startsWith('image/'));
+
+  if (!isPng && !isJpeg) {
+    throw new AppError(400, 'Only JPEG and PNG photos are allowed');
+  }
+
+  const options = {
+    folder: `${folder}/reports`,
+    resource_type: 'image',
+    format: isPng ? 'png' : 'jpg',
+    type: 'upload',
+    access_mode: 'public',
+  };
 
   return new Promise((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(options, (err, result) => {
@@ -107,7 +113,7 @@ const uploadHealthFile = (buffer, mimetype = 'application/pdf') => {
       resolve({
         fileUrl: result.secure_url,
         publicId: result.public_id,
-        resourceType: isPdf ? 'raw' : 'image',
+        resourceType: 'image',
       });
     });
 
@@ -156,6 +162,80 @@ const resourceTypesToTry = (hint) => {
   return ['raw', 'image'];
 };
 
+const resourceFormatForDownload = (meta) => {
+  if (meta.format) return meta.format;
+  const id = String(meta.public_id || '').toLowerCase();
+  if (id.endsWith('.pdf')) return 'pdf';
+  if (id.endsWith('.png')) return 'png';
+  if (id.endsWith('.jpg') || id.endsWith('.jpeg')) return 'jpg';
+  return meta.resource_type === 'raw' ? 'pdf' : 'jpg';
+};
+
+const fetchBufferFromUrl = async (url) => {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new AppError(502, `Could not fetch report file (${response.status})`);
+  }
+  const buffer = Buffer.from(await response.arrayBuffer());
+  if (buffer.length < 32) {
+    throw new AppError(502, 'Downloaded report file is empty');
+  }
+  return buffer;
+};
+
+const buildDownloadAttempts = (meta) => {
+  const { api_key } = getConfig();
+  ensureConfigured();
+
+  const resourceType = meta.resource_type || 'raw';
+  const deliveryType = meta.type || 'upload';
+  const format = resourceFormatForDownload(meta);
+  const urls = [];
+  const push = (value) => {
+    const trimmed = String(value || '').trim();
+    if (trimmed && !urls.includes(trimmed)) urls.push(trimmed);
+  };
+
+  // Admin-signed download URL — works when CDN signed URLs return 401 (restricted delivery).
+  push(
+    cloudinary.utils.private_download_url(meta.public_id, format, {
+      resource_type: resourceType,
+      type: deliveryType,
+      expires_at: Math.floor(Date.now() / 1000) + 3600,
+    }),
+  );
+
+  if (typeof cloudinary.utils.generate_auth_token === 'function') {
+    const authToken = cloudinary.utils.generate_auth_token({
+      key: api_key,
+      duration: 3600,
+    });
+    push(
+      cloudinary.url(meta.public_id, {
+        resource_type: resourceType,
+        type: deliveryType,
+        version: meta.version,
+        auth_token: authToken,
+        secure: true,
+      }),
+    );
+  }
+
+  push(meta.secure_url);
+
+  push(
+    cloudinary.url(meta.public_id, {
+      resource_type: resourceType,
+      type: deliveryType,
+      version: meta.version,
+      sign_url: true,
+      secure: true,
+    }),
+  );
+
+  return urls;
+};
+
 /**
  * Download report bytes via Cloudinary Admin API metadata (version + delivery type)
  * so signed URLs match what Cloudinary expects.
@@ -171,26 +251,14 @@ const fetchReportBuffer = async (publicId, resourceTypeHint = 'raw') => {
   for (const resourceType of resourceTypesToTry(resourceTypeHint)) {
     try {
       const meta = await cloudinary.api.resource(publicId, { resource_type: resourceType });
-      const deliveryType = meta.type || 'upload';
-      const signedUrl = cloudinary.url(meta.public_id, {
-        resource_type: meta.resource_type || resourceType,
-        type: deliveryType,
-        version: meta.version,
-        sign_url: true,
-        secure: true,
-      });
 
-      const response = await fetch(signedUrl);
-      if (!response.ok) {
-        throw new AppError(502, `Could not fetch report file (${response.status})`);
+      for (const url of buildDownloadAttempts(meta)) {
+        try {
+          return await fetchBufferFromUrl(url);
+        } catch (err) {
+          lastError = err;
+        }
       }
-
-      const buffer = Buffer.from(await response.arrayBuffer());
-      if (buffer.length < 32) {
-        throw new AppError(502, 'Downloaded report file is empty');
-      }
-
-      return buffer;
     } catch (err) {
       lastError = err;
     }

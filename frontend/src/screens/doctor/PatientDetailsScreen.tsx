@@ -32,8 +32,8 @@ import {
   fetchDoctorPrescriptions,
   fetchDoctorReports,
 } from '@/services/doctorService';
-import { isHealthReportImage, isHealthReportPdf } from '@/utils/healthReportFile';
-import { downloadHealthReport, viewDoctorHealthReport } from '@/utils/downloadHealthReport';
+import { isHealthReportImage } from '@/utils/healthReportFile';
+import { downloadHealthReport } from '@/utils/downloadHealthReport';
 import theme from '@/styles/theme';
 import { useTranslation } from 'react-i18next';
 import { formatDoctorPatientPhone } from '@/utils/doctorPatientPhone';
@@ -141,24 +141,6 @@ const PatientDetailsScreen = () => {
 
   const previewReportImage = (report: HealthReport) => {
     setPreviewUri(report.fileUrl);
-  };
-
-  const openReportPdf = async (report: HealthReport) => {
-    setReportBusyId(report.id);
-    try {
-      await viewDoctorHealthReport({
-        patientUserId: userId,
-        reportId: report.id,
-        title: report.title,
-        mimeType: report.mimeType,
-        fileUrl: report.fileUrl,
-      });
-    } catch (err) {
-      const message = err instanceof Error ? err.message : t('doctor.reportDownloadFailed');
-      Alert.alert(t('doctor.reportDownloadFailedTitle'), message);
-    } finally {
-      setReportBusyId(null);
-    }
   };
 
   const downloadReport = async (report: HealthReport) => {
@@ -304,32 +286,21 @@ const PatientDetailsScreen = () => {
           >
             {reports.map((report) => {
               const isImage = isHealthReportImage(report.mimeType, report.fileUrl);
-              const isPdf = isHealthReportPdf(report.mimeType, report.fileUrl);
               return (
-              <ReportFileRow
-                key={report.id}
-                title={report.title}
-                meta={`${formatDate(report.createdAt)} · ${
-                  isImage ? 'Image' : 'PDF'
-                }`}
-                isImage={isImage}
-                busy={reportBusyId === report.id}
-                viewLabel={t('doctor.view')}
-                downloadLabel={t('doctor.download')}
-                onView={
-                  isImage
-                    ? () => previewReportImage(report)
-                    : isPdf
-                      ? () => {
-                          void openReportPdf(report);
-                        }
-                      : undefined
-                }
-                onDownload={() => {
-                  void downloadReport(report);
-                }}
-              />
-            );
+                <ReportFileRow
+                  key={report.id}
+                  title={report.title}
+                  meta={`${formatDate(report.createdAt)} · ${t('doctor.reportPhoto')}`}
+                  isImage={isImage}
+                  busy={reportBusyId === report.id}
+                  viewLabel={t('doctor.view')}
+                  downloadLabel={t('doctor.download')}
+                  onView={isImage ? () => previewReportImage(report) : undefined}
+                  onDownload={() => {
+                    void downloadReport(report);
+                  }}
+                />
+              );
             })}
           </ChartSection>
         </ScrollView>
