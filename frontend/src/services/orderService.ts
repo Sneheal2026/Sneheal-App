@@ -4,10 +4,15 @@ import type { OrderDetail, OrderListItem, DeliveryQueuePage, AgentDeliveredOrder
 export const createCheckoutOrder = (
   addressId: string,
   items: Array<{ productId: string; quantity: number }>,
+  couponCode?: string | null,
 ): Promise<OrderDetail> =>
   authenticatedApiRequest<OrderDetail>('/api/orders', {
     method: 'POST',
-    body: { addressId, items },
+    body: {
+      addressId,
+      items,
+      ...(couponCode ? { couponCode } : {}),
+    },
   });
 
 const ORDERS_STALE_MS = 90_000;

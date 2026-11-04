@@ -23,6 +23,7 @@ const SQL_FILES = [
   '012_order_fulfillment_status.sql',
   '013_health_reports.sql',
   '014_agent_delivered_orders_index.sql',
+  '015_promotions.sql',
 ];
 
 const splitStatements = (sql) =>

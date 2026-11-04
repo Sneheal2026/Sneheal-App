@@ -14,10 +14,10 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ScreenHeader from '@/components/common/ScreenHeader';
-import { CartBilling, CartItemRow, type BillLine } from '@/components/cart';
+import { CartBilling, CartItemRow, CartOffersSection, CouponAutoApplyToast, type BillLine } from '@/components/cart';
 import { useCart } from '@/context/CartContext';
 import { useSavedAddresses } from '@/hooks/useSavedAddresses';
-import { computeCartBill, formatInr } from '@/utils/cartBilling';
+import { emptyCartBill, formatInr } from '@/utils/cartBilling';
 import { resolveCatalogImage } from '@/utils/productImage';
 import { getTabBarHeight } from '@/navigation/tabBarConfig';
 import type { AuthStackParamList, TabScreenProps } from '@/navigation/types';
@@ -34,7 +34,21 @@ const CartScreen = ({ navigation: tabNavigation }: TabScreenProps<'Cart'>) => {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const tabBarHeight = getTabBarHeight(insets.bottom);
-  const { lines, totalItems, increment, decrement } = useCart();
+  const {
+    lines,
+    totalItems,
+    increment,
+    decrement,
+    quote,
+    quoteLoading,
+    couponDraft,
+    setCouponDraft,
+    applyCouponDraft,
+    clearCoupon,
+    couponApplyError,
+    autoApplyToast,
+    dismissAutoApplyToast,
+  } = useCart();
   const { selectedAddress, addresses, refresh } = useSavedAddresses();
   const [addressMissing, setAddressMissing] = useState(false);
 
@@ -44,7 +58,7 @@ const CartScreen = ({ navigation: tabNavigation }: TabScreenProps<'Cart'>) => {
     }, [refresh]),
   );
 
-  const bill = useMemo(() => computeCartBill(lines), [lines]);
+  const bill = quote?.bill ?? emptyCartBill();
 
   const billLines = useMemo<BillLine[]>(() => {
     const rows: BillLine[] = [
@@ -64,7 +78,7 @@ const CartScreen = ({ navigation: tabNavigation }: TabScreenProps<'Cart'>) => {
 
     if (bill.promoDiscount > 0) {
       rows.push({
-        label: t('cart.snehealDiscount'),
+        label: bill.appliedCartPromotion?.title ?? t('cart.snehealDiscount'),
         value: `- ${formatInr(bill.promoDiscount)}`,
         highlight: true,
       });
@@ -135,6 +149,11 @@ const CartScreen = ({ navigation: tabNavigation }: TabScreenProps<'Cart'>) => {
 
   return (
     <View style={styles.root}>
+      <CouponAutoApplyToast
+        visible={autoApplyToast != null}
+        payload={autoApplyToast}
+        onDismiss={dismissAutoApplyToast}
+      />
       <ScreenHeader title={t('cart.title')} subtitle={subtitle} />
 
       {lines.length === 0 ? (
@@ -212,6 +231,16 @@ const CartScreen = ({ navigation: tabNavigation }: TabScreenProps<'Cart'>) => {
               ))}
             </View>
 
+            <CartOffersSection
+              offers={quote?.offers ?? []}
+              loading={quoteLoading}
+              draftCode={couponDraft}
+              onChangeDraftCode={setCouponDraft}
+              onApplyCode={applyCouponDraft}
+              onClearCode={clearCoupon}
+              applyError={couponApplyError}
+            />
+
             <CartBilling
               lines={billLines}
               savings={bill.savings}
@@ -221,7 +250,9 @@ const CartScreen = ({ navigation: tabNavigation }: TabScreenProps<'Cart'>) => {
             <View style={styles.checkoutBar}>
               <View>
                 <Text style={styles.checkoutKicker}>{t('cart.toPay')}</Text>
-                <Text style={styles.checkoutTotal}>{formatInr(bill.grandTotal)}</Text>
+                <Text style={styles.checkoutTotal}>
+                  {quoteLoading && !quote ? '…' : formatInr(bill.grandTotal)}
+                </Text>
               </View>
               <Pressable
                 onPress={onContinue}

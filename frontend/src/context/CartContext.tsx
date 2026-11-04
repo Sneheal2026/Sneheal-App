@@ -4,12 +4,25 @@ import React, {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 import * as Haptics from 'expo-haptics';
 import { getCartLines, saveCartLines } from '@/services/cartStorage';
+import { fetchCartQuote } from '@/services/cartQuoteService';
+import { ApiError } from '@/services/apiClient';
 import { MAX_CART_QTY, productToCartLine, type CartLine } from '@/types/cart.types';
+import type { CartQuote } from '@/types/cartQuote.types';
 import type { Product } from '@/types/product.types';
+
+const QUOTE_DEBOUNCE_MS = 450;
+
+export type AutoApplyToastPayload = {
+  title: string;
+  code: string | null;
+  promoDiscount: number;
+  deliveryUnlocked: boolean;
+};
 
 type CartContextValue = {
   ready: boolean;
@@ -21,6 +34,17 @@ type CartContextValue = {
   decrement: (productId: string) => void;
   remove: (productId: string) => void;
   clearCart: () => void;
+  quote: CartQuote | null;
+  quoteLoading: boolean;
+  quoteError: string | null;
+  couponDraft: string;
+  setCouponDraft: (value: string) => void;
+  applyCouponDraft: () => void;
+  clearCoupon: () => void;
+  couponApplyError: string | null;
+  checkoutCouponCode: string | null;
+  autoApplyToast: AutoApplyToastPayload | null;
+  dismissAutoApplyToast: () => void;
 };
 
 const CartContext = createContext<CartContextValue | null>(null);
@@ -28,6 +52,18 @@ const CartContext = createContext<CartContextValue | null>(null);
 export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   const [lines, setLines] = useState<CartLine[]>([]);
   const [ready, setReady] = useState(false);
+  const [quote, setQuote] = useState<CartQuote | null>(null);
+  const [quoteLoading, setQuoteLoading] = useState(false);
+  const [quoteError, setQuoteError] = useState<string | null>(null);
+  const [couponDraft, setCouponDraft] = useState('');
+  const [appliedCouponCode, setAppliedCouponCode] = useState<string | null>(null);
+  const [couponApplyError, setCouponApplyError] = useState<string | null>(null);
+  const [autoApplyToast, setAutoApplyToast] = useState<AutoApplyToastPayload | null>(null);
+
+  const quoteRequestId = useRef(0);
+  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const prevCartPromoId = useRef<string | null>(null);
+  const prevDeliveryFree = useRef(false);
 
   useEffect(() => {
     let active = true;
@@ -45,6 +81,118 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     if (!ready) return;
     void saveCartLines(lines);
   }, [lines, ready]);
+
+  const runQuote = useCallback(
+    async (nextLines: CartLine[], couponCode: string | null) => {
+      if (nextLines.length === 0) {
+        setQuote(null);
+        setQuoteLoading(false);
+        setQuoteError(null);
+        prevCartPromoId.current = null;
+        prevDeliveryFree.current = false;
+        return;
+      }
+
+      const requestId = ++quoteRequestId.current;
+      setQuoteLoading(true);
+      setQuoteError(null);
+
+      try {
+        const data = await fetchCartQuote(nextLines, couponCode);
+        if (requestId !== quoteRequestId.current) return;
+        setQuote(data);
+        setCouponApplyError(null);
+      } catch (err) {
+        if (requestId !== quoteRequestId.current) return;
+        const message =
+          err instanceof ApiError ? err.message : 'Could not refresh cart totals';
+        setQuoteError(message);
+        if (couponCode) {
+          setCouponApplyError(message);
+        }
+      } finally {
+        if (requestId === quoteRequestId.current) {
+          setQuoteLoading(false);
+        }
+      }
+    },
+    [],
+  );
+
+  useEffect(() => {
+    if (!ready) return;
+
+    if (debounceTimer.current) {
+      clearTimeout(debounceTimer.current);
+    }
+
+    if (lines.length === 0) {
+      setQuote(null);
+      setQuoteLoading(false);
+      return;
+    }
+
+    debounceTimer.current = setTimeout(() => {
+      void runQuote(lines, appliedCouponCode);
+    }, QUOTE_DEBOUNCE_MS);
+
+    return () => {
+      if (debounceTimer.current) {
+        clearTimeout(debounceTimer.current);
+      }
+    };
+  }, [ready, lines, appliedCouponCode, runQuote]);
+
+  useEffect(() => {
+    if (!quote || quoteLoading) return;
+
+    const cartPromo = quote.bill.appliedCartPromotion;
+    const cartId = cartPromo?.id ?? null;
+    const deliveryFree = quote.bill.deliveryFree;
+    const deliveryJustUnlocked = deliveryFree && !prevDeliveryFree.current;
+
+    if (appliedCouponCode) {
+      prevCartPromoId.current = cartId;
+      prevDeliveryFree.current = deliveryFree;
+      return;
+    }
+
+    const cartNewlyApplied = Boolean(cartId && cartId !== prevCartPromoId.current);
+
+    if (cartNewlyApplied || (deliveryJustUnlocked && quote.bill.appliedDeliveryPromotion)) {
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setAutoApplyToast({
+        title: cartPromo?.title ?? quote.bill.appliedDeliveryPromotion?.title ?? '',
+        code: cartPromo?.code ?? null,
+        promoDiscount: quote.bill.promoDiscount,
+        deliveryUnlocked: deliveryJustUnlocked,
+      });
+    }
+
+    prevCartPromoId.current = cartId;
+    prevDeliveryFree.current = deliveryFree;
+  }, [quote, quoteLoading, appliedCouponCode]);
+
+  const dismissAutoApplyToast = useCallback(() => {
+    setAutoApplyToast(null);
+  }, []);
+
+  const applyCouponDraft = useCallback(() => {
+    const trimmed = couponDraft.trim().toUpperCase();
+    if (!trimmed) {
+      setCouponApplyError(null);
+      setAppliedCouponCode(null);
+      return;
+    }
+    setAppliedCouponCode(trimmed);
+    setCouponApplyError(null);
+  }, [couponDraft]);
+
+  const clearCoupon = useCallback(() => {
+    setCouponDraft('');
+    setAppliedCouponCode(null);
+    setCouponApplyError(null);
+  }, []);
 
   const getQuantity = useCallback(
     (productId: string) => lines.find((line) => line.productId === productId)?.quantity ?? 0,
@@ -109,12 +257,16 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
 
   const clearCart = useCallback(() => {
     setLines([]);
-  }, []);
+    setQuote(null);
+    clearCoupon();
+  }, [clearCoupon]);
 
   const totalItems = useMemo(
     () => lines.reduce((sum, line) => sum + line.quantity, 0),
     [lines],
   );
+
+  const checkoutCouponCode = appliedCouponCode;
 
   const value = useMemo<CartContextValue>(
     () => ({
@@ -127,8 +279,39 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       decrement,
       remove,
       clearCart,
+      quote,
+      quoteLoading,
+      quoteError,
+      couponDraft,
+      setCouponDraft,
+      applyCouponDraft,
+      clearCoupon,
+      couponApplyError,
+      checkoutCouponCode,
+      autoApplyToast,
+      dismissAutoApplyToast,
     }),
-    [ready, lines, totalItems, getQuantity, addProduct, increment, decrement, remove, clearCart],
+    [
+      ready,
+      lines,
+      totalItems,
+      getQuantity,
+      addProduct,
+      increment,
+      decrement,
+      remove,
+      clearCart,
+      quote,
+      quoteLoading,
+      quoteError,
+      couponDraft,
+      applyCouponDraft,
+      clearCoupon,
+      couponApplyError,
+      checkoutCouponCode,
+      autoApplyToast,
+      dismissAutoApplyToast,
+    ],
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

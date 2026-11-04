@@ -2,14 +2,16 @@ const crypto = require('crypto');
 const db = require('../config/db');
 const AppError = require('../utils/AppError');
 const addressRepo = require('../repositories/address.repository');
-const productRepo = require('../repositories/product.repository');
 const orderRepo = require('../repositories/order.repository');
 const paymentRepo = require('../repositories/payment.repository');
 const { computeCartBill, fromPaise, toPaise } = require('./cartBilling.service');
+const {
+  buildPricedLines,
+  normalizeItems,
+} = require('./cart.service');
+const promotionRepo = require('../repositories/promotion.repository');
+const { evaluatePromotions } = require('./promotion.service');
 const mailService = require('./mail.service');
-
-const MAX_LINES = 50;
-const MAX_QTY = 10;
 
 const makePublicId = () => {
   const rand = crypto.randomBytes(3).toString('hex').toUpperCase();
@@ -122,32 +124,7 @@ const hydrateDeliveryOrders = async (orders) => {
   return orders.map((order) => toDeliveryPayload(order, byOrder.get(order.id) || []));
 };
 
-const normalizeItems = (rawItems) => {
-  if (!Array.isArray(rawItems) || rawItems.length === 0) {
-    throw new AppError(400, 'Cart items are required');
-  }
-  if (rawItems.length > MAX_LINES) {
-    throw new AppError(400, `Cart cannot have more than ${MAX_LINES} items`);
-  }
-
-  const merged = new Map();
-  for (const raw of rawItems) {
-    const productId = String(raw.productId ?? '').trim();
-    const quantity = Number(raw.quantity);
-    if (!productId) {
-      throw new AppError(400, 'Each item needs a productId');
-    }
-    if (!Number.isInteger(quantity) || quantity < 1 || quantity > MAX_QTY) {
-      throw new AppError(400, `Quantity must be between 1 and ${MAX_QTY}`);
-    }
-    merged.set(productId, (merged.get(productId) || 0) + quantity);
-  }
-
-  return [...merged.entries()].map(([productId, quantity]) => ({
-    productId,
-    quantity: Math.min(MAX_QTY, quantity),
-  }));
-};
+const normalizeItemsForOrder = normalizeItems;
 
 const createCheckoutOrder = async (userId, body) => {
   const addressId = String(body.addressId ?? '').trim();
@@ -155,33 +132,24 @@ const createCheckoutOrder = async (userId, body) => {
     throw new AppError(400, 'Delivery address is required');
   }
 
-  const requested = normalizeItems(body.items);
+  const requested = normalizeItemsForOrder(body.items);
   const address = await addressRepo.findByIdAndUserId(addressId, userId);
   if (!address) {
     throw new AppError(400, 'Delivery address not found');
   }
 
-  const products = await productRepo.findByIds(requested.map((item) => item.productId));
-  const productMap = new Map(products.map((product) => [product.id, product]));
-
-  const pricedLines = requested.map((item) => {
-    const product = productMap.get(item.productId);
-    if (!product) {
-      throw new AppError(400, 'One or more products are unavailable');
-    }
-    return {
-      productId: product.id,
-      quantity: item.quantity,
-      name: product.name,
-      unit: product.unit,
-      imageUrl: product.imageUrl,
-      price: product.price,
-      originalPrice: product.originalPrice ?? product.price,
-      prescriptionRequired: product.prescriptionRequired,
-    };
-  });
-
-  const bill = computeCartBill(pricedLines);
+  const pricedLines = await buildPricedLines(requested);
+  const promotions = await promotionRepo.findActive();
+  const itemSellingPaise = pricedLines.reduce(
+    (sum, line) => sum + toPaise(line.price) * line.quantity,
+    0,
+  );
+  const evaluation = evaluatePromotions(
+    promotions,
+    itemSellingPaise,
+    body.couponCode,
+  );
+  const bill = computeCartBill(pricedLines, evaluation);
   if (bill.grandTotalPaise < 100) {
     throw new AppError(400, 'Order total is too low');
   }

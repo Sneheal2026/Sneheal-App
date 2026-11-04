@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -16,7 +16,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useCart } from '@/context/CartContext';
 import { useSavedAddresses } from '@/hooks/useSavedAddresses';
-import { computeCartBill, formatInr } from '@/utils/cartBilling';
+import { emptyCartBill, formatInr } from '@/utils/cartBilling';
 import { createCheckoutOrder, seedOrderInCache } from '@/services/orderService';
 import { ApiError } from '@/services/apiClient';
 import type { AuthStackParamList } from '@/navigation/types';
@@ -32,12 +32,12 @@ const PaymentMethodScreen = () => {
   const { t } = useTranslation();
   const navigation = useNavigation<Nav>();
   const insets = useSafeAreaInsets();
-  const { lines, clearCart, ready } = useCart();
+  const { lines, clearCart, ready, quote, quoteLoading, checkoutCouponCode } = useCart();
   const { selectedAddress, addresses, refresh } = useSavedAddresses();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const bill = useMemo(() => computeCartBill(lines), [lines]);
+  const bill = quote?.bill ?? emptyCartBill();
 
   useFocusEffect(
     useCallback(() => {
@@ -87,6 +87,7 @@ const PaymentMethodScreen = () => {
       const order = await createCheckoutOrder(
         selectedAddress.id,
         lines.map((line) => ({ productId: line.productId, quantity: line.quantity })),
+        checkoutCouponCode,
       );
       seedOrderInCache(order);
       clearCart();
@@ -111,6 +112,7 @@ const PaymentMethodScreen = () => {
     lines,
     navigation,
     openAddresses,
+    checkoutCouponCode,
     selectedAddress,
     submitting,
     t,
@@ -201,7 +203,7 @@ const PaymentMethodScreen = () => {
             onPress={() => {
               void onPlaceOrder();
             }}
-            disabled={submitting}
+            disabled={submitting || quoteLoading}
             style={({ pressed }) => [
               styles.placeBtn,
               pressed && styles.pressed,

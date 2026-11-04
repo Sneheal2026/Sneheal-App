@@ -1,16 +1,19 @@
 /**
  * Keep fee rules in sync with frontend/src/utils/cartBilling.ts
+ * Cart/delivery promos come from the promotions table (promotion.service.js).
  */
 const HANDLING_FEE = 9;
 const DELIVERY_FEE = 29;
-const PROMO_DISCOUNT = 10;
-const FREE_DELIVERY_MIN = 199;
 const GST_RATE = 0.18;
 
 const toPaise = (amount) => Math.round(Number(amount) * 100);
 const fromPaise = (paise) => Number(paise) / 100;
 
-const computeCartBill = (lines) => {
+/**
+ * @param {Array} lines priced cart lines
+ * @param {{ cartPromoPaise?: number, deliveryFree?: boolean }} promoResult
+ */
+const computeCartBill = (lines, promoResult = {}) => {
   let itemMrpPaise = 0;
   let itemSellingPaise = 0;
 
@@ -22,11 +25,11 @@ const computeCartBill = (lines) => {
   }
 
   const itemDiscountPaise = Math.max(0, itemMrpPaise - itemSellingPaise);
-  const promoPaise =
-    itemSellingPaise >= toPaise(50) ? toPaise(PROMO_DISCOUNT) : 0;
+  const cartPromoPaise = Math.max(0, Number(promoResult.cartPromoPaise) || 0);
+  const cappedCartPromoPaise = Math.min(cartPromoPaise, itemSellingPaise);
 
-  const afterPromoPaise = Math.max(0, itemSellingPaise - promoPaise);
-  const deliveryFree = afterPromoPaise >= toPaise(FREE_DELIVERY_MIN);
+  const afterPromoPaise = Math.max(0, itemSellingPaise - cappedCartPromoPaise);
+  const deliveryFree = promoResult.deliveryFree === true;
   const deliveryOriginalPaise = toPaise(DELIVERY_FEE);
   const deliveryPaise = deliveryFree ? 0 : deliveryOriginalPaise;
   const handlingPaise = toPaise(HANDLING_FEE);
@@ -35,13 +38,15 @@ const computeCartBill = (lines) => {
   const grandTotalPaise =
     afterPromoPaise + handlingPaise + deliveryPaise + gstPaise;
   const savingsPaise =
-    itemDiscountPaise + promoPaise + (deliveryFree ? deliveryOriginalPaise : 0);
+    itemDiscountPaise +
+    cappedCartPromoPaise +
+    (deliveryFree ? deliveryOriginalPaise : 0);
 
   return {
     itemMrpPaise,
     itemSellingPaise,
     itemDiscountPaise,
-    promoPaise,
+    promoPaise: cappedCartPromoPaise,
     handlingPaise,
     deliveryPaise,
     deliveryOriginalPaise,
@@ -52,13 +57,27 @@ const computeCartBill = (lines) => {
     itemMrp: fromPaise(itemMrpPaise),
     itemSelling: fromPaise(itemSellingPaise),
     itemDiscount: fromPaise(itemDiscountPaise),
-    promoDiscount: fromPaise(promoPaise),
+    promoDiscount: fromPaise(cappedCartPromoPaise),
     handlingFee: fromPaise(handlingPaise),
     deliveryFee: fromPaise(deliveryPaise),
     deliveryOriginal: fromPaise(deliveryOriginalPaise),
     gstOnFees: fromPaise(gstPaise),
     grandTotal: fromPaise(grandTotalPaise),
     savings: fromPaise(savingsPaise),
+    appliedCartPromotion: promoResult.appliedCart
+      ? {
+          id: promoResult.appliedCart.id,
+          code: promoResult.appliedCart.code,
+          title: promoResult.appliedCart.title,
+        }
+      : null,
+    appliedDeliveryPromotion: promoResult.appliedDelivery
+      ? {
+          id: promoResult.appliedDelivery.id,
+          code: promoResult.appliedDelivery.code,
+          title: promoResult.appliedDelivery.title,
+        }
+      : null,
   };
 };
 
