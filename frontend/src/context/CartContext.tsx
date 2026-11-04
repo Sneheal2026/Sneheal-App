@@ -49,13 +49,19 @@ type CartContextValue = {
 
 const CartContext = createContext<CartContextValue | null>(null);
 
+const cartLinesKey = (lines: CartLine[]) =>
+  lines
+    .map((line) => `${line.productId}:${line.quantity}`)
+    .sort()
+    .join('|');
+
 export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   const [lines, setLines] = useState<CartLine[]>([]);
   const [ready, setReady] = useState(false);
   const [quote, setQuote] = useState<CartQuote | null>(null);
   const [quoteLoading, setQuoteLoading] = useState(false);
   const [quoteError, setQuoteError] = useState<string | null>(null);
-  const [couponDraft, setCouponDraft] = useState('');
+  const [couponDraft, setCouponDraftState] = useState('');
   const [appliedCouponCode, setAppliedCouponCode] = useState<string | null>(null);
   const [couponApplyError, setCouponApplyError] = useState<string | null>(null);
   const [autoApplyToast, setAutoApplyToast] = useState<AutoApplyToastPayload | null>(null);
@@ -101,15 +107,16 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
         const data = await fetchCartQuote(nextLines, couponCode);
         if (requestId !== quoteRequestId.current) return;
         setQuote(data);
-        setCouponApplyError(null);
+        if (data.couponError) {
+          setCouponApplyError(data.couponError);
+        } else {
+          setCouponApplyError(null);
+        }
       } catch (err) {
         if (requestId !== quoteRequestId.current) return;
         const message =
           err instanceof ApiError ? err.message : 'Could not refresh cart totals';
         setQuoteError(message);
-        if (couponCode) {
-          setCouponApplyError(message);
-        }
       } finally {
         if (requestId === quoteRequestId.current) {
           setQuoteLoading(false);
@@ -118,6 +125,8 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     },
     [],
   );
+
+  const linesKey = cartLinesKey(lines);
 
   useEffect(() => {
     if (!ready) return;
@@ -141,7 +150,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
         clearTimeout(debounceTimer.current);
       }
     };
-  }, [ready, lines, appliedCouponCode, runQuote]);
+  }, [ready, linesKey, appliedCouponCode, runQuote]);
 
   useEffect(() => {
     if (!quote || quoteLoading) return;
@@ -151,7 +160,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     const deliveryFree = quote.bill.deliveryFree;
     const deliveryJustUnlocked = deliveryFree && !prevDeliveryFree.current;
 
-    if (appliedCouponCode) {
+    if (appliedCouponCode || quote.couponError) {
       prevCartPromoId.current = cartId;
       prevDeliveryFree.current = deliveryFree;
       return;
@@ -177,19 +186,34 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     setAutoApplyToast(null);
   }, []);
 
+  const setCouponDraft = useCallback(
+    (value: string) => {
+      setCouponDraftState(value);
+      const normalized = value.trim().toUpperCase();
+      if (appliedCouponCode && normalized !== appliedCouponCode) {
+        setAppliedCouponCode(null);
+      }
+      if (!value.trim()) {
+        setCouponApplyError(null);
+      }
+    },
+    [appliedCouponCode],
+  );
+
   const applyCouponDraft = useCallback(() => {
     const trimmed = couponDraft.trim().toUpperCase();
     if (!trimmed) {
       setCouponApplyError(null);
       setAppliedCouponCode(null);
+      void runQuote(lines, null);
       return;
     }
     setAppliedCouponCode(trimmed);
     setCouponApplyError(null);
-  }, [couponDraft]);
+  }, [couponDraft, lines, runQuote]);
 
   const clearCoupon = useCallback(() => {
-    setCouponDraft('');
+    setCouponDraftState('');
     setAppliedCouponCode(null);
     setCouponApplyError(null);
   }, []);
@@ -266,7 +290,8 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     [lines],
   );
 
-  const checkoutCouponCode = appliedCouponCode;
+  const checkoutCouponCode =
+    appliedCouponCode && quote && !quote.couponError ? appliedCouponCode : null;
 
   const value = useMemo<CartContextValue>(
     () => ({
@@ -305,6 +330,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       quoteLoading,
       quoteError,
       couponDraft,
+      setCouponDraft,
       applyCouponDraft,
       clearCoupon,
       couponApplyError,

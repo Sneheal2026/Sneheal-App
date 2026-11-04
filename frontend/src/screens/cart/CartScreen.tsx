@@ -48,6 +48,7 @@ const CartScreen = ({ navigation: tabNavigation }: TabScreenProps<'Cart'>) => {
     couponApplyError,
     autoApplyToast,
     dismissAutoApplyToast,
+    quoteError,
   } = useCart();
   const { selectedAddress, addresses, refresh } = useSavedAddresses();
   const [addressMissing, setAddressMissing] = useState(false);
@@ -238,8 +239,12 @@ const CartScreen = ({ navigation: tabNavigation }: TabScreenProps<'Cart'>) => {
               onChangeDraftCode={setCouponDraft}
               onApplyCode={applyCouponDraft}
               onClearCode={clearCoupon}
-              applyError={couponApplyError}
+              applyError={quote?.couponError ?? couponApplyError}
             />
+
+            {quoteError ? (
+              <Text style={styles.quoteErrorText}>{quoteError}</Text>
+            ) : null}
 
             <CartBilling
               lines={billLines}
@@ -423,6 +428,12 @@ const styles = StyleSheet.create({
     ...typography.bodySmall,
     fontWeight: '800',
     color: colors.white,
+  },
+  quoteErrorText: {
+    ...typography.caption,
+    color: colors.error,
+    fontWeight: '600',
+    textAlign: 'center',
   },
 });
 

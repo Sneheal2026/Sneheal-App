@@ -40,4 +40,6 @@ export type CartQuote = {
   bill: CartBill;
   offers: CartOffer[];
   couponCode: string | null;
+  attemptedCouponCode?: string | null;
+  couponError?: string | null;
 };

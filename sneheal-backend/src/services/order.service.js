@@ -148,6 +148,7 @@ const createCheckoutOrder = async (userId, body) => {
     promotions,
     itemSellingPaise,
     body.couponCode,
+    { strictCoupon: true },
   );
   const bill = computeCartBill(pricedLines, evaluation);
   if (bill.grandTotalPaise < 100) {

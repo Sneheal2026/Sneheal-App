@@ -43,8 +43,15 @@ const normalizeCouponCode = (raw) => {
 
 /**
  * One cart-stack promo at a time; delivery promos stack independently.
+ * @param {{ strictCoupon?: boolean }} options - strictCoupon: throw on bad code (checkout)
  */
-const evaluatePromotions = (promotions, itemSellingPaise, requestedCodeRaw) => {
+const evaluatePromotions = (
+  promotions,
+  itemSellingPaise,
+  requestedCodeRaw,
+  options = {},
+) => {
+  const strictCoupon = options.strictCoupon === true;
   const now = new Date();
   const active = promotions.filter((promo) => isWithinWindow(promo, now));
 
@@ -63,29 +70,39 @@ const evaluatePromotions = (promotions, itemSellingPaise, requestedCodeRaw) => {
       (promo.promoType === 'percent_off' || promo.promoType === 'flat_off'),
   );
 
+  const eligibleCart = cartPool.filter(
+    (promo) => itemSellingPaise >= promo.minCartPaise,
+  );
+  const autoCartPromo = pickBestCartPromo(eligibleCart, itemSellingPaise);
+
   const requestedCode = normalizeCouponCode(requestedCodeRaw);
   let appliedCart = null;
+  let couponError = null;
 
   if (requestedCode) {
     const match = cartPool.find(
       (promo) => promo.code && promo.code.toUpperCase() === requestedCode,
     );
     if (!match) {
-      throw new AppError(400, 'This coupon code is not valid');
-    }
-    if (itemSellingPaise < match.minCartPaise) {
+      const message = 'This coupon code is not valid';
+      if (strictCoupon) {
+        throw new AppError(400, message);
+      }
+      couponError = message;
+      appliedCart = autoCartPromo;
+    } else if (itemSellingPaise < match.minCartPaise) {
       const gap = match.minCartPaise - itemSellingPaise;
-      throw new AppError(
-        400,
-        `Add ₹${(gap / 100).toFixed(0)} more to use this coupon`,
-      );
+      const message = `Add ₹${(gap / 100).toFixed(0)} more to use this coupon`;
+      if (strictCoupon) {
+        throw new AppError(400, message);
+      }
+      couponError = message;
+      appliedCart = autoCartPromo;
+    } else {
+      appliedCart = match;
     }
-    appliedCart = match;
   } else {
-    const eligibleCart = cartPool.filter(
-      (promo) => itemSellingPaise >= promo.minCartPaise,
-    );
-    appliedCart = pickBestCartPromo(eligibleCart, itemSellingPaise);
+    appliedCart = autoCartPromo;
   }
 
   const cartPromoPaise = appliedCart
@@ -98,6 +115,7 @@ const evaluatePromotions = (promotions, itemSellingPaise, requestedCodeRaw) => {
     appliedCart,
     appliedDelivery,
     requestedCode,
+    couponError,
   };
 };
 

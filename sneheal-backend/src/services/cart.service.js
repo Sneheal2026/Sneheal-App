@@ -80,6 +80,11 @@ const quoteCart = async (rawItems, couponCode) => {
   const bill = computeCartBill(pricedLines, evaluation);
   const offers = buildOfferViews(promotions, itemSellingPaise, evaluation);
 
+  const appliedCode =
+    evaluation.couponError || !evaluation.appliedCart?.code
+      ? null
+      : evaluation.appliedCart.code;
+
   return {
     bill: {
       itemMrp: bill.itemMrp,
@@ -97,7 +102,9 @@ const quoteCart = async (rawItems, couponCode) => {
       appliedDeliveryPromotion: bill.appliedDeliveryPromotion,
     },
     offers,
-    couponCode: evaluation.appliedCart?.code ?? evaluation.requestedCode ?? null,
+    couponCode: appliedCode,
+    attemptedCouponCode: evaluation.requestedCode,
+    couponError: evaluation.couponError,
   };
 };
 
