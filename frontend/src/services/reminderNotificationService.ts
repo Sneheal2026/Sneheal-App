@@ -79,7 +79,7 @@ export async function setupAndroidNotificationChannel(): Promise<void> {
     description: 'Daily reminders to take your medicines on time',
     importance: Notifications.AndroidImportance.MAX,
     vibrationPattern: [0, 250, 150, 250],
-    lightColor: '#1A73E8',
+    lightColor: '#CA2164',
     sound: 'default',
     enableVibrate: true,
     showBadge: true,

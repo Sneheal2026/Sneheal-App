@@ -16,14 +16,14 @@ export interface ColorThemeOption {
 }
 
 export const DEFAULT_COLOR_THEME_ID: ColorThemeId = 'blue';
-export const DEFAULT_CUSTOM_PRIMARY = '#1A73E8';
+export const DEFAULT_CUSTOM_PRIMARY = '#CA2164';
 export const CUSTOM_COLOR_THEME_ID: ColorThemeId = 'custom';
 
 export const COLOR_THEME_OPTIONS: ColorThemeOption[] = [
   {
     id: 'blue',
     label: 'Classic Blue',
-    primary: '#1A73E8',
+    primary: '#CA2164',
     description: 'Sneheal default healthcare blue',
   },
   {

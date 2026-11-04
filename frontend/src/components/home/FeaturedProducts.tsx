@@ -136,9 +136,9 @@ const FeaturedProducts = ({
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>{t('home.featuredProducts')}</Text>
-        <Pressable>
+        {/* <Pressable>
           <Text style={[styles.viewAll, { color: colors.primary }]}>{t('common.viewAll')}</Text>
-        </Pressable>
+        </Pressable> */}
       </View>
 
       {showSkeletons ? (

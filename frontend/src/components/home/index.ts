@@ -2,6 +2,7 @@ export { default as HomeHeader } from './HomeHeader';
 export { default as HeroBackground } from './HeroBackground';
 export { default as SearchBar } from './SearchBar';
 export { default as PromoBanner } from './PromoBanner';
+export { default as DiwaliBanner } from './DiwaliBanner';
 export { default as CategoryCards } from './CategoryCards';
 export { default as OrderVia } from './OrderVia';
 export { default as FullWidthBanner } from './FullWidthBanner';

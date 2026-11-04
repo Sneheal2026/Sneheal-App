@@ -1,10 +1,10 @@
 // Base palette — primary brand tokens are overridden at runtime by ThemeProvider.
 // Use `useTheme()` from '@/hooks/useTheme' for dynamic primary colors.
 const colors = {
-  // Brand Colors — clear healthcare blue (not violet)
-  primary: '#1A73E8',
-  primaryLight: '#4A9CF5',
-  primaryDark: '#1558B0',
+  // Brand Colors — default rose accent (Classic Blue theme swatch)
+  primary: '#CA2164',
+  primaryLight: '#E85792',
+  primaryDark: '#9B1A4E',
 
   // Accent — teal complement for pharmacy / wellness
   secondary: '#0D9488',
@@ -35,7 +35,7 @@ const colors = {
   // Borders
   border: '#E2E8F0',
   borderLight: '#F1F5F9',
-  borderFocused: '#1A73E8',
+  borderFocused: '#CA2164',
 
   // Pharmacy / Medicine Delivery
   headerGreenDark: '#0D3B2E',
@@ -43,8 +43,8 @@ const colors = {
   headerGreenLight: '#1A7A52',
 
   // Home header — Blinkit-style yellow → white
-  headerGradientStart: '#0066ff',
-  headerGradientMid: '#e6f0ff',
+  headerGradientStart: '#CA2164',
+  headerGradientMid: '#FCE8F0',
   headerGradientEnd: '#FFFFFF',
   headerAccent: '#0D9488',
   headerAccentDark: '#0F766E',

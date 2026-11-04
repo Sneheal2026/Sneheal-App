@@ -25,6 +25,7 @@ import {
   HomeHeader,
   SearchBar,
   PromoBanner,
+  DiwaliBanner,
   CategoriesGrid,
   FeaturedProducts,
 } from '@/components/home';
@@ -309,6 +310,7 @@ const HomeScreen = () => {
           />
 
           <View style={styles.contentSection}>
+            <DiwaliBanner />
             <CategoriesGrid onPressCategory={handleOpenCategory} />
             <PromoBanner isScrolling={isScrolling} />
             <FeaturedProducts
@@ -350,7 +352,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {},
   contentSection: {
-    paddingTop: spacing.sm,
+    paddingTop: 0,
     zIndex: 10,
     elevation: 10,
   },
