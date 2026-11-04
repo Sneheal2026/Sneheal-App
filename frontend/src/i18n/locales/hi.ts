@@ -106,6 +106,7 @@ const hi: TranslationResources = {
     pharmacy: 'फ़ार्मेसी',
     addDeliveryAddress: 'डिलीवरी पता जोड़ें',
     openNotifications: 'सूचनाएँ खोलें',
+    appUpdateCallout: 'नया ऐप अपडेट उपलब्ध',
     openAccount: 'खाता सेटिंग खोलें',
     searchPrefix: 'खोजें',
     featuredProducts: 'विशेष उत्पाद',
@@ -812,6 +813,8 @@ const hi: TranslationResources = {
     newUpdate: '{{count}} नई अपडेट',
     newUpdates: '{{count}} नई अपडेट',
     markAllReadA11y: 'सभी को पढ़ा हुआ चिह्नित करें',
+    updateApp: 'ऐप अपडेट करें',
+    updateAppA11y: 'Google Play पर ऐप अपडेट करें',
   },
   scan: {
     title: 'दवा स्कैन करें',

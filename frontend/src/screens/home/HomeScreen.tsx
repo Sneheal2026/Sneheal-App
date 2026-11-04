@@ -68,7 +68,14 @@ const HomeScreen = () => {
     refetch: refetchFeatured,
   } = useFeaturedProducts();
   const { lines, totalItems, addProduct, decrement } = useCart();
-  const { unreadCount: notificationUnreadCount } = useInAppAnnouncements();
+  const { unreadCount: notificationUnreadCount, items: announcementItems } = useInAppAnnouncements();
+
+  const hasUnreadAppUpdate = useMemo(
+    () => announcementItems.some((item) => item.kind === 'app_update' && item.unread),
+    [announcementItems],
+  );
+
+  const [showAppUpdateCallout, setShowAppUpdateCallout] = useState(false);
 
   const quantities = useMemo(() => {
     const map: Record<string, number> = {};
@@ -239,6 +246,25 @@ const HomeScreen = () => {
 
   useFocusEffect(
     useCallback(() => {
+      if (!hasUnreadAppUpdate) {
+        setShowAppUpdateCallout(false);
+        return;
+      }
+
+      setShowAppUpdateCallout(true);
+      const hideTimer = setTimeout(() => {
+        setShowAppUpdateCallout(false);
+      }, 5500);
+
+      return () => {
+        clearTimeout(hideTimer);
+        setShowAppUpdateCallout(false);
+      };
+    }, [hasUnreadAppUpdate]),
+  );
+
+  useFocusEffect(
+    useCallback(() => {
       StatusBar.setBarStyle('dark-content');
       if (Platform.OS === 'android') {
         StatusBar.setTranslucent(true);
@@ -303,6 +329,8 @@ const HomeScreen = () => {
             onAccountPress={handleOpenSettings}
             onNotificationsPress={handleOpenNotifications}
             hasUnreadNotifications={notificationUnreadCount > 0}
+            showAppUpdateCallout={showAppUpdateCallout}
+            hasUnreadAppUpdate={hasUnreadAppUpdate}
             addressLabel={addressLabel}
             addressTag={addressTag}
             onLocationPress={handleLocationPress}

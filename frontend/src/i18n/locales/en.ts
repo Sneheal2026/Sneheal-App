@@ -107,6 +107,7 @@ const en = {
     pharmacy: 'Pharmacy',
     addDeliveryAddress: 'Add delivery address',
     openNotifications: 'Open notifications',
+    appUpdateCallout: 'New app update available',
     openAccount: 'Open account settings',
     searchPrefix: 'Search for',
     featuredProducts: 'Featured Products',
@@ -813,6 +814,8 @@ const en = {
     newUpdate: '{{count}} new update',
     newUpdates: '{{count}} new updates',
     markAllReadA11y: 'Mark all as read',
+    updateApp: 'Update App',
+    updateAppA11y: 'Update app on Google Play',
   },
   scan: {
     title: 'Scan Medicine',

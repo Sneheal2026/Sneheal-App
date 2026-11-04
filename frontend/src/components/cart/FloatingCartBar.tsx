@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -6,20 +6,14 @@ import {
   Pressable,
   Image,
   ImageSourcePropType,
-  type LayoutChangeEvent,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import Svg, { Rect } from 'react-native-svg';
 import Animated, {
   FadeInUp,
   useSharedValue,
   useAnimatedStyle,
-  useAnimatedProps,
-  withRepeat,
-  withTiming,
-  cancelAnimation,
-  Easing,
 } from 'react-native-reanimated';
+import RunningBorderHighlight from '@/components/common/RunningBorderHighlight';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useOptionalTabBarVisibility } from '@/context/TabBarVisibilityContext';
@@ -31,17 +25,10 @@ const { colors, spacing, typography, moderateScale, shadows } = theme;
 const BAR_RADIUS = moderateScale(32, 0.35);
 const THUMB_SIZE = moderateScale(48, 0.35);
 const CTA_SIZE = moderateScale(44, 0.35);
-const STROKE = 3;
-const FLASH_RX = Math.max(0, BAR_RADIUS - STROKE / 2);
-const FLASH_LEN = 96;
-const TAIL_LEN = 40;
 const LOOP_MS = 4000;
-const RUN_PORTION = 0.32;
 
 export const FLOATING_CART_BAR_HEIGHT =
   THUMB_SIZE + spacing.md * 2;
-
-const AnimatedRect = Animated.createAnimatedComponent(Rect);
 
 interface FloatingCartBarProps {
   totalItems: number;
@@ -50,115 +37,6 @@ interface FloatingCartBarProps {
   /** Distance from the screen bottom. When set, tab-bar tracking is skipped. */
   bottomOffset?: number;
 }
-
-const roundedPerimeter = (width: number, height: number, radius: number) => {
-  const rx = Math.min(radius, width / 2, height / 2);
-  return 2 * (width + height - 2 * rx) + 2 * Math.PI * rx;
-};
-
-/** Gold comet + cyan tail that runs the outline every 4s. */
-const RunningBorder = () => {
-  const [size, setSize] = useState({ w: 0, h: 0 });
-  const progress = useSharedValue(0);
-  const perimeter = useSharedValue(1);
-
-  const onLayout = (event: LayoutChangeEvent) => {
-    const { width, height } = event.nativeEvent.layout;
-    if (width === size.w && height === size.h) return;
-    setSize({ w: width, h: height });
-  };
-
-  useEffect(() => {
-    if (size.w < 8 || size.h < 8) return;
-
-    const innerW = size.w - STROKE;
-    const innerH = size.h - STROKE;
-    perimeter.value = roundedPerimeter(innerW, innerH, FLASH_RX);
-    progress.value = 0;
-    progress.value = withRepeat(
-      withTiming(1, { duration: LOOP_MS, easing: Easing.linear }),
-      -1,
-      false,
-    );
-
-    return () => cancelAnimation(progress);
-  }, [size.w, size.h, perimeter, progress]);
-
-  const flashStyle = useAnimatedStyle(() => {
-    const t = progress.value;
-    if (t >= RUN_PORTION) return { opacity: 0 };
-    const fadeStart = RUN_PORTION * 0.8;
-    const opacity = t < fadeStart ? 1 : 1 - (t - fadeStart) / (RUN_PORTION - fadeStart);
-    return { opacity };
-  });
-
-  const headProps = useAnimatedProps(() => ({
-    strokeDashoffset: -perimeter.value * Math.min(progress.value / RUN_PORTION, 1),
-  }));
-
-  const tailProps = useAnimatedProps(() => ({
-    strokeDashoffset:
-      -perimeter.value * Math.min(progress.value / RUN_PORTION, 1) + 36,
-  }));
-
-  const innerW = Math.max(0, size.w - STROKE);
-  const innerH = Math.max(0, size.h - STROKE);
-  const dashGap = Math.max(roundedPerimeter(innerW, innerH, FLASH_RX), FLASH_LEN);
-
-  return (
-    <View pointerEvents="none" style={StyleSheet.absoluteFill} onLayout={onLayout}>
-      {size.w > 0 ? (
-        <>
-          <Svg width={size.w} height={size.h}>
-            <Rect
-              x={STROKE / 2}
-              y={STROKE / 2}
-              width={innerW}
-              height={innerH}
-              rx={FLASH_RX}
-              ry={FLASH_RX}
-              fill="none"
-              stroke="rgba(255, 224, 138, 0.35)"
-              strokeWidth={1.5}
-            />
-          </Svg>
-          <Animated.View style={[StyleSheet.absoluteFill, flashStyle]}>
-            <Svg width={size.w} height={size.h}>
-              <AnimatedRect
-                x={STROKE / 2}
-                y={STROKE / 2}
-                width={innerW}
-                height={innerH}
-                rx={FLASH_RX}
-                ry={FLASH_RX}
-                fill="none"
-                stroke="#7EE8F0"
-                strokeWidth={2}
-                strokeLinecap="round"
-                strokeDasharray={`${TAIL_LEN} ${dashGap}`}
-                animatedProps={tailProps}
-              />
-              <AnimatedRect
-                x={STROKE / 2}
-                y={STROKE / 2}
-                width={innerW}
-                height={innerH}
-                rx={FLASH_RX}
-                ry={FLASH_RX}
-                fill="none"
-                stroke="#FFE08A"
-                strokeWidth={STROKE}
-                strokeLinecap="round"
-                strokeDasharray={`${FLASH_LEN} ${dashGap}`}
-                animatedProps={headProps}
-              />
-            </Svg>
-          </Animated.View>
-        </>
-      ) : null}
-    </View>
-  );
-};
 
 const FloatingCartBar = ({
   totalItems,
@@ -251,7 +129,7 @@ const FloatingCartBar = ({
             <Ionicons name="arrow-forward" size={22} color="#1A1468" />
           </LinearGradient>
         </Pressable>
-        <RunningBorder />
+        <RunningBorderHighlight borderRadius={BAR_RADIUS} loopMs={LOOP_MS} />
       </View>
     </Animated.View>
   );

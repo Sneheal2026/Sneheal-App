@@ -106,6 +106,7 @@ const mr: TranslationResources = {
     pharmacy: 'फार्मसी',
     addDeliveryAddress: 'डिलिव्हरी पत्ता जोडा',
     openNotifications: 'सूचना उघडा',
+    appUpdateCallout: 'नवीन अॅप अपडेट उपलब्ध',
     openAccount: 'खाते सेटिंग उघडा',
     searchPrefix: 'शोधा',
     featuredProducts: 'विशेष उत्पादने',
@@ -812,6 +813,8 @@ const mr: TranslationResources = {
     newUpdate: '{{count}} नवीन अपडेट',
     newUpdates: '{{count}} नवीन अपडेट',
     markAllReadA11y: 'सर्व वाचले म्हणून चिन्हांकित करा',
+    updateApp: 'अॅप अपडेट करा',
+    updateAppA11y: 'Google Play वर अॅप अपडेट करा',
   },
   scan: {
     title: 'औषध स्कॅन करा',

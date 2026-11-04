@@ -6,6 +6,7 @@ import {
   FlatList,
   Pressable,
   Linking,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -17,6 +18,7 @@ import { useTranslation } from 'react-i18next';
 import { withAlpha } from '@/utils/colorUtils';
 import { useInAppAnnouncements } from '@/context/InAppAnnouncementsContext';
 import type { InAppAnnouncement } from '@/types/announcement.types';
+import { APP_PLAY_STORE_URL } from '@/constants/appInfo';
 import {
   formatAnnouncementTime,
   getAnnouncementSection,
@@ -26,6 +28,7 @@ type NotificationIcon = keyof typeof Ionicons.glyphMap;
 
 interface NotificationItem {
   id: string;
+  kind: InAppAnnouncement['kind'];
   title: string;
   message: string;
   time: string;
@@ -40,6 +43,7 @@ const iconForKind = (kind: InAppAnnouncement['kind']): NotificationIcon =>
 
 const toNotificationItem = (item: InAppAnnouncement): NotificationItem => ({
   id: item.id,
+  kind: item.kind,
   title: item.title,
   message: item.body,
   time: formatAnnouncementTime(item.createdAt),
@@ -99,6 +103,9 @@ const NotificationsScreen = () => {
 
   const handlePressNotification = useCallback(
     (item: NotificationItem) => {
+      if (item.kind === 'app_update') {
+        return;
+      }
       if (item.unread) {
         void markRead(item.id);
       }
@@ -107,6 +114,21 @@ const NotificationsScreen = () => {
       }
     },
     [markRead],
+  );
+
+  const openAppUpdate = useCallback(
+    async (item: NotificationItem) => {
+      if (item.unread) {
+        void markRead(item.id);
+      }
+      const url = item.actionUrl ?? APP_PLAY_STORE_URL;
+      try {
+        await Linking.openURL(url);
+      } catch {
+        Alert.alert(t('share.playStoreFailTitle'), t('share.playStoreFailBody'));
+      }
+    },
+    [markRead, t],
   );
 
   const styles = useMemo(
@@ -345,6 +367,32 @@ const NotificationsScreen = () => {
           fontWeight: '700',
           color: colors.textSecondary,
         },
+        updateBtnOuter: {
+          marginTop: spacing.sm,
+          alignSelf: 'flex-start',
+          borderRadius: borderRadius.full,
+          overflow: 'hidden',
+          ...shadows.sm,
+        },
+        updateBtn: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: spacing.xs,
+          paddingHorizontal: spacing.lg,
+          paddingVertical: spacing.sm,
+          borderRadius: borderRadius.full,
+        },
+        updateBtnPressed: {
+          opacity: 0.9,
+        },
+        updateBtnText: {
+          ...typography.caption,
+          fontSize: moderateScale(13),
+          fontWeight: '800',
+          color: colors.white,
+          letterSpacing: 0.2,
+        },
       }),
     [borderRadius, colors, moderateScale, shadows, spacing, typography],
   );
@@ -389,6 +437,28 @@ const NotificationsScreen = () => {
             <Text style={styles.rowMessage} numberOfLines={2}>
               {n.message}
             </Text>
+            {n.kind === 'app_update' ? (
+              <Pressable
+                onPress={() => void openAppUpdate(n)}
+                style={({ pressed }) => [
+                  styles.updateBtnOuter,
+                  pressed && styles.updateBtnPressed,
+                ]}
+                accessibilityRole="button"
+                accessibilityLabel={t('notifications.updateAppA11y')}
+              >
+                <LinearGradient
+                  colors={[colors.primary, colors.primaryDark]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.updateBtn}
+                >
+                  <Ionicons name="logo-google-playstore" size={moderateScale(16)} color={colors.white} />
+                  <Text style={styles.updateBtnText}>{t('notifications.updateApp')}</Text>
+                  <Ionicons name="arrow-forward" size={moderateScale(14)} color={colors.white} />
+                </LinearGradient>
+              </Pressable>
+            ) : null}
           </View>
 
           {n.unread ? <View style={styles.unreadDot} /> : null}

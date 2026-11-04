@@ -14,6 +14,8 @@ import { useTranslation } from 'react-i18next';
 import { LocationBar } from '@/components/location';
 import SearchBar from './SearchBar';
 import HeroBackground from './HeroBackground';
+import HomeAppUpdateCallout from './HomeAppUpdateCallout';
+import HomeNotificationBell from './HomeNotificationBell';
 import theme from '@/styles/theme';
 
 const { colors, spacing, borderRadius, moderateScale } = theme;
@@ -29,6 +31,8 @@ interface HomeHeaderProps {
   addressTag?: string;
   onLocationPress?: () => void;
   onUploadScanPress?: () => void;
+  showAppUpdateCallout?: boolean;
+  hasUnreadAppUpdate?: boolean;
 }
 
 const HomeHeader: React.FC<HomeHeaderProps> = ({
@@ -42,6 +46,8 @@ const HomeHeader: React.FC<HomeHeaderProps> = ({
   addressTag,
   onLocationPress,
   onUploadScanPress,
+  showAppUpdateCallout = false,
+  hasUnreadAppUpdate = false,
 }) => {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
@@ -81,21 +87,18 @@ const HomeHeader: React.FC<HomeHeaderProps> = ({
             entering={FadeInDown.delay(100).duration(450).springify()}
             style={styles.topActions}
           >
-            <TouchableOpacity
-              style={styles.actionBtn}
-              activeOpacity={0.8}
-              onPress={onNotificationsPress}
-              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-              accessibilityLabel={t('home.openNotifications')}
-              accessibilityRole="button"
-            >
-              <Ionicons
-                name="notifications-outline"
-                size={moderateScale(20)}
-                color={colors.headerTextDark}
+            <View style={styles.notifAnchor}>
+              <HomeNotificationBell
+                onPress={onNotificationsPress}
+                hasUnread={hasUnreadNotifications}
+                ringActive={hasUnreadAppUpdate}
+                accessibilityLabel={t('home.openNotifications')}
               />
-              {hasUnreadNotifications ? <View style={styles.notifDot} /> : null}
-            </TouchableOpacity>
+              <HomeAppUpdateCallout
+                visible={showAppUpdateCallout}
+                message={t('home.appUpdateCallout')}
+              />
+            </View>
             <TouchableOpacity
               style={styles.actionBtn}
               activeOpacity={0.75}
@@ -157,6 +160,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: spacing.md,
     gap: spacing.md,
+    zIndex: 4,
   },
   deliveryBlock: {
     flex: 1,
@@ -200,9 +204,13 @@ const styles = StyleSheet.create({
   },
   topActions: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: spacing.sm,
     flexShrink: 0,
+  },
+  notifAnchor: {
+    position: 'relative',
+    alignItems: 'center',
   },
   actionBtn: {
     width: moderateScale(42),
@@ -218,17 +226,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.06,
     shadowRadius: 4,
     elevation: 2,
-  },
-  notifDot: {
-    position: 'absolute',
-    top: 9,
-    right: 9,
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-    backgroundColor: colors.error,
-    borderWidth: 1.5,
-    borderColor: colors.white,
   },
   searchSection: {
     marginBottom: 0,
