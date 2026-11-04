@@ -253,10 +253,9 @@ const hi: TranslationResources = {
     offersCodePlaceholder: 'कूपन कोड',
     offersApply: 'लागू करें',
     offersClearCode: 'सर्वोत्तम ऑफर इस्तेमाल करें',
-    offersAutoAppliedKicker: 'अपने आप लागू',
-    offersAutoAppliedSavings: 'इस ऑर्डर पर {{amount}} की बचत',
-    offersAutoAppliedDelivery: 'फ्री डिलीवरी मिल गई',
-    offersAutoAppliedTap: 'बंद करने के लिए कहीं भी टैप करें',
+    offersAutoAppliedSaved: '{{amount}} बचत',
+    offersDiwaliBadge: 'दिवाली',
+    offersAutoAppliedDeliveryShort: 'फ्री डिलीवरी',
   },
   orders: {
     title: 'मेरे ऑर्डर',

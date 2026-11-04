@@ -46,6 +46,7 @@ const CartScreen = ({ navigation: tabNavigation }: TabScreenProps<'Cart'>) => {
     applyCouponDraft,
     clearCoupon,
     couponApplyError,
+    couponApplying,
     autoApplyToast,
     dismissAutoApplyToast,
     quoteError,
@@ -234,12 +235,12 @@ const CartScreen = ({ navigation: tabNavigation }: TabScreenProps<'Cart'>) => {
 
             <CartOffersSection
               offers={quote?.offers ?? []}
-              loading={quoteLoading}
               draftCode={couponDraft}
               onChangeDraftCode={setCouponDraft}
               onApplyCode={applyCouponDraft}
               onClearCode={clearCoupon}
-              applyError={quote?.couponError ?? couponApplyError}
+              applyError={couponApplyError}
+              applyLoading={couponApplying}
             />
 
             {quoteError ? (

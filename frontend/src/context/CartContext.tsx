@@ -1,4 +1,4 @@
-import React, {
+import {
   createContext,
   useCallback,
   useContext,
@@ -7,6 +7,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
+import { LayoutAnimation } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { getCartLines, saveCartLines } from '@/services/cartStorage';
 import { fetchCartQuote } from '@/services/cartQuoteService';
@@ -42,6 +43,7 @@ type CartContextValue = {
   applyCouponDraft: () => void;
   clearCoupon: () => void;
   couponApplyError: string | null;
+  couponApplying: boolean;
   checkoutCouponCode: string | null;
   autoApplyToast: AutoApplyToastPayload | null;
   dismissAutoApplyToast: () => void;
@@ -55,6 +57,8 @@ const cartLinesKey = (lines: CartLine[]) =>
     .sort()
     .join('|');
 
+const COUPON_ERROR_DISMISS_MS = 3500;
+
 export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   const [lines, setLines] = useState<CartLine[]>([]);
   const [ready, setReady] = useState(false);
@@ -64,12 +68,27 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   const [couponDraft, setCouponDraftState] = useState('');
   const [appliedCouponCode, setAppliedCouponCode] = useState<string | null>(null);
   const [couponApplyError, setCouponApplyError] = useState<string | null>(null);
+  const [couponApplying, setCouponApplying] = useState(false);
   const [autoApplyToast, setAutoApplyToast] = useState<AutoApplyToastPayload | null>(null);
 
   const quoteRequestId = useRef(0);
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const couponErrorTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const appliedCouponRef = useRef<string | null>(null);
   const prevCartPromoId = useRef<string | null>(null);
   const prevDeliveryFree = useRef(false);
+
+  appliedCouponRef.current = appliedCouponCode;
+
+  const scheduleCouponErrorClear = useCallback((message: string) => {
+    setCouponApplyError(message);
+    if (couponErrorTimer.current) {
+      clearTimeout(couponErrorTimer.current);
+    }
+    couponErrorTimer.current = setTimeout(() => {
+      setCouponApplyError(null);
+    }, COUPON_ERROR_DISMISS_MS);
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -88,8 +107,21 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     void saveCartLines(lines);
   }, [lines, ready]);
 
+  useEffect(
+    () => () => {
+      if (couponErrorTimer.current) {
+        clearTimeout(couponErrorTimer.current);
+      }
+    },
+    [],
+  );
+
   const runQuote = useCallback(
-    async (nextLines: CartLine[], couponCode: string | null) => {
+    async (
+      nextLines: CartLine[],
+      couponCode: string | null,
+      options: { background?: boolean } = {},
+    ) => {
       if (nextLines.length === 0) {
         setQuote(null);
         setQuoteLoading(false);
@@ -100,7 +132,9 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       }
 
       const requestId = ++quoteRequestId.current;
-      setQuoteLoading(true);
+      if (!options.background) {
+        setQuoteLoading(true);
+      }
       setQuoteError(null);
 
       try {
@@ -108,8 +142,8 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
         if (requestId !== quoteRequestId.current) return;
         setQuote(data);
         if (data.couponError) {
-          setCouponApplyError(data.couponError);
-        } else {
+          scheduleCouponErrorClear(data.couponError);
+        } else if (!couponCode) {
           setCouponApplyError(null);
         }
       } catch (err) {
@@ -118,12 +152,12 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
           err instanceof ApiError ? err.message : 'Could not refresh cart totals';
         setQuoteError(message);
       } finally {
-        if (requestId === quoteRequestId.current) {
+        if (requestId === quoteRequestId.current && !options.background) {
           setQuoteLoading(false);
         }
       }
     },
-    [],
+    [scheduleCouponErrorClear],
   );
 
   const linesKey = cartLinesKey(lines);
@@ -142,7 +176,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     }
 
     debounceTimer.current = setTimeout(() => {
-      void runQuote(lines, appliedCouponCode);
+      void runQuote(lines, appliedCouponRef.current, { background: true });
     }, QUOTE_DEBOUNCE_MS);
 
     return () => {
@@ -150,7 +184,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
         clearTimeout(debounceTimer.current);
       }
     };
-  }, [ready, linesKey, appliedCouponCode, runQuote]);
+  }, [ready, linesKey, runQuote]);
 
   useEffect(() => {
     if (!quote || quoteLoading) return;
@@ -186,37 +220,76 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     setAutoApplyToast(null);
   }, []);
 
-  const setCouponDraft = useCallback(
-    (value: string) => {
-      setCouponDraftState(value);
-      const normalized = value.trim().toUpperCase();
-      if (appliedCouponCode && normalized !== appliedCouponCode) {
-        setAppliedCouponCode(null);
-      }
-      if (!value.trim()) {
-        setCouponApplyError(null);
-      }
-    },
-    [appliedCouponCode],
-  );
+  const setCouponDraft = useCallback((value: string) => {
+    setCouponDraftState(value);
+    if (couponErrorTimer.current) {
+      clearTimeout(couponErrorTimer.current);
+    }
+    if (!value.trim()) {
+      setCouponApplyError(null);
+    }
+  }, []);
 
   const applyCouponDraft = useCallback(() => {
     const trimmed = couponDraft.trim().toUpperCase();
     if (!trimmed) {
-      setCouponApplyError(null);
       setAppliedCouponCode(null);
-      void runQuote(lines, null);
+      setCouponDraftState('');
+      setCouponApplyError(null);
+      void runQuote(lines, null, { background: true });
       return;
     }
-    setAppliedCouponCode(trimmed);
+
+    if (couponApplying) return;
+
+    setCouponApplying(true);
     setCouponApplyError(null);
-  }, [couponDraft, lines, runQuote]);
+    if (couponErrorTimer.current) {
+      clearTimeout(couponErrorTimer.current);
+    }
+
+    void (async () => {
+      try {
+        const data = await fetchCartQuote(lines, trimmed);
+        setQuote(data);
+        if (data.couponError) {
+          setAppliedCouponCode(null);
+          appliedCouponRef.current = null;
+          LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+          setCouponDraftState('');
+          scheduleCouponErrorClear(data.couponError);
+          void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+        } else {
+          setAppliedCouponCode(trimmed);
+          appliedCouponRef.current = trimmed;
+          setCouponDraftState(trimmed);
+          setCouponApplyError(null);
+          void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        }
+      } catch (err) {
+        const message =
+          err instanceof ApiError ? err.message : 'Could not apply coupon';
+        scheduleCouponErrorClear(message);
+        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+        setCouponDraftState('');
+        setAppliedCouponCode(null);
+        appliedCouponRef.current = null;
+      } finally {
+        setCouponApplying(false);
+      }
+    })();
+  }, [couponApplying, couponDraft, lines, runQuote, scheduleCouponErrorClear]);
 
   const clearCoupon = useCallback(() => {
+    if (couponErrorTimer.current) {
+      clearTimeout(couponErrorTimer.current);
+    }
     setCouponDraftState('');
     setAppliedCouponCode(null);
+    appliedCouponRef.current = null;
     setCouponApplyError(null);
-  }, []);
+    void runQuote(lines, null, { background: true });
+  }, [lines, runQuote]);
 
   const getQuantity = useCallback(
     (productId: string) => lines.find((line) => line.productId === productId)?.quantity ?? 0,
@@ -312,6 +385,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       applyCouponDraft,
       clearCoupon,
       couponApplyError,
+      couponApplying,
       checkoutCouponCode,
       autoApplyToast,
       dismissAutoApplyToast,
@@ -334,6 +408,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       applyCouponDraft,
       clearCoupon,
       couponApplyError,
+      couponApplying,
       checkoutCouponCode,
       autoApplyToast,
       dismissAutoApplyToast,

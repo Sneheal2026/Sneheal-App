@@ -23,18 +23,21 @@ import { formatInr } from '@/utils/cartBilling';
 import type { AutoApplyToastPayload } from '@/context/CartContext';
 import theme from '@/styles/theme';
 
-const { colors, spacing, typography, borderRadius, moderateScale, shadows } = theme;
+const { colors, spacing, borderRadius, moderateScale, shadows } = theme;
 
-const NAVY = '#111152';
 const GREEN = '#0C831F';
-const GRADIENT = ['#FF8A00', '#E85D04', '#9D0208'] as const;
-export const AUTO_APPLY_TOAST_MS = 3000;
+const DIWALI_GRADIENT = ['#FF8A00', '#E85D04', '#9D0208'] as const;
+export const AUTO_APPLY_TOAST_MS = 2800;
 
 type Props = {
   visible: boolean;
   payload: AutoApplyToastPayload | null;
   onDismiss: () => void;
 };
+
+const isDiwaliOffer = (payload: AutoApplyToastPayload) =>
+  payload.code === 'DIWALI25' ||
+  payload.title.toLowerCase().includes('diwali');
 
 const CouponAutoApplyToast = ({ visible, payload, onDismiss }: Props) => {
   const { t } = useTranslation();
@@ -80,46 +83,50 @@ const CouponAutoApplyToast = ({ visible, payload, onDismiss }: Props) => {
     return null;
   }
 
-  const savingsLine =
-    payload.promoDiscount > 0
-      ? t('cart.offersAutoAppliedSavings', {
-          amount: formatInr(payload.promoDiscount),
-        })
+  const diwali = isDiwaliOffer(payload);
+  const hasSavings = payload.promoDiscount > 0;
+
+  const eyebrow = diwali ? t('cart.offersDiwaliBadge') : t('cart.offersApplied');
+
+  const mainLine = hasSavings
+    ? t('cart.offersAutoAppliedSaved', { amount: formatInr(payload.promoDiscount) })
+    : payload.deliveryUnlocked
+      ? t('cart.offersAutoAppliedDeliveryShort')
+      : t('cart.offersApplied');
+
+  const extraLine =
+    hasSavings && payload.deliveryUnlocked
+      ? t('cart.offersAutoAppliedDeliveryShort')
       : null;
 
   return (
     <Modal transparent visible animationType="none" statusBarTranslucent onRequestClose={onDismiss}>
       <Pressable style={styles.backdrop} onPress={onDismiss}>
         <Animated.View
-          entering={FadeIn.duration(220)}
+          entering={FadeIn.duration(240)}
           exiting={FadeOut.duration(180)}
-          style={[styles.cardWrap, { maxWidth: Math.min(width - spacing.xl * 2, 360) }]}
+          style={[styles.cardWrap, { maxWidth: Math.min(width - spacing.xl * 2, 300) }]}
         >
           <Pressable onPress={(e) => e.stopPropagation()}>
             <LinearGradient
-              colors={[...GRADIENT]}
+              colors={[...DIWALI_GRADIENT]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.card}
             >
-              <View style={styles.iconRing}>
-                <Ionicons name="checkmark-circle" size={36} color={GREEN} />
+              <View style={styles.badge}>
+                <Ionicons name="sparkles" size={11} color={DIWALI_GRADIENT[1]} />
+                <Text style={styles.badgeText}>{eyebrow}</Text>
               </View>
-              <Text style={styles.kicker}>{t('cart.offersAutoAppliedKicker')}</Text>
-              <Text style={styles.title}>{payload.title}</Text>
-              {payload.code ? (
-                <View style={styles.codeChip}>
-                  <Text style={styles.codeText}>{payload.code}</Text>
-                </View>
-              ) : null}
-              {savingsLine ? <Text style={styles.savings}>{savingsLine}</Text> : null}
-              {payload.deliveryUnlocked ? (
-                <View style={styles.deliveryRow}>
-                  <Ionicons name="bicycle" size={16} color={colors.white} />
-                  <Text style={styles.deliveryText}>{t('cart.offersAutoAppliedDelivery')}</Text>
-                </View>
-              ) : null}
-              <Text style={styles.tapHint}>{t('cart.offersAutoAppliedTap')}</Text>
+
+              <View style={styles.checkRing}>
+                <Ionicons name="checkmark" size={28} color={GREEN} />
+              </View>
+
+              <Text style={styles.mainLine}>{mainLine}</Text>
+
+              {extraLine ? <Text style={styles.extraLine}>{extraLine}</Text> : null}
+
               <View style={styles.timerTrack}>
                 <Animated.View style={[styles.timerFill, timerBarStyle]} />
               </View>
@@ -145,78 +152,56 @@ const styles = StyleSheet.create({
   },
   card: {
     borderRadius: borderRadius.xl,
-    padding: spacing.xl,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.md,
+    paddingHorizontal: spacing.lg,
     alignItems: 'center',
-    gap: spacing.sm,
     overflow: 'hidden',
   },
-  iconRing: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+  badge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: colors.white,
+    paddingHorizontal: spacing.sm + 2,
+    paddingVertical: 5,
+    borderRadius: borderRadius.full,
+    marginBottom: spacing.sm,
+  },
+  badgeText: {
+    fontSize: moderateScale(10, 0.35),
+    fontWeight: '800',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    color: DIWALI_GRADIENT[1],
+  },
+  checkRing: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     backgroundColor: colors.white,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: spacing.xxs,
+    marginBottom: spacing.sm,
   },
-  kicker: {
-    fontSize: moderateScale(11, 0.35),
-    fontWeight: '800',
-    letterSpacing: 1.2,
-    textTransform: 'uppercase',
-    color: 'rgba(255,255,255,0.9)',
-  },
-  title: {
-    fontSize: moderateScale(20, 0.35),
+  mainLine: {
+    fontSize: moderateScale(22, 0.35),
     fontWeight: '800',
     color: colors.white,
     textAlign: 'center',
   },
-  codeChip: {
-    borderWidth: 1,
-    borderStyle: 'dashed',
-    borderColor: 'rgba(255,255,255,0.55)',
-    paddingHorizontal: spacing.md,
-    paddingVertical: 4,
-    borderRadius: borderRadius.sm,
-  },
-  codeText: {
-    fontWeight: '800',
-    letterSpacing: 1.5,
-    color: colors.white,
-    fontSize: moderateScale(13, 0.35),
-  },
-  savings: {
-    ...typography.body,
-    fontWeight: '700',
-    color: colors.white,
-    textAlign: 'center',
-  },
-  deliveryRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    borderRadius: borderRadius.full,
-  },
-  deliveryText: {
-    ...typography.bodySmall,
-    fontWeight: '700',
-    color: colors.white,
-  },
-  tapHint: {
-    ...typography.caption,
-    color: 'rgba(255,255,255,0.75)',
-    marginTop: spacing.xxs,
+  extraLine: {
+    fontSize: moderateScale(12, 0.35),
+    fontWeight: '600',
+    color: 'rgba(255,255,255,0.85)',
+    marginTop: spacing.xs,
   },
   timerTrack: {
     alignSelf: 'stretch',
-    height: 4,
+    height: 3,
     borderRadius: 2,
-    backgroundColor: 'rgba(255,255,255,0.25)',
-    marginTop: spacing.sm,
+    backgroundColor: 'rgba(255,255,255,0.3)',
+    marginTop: spacing.md,
     overflow: 'hidden',
   },
   timerFill: {

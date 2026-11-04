@@ -254,10 +254,9 @@ const en = {
     offersCodePlaceholder: 'Enter coupon code',
     offersApply: 'Apply',
     offersClearCode: 'Use best offer instead',
-    offersAutoAppliedKicker: 'Auto-applied',
-    offersAutoAppliedSavings: 'You save {{amount}} on this order',
-    offersAutoAppliedDelivery: 'Free delivery unlocked',
-    offersAutoAppliedTap: 'Tap anywhere to close',
+    offersAutoAppliedSaved: '{{amount}} saved',
+    offersDiwaliBadge: 'Diwali',
+    offersAutoAppliedDeliveryShort: 'Free delivery',
   },
   orders: {
     title: 'My Orders',

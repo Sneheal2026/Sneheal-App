@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useMemo } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,9 @@ import {
   TextInput,
   Pressable,
   ActivityIndicator,
+  LayoutAnimation,
+  Platform,
+  UIManager,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -20,24 +23,28 @@ const NAVY = '#111152';
 const GREEN = '#0C831F';
 const DIWALI_GRADIENT = ['#FF8A00', '#E85D04', '#9D0208'] as const;
 
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
+
 type Props = {
   offers: CartOffer[];
-  loading: boolean;
   draftCode: string;
   onChangeDraftCode: (value: string) => void;
   onApplyCode: () => void;
   onClearCode: () => void;
   applyError: string | null;
+  applyLoading: boolean;
 };
 
 const CartOffersSection = ({
   offers,
-  loading,
   draftCode,
   onChangeDraftCode,
   onApplyCode,
   onClearCode,
   applyError,
+  applyLoading,
 }: Props) => {
   const { t } = useTranslation();
 
@@ -51,7 +58,7 @@ const CartOffersSection = ({
     [offers, featured?.id],
   );
 
-  if (offers.length === 0 && !loading) {
+  if (offers.length === 0) {
     return null;
   }
 
@@ -59,11 +66,7 @@ const CartOffersSection = ({
     <View style={styles.wrap}>
       <View style={styles.headerRow}>
         <Text style={styles.sectionTitle}>{t('cart.offersTitle')}</Text>
-        {loading ? (
-          <ActivityIndicator size="small" color={NAVY} />
-        ) : (
-          <Text style={styles.hint}>{t('cart.offersOneCartHint')}</Text>
-        )}
+        <Text style={styles.hint}>{t('cart.offersOneCartHint')}</Text>
       </View>
 
       {featured ? (
@@ -109,24 +112,37 @@ const CartOffersSection = ({
           <Ionicons name="ticket-outline" size={18} color={NAVY} />
           <TextInput
             value={draftCode}
-            onChangeText={onChangeDraftCode}
+            onChangeText={(text) => {
+              LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+              onChangeDraftCode(text);
+            }}
             placeholder={t('cart.offersCodePlaceholder')}
             placeholderTextColor={colors.textMuted}
             autoCapitalize="characters"
             autoCorrect={false}
+            editable={!applyLoading}
             style={styles.codeInput}
             returnKeyType="done"
             onSubmitEditing={onApplyCode}
           />
           <Pressable
             onPress={onApplyCode}
-            style={({ pressed }) => [styles.applyBtn, pressed && styles.pressed]}
+            disabled={applyLoading || !draftCode.trim()}
+            style={({ pressed }) => [
+              styles.applyBtn,
+              (applyLoading || !draftCode.trim()) && styles.applyBtnDisabled,
+              pressed && !applyLoading && styles.pressed,
+            ]}
           >
-            <Text style={styles.applyBtnText}>{t('cart.offersApply')}</Text>
+            {applyLoading ? (
+              <ActivityIndicator size="small" color={colors.white} />
+            ) : (
+              <Text style={styles.applyBtnText}>{t('cart.offersApply')}</Text>
+            )}
           </Pressable>
         </View>
         {applyError ? <Text style={styles.errorText}>{applyError}</Text> : null}
-        {draftCode.trim().length > 0 ? (
+        {draftCode.trim().length > 0 && !applyLoading ? (
           <Pressable onPress={onClearCode} style={styles.clearLink}>
             <Text style={styles.clearLinkText}>{t('cart.offersClearCode')}</Text>
           </Pressable>
@@ -347,6 +363,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     borderRadius: borderRadius.md,
+    minWidth: moderateScale(72, 0.35),
+    minHeight: moderateScale(36, 0.35),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  applyBtnDisabled: {
+    opacity: 0.55,
   },
   applyBtnText: {
     ...typography.caption,
