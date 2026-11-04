@@ -40,6 +40,7 @@ import { resolveCatalogImage } from '@/utils/productImage';
 import theme from '@/styles/theme';
 import globalStyles from '@/styles/globalStyles';
 import { useTheme } from '@/hooks/useTheme';
+import { useInAppAnnouncements } from '@/context/InAppAnnouncementsContext';
 import type { Category } from '@/types/product.types';
 import type { AuthStackParamList, TabParamList } from '@/navigation/types';
 
@@ -66,6 +67,7 @@ const HomeScreen = () => {
     refetch: refetchFeatured,
   } = useFeaturedProducts();
   const { lines, totalItems, addProduct, decrement } = useCart();
+  const { unreadCount: notificationUnreadCount } = useInAppAnnouncements();
 
   const quantities = useMemo(() => {
     const map: Record<string, number> = {};
@@ -299,6 +301,7 @@ const HomeScreen = () => {
             isScrolling={isScrolling}
             onAccountPress={handleOpenSettings}
             onNotificationsPress={handleOpenNotifications}
+            hasUnreadNotifications={notificationUnreadCount > 0}
             addressLabel={addressLabel}
             addressTag={addressTag}
             onLocationPress={handleLocationPress}

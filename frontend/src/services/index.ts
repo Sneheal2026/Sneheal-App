@@ -43,6 +43,11 @@ export {
   fetchCategories,
 } from './productService';
 export {
+  fetchInAppAnnouncements,
+  markAnnouncementRead,
+  markAllAnnouncementsRead,
+} from './announcementService';
+export {
   getSavedAddresses,
   getCachedAddresses,
   saveAddress,

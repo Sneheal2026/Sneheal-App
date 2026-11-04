@@ -7,22 +7,22 @@ TRUNCATE TABLE categories;
 SET FOREIGN_KEY_CHECKS = 1;
 
 INSERT INTO categories (name, slug, image_url, offer_label, sort_order, is_active) VALUES
-('Skin Care', 'skin-care', NULL, NULL, 1, 1),
-('Sexual Wellness', 'sexual-wellness', NULL, NULL, 2, 1),
-('Oral Care', 'oral-care', NULL, NULL, 3, 1),
-('Hair Care', 'hair-care', NULL, NULL, 4, 1),
-('Feminine Hygiene', 'feminine-hygiene', NULL, NULL, 5, 1),
-('Diaper & Wipes', 'diaper-wipes', NULL, NULL, 6, 1),
-('Feeding Essentials', 'feeding-essentials', NULL, NULL, 7, 1),
-('Baby Skin & Bath', 'baby-skin-bath', NULL, NULL, 8, 1),
-('Fitness Essentials', 'fitness-essentials', NULL, NULL, 9, 1),
-('Vitamins & Minerals', 'vitamins-minerals', NULL, NULL, 10, 1),
-('Nutritional Drinks', 'nutritional-drinks', NULL, NULL, 11, 1),
-('Ayurveda Essentials', 'ayurveda-essentials', NULL, NULL, 12, 1),
-('Health Devices', 'health-devices', NULL, NULL, 13, 1),
-('Home Essentials', 'home-essentials', NULL, NULL, 14, 1),
-('Pain Relief', 'pain-relief', NULL, NULL, 15, 1),
-('Fever & Cold', 'fever-cold', NULL, NULL, 16, 1);
+('Fever & Cold', 'fever-cold', NULL, NULL, 1, 1),
+('Skin Care', 'skin-care', NULL, NULL, 2, 1),
+('Sexual Wellness', 'sexual-wellness', NULL, NULL, 3, 1),
+('Oral Care', 'oral-care', NULL, NULL, 4, 1),
+('Hair Care', 'hair-care', NULL, NULL, 5, 1),
+('Feminine Hygiene', 'feminine-hygiene', NULL, NULL, 6, 1),
+('Diaper & Wipes', 'diaper-wipes', NULL, NULL, 7, 1),
+('Feeding Essentials', 'feeding-essentials', NULL, NULL, 8, 1),
+('Baby Skin & Bath', 'baby-skin-bath', NULL, NULL, 9, 1),
+('Fitness Essentials', 'fitness-essentials', NULL, NULL, 10, 1),
+('Vitamins & Minerals', 'vitamins-minerals', NULL, NULL, 11, 1),
+('Nutritional Drinks', 'nutritional-drinks', NULL, NULL, 12, 1),
+('Ayurveda Essentials', 'ayurveda-essentials', NULL, NULL, 13, 1),
+('Health Devices', 'health-devices', NULL, NULL, 14, 1),
+('Home Essentials', 'home-essentials', NULL, NULL, 15, 1),
+('Pain Relief', 'pain-relief', NULL, NULL, 16, 1);
 
 SET @highlights = JSON_ARRAY(
   JSON_OBJECT('icon', 'shield-checkmark-outline', 'label', '100% Genuine'),

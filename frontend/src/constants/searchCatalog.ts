@@ -34,6 +34,13 @@ export const TRENDING_SEARCHES: SearchSuggestion[] = [
 
 export const SEARCH_CATEGORIES: SearchCategory[] = [
   {
+    id: 'fever-cold',
+    query: 'Fever',
+    labelKey: 'search.catFeverCold',
+    image: CATEGORY_IMAGES.feverCold,
+    tint: '#FFF6E0',
+  },
+  {
     id: 'vitamins',
     query: 'Vitamin',
     labelKey: 'search.catVitamins',
@@ -74,13 +81,6 @@ export const SEARCH_CATEGORIES: SearchCategory[] = [
     labelKey: 'search.catAyurveda',
     image: CATEGORY_IMAGES.ayurveda,
     tint: '#E8F7EC',
-  },
-  {
-    id: 'fever-cold',
-    query: 'Fever',
-    labelKey: 'search.catFeverCold',
-    image: CATEGORY_IMAGES.feverCold,
-    tint: '#FFF6E0',
   },
   {
     id: 'nutrition',

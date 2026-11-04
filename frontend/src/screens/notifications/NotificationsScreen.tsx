@@ -1,10 +1,11 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   FlatList,
   Pressable,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -14,6 +15,12 @@ import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { useTheme } from '@/hooks/useTheme';
 import { useTranslation } from 'react-i18next';
 import { withAlpha } from '@/utils/colorUtils';
+import { useInAppAnnouncements } from '@/context/InAppAnnouncementsContext';
+import type { InAppAnnouncement } from '@/types/announcement.types';
+import {
+  formatAnnouncementTime,
+  getAnnouncementSection,
+} from '@/utils/announcementFormat';
 
 type NotificationIcon = keyof typeof Ionicons.glyphMap;
 
@@ -25,7 +32,22 @@ interface NotificationItem {
   icon: NotificationIcon;
   unread: boolean;
   section: 'today' | 'earlier';
+  actionUrl: string | null;
 }
+
+const iconForKind = (kind: InAppAnnouncement['kind']): NotificationIcon =>
+  kind === 'app_update' ? 'arrow-up-circle-outline' : 'megaphone-outline';
+
+const toNotificationItem = (item: InAppAnnouncement): NotificationItem => ({
+  id: item.id,
+  title: item.title,
+  message: item.body,
+  time: formatAnnouncementTime(item.createdAt),
+  icon: iconForKind(item.kind),
+  unread: item.unread,
+  section: getAnnouncementSection(item.createdAt),
+  actionUrl: item.actionUrl,
+});
 
 type ListRow =
   | { type: 'header'; id: string; label: string }
@@ -45,7 +67,12 @@ const NotificationsScreen = () => {
   const { t } = useTranslation();
   const { colors, spacing, typography, borderRadius, shadows, moderateScale, gradients } =
     useTheme();
-  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const { items: announcementItems, markRead, markAllRead } = useInAppAnnouncements();
+
+  const notifications = useMemo(
+    () => announcementItems.map(toNotificationItem),
+    [announcementItems],
+  );
 
   const unreadCount = notifications.filter((n) => n.unread).length;
   const isEmpty = notifications.length === 0;
@@ -66,15 +93,21 @@ const NotificationsScreen = () => {
     return rows;
   }, [notifications, t]);
 
-  const markAllRead = useCallback(() => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, unread: false })));
-  }, []);
+  const markAllReadHandler = useCallback(() => {
+    void markAllRead();
+  }, [markAllRead]);
 
-  const markOneRead = useCallback((id: string) => {
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, unread: false } : n)),
-    );
-  }, []);
+  const handlePressNotification = useCallback(
+    (item: NotificationItem) => {
+      if (item.unread) {
+        void markRead(item.id);
+      }
+      if (item.actionUrl) {
+        void Linking.openURL(item.actionUrl);
+      }
+    },
+    [markRead],
+  );
 
   const styles = useMemo(
     () =>
@@ -329,7 +362,7 @@ const NotificationsScreen = () => {
     return (
       <Animated.View entering={FadeInDown.delay(60 + index * 40).duration(350)}>
         <Pressable
-          onPress={() => markOneRead(n.id)}
+          onPress={() => handlePressNotification(n)}
           style={({ pressed }) => [
             styles.row,
             n.unread && styles.rowUnread,
@@ -397,7 +430,7 @@ const NotificationsScreen = () => {
               <View style={styles.headerSpacer} />
             ) : (
               <Pressable
-                onPress={markAllRead}
+                onPress={markAllReadHandler}
                 disabled={unreadCount === 0}
                 style={({ pressed }) => [
                   styles.markReadBtn,

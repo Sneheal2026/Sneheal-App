@@ -24,6 +24,7 @@ interface HomeHeaderProps {
   isScrolling?: boolean;
   onAccountPress?: () => void;
   onNotificationsPress?: () => void;
+  hasUnreadNotifications?: boolean;
   addressLabel?: string;
   addressTag?: string;
   onLocationPress?: () => void;
@@ -36,6 +37,7 @@ const HomeHeader: React.FC<HomeHeaderProps> = ({
   isScrolling = false,
   onAccountPress,
   onNotificationsPress,
+  hasUnreadNotifications = false,
   addressLabel,
   addressTag,
   onLocationPress,
@@ -92,7 +94,7 @@ const HomeHeader: React.FC<HomeHeaderProps> = ({
                 size={moderateScale(20)}
                 color={colors.headerTextDark}
               />
-              <View style={styles.notifDot} />
+              {hasUnreadNotifications ? <View style={styles.notifDot} /> : null}
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.actionBtn}

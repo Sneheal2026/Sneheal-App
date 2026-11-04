@@ -1,4 +1,4 @@
-import React, { useCallback, useRef } from 'react';
+import React, { useCallback, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -64,6 +64,15 @@ const CATEGORY_FALLBACK_BY_SLUG: Record<string, ImageSourcePropType> = {
   'home-essentials': CATEGORY_IMAGES.homeEssentials,
   'pain-relief': CATEGORY_IMAGES.painRelief,
   'fever-cold': CATEGORY_IMAGES.feverCold,
+};
+
+const FEVER_COLD_SLUG = 'fever-cold';
+
+/** Keep Fever & Cold in the first slot (top row) even if API sort_order lags. */
+const sortCategoriesForDisplay = (categories: Category[]): Category[] => {
+  const feverCold = categories.find((c) => c.slug === FEVER_COLD_SLUG);
+  if (!feverCold) return categories;
+  return [feverCold, ...categories.filter((c) => c.slug !== FEVER_COLD_SLUG)];
 };
 
 const resolveCategoryImage = (category: Category): ImageSourcePropType => {
@@ -140,6 +149,10 @@ interface CategoriesGridProps {
 const CategoriesGrid = ({ onPressCategory }: CategoriesGridProps) => {
   const { t } = useTranslation();
   const { data: categories, loading } = useCategories();
+  const displayCategories = useMemo(
+    () => sortCategoriesForDisplay(categories),
+    [categories],
+  );
 
   const handlePress = useCallback(
     (item: Category) => onPressCategory?.(item),
@@ -154,7 +167,7 @@ const CategoriesGrid = ({ onPressCategory }: CategoriesGridProps) => {
         ? Array.from({ length: 8 }).map((_, index) => (
             <CategorySkeleton key={index} />
           ))
-        : categories.map((item) => (
+        : displayCategories.map((item) => (
             <CategoryCard key={item.id} item={item} onPress={handlePress} />
           ))}
     </View>

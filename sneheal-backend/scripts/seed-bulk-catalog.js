@@ -196,22 +196,22 @@ const USES_POOL = [
 ];
 
 const CATEGORY_SEED = [
-  ['Skin Care', 'skin-care', 1],
-  ['Sexual Wellness', 'sexual-wellness', 2],
-  ['Oral Care', 'oral-care', 3],
-  ['Hair Care', 'hair-care', 4],
-  ['Feminine Hygiene', 'feminine-hygiene', 5],
-  ['Diaper & Wipes', 'diaper-wipes', 6],
-  ['Feeding Essentials', 'feeding-essentials', 7],
-  ['Baby Skin & Bath', 'baby-skin-bath', 8],
-  ['Fitness Essentials', 'fitness-essentials', 9],
-  ['Vitamins & Minerals', 'vitamins-minerals', 10],
-  ['Nutritional Drinks', 'nutritional-drinks', 11],
-  ['Ayurveda Essentials', 'ayurveda-essentials', 12],
-  ['Health Devices', 'health-devices', 13],
-  ['Home Essentials', 'home-essentials', 14],
-  ['Pain Relief', 'pain-relief', 15],
-  ['Fever & Cold', 'fever-cold', 16],
+  ['Fever & Cold', 'fever-cold', 1],
+  ['Skin Care', 'skin-care', 2],
+  ['Sexual Wellness', 'sexual-wellness', 3],
+  ['Oral Care', 'oral-care', 4],
+  ['Hair Care', 'hair-care', 5],
+  ['Feminine Hygiene', 'feminine-hygiene', 6],
+  ['Diaper & Wipes', 'diaper-wipes', 7],
+  ['Feeding Essentials', 'feeding-essentials', 8],
+  ['Baby Skin & Bath', 'baby-skin-bath', 9],
+  ['Fitness Essentials', 'fitness-essentials', 10],
+  ['Vitamins & Minerals', 'vitamins-minerals', 11],
+  ['Nutritional Drinks', 'nutritional-drinks', 12],
+  ['Ayurveda Essentials', 'ayurveda-essentials', 13],
+  ['Health Devices', 'health-devices', 14],
+  ['Home Essentials', 'home-essentials', 15],
+  ['Pain Relief', 'pain-relief', 16],
 ];
 
 const pick = (arr, i) => arr[i % arr.length];
