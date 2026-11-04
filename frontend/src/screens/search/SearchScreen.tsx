@@ -107,6 +107,8 @@ const SearchScreen = () => {
 
       if (fromScan && hasActiveDraft) {
         setShowBackToScan(true);
+      } else if (!hasActiveDraft) {
+        setShowBackToScan(false);
       }
 
       if (shouldFocus || shouldStartVoice || incomingQuery || fromScan) {
@@ -142,9 +144,19 @@ const SearchScreen = () => {
     }, [hasActiveDraft, navigation]),
   );
 
+  useEffect(() => {
+    if (!hasActiveDraft) {
+      setShowBackToScan(false);
+    }
+  }, [hasActiveDraft]);
+
   const handleBackToScan = useCallback(() => {
+    if (!hasActiveDraft) {
+      setShowBackToScan(false);
+      return;
+    }
     navigation.navigate('MedicineScan');
-  }, [navigation]);
+  }, [hasActiveDraft, navigation]);
 
   useEffect(() => {
     const incomingQuery = route.params?.query?.trim();

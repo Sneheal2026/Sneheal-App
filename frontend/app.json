@@ -16,7 +16,8 @@
         "NSLocationWhenInUseUsageDescription": "Sneheal uses your location to show your delivery address, nearby pharmacies, and nearest hospitals.",
         "LSApplicationQueriesSchemes": [
           "whatsapp",
-          "comgooglemaps"
+          "comgooglemaps",
+          "comgooglemaps-x-callback"
         ]
       }
     },
@@ -24,6 +25,28 @@
       "package": "com.sneheal.app",
       "versionCode": 5,
       "softwareKeyboardLayoutMode": "resize",
+      "queries": [
+        {
+          "package": "com.google.android.apps.maps"
+        },
+        {
+          "intent": {
+            "action": "android.intent.action.VIEW",
+            "data": {
+              "scheme": "google.navigation"
+            }
+          }
+        },
+        {
+          "intent": {
+            "action": "android.intent.action.VIEW",
+            "data": {
+              "scheme": "https",
+              "host": "www.google.com"
+            }
+          }
+        }
+      ],
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/icon.png",
         "backgroundColor": "#ffffff"

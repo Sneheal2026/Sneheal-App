@@ -16,8 +16,10 @@ const getOrder = async (req, res) => {
   return success(res, 'Order fetched successfully', data);
 };
 
-const listDeliveryQueue = async (_req, res) => {
-  const data = await orderService.listDeliveryQueue();
+const listDeliveryQueue = async (req, res) => {
+  const limit = req.query.limit;
+  const offset = req.query.offset;
+  const data = await orderService.listDeliveryQueueActive({ limit, offset });
   return success(res, 'Delivery queue fetched successfully', data);
 };
 

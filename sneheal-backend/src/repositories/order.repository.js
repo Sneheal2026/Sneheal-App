@@ -185,6 +185,31 @@ const findByStatuses = async (statuses, connection = db) => {
   return rows.map(mapOrder);
 };
 
+const countByStatuses = async (statuses, connection = db) => {
+  if (!statuses.length) return 0;
+  const placeholders = statuses.map(() => '?').join(',');
+  const [rows] = await connection.execute(
+    `SELECT COUNT(*) AS cnt FROM orders WHERE status IN (${placeholders})`,
+    statuses,
+  );
+  return Number(rows[0]?.cnt ?? 0);
+};
+
+const findByStatusesPaginated = async (statuses, limit, offset, connection = db) => {
+  if (!statuses.length) return [];
+  const safeLimit = Math.min(20, Math.max(1, Number(limit) || 5));
+  const safeOffset = Math.max(0, Number(offset) || 0);
+  const placeholders = statuses.map(() => '?').join(',');
+  const [rows] = await connection.execute(
+    `SELECT ${ORDER_SELECT} FROM orders
+     WHERE status IN (${placeholders})
+     ORDER BY created_at DESC
+     LIMIT ${safeLimit} OFFSET ${safeOffset}`,
+    statuses,
+  );
+  return rows.map(mapOrder);
+};
+
 const findRecentByStatus = async (status, limit = 20, connection = db) => {
   const [rows] = await connection.execute(
     `SELECT ${ORDER_SELECT} FROM orders
@@ -235,6 +260,8 @@ module.exports = {
   findByIdForUpdate,
   findByUserId,
   findByStatuses,
+  countByStatuses,
+  findByStatusesPaginated,
   findRecentByStatus,
   updateFulfillment,
   insertItems,

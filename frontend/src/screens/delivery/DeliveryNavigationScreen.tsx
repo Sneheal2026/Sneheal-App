@@ -8,7 +8,6 @@ import {
   StatusBar,
   Animated as RNAnimated,
   Alert,
-  Linking,
 } from 'react-native';
 import MapView, {
   Marker,
@@ -28,6 +27,7 @@ import { updateOrderStatus } from '@/services/orderService';
 import { ApiError } from '@/services/apiClient';
 import theme from '@/styles/theme';
 import { GOOGLE_MAPS_KEY } from '@/constants/googleMaps';
+import { openGoogleMapsNavigation } from '@/utils/openGoogleMapsNavigation';
 import { useTranslation } from 'react-i18next';
 
 const { spacing, typography, borderRadius, shadows } = theme;
@@ -507,18 +507,12 @@ const DeliveryNavigationScreen = () => {
 
   // ── Open Google Maps for turn-by-turn ──────────────────────────
   const openGoogleMaps = useCallback(() => {
-    const dest = currentDestination;
-    const url = Platform.select({
-      ios: `comgooglemaps://?daddr=${dest.latitude},${dest.longitude}&directionsmode=driving`,
-      android: `google.navigation:q=${dest.latitude},${dest.longitude}&mode=d`,
+    void openGoogleMapsNavigation({
+      coords: {
+        latitude: currentDestination.latitude,
+        longitude: currentDestination.longitude,
+      },
     });
-    const fallback = `https://www.google.com/maps/dir/?api=1&destination=${dest.latitude},${dest.longitude}&travelmode=driving`;
-
-    if (url) {
-      Linking.canOpenURL(url).then((supported) => {
-        Linking.openURL(supported ? url : fallback);
-      });
-    }
   }, [currentDestination]);
 
   // ── Finish delivery ────────────────────────────────────────────

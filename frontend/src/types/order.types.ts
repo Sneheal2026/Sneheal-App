@@ -73,6 +73,13 @@ export type OrderDetail = {
   } | null;
 };
 
+export type DeliveryQueueItemLine = {
+  name: string;
+  unit: string;
+  quantity: number;
+  lineTotal: number;
+};
+
 export type DeliveryQueueOrder = OrderListItem & {
   receiverName: string;
   mobile: string;
@@ -83,9 +90,16 @@ export type DeliveryQueueOrder = OrderListItem & {
     latitude: number;
     longitude: number;
   };
+  items: DeliveryQueueItemLine[];
 };
 
 export type DeliveryQueue = {
   active: DeliveryQueueOrder[];
   completed: DeliveryQueueOrder[];
+};
+
+export type DeliveryQueuePage = {
+  active: DeliveryQueueOrder[];
+  total: number;
+  hasMore: boolean;
 };

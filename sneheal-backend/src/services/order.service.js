@@ -102,6 +102,12 @@ const toDeliveryPayload = (order, items) => {
       latitude: order.latitude,
       longitude: order.longitude,
     },
+    items: items.map((item) => ({
+      name: item.name,
+      unit: item.unit,
+      quantity: item.quantity,
+      lineTotal: fromPaise(item.lineTotalPaise),
+    })),
   };
 };
 
@@ -306,9 +312,36 @@ const updateFulfillmentByPublicId = async (agentId, publicId, nextStatus) => {
   return updateFulfillmentStatus(agentId, order.id, nextStatus);
 };
 
+const ACTIVE_DELIVERY_STATUSES = ['confirmed', 'out_for_delivery'];
+const DEFAULT_QUEUE_PAGE_SIZE = 5;
+const MAX_QUEUE_PAGE_SIZE = 20;
+
+const parseQueuePage = (limit, offset) => ({
+  limit: Math.min(MAX_QUEUE_PAGE_SIZE, Math.max(1, Number(limit) || DEFAULT_QUEUE_PAGE_SIZE)),
+  offset: Math.max(0, Number(offset) || 0),
+});
+
+const listDeliveryQueueActive = async ({ limit, offset } = {}) => {
+  const page = parseQueuePage(limit, offset);
+  const [total, orders] = await Promise.all([
+    orderRepo.countByStatuses(ACTIVE_DELIVERY_STATUSES),
+    orderRepo.findByStatusesPaginated(
+      ACTIVE_DELIVERY_STATUSES,
+      page.limit,
+      page.offset,
+    ),
+  ]);
+  const active = await hydrateDeliveryOrders(orders);
+  return {
+    active,
+    total,
+    hasMore: page.offset + active.length < total,
+  };
+};
+
 const listDeliveryQueue = async () => {
   const [active, completed] = await Promise.all([
-    orderRepo.findByStatuses(['confirmed', 'out_for_delivery']),
+    orderRepo.findByStatuses(ACTIVE_DELIVERY_STATUSES),
     orderRepo.findRecentByStatus('delivered', 20),
   ]);
   const [activeRows, completedRows] = await Promise.all([
@@ -398,6 +431,7 @@ module.exports = {
   getOrder,
   getOrderByPublicId,
   listDeliveryQueue,
+  listDeliveryQueueActive,
   updateFulfillmentStatus,
   updateFulfillmentByPublicId,
 };

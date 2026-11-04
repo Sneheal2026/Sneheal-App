@@ -55,6 +55,7 @@ export type AuthStackParamList = {
   DeliveryAgentMain: undefined;
   DeliveryAgentProfile: undefined;
   DeliveryConfirm: undefined;
+  DeliveryOrderDetail: { orderId: string };
   DeliveryNavigation: {
     orderId: string;
     publicId?: string;

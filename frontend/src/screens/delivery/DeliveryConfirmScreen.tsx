@@ -19,6 +19,7 @@ import {
   fetchOrderByPublicId,
   markOrderDeliveredByPublicId,
   invalidateOrdersCache,
+  invalidateDeliveryQueueCache,
 } from '@/services/orderService';
 import { setOrderStatus } from '@/services/firebase';
 import { ApiError } from '@/services/apiClient';
@@ -86,6 +87,7 @@ const DeliveryConfirmScreen = () => {
       setOrder(updated);
       setDelivered(true);
       invalidateOrdersCache();
+      invalidateDeliveryQueueCache();
       // Live-mirror to Firebase so the customer's open tracker flips instantly.
       try {
         await setOrderStatus(updated.id, 'delivered', updated.publicId);

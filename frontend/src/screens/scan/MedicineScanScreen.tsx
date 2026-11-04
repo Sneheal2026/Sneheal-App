@@ -308,6 +308,8 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
   const scanGenerationRef = useRef(0);
   const scanInFlightRef = useRef(false);
   const hydratedFromDraftRef = useRef(false);
+  /** Prevents draft sync from re-saving after an intentional clear/delete. */
+  const skipDraftSyncRef = useRef(false);
 
   useEffect(() => {
     if (hydratedFromDraftRef.current || !draft?.pickedImage) return;
@@ -326,6 +328,10 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
     }
     if (!hydratedFromDraftRef.current) return;
     if (!pickedImage) {
+      skipDraftSyncRef.current = false;
+      return;
+    }
+    if (skipDraftSyncRef.current) {
       return;
     }
     setDraft({
@@ -416,9 +422,9 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
   );
 
   const handleClearImage = useCallback(() => {
+    skipDraftSyncRef.current = true;
     scanGenerationRef.current += 1;
     scanInFlightRef.current = false;
-    clearDraft();
     setPickedImage(null);
     setMedicines([]);
     setScanError(null);
@@ -426,6 +432,7 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
     setHasScanned(false);
     setIsSaved(false);
     setIsScanning(false);
+    clearDraft();
   }, [clearDraft]);
 
   const handleScan = useCallback(() => {

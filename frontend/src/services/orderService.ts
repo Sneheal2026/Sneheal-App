@@ -1,5 +1,5 @@
 import { authenticatedApiRequest } from './authTokenManager';
-import type { OrderDetail, OrderListItem, DeliveryQueue } from '@/types/order.types';
+import type { OrderDetail, OrderListItem, DeliveryQueuePage } from '@/types/order.types';
 
 export const createCheckoutOrder = (
   addressId: string,
@@ -79,8 +79,29 @@ export const markOrderDeliveredByPublicId = (
     },
   );
 
-export const fetchDeliveryQueue = (): Promise<DeliveryQueue> =>
-  authenticatedApiRequest<DeliveryQueue>('/api/orders/delivery/queue');
+export const DELIVERY_QUEUE_PAGE_SIZE = 5;
+
+export const fetchDeliveryQueuePage = (
+  options: { limit?: number; offset?: number } = {},
+): Promise<DeliveryQueuePage> => {
+  const limit = options.limit ?? DELIVERY_QUEUE_PAGE_SIZE;
+  const offset = options.offset ?? 0;
+  const query = new URLSearchParams({
+    limit: String(limit),
+    offset: String(offset),
+  });
+  return authenticatedApiRequest<DeliveryQueuePage>(
+    `/api/orders/delivery/queue?${query.toString()}`,
+  );
+};
+
+/** @deprecated Use fetchDeliveryQueuePage — clears any legacy cache hook. */
+export const invalidateDeliveryQueueCache = () => {};
+
+export const fetchDeliveryQueue = (options?: {
+  limit?: number;
+  offset?: number;
+}): Promise<DeliveryQueuePage> => fetchDeliveryQueuePage(options);
 
 export const updateOrderStatus = (
   orderId: string,
