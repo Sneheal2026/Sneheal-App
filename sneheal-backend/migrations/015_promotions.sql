@@ -40,21 +40,6 @@ INSERT IGNORE INTO promotions (
   1
 ),
 (
-  'SNEHEAL10',
-  'Sneheal welcome',
-  'Flat ₹10 off on orders above ₹50',
-  'flat_off',
-  1000,
-  5000,
-  NULL,
-  'cart',
-  10,
-  2,
-  NULL,
-  NULL,
-  1
-),
-(
   NULL,
   'Free delivery',
   'No delivery fee on orders above ₹100',
@@ -64,7 +49,7 @@ INSERT IGNORE INTO promotions (
   NULL,
   'delivery',
   5,
-  3,
+  2,
   NULL,
   NULL,
   1
