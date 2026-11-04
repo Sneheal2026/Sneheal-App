@@ -5,6 +5,7 @@ import OtpScreen from '@/screens/auth/OtpScreen';
 import RegistrationScreen from '@/screens/auth/RegistrationScreen';
 import DeliveryAgentHomeScreen from '@/screens/delivery/DeliveryAgentHomeScreen';
 import DeliveryAgentProfileScreen from '@/screens/delivery/DeliveryAgentProfileScreen';
+import DeliveryAgentDeliveredScreen from '@/screens/delivery/DeliveryAgentDeliveredScreen';
 import DeliveryConfirmScreen from '@/screens/delivery/DeliveryConfirmScreen';
 import DeliveryOrderDetailScreen from '@/screens/delivery/DeliveryOrderDetailScreen';
 import DeliveryNavigationScreen from '@/screens/delivery/DeliveryNavigationScreen';
@@ -79,6 +80,7 @@ const AuthNavigator = () => {
       <Stack.Screen name="CustomerTracking" component={CustomerTrackingScreen} />
       <Stack.Screen name="DeliveryAgentMain" component={DeliveryAgentHomeScreen} />
       <Stack.Screen name="DeliveryAgentProfile" component={DeliveryAgentProfileScreen} />
+      <Stack.Screen name="DeliveryAgentDelivered" component={DeliveryAgentDeliveredScreen} />
       <Stack.Screen name="DeliveryConfirm" component={DeliveryConfirmScreen} />
       <Stack.Screen name="DeliveryOrderDetail" component={DeliveryOrderDetailScreen} />
       <Stack.Screen name="DeliveryNavigation" component={DeliveryNavigationScreen} />

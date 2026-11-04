@@ -103,3 +103,9 @@ export type DeliveryQueuePage = {
   total: number;
   hasMore: boolean;
 };
+
+export type AgentDeliveredOrdersPage = {
+  orders: DeliveryQueueOrder[];
+  total: number;
+  hasMore: boolean;
+};

@@ -98,6 +98,11 @@ const DeliveryAgentProfileScreen = () => {
 
   const accountItems: AccountItem[] = [
     {
+      id: 'delivered',
+      icon: 'checkmark-done-outline',
+      label: t('delivery.deliveredHistory.menu'),
+    },
+    {
       id: 'language',
       icon: 'language-outline',
       label: t('settings.languageSettings'),
@@ -109,7 +114,8 @@ const DeliveryAgentProfileScreen = () => {
   ];
 
   const handleAccountPress = (id: string) => {
-    if (id === 'language') navigation.navigate('LanguageSettings');
+    if (id === 'delivered') navigation.navigate('DeliveryAgentDelivered');
+    else if (id === 'language') navigation.navigate('LanguageSettings');
     else if (id === 'about') navigation.navigate('AboutSneheal');
     else if (id === 'privacy') navigation.navigate('PrivacyPolicy');
     else if (id === 'logout') setLogoutVisible(true);

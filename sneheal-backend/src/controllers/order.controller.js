@@ -23,6 +23,13 @@ const listDeliveryQueue = async (req, res) => {
   return success(res, 'Delivery queue fetched successfully', data);
 };
 
+const listAgentDeliveredOrders = async (req, res) => {
+  const limit = req.query.limit;
+  const offset = req.query.offset;
+  const data = await orderService.listAgentDeliveredOrders(req.user.sub, { limit, offset });
+  return success(res, 'Delivered orders fetched successfully', data);
+};
+
 const updateStatus = async (req, res) => {
   const data = await orderService.updateFulfillmentStatus(
     req.user.sub,
@@ -52,6 +59,7 @@ module.exports = {
   getOrder,
   getOrderByPublicId,
   listDeliveryQueue,
+  listAgentDeliveredOrders,
   updateStatus,
   updateStatusByPublicId,
 };

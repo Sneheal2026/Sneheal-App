@@ -6,4 +6,5 @@ export { default as OnlineStatusCard } from './OnlineStatusCard';
 export { default as SectionHeader } from './SectionHeader';
 export { default as ActiveDeliveryCard } from './ActiveDeliveryCard';
 export { default as LatestOrderCard } from './LatestOrderCard';
+export { default as AgentDeliveredOrderCard } from './AgentDeliveredOrderCard';
 export { default as DeliveryEmptyState } from './DeliveryEmptyState';

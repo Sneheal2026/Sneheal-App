@@ -221,6 +221,28 @@ const findRecentByStatus = async (status, limit = 20, connection = db) => {
   return rows.map(mapOrder);
 };
 
+const countDeliveredByAgentId = async (agentId, connection = db) => {
+  const [rows] = await connection.execute(
+    `SELECT COUNT(*) AS cnt FROM orders
+     WHERE assigned_agent_id = ? AND status = 'delivered'`,
+    [agentId],
+  );
+  return Number(rows[0]?.cnt ?? 0);
+};
+
+const findDeliveredByAgentPaginated = async (agentId, limit, offset, connection = db) => {
+  const safeLimit = Math.min(20, Math.max(1, Number(limit) || 5));
+  const safeOffset = Math.max(0, Number(offset) || 0);
+  const [rows] = await connection.execute(
+    `SELECT ${ORDER_SELECT} FROM orders
+     WHERE assigned_agent_id = ? AND status = 'delivered'
+     ORDER BY delivered_at DESC, updated_at DESC
+     LIMIT ${safeLimit} OFFSET ${safeOffset}`,
+    [agentId],
+  );
+  return rows.map(mapOrder);
+};
+
 const updateFulfillment = async (id, data, connection = db) => {
   await connection.execute(
     `UPDATE orders
@@ -263,6 +285,8 @@ module.exports = {
   countByStatuses,
   findByStatusesPaginated,
   findRecentByStatus,
+  countDeliveredByAgentId,
+  findDeliveredByAgentPaginated,
   updateFulfillment,
   insertItems,
   findItemsByOrderId,

@@ -1,5 +1,5 @@
 import { authenticatedApiRequest } from './authTokenManager';
-import type { OrderDetail, OrderListItem, DeliveryQueuePage } from '@/types/order.types';
+import type { OrderDetail, OrderListItem, DeliveryQueuePage, AgentDeliveredOrdersPage } from '@/types/order.types';
 
 export const createCheckoutOrder = (
   addressId: string,
@@ -102,6 +102,20 @@ export const fetchDeliveryQueue = (options?: {
   limit?: number;
   offset?: number;
 }): Promise<DeliveryQueuePage> => fetchDeliveryQueuePage(options);
+
+export const fetchAgentDeliveredOrdersPage = (
+  options: { limit?: number; offset?: number } = {},
+): Promise<AgentDeliveredOrdersPage> => {
+  const limit = options.limit ?? DELIVERY_QUEUE_PAGE_SIZE;
+  const offset = options.offset ?? 0;
+  const query = new URLSearchParams({
+    limit: String(limit),
+    offset: String(offset),
+  });
+  return authenticatedApiRequest<AgentDeliveredOrdersPage>(
+    `/api/orders/delivery/mine/delivered?${query.toString()}`,
+  );
+};
 
 export const updateOrderStatus = (
   orderId: string,

@@ -54,6 +54,7 @@ export type AuthStackParamList = {
   LabReports: undefined;
   DeliveryAgentMain: undefined;
   DeliveryAgentProfile: undefined;
+  DeliveryAgentDelivered: undefined;
   DeliveryConfirm: undefined;
   DeliveryOrderDetail: { orderId: string };
   DeliveryNavigation: {

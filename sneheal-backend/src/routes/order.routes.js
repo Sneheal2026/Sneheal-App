@@ -50,6 +50,13 @@ router.get(
   asyncHandler(orderController.listDeliveryQueue),
 );
 
+router.get(
+  '/delivery/mine/delivered',
+  authenticateToken,
+  requireRole('delivery_agent'),
+  asyncHandler(orderController.listAgentDeliveredOrders),
+);
+
 /**
  * @swagger
  * /api/orders/{id}/status:

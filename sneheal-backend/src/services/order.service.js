@@ -339,6 +339,24 @@ const listDeliveryQueueActive = async ({ limit, offset } = {}) => {
   };
 };
 
+const listAgentDeliveredOrders = async (agentId, { limit, offset } = {}) => {
+  const page = parseQueuePage(limit, offset);
+  const agentKey = String(agentId ?? '').trim();
+  if (!agentKey) {
+    throw new AppError(400, 'Agent id is required');
+  }
+  const [total, orders] = await Promise.all([
+    orderRepo.countDeliveredByAgentId(agentKey),
+    orderRepo.findDeliveredByAgentPaginated(agentKey, page.limit, page.offset),
+  ]);
+  const items = await hydrateDeliveryOrders(orders);
+  return {
+    orders: items,
+    total,
+    hasMore: page.offset + items.length < total,
+  };
+};
+
 const listDeliveryQueue = async () => {
   const [active, completed] = await Promise.all([
     orderRepo.findByStatuses(ACTIVE_DELIVERY_STATUSES),
@@ -432,6 +450,7 @@ module.exports = {
   getOrderByPublicId,
   listDeliveryQueue,
   listDeliveryQueueActive,
+  listAgentDeliveredOrders,
   updateFulfillmentStatus,
   updateFulfillmentByPublicId,
 };
