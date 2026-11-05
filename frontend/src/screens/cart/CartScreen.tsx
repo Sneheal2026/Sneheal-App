@@ -14,6 +14,7 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ScreenHeader from '@/components/common/ScreenHeader';
+import HeaderHomeButton from '@/components/common/HeaderHomeButton';
 import { CartBilling, CartItemRow, CartOffersSection, CouponAutoApplyToast, type BillLine } from '@/components/cart';
 import { useCart } from '@/context/CartContext';
 import { useSavedAddresses } from '@/hooks/useSavedAddresses';
@@ -126,9 +127,13 @@ const CartScreen = ({ navigation: tabNavigation }: TabScreenProps<'Cart'>) => {
     parent?.navigate('LocationMap', { returnTo: 'Main' });
   }, [navigation, addresses.length]);
 
-  const openShop = useCallback(() => {
+  const goHome = useCallback(() => {
     tabNavigation.navigate('Home');
   }, [tabNavigation]);
+
+  const openShop = useCallback(() => {
+    goHome();
+  }, [goHome]);
 
   const onContinue = useCallback(() => {
     if (!selectedAddress) {
@@ -156,7 +161,11 @@ const CartScreen = ({ navigation: tabNavigation }: TabScreenProps<'Cart'>) => {
         payload={autoApplyToast}
         onDismiss={dismissAutoApplyToast}
       />
-      <ScreenHeader title={t('cart.title')} subtitle={subtitle} />
+      <ScreenHeader
+        title={t('cart.title')}
+        subtitle={subtitle}
+        rightElement={<HeaderHomeButton onPress={goHome} />}
+      />
 
       {lines.length === 0 ? (
         <View style={[styles.emptyWrap, { paddingBottom: tabBarHeight }]}>

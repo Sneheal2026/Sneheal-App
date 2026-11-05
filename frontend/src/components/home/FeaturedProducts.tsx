@@ -196,7 +196,7 @@ const FeaturedProducts = ({
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: spacing.xl,
+    marginBottom: spacing.xxs,
     marginTop: spacing.xl,
     zIndex: 10,
     elevation: 10,

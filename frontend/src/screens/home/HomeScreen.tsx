@@ -26,6 +26,7 @@ import {
   SearchBar,
   PromoBanner,
   DiwaliBanner,
+  DiwaliBorder,
   CategoriesGrid,
   FeaturedProducts,
 } from '@/components/home';
@@ -406,6 +407,8 @@ const HomeScreen = () => {
             <DevResetStorageButton />
           </View>
 
+          <DiwaliBorder />
+
           <View style={styles.pillImageWrap} pointerEvents="none">
             <Image
               source={PILL_IMAGE}
@@ -451,8 +454,8 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
   pillImageWrap: {
-    marginTop: -109,
-    marginBottom: -109,
+    marginTop: verticalScale(-168),
+    marginBottom: verticalScale(-109),
     overflow: 'hidden',
     zIndex: 0,
   },

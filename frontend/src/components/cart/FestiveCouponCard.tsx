@@ -28,7 +28,6 @@ const VARIANT_THEME = {
     badgeIconColor: DIWALI_GRADIENT[1],
     badgeTextColor: DIWALI_GRADIENT[1],
     perfDot: 'rgba(255, 248, 220, 0.55)',
-    glowLarge: 'rgba(255, 186, 8, 0.22)',
     glowSmall: 'rgba(255, 255, 255, 0.12)',
     decorIcon: 'sparkles' as const,
     decorIconColor: 'rgba(255, 248, 220, 0.35)',
@@ -42,7 +41,6 @@ const VARIANT_THEME = {
     badgeIconColor: GREEN,
     badgeTextColor: GREEN,
     perfDot: 'rgba(230, 255, 240, 0.6)',
-    glowLarge: 'rgba(149, 213, 178, 0.28)',
     glowSmall: 'rgba(255, 255, 255, 0.14)',
     decorIcon: 'flash' as const,
     decorIconColor: 'rgba(230, 255, 240, 0.4)',
@@ -96,7 +94,6 @@ export const FestiveCouponShell = ({
           style={styles.couponBodyGradient}
         >
           <View pointerEvents="none" style={styles.couponDecorLayer}>
-            <View style={[styles.couponGlowOrbLarge, { backgroundColor: themeVariant.glowLarge }]} />
             <View style={[styles.couponGlowOrbSmall, { backgroundColor: themeVariant.glowSmall }]} />
             <Ionicons
               name={themeVariant.decorIcon}
@@ -213,14 +210,6 @@ const styles = StyleSheet.create({
   },
   couponDecorLayer: {
     ...StyleSheet.absoluteFillObject,
-  },
-  couponGlowOrbLarge: {
-    position: 'absolute',
-    width: moderateScale(140, 0.35),
-    height: moderateScale(140, 0.35),
-    borderRadius: moderateScale(70, 0.35),
-    top: -moderateScale(48, 0.35),
-    right: -moderateScale(36, 0.35),
   },
   couponGlowOrbSmall: {
     position: 'absolute',

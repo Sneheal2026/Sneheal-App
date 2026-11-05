@@ -14,6 +14,7 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ScreenHeader from '@/components/common/ScreenHeader';
+import HeaderHomeButton from '@/components/common/HeaderHomeButton';
 import OrderLoader from '@/components/orders/OrderLoader';
 import OrderCard from '@/components/orders/OrderCard';
 import {
@@ -31,7 +32,7 @@ import type { AuthStackParamList, TabScreenProps } from '@/navigation/types';
 const NO_ORDERS_PIC = require('../../../assets/images/No-Orders-Pic.webp');
 const PAGE_BG = '#F5F6F8';
 
-const OrdersScreen = (_props: TabScreenProps<'Orders'>) => {
+const OrdersScreen = ({ navigation: tabNavigation }: TabScreenProps<'Orders'>) => {
   const { t } = useTranslation();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
@@ -102,9 +103,13 @@ const OrdersScreen = (_props: TabScreenProps<'Orders'>) => {
     [openDetail],
   );
 
+  const goHome = useCallback(() => {
+    tabNavigation.navigate('Home');
+  }, [tabNavigation]);
+
   const goShop = useCallback(() => {
-    navigation.navigate('Home' as never);
-  }, [navigation]);
+    goHome();
+  }, [goHome]);
 
   const listHeader = useMemo(() => {
     if (loading && visibleOrders.length === 0) return null;
@@ -205,7 +210,11 @@ const OrdersScreen = (_props: TabScreenProps<'Orders'>) => {
 
   return (
     <View style={styles.root}>
-      <ScreenHeader title={t('orders.title')} subtitle={t('orders.subtitle')} />
+      <ScreenHeader
+        title={t('orders.title')}
+        subtitle={t('orders.subtitle')}
+        rightElement={<HeaderHomeButton onPress={goHome} />}
+      />
 
       <FlatList
         data={filteredOrders}

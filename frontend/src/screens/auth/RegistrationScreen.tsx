@@ -516,7 +516,7 @@ const RegistrationScreen = ({
   const { setLanguage: applyAppLanguage } = useLanguage();
 
   const [username, setUsername] = useState('');
-  const [language, setLanguage] = useState<AppLanguage | null>(null);
+  const [language, setLanguage] = useState<AppLanguage>('ENGLISH');
   const [role, setRole] = useState<UserRole | null>('customer');
   const [aadharUri, setAadharUri] = useState<string | null>(null);
   const [licenseUri, setLicenseUri] = useState<string | null>(null);
@@ -941,8 +941,6 @@ const RegistrationScreen = ({
   return (
     <AuthScreenLayout
       mutedBackground
-      showBack
-      onBack={() => navigation.goBack()}
       footer={
         <AuthPrimaryButton
           title={t('common.continue')}
