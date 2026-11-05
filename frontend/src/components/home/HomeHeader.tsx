@@ -6,7 +6,9 @@ import {
   TouchableOpacity,
   Platform,
   StatusBar,
+  Dimensions,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -18,7 +20,15 @@ import HomeAppUpdateCallout from './HomeAppUpdateCallout';
 import HomeNotificationBell from './HomeNotificationBell';
 import theme from '@/styles/theme';
 
-const { colors, spacing, borderRadius, moderateScale } = theme;
+const { colors, spacing, borderRadius, moderateScale, verticalScale } = theme;
+
+const LANTERN_DESIGN = require('../../../assets/images/LanternDesign.webp');
+const FLOWER_DESIGN = require('../../../assets/images/FlowerDesignn.webp');
+const LIGHTING_DESIGN_2 = require('../../../assets/images/LightingDesign2.webp');
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const LANTERN_WIDTH = SCREEN_WIDTH * 0.62;
+const LANTERN_HEIGHT = verticalScale(108);
+const BRAND_FLOWER_SIZE = moderateScale(16);
 
 interface HomeHeaderProps {
   onSearchPress: () => void;
@@ -61,6 +71,13 @@ const HomeHeader: React.FC<HomeHeaderProps> = ({
     <View style={styles.heroWrapper}>
       <View style={StyleSheet.absoluteFill} pointerEvents="none">
         <HeroBackground pauseAnimation={isScrolling} />
+        <Image
+          source={LANTERN_DESIGN}
+          style={styles.lanternDecor}
+          contentFit="contain"
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+        />
       </View>
 
       <View style={[styles.heroContent, { paddingTop: topInset + spacing.sm }]}>
@@ -69,9 +86,28 @@ const HomeHeader: React.FC<HomeHeaderProps> = ({
             entering={FadeInDown.delay(60).duration(450).springify()}
             style={styles.deliveryBlock}
           >
-            <Text style={styles.deliveryLabel}>{t('home.snehealIn')}</Text>
+            <View style={styles.brandRow}>
+              <Text style={styles.deliveryLabel}>{t('home.snehealIn')}</Text>
+              <Image
+                source={FLOWER_DESIGN}
+                style={styles.brandFlower}
+                contentFit="contain"
+                accessibilityElementsHidden
+                importantForAccessibility="no-hide-descendants"
+              />
+            </View>
             <View style={styles.deliveryTimeRow}>
-              <Text style={styles.deliveryTime}>{t('home.deliveryTime')}</Text>
+              <View style={styles.deliveryTimeWrap}>
+                <Image
+                  source={LIGHTING_DESIGN_2}
+                  style={styles.lightingAboveCare}
+                  contentFit="contain"
+                  accessibilityElementsHidden
+                  importantForAccessibility="no-hide-descendants"
+                />
+                <Text style={styles.deliveryTime}>{t('home.deliveryTime')}</Text>
+              </View>
+              {/* Pharmacy pill — hidden for Diwali header layout
               <View style={styles.deliveryBadge}>
                 <Ionicons
                   name="medkit-outline"
@@ -80,6 +116,7 @@ const HomeHeader: React.FC<HomeHeaderProps> = ({
                 />
                 <Text style={styles.deliveryBadgeText}>{t('home.pharmacy')}</Text>
               </View>
+              */}
             </View>
           </Animated.View>
 
@@ -148,6 +185,38 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     paddingBottom: spacing.md,
   },
+  lanternDecor: {
+    position: 'absolute',
+    top: verticalScale(16),
+    left: SCREEN_WIDTH * 0.26,
+    width: LANTERN_WIDTH,
+    height: LANTERN_HEIGHT,
+    zIndex: 1,
+  },
+  deliveryTimeWrap: {
+    position: 'relative',
+    alignSelf: 'flex-start',
+  },
+  lightingAboveCare: {
+    position: 'absolute',
+    top: -moderateScale(28),
+    left: moderateScale(118),
+    width: moderateScale(50),
+    height: moderateScale(50),
+    zIndex: 6,
+  },
+  brandRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginBottom: 1,
+  },
+  brandFlower: {
+    width: BRAND_FLOWER_SIZE,
+    height: BRAND_FLOWER_SIZE,
+    marginTop: 1,
+    opacity: 0.95,
+  },
   heroContent: {
     paddingHorizontal: spacing.lg,
     zIndex: 2,
@@ -167,11 +236,10 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   deliveryLabel: {
-    fontSize: moderateScale(13),
-    fontWeight: '600',
-    color: colors.headerTextMutedOnDark,
-    letterSpacing: 0.2,
-    marginBottom: 1,
+    fontSize: moderateScale(14),
+    fontWeight: '700',
+    color: colors.headerTextOnDark,
+    letterSpacing: 0.15,
   },
   deliveryTimeRow: {
     flexDirection: 'row',

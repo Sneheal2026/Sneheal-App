@@ -38,6 +38,7 @@ import { updateTabBarOnScroll } from '@/utils/tabBarScrollWorklet';
 import { useFeaturedProducts } from '@/hooks/useCatalog';
 import { useCart } from '@/context/CartContext';
 import { resolveCatalogImage } from '@/utils/productImage';
+import { Image as ExpoImage } from 'expo-image';
 import theme from '@/styles/theme';
 import globalStyles from '@/styles/globalStyles';
 import { useTheme } from '@/hooks/useTheme';
@@ -47,8 +48,10 @@ import type { AuthStackParamList, TabParamList } from '@/navigation/types';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const PILL_IMAGE = require('../../../assets/images/Sneheal-Pill-2.webp');
+const LIGHTING_BELOW_SEARCH_RIGHT = require('../../../assets/images/LightingDesign1.webp');
+const LIGHTING_BELOW_SEARCH_LEFT = require('../../../assets/images/LightingDesign3.webp');
 
-const { colors, spacing } = theme;
+const { colors, spacing, moderateScale, verticalScale } = theme;
 
 const STICKY_THRESHOLD = 140;
 
@@ -337,6 +340,23 @@ const HomeScreen = () => {
             onUploadScanPress={handleUploadScan}
           />
 
+          <View style={styles.belowSearchLighting} pointerEvents="none">
+            <ExpoImage
+              source={LIGHTING_BELOW_SEARCH_LEFT}
+              style={styles.belowSearchLightingImage}
+              contentFit="contain"
+              accessibilityElementsHidden
+              importantForAccessibility="no-hide-descendants"
+            />
+            <ExpoImage
+              source={LIGHTING_BELOW_SEARCH_RIGHT}
+              style={styles.belowSearchLightingImage}
+              contentFit="contain"
+              accessibilityElementsHidden
+              importantForAccessibility="no-hide-descendants"
+            />
+          </View>
+
           <View style={styles.contentSection}>
             <DiwaliBanner />
             <CategoriesGrid onPressCategory={handleOpenCategory} />
@@ -379,6 +399,20 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   scrollContent: {},
+  belowSearchLighting: {
+    zIndex: 15,
+    elevation: 15,
+    marginTop: -verticalScale(32),
+    marginBottom: -verticalScale(10),
+    paddingHorizontal: spacing.xl,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  belowSearchLightingImage: {
+    width: moderateScale(58),
+    height: moderateScale(58),
+  },
   contentSection: {
     paddingTop: 0,
     zIndex: 10,

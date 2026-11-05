@@ -103,7 +103,7 @@ const en = {
   },
   home: {
     snehealIn: 'Sneheal',
-    deliveryTime: 'Your Wellness',
+    deliveryTime: 'Feel the Care',
     pharmacy: 'Pharmacy',
     addDeliveryAddress: 'Add delivery address',
     openNotifications: 'Open notifications',

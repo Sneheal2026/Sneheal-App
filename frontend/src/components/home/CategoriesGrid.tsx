@@ -8,9 +8,11 @@ import {
   Animated,
   ImageSourcePropType,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { useTranslation } from 'react-i18next';
 import theme from '@/styles/theme';
 import Shimmer from '@/components/common/Shimmer';
+import { useTheme } from '@/hooks/useTheme';
 import { useCategories } from '@/hooks/useCatalog';
 import type { Category } from '@/types/product.types';
 
@@ -24,8 +26,9 @@ const GRID_WIDTH = SCREEN_WIDTH - HORIZONTAL_PADDING * 2;
 const CARD_WIDTH = (GRID_WIDTH - GRID_GAP * (NUM_COLUMNS - 1)) / NUM_COLUMNS;
 const IMAGE_BOX_SIZE = CARD_WIDTH;
 
-const CARD_BG = '#D9E5F3';
 const OFFER_GREEN = '#1F9D55';
+const FLOWER_DESIGN = require('../../../assets/images/FlowerDesignn.webp');
+const TITLE_FLOWER_SIZE = moderateScale(38);
 
 const CATEGORY_IMAGES = {
   skinCare: require('../../../assets/images/Skin-Care.png'),
@@ -106,13 +109,16 @@ const CategoryImage = React.memo(({ source }: { source: ImageSourcePropType }) =
 CategoryImage.displayName = 'CategoryImage';
 
 const CategoryCard = React.memo(
-  ({ item, onPress }: { item: Category; onPress: (item: Category) => void }) => (
+  ({ item, onPress }: { item: Category; onPress: (item: Category) => void }) => {
+    const { colors } = useTheme();
+
+    return (
     <TouchableOpacity
       style={styles.gridItem}
       activeOpacity={0.85}
       onPress={() => onPress(item)}
     >
-      <View style={styles.imageBox}>
+      <View style={[styles.imageBox, { backgroundColor: colors.infoLight }]}>
         <CategoryImage source={resolveCategoryImage(item)} />
         {item.offerLabel ? (
           <View style={styles.offerBanner}>
@@ -126,21 +132,26 @@ const CategoryCard = React.memo(
         {item.name}
       </Text>
     </TouchableOpacity>
-  ),
+    );
+  },
 );
 
 CategoryCard.displayName = 'CategoryCard';
 
-const CategorySkeleton = () => (
+const CategorySkeleton = () => {
+  const { colors } = useTheme();
+
+  return (
   <View style={styles.gridItem}>
-    <View style={styles.imageBox}>
+    <View style={[styles.imageBox, { backgroundColor: colors.infoLight }]}>
       <Shimmer width="100%" height="100%" borderRadius={moderateScale(16)} />
     </View>
     <View style={styles.skeletonLabel}>
       <Shimmer width="80%" height={moderateScale(10)} />
     </View>
   </View>
-);
+  );
+};
 
 interface CategoriesGridProps {
   onPressCategory?: (category: Category) => void;
@@ -161,7 +172,23 @@ const CategoriesGrid = ({ onPressCategory }: CategoriesGridProps) => {
 
   return (
   <View style={styles.section}>
-    <Text style={styles.sectionTitle}>{t('home.categories')}</Text>
+    <View style={styles.sectionTitleRow}>
+      <Image
+        source={FLOWER_DESIGN}
+        style={styles.titleFlowerLeft}
+        contentFit="contain"
+        accessibilityElementsHidden
+        importantForAccessibility="no-hide-descendants"
+      />
+      <Text style={styles.sectionTitle}>{t('home.categories')}</Text>
+      <Image
+        source={FLOWER_DESIGN}
+        style={styles.titleFlowerRight}
+        contentFit="contain"
+        accessibilityElementsHidden
+        importantForAccessibility="no-hide-descendants"
+      />
+    </View>
     <View style={styles.grid}>
       {loading && categories.length === 0
         ? Array.from({ length: 8 }).map((_, index) => (
@@ -180,13 +207,31 @@ const styles = StyleSheet.create({
     paddingHorizontal: HORIZONTAL_PADDING,
     marginBottom: spacing.lg,
   },
+  sectionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  titleFlowerLeft: {
+    width: TITLE_FLOWER_SIZE,
+    height: TITLE_FLOWER_SIZE,
+    transform: [{ scaleX: -1 }],
+    opacity: 0.9,
+  },
+  titleFlowerRight: {
+    width: TITLE_FLOWER_SIZE,
+    height: TITLE_FLOWER_SIZE,
+    opacity: 0.9,
+  },
   sectionTitle: {
     ...typography.h4,
     fontSize: moderateScale(18),
     fontWeight: '700',
     color: colors.textPrimary,
     letterSpacing: -0.3,
-    marginBottom: spacing.md,
+    marginBottom: 0,
   },
   grid: {
     flexDirection: 'row',
@@ -206,7 +251,6 @@ const styles = StyleSheet.create({
     width: IMAGE_BOX_SIZE,
     height: IMAGE_BOX_SIZE,
     borderRadius: moderateScale(16),
-    backgroundColor: CARD_BG,
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
