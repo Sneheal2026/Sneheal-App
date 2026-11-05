@@ -9,6 +9,7 @@ import {
   Image,
   Platform,
 } from 'react-native';
+import { Image as ExpoImage } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import theme from '@/styles/theme';
@@ -19,8 +20,11 @@ import type { Product } from '@/types/product.types';
 
 export type { Product } from '@/types/product.types';
 
-const { colors, spacing, moderateScale, device } = theme;
+const { colors, spacing, typography, moderateScale, device } = theme;
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+const FLOWER_DESIGN = require('../../../assets/images/FlowerDesignn.webp');
+const TITLE_FLOWER_SIZE = moderateScale(38);
 
 const CARD_WIDTH = device.isSmallDevice
   ? SCREEN_WIDTH * 0.44
@@ -138,11 +142,22 @@ const FeaturedProducts = ({
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>{t('home.featuredProducts')}</Text>
-        {/* <Pressable>
-          <Text style={[styles.viewAll, { color: colors.primary }]}>{t('common.viewAll')}</Text>
-        </Pressable> */}
+      <View style={styles.sectionTitleRow}>
+        <ExpoImage
+          source={FLOWER_DESIGN}
+          style={styles.titleFlowerLeft}
+          contentFit="contain"
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+        />
+        <Text style={styles.sectionTitle}>{t('home.featuredProducts')}</Text>
+        <ExpoImage
+          source={FLOWER_DESIGN}
+          style={styles.titleFlowerRight}
+          contentFit="contain"
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+        />
       </View>
 
       {showSkeletons ? (
@@ -186,22 +201,32 @@ const styles = StyleSheet.create({
     zIndex: 10,
     elevation: 10,
   },
-  header: {
+  sectionTitleRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
     paddingHorizontal: spacing.lg,
     marginBottom: spacing.md,
   },
-  title: {
+  titleFlowerLeft: {
+    width: TITLE_FLOWER_SIZE,
+    height: TITLE_FLOWER_SIZE,
+    transform: [{ scaleX: -1 }],
+    opacity: 0.9,
+  },
+  titleFlowerRight: {
+    width: TITLE_FLOWER_SIZE,
+    height: TITLE_FLOWER_SIZE,
+    opacity: 0.9,
+  },
+  sectionTitle: {
+    ...typography.h4,
     fontSize: moderateScale(18),
     fontWeight: '700',
     color: colors.textPrimary,
     letterSpacing: -0.3,
-  },
-  viewAll: {
-    fontSize: moderateScale(14),
-    fontWeight: '600',
+    marginBottom: 0,
   },
   list: {
     paddingHorizontal: spacing.lg,

@@ -20,6 +20,7 @@ import { ApiError } from '@/services/apiClient';
 type InAppAnnouncementsContextValue = {
   items: InAppAnnouncement[];
   unreadCount: number;
+  refreshAnnouncements: () => void;
   markRead: (id: string) => Promise<void>;
   markAllRead: () => Promise<void>;
 };
@@ -30,6 +31,9 @@ const InAppAnnouncementsContext = createContext<InAppAnnouncementsContextValue |
 
 /** Minimum time between automatic GET requests (same session). */
 const STALE_AFTER_MS = 30 * 60 * 1000;
+
+/** When Home tab is focused, refresh sooner so new update rows show without waiting for resume TTL. */
+const HOME_FOCUS_STALE_MS = 30 * 1000;
 
 /** After 404 / server errors, stop GET until this backoff expires. */
 const ERROR_BACKOFF_MS = 6 * 60 * 60 * 1000;
@@ -65,7 +69,7 @@ export const InAppAnnouncementsProvider = ({
   }, [applyPayload]);
 
   const loadAnnouncements = useCallback(
-    async (reason: 'login' | 'resume') => {
+    async (reason: 'login' | 'resume' | 'home_focus') => {
       if (!isAuthenticated) {
         resetSession();
         return;
@@ -86,6 +90,15 @@ export const InAppAnnouncementsProvider = ({
           return;
         }
         if (now - lastFetchedAt.current < STALE_AFTER_MS) {
+          return;
+        }
+      }
+
+      if (reason === 'home_focus') {
+        if (!hasLoadedSession.current) {
+          return;
+        }
+        if (now - lastFetchedAt.current < HOME_FOCUS_STALE_MS) {
           return;
         }
       }
@@ -156,6 +169,10 @@ export const InAppAnnouncementsProvider = ({
     return () => subscription.remove();
   }, [isAuthenticated, loadAnnouncements]);
 
+  const refreshAnnouncements = useCallback(() => {
+    void loadAnnouncements('home_focus');
+  }, [loadAnnouncements]);
+
   const markRead = useCallback(async (id: string) => {
     setItems((prev) =>
       prev.map((item) => (item.id === id ? { ...item, unread: false } : item)),
@@ -184,10 +201,11 @@ export const InAppAnnouncementsProvider = ({
     () => ({
       items,
       unreadCount,
+      refreshAnnouncements,
       markRead,
       markAllRead,
     }),
-    [items, unreadCount, markRead, markAllRead],
+    [items, unreadCount, refreshAnnouncements, markRead, markAllRead],
   );
 
   return (

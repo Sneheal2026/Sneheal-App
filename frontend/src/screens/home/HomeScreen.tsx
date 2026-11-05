@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, useMemo } from 'react';
+import React, { useState, useCallback, useRef, useMemo, useEffect } from 'react';
 import {
   View,
   StyleSheet,
@@ -8,7 +8,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { StatusBar as ExpoStatusBar } from 'expo-status-bar';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation, useFocusEffect, useIsFocused } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -54,6 +54,8 @@ const LIGHTING_BELOW_SEARCH_LEFT = require('../../../assets/images/LightingDesig
 const { colors, spacing, moderateScale, verticalScale } = theme;
 
 const STICKY_THRESHOLD = 140;
+/** One-time tooltip on Home per unread app-update cycle (until the update is marked read). */
+const APP_UPDATE_CALLOUT_MS = 6000;
 
 const HomeScreen = () => {
   const navigation = useNavigation<BottomTabNavigationProp<TabParamList, 'Home'>>();
@@ -71,7 +73,12 @@ const HomeScreen = () => {
     refetch: refetchFeatured,
   } = useFeaturedProducts();
   const { lines, totalItems, addProduct, decrement } = useCart();
-  const { unreadCount: notificationUnreadCount, items: announcementItems } = useInAppAnnouncements();
+  const {
+    unreadCount: notificationUnreadCount,
+    items: announcementItems,
+    refreshAnnouncements,
+  } = useInAppAnnouncements();
+  const isHomeFocused = useIsFocused();
 
   const hasUnreadAppUpdate = useMemo(
     () => announcementItems.some((item) => item.kind === 'app_update' && item.unread),
@@ -79,6 +86,44 @@ const HomeScreen = () => {
   );
 
   const [showAppUpdateCallout, setShowAppUpdateCallout] = useState(false);
+  const appUpdateCalloutConsumedRef = useRef(false);
+  const calloutHideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearCalloutHideTimer = useCallback(() => {
+    if (calloutHideTimerRef.current) {
+      clearTimeout(calloutHideTimerRef.current);
+      calloutHideTimerRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!hasUnreadAppUpdate) {
+      appUpdateCalloutConsumedRef.current = false;
+    }
+  }, [hasUnreadAppUpdate]);
+
+  useEffect(() => {
+    clearCalloutHideTimer();
+
+    if (!isHomeFocused || !hasUnreadAppUpdate) {
+      setShowAppUpdateCallout(false);
+      return;
+    }
+
+    if (appUpdateCalloutConsumedRef.current) {
+      setShowAppUpdateCallout(false);
+      return;
+    }
+
+    appUpdateCalloutConsumedRef.current = true;
+    setShowAppUpdateCallout(true);
+    calloutHideTimerRef.current = setTimeout(() => {
+      setShowAppUpdateCallout(false);
+      calloutHideTimerRef.current = null;
+    }, APP_UPDATE_CALLOUT_MS);
+
+    return clearCalloutHideTimer;
+  }, [isHomeFocused, hasUnreadAppUpdate, clearCalloutHideTimer]);
 
   const quantities = useMemo(() => {
     const map: Record<string, number> = {};
@@ -249,21 +294,8 @@ const HomeScreen = () => {
 
   useFocusEffect(
     useCallback(() => {
-      if (!hasUnreadAppUpdate) {
-        setShowAppUpdateCallout(false);
-        return;
-      }
-
-      setShowAppUpdateCallout(true);
-      const hideTimer = setTimeout(() => {
-        setShowAppUpdateCallout(false);
-      }, 5500);
-
-      return () => {
-        clearTimeout(hideTimer);
-        setShowAppUpdateCallout(false);
-      };
-    }, [hasUnreadAppUpdate]),
+      refreshAnnouncements();
+    }, [refreshAnnouncements]),
   );
 
   useFocusEffect(
