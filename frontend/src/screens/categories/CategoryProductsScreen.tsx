@@ -23,7 +23,7 @@ import { useCart } from '@/context/CartContext';
 import { useTheme } from '@/hooks/useTheme';
 import QuantityStepper from '@/components/common/QuantityStepper';
 import FloatingCartBar, { FLOATING_CART_BAR_HEIGHT } from '@/components/cart/FloatingCartBar';
-import Shimmer from '@/components/common/Shimmer';
+import ProductGridSkeleton from '@/components/common/ProductGridSkeleton';
 import { resolveCatalogImage } from '@/utils/productImage';
 import type { AuthStackParamList } from '@/navigation/types';
 import type { Product } from '@/types/product.types';
@@ -97,21 +97,6 @@ const ProductCard = React.memo(
   },
 );
 ProductCard.displayName = 'ProductCard';
-
-const CardSkeleton = () => (
-  <View style={styles.card}>
-    <View style={styles.cardImageBox}>
-      <Shimmer width="100%" height="100%" borderRadius={moderateScale(14)} />
-    </View>
-    <View style={styles.cardBody}>
-      <Shimmer width="85%" height={moderateScale(12)} />
-      <View style={{ height: spacing.xs }} />
-      <Shimmer width="55%" height={moderateScale(10)} />
-      <View style={{ height: spacing.sm }} />
-      <Shimmer width="40%" height={moderateScale(14)} />
-    </View>
-  </View>
-);
 
 const CategoryProductsScreen = () => {
   const { t } = useTranslation();
@@ -223,17 +208,15 @@ const CategoryProductsScreen = () => {
     return null;
   }, [loadingMore, loading, products.length, hasMore, t, themeColors.primary]);
 
-  const emptyComponent = useMemo(() => {
-    if (loading) {
-      return (
-        <View style={styles.skeletonGrid}>
-          {Array.from({ length: 6 }).map((_, i) => (
-            <CardSkeleton key={i} />
-          ))}
-        </View>
-      );
-    }
+  const listBottomPadding = useMemo(
+    () =>
+      totalItems > 0
+        ? Math.max(insets.bottom, spacing.md) + FLOATING_CART_BAR_HEIGHT + spacing.xl + spacing.md
+        : Math.max(insets.bottom, spacing.md) + spacing.xl,
+    [insets.bottom, totalItems],
+  );
 
+  const emptyComponent = useMemo(() => {
     if (error) {
       return (
         <View style={styles.emptyWrap}>
@@ -259,7 +242,7 @@ const CategoryProductsScreen = () => {
         </Pressable>
       </Animated.View>
     );
-  }, [loading, error, refetch, t, navigation, themeColors.primary]);
+  }, [error, refetch, t, navigation, themeColors.primary]);
 
   return (
     <View style={styles.screen}>
@@ -292,29 +275,32 @@ const CategoryProductsScreen = () => {
         </Pressable>
       </View>
 
-      {/* Product list */}
-      <FlatList
-        data={loading ? [] : products}
-        renderItem={renderItem}
-        keyExtractor={keyExtractor}
-        numColumns={NUM_COLUMNS}
-        columnWrapperStyle={styles.columnWrapper}
-        contentContainerStyle={[
-          styles.listContent,
-          {
-            paddingBottom:
-              totalItems > 0
-                ? Math.max(insets.bottom, spacing.md) + FLOATING_CART_BAR_HEIGHT + spacing.xl + spacing.md
-                : Math.max(insets.bottom, spacing.md) + spacing.xl,
-          },
-        ]}
-        showsVerticalScrollIndicator={false}
-        ListHeaderComponent={headerComponent}
-        ListFooterComponent={footerComponent}
-        ListEmptyComponent={emptyComponent}
-        onEndReached={handleEndReached}
-        onEndReachedThreshold={0.4}
-      />
+      {loading ? (
+        <Animated.View
+          entering={FadeIn.duration(200)}
+          style={[styles.listContent, { paddingBottom: listBottomPadding }]}
+        >
+          <View style={styles.countSkeleton}>
+            <View style={[styles.countSkeletonPill, { backgroundColor: themeColors.surfaceSecondary }]} />
+          </View>
+          <ProductGridSkeleton count={6} columns={NUM_COLUMNS} gap={CARD_GAP} />
+        </Animated.View>
+      ) : (
+        <FlatList
+          data={products}
+          renderItem={renderItem}
+          keyExtractor={keyExtractor}
+          numColumns={NUM_COLUMNS}
+          columnWrapperStyle={styles.columnWrapper}
+          contentContainerStyle={[styles.listContent, { paddingBottom: listBottomPadding }]}
+          showsVerticalScrollIndicator={false}
+          ListHeaderComponent={headerComponent}
+          ListFooterComponent={footerComponent}
+          ListEmptyComponent={emptyComponent}
+          onEndReached={handleEndReached}
+          onEndReachedThreshold={0.4}
+        />
+      )}
 
       <FloatingCartBar
         totalItems={totalItems}
@@ -458,10 +444,13 @@ const styles = StyleSheet.create({
     textDecorationLine: 'line-through',
     marginTop: 1,
   },
-  skeletonGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: CARD_GAP,
+  countSkeleton: {
+    marginBottom: spacing.md,
+  },
+  countSkeletonPill: {
+    width: moderateScale(120),
+    height: moderateScale(22),
+    borderRadius: borderRadius.full,
   },
   emptyWrap: {
     alignItems: 'center',
