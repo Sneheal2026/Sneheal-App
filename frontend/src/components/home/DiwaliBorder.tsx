@@ -1,29 +1,51 @@
-import React from 'react';
-import { View, StyleSheet, Dimensions, Image as RNImage } from 'react-native';
+import React, { useMemo } from 'react';
+import { View, StyleSheet, Dimensions } from 'react-native';
 import { Image } from 'expo-image';
+import { useHomeScreenImages } from '@/context/HomeScreenImagesContext';
+import {
+  resolveHomeScreenAltText,
+  resolveHomeScreenAspectRatio,
+  resolveHomeScreenImageSource,
+} from '@/utils/homeScreenImage';
 import theme from '@/styles/theme';
-
-const DIWALI_BORDER = require('../../../assets/images/DiwaliBorder.webp');
 
 const { spacing, verticalScale } = theme;
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const borderAsset = RNImage.resolveAssetSource(DIWALI_BORDER);
-const BORDER_ASPECT =
-  borderAsset?.width && borderAsset?.height
-    ? borderAsset.width / borderAsset.height
-    : 375 / 48;
+const DEFAULT_BORDER_ASPECT = 375 / 48;
 
-const DiwaliBorder = () => (
-  <View style={styles.container} pointerEvents="none">
-    <Image
-      source={DIWALI_BORDER}
-      style={styles.image}
-      contentFit="cover"
-      accessibilityRole="image"
-      accessibilityLabel="Diwali decorative border"
-    />
-  </View>
-);
+const DiwaliBorder = () => {
+  const { getImage } = useHomeScreenImages();
+  const remote = getImage('home_border');
+
+  const source = useMemo(
+    () => resolveHomeScreenImageSource('home_border', remote),
+    [remote],
+  );
+  const aspectRatio = useMemo(
+    () => resolveHomeScreenAspectRatio('home_border', remote) ?? DEFAULT_BORDER_ASPECT,
+    [remote],
+  );
+  const accessibilityLabel = useMemo(
+    () =>
+      resolveHomeScreenAltText('home_border', remote, 'Festive decorative border'),
+    [remote],
+  );
+
+  return (
+    <View style={styles.container} pointerEvents="none">
+      <Image
+        source={source}
+        style={[styles.image, { aspectRatio }]}
+        contentFit="cover"
+        recyclingKey={
+          typeof source === 'object' && 'uri' in source ? source.uri : 'home_border_local'
+        }
+        accessibilityRole="image"
+        accessibilityLabel={accessibilityLabel}
+      />
+    </View>
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -36,7 +58,6 @@ const styles = StyleSheet.create({
   },
   image: {
     width: '100%',
-    aspectRatio: BORDER_ASPECT,
   },
 });
 

@@ -19,11 +19,11 @@ import HeroBackground from './HeroBackground';
 import HomeAppUpdateCallout from './HomeAppUpdateCallout';
 import HomeNotificationBell from './HomeNotificationBell';
 import theme from '@/styles/theme';
+import { useHomeScreenImages } from '@/context/HomeScreenImagesContext';
+import { resolveHomeScreenImageSource } from '@/utils/homeScreenImage';
 
 const { colors, spacing, borderRadius, moderateScale, verticalScale } = theme;
 
-const LANTERN_DESIGN = require('../../../assets/images/LanternDesign.webp');
-const FLOWER_DESIGN = require('../../../assets/images/FlowerDesignn.webp');
 const LIGHTING_DESIGN_2 = require('../../../assets/images/LightingDesign2.webp');
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const LANTERN_WIDTH = SCREEN_WIDTH * 0.62;
@@ -60,6 +60,15 @@ const HomeHeader: React.FC<HomeHeaderProps> = ({
   hasUnreadAppUpdate = false,
 }) => {
   const { t } = useTranslation();
+  const { getImage } = useHomeScreenImages();
+  const lanternSource = resolveHomeScreenImageSource(
+    'header_lantern',
+    getImage('header_lantern'),
+  );
+  const flowerSource = resolveHomeScreenImageSource(
+    'header_flower',
+    getImage('header_flower'),
+  );
   const insets = useSafeAreaInsets();
   const resolvedAddressLabel = addressLabel ?? t('home.addDeliveryAddress');
   const topInset = Math.max(
@@ -72,9 +81,14 @@ const HomeHeader: React.FC<HomeHeaderProps> = ({
       <View style={StyleSheet.absoluteFill} pointerEvents="none">
         <HeroBackground pauseAnimation={isScrolling} />
         <Image
-          source={LANTERN_DESIGN}
+          source={lanternSource}
           style={styles.lanternDecor}
           contentFit="contain"
+          recyclingKey={
+            typeof lanternSource === 'object' && 'uri' in lanternSource
+              ? lanternSource.uri
+              : 'header_lantern_local'
+          }
           accessibilityElementsHidden
           importantForAccessibility="no-hide-descendants"
         />
@@ -89,9 +103,14 @@ const HomeHeader: React.FC<HomeHeaderProps> = ({
             <View style={styles.brandRow}>
               <Text style={styles.deliveryLabel}>{t('home.snehealIn')}</Text>
               <Image
-                source={FLOWER_DESIGN}
+                source={flowerSource}
                 style={styles.brandFlower}
                 contentFit="contain"
+                recyclingKey={
+                  typeof flowerSource === 'object' && 'uri' in flowerSource
+                    ? flowerSource.uri
+                    : 'header_flower_local'
+                }
                 accessibilityElementsHidden
                 importantForAccessibility="no-hide-descendants"
               />

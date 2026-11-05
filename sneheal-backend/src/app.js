@@ -17,6 +17,7 @@ const cartRoutes = require('./routes/cart.routes');
 const healthReportRoutes = require('./routes/healthReport.routes');
 const doctorRoutes = require('./routes/doctor.routes');
 const announcementRoutes = require('./routes/announcement.routes');
+const homeRoutes = require('./routes/home.routes');
 const errorHandler = require('./middleware/errorHandler');
 const { success } = require('./utils/response');
 
@@ -58,6 +59,7 @@ app.use('/api/cart', cartRoutes);
 app.use('/api/reports', healthReportRoutes);
 app.use('/api/doctor', doctorRoutes);
 app.use('/api/announcements', announcementRoutes);
+app.use('/api/home', homeRoutes);
 
 app.use((_req, res) => {
   return res.status(404).json({ success: false, message: 'Route not found' });

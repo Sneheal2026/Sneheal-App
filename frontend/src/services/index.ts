@@ -47,6 +47,7 @@ export {
   markAnnouncementRead,
   markAllAnnouncementsRead,
 } from './announcementService';
+export { fetchHomeScreenImages } from './homeScreenImageService';
 export {
   getSavedAddresses,
   getCachedAddresses,

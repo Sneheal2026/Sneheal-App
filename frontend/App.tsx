@@ -10,6 +10,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import NetworkGate from './src/components/common/NetworkGate';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { InAppAnnouncementsProvider } from './src/context/InAppAnnouncementsContext';
+import { HomeScreenImagesProvider } from './src/context/HomeScreenImagesContext';
 import { CartProvider } from './src/context/CartContext';
 import { ScanDraftProvider } from './src/context/ScanDraftContext';
 import { LanguageProvider } from './src/context/LanguageContext';
@@ -100,15 +101,17 @@ export default function App() {
         <ThemeProvider>
           <LanguageProvider>
             <NetworkGate>
-              <AuthProvider>
-                <InAppAnnouncementsProvider>
-                  <CartProvider>
-                    <ScanDraftProvider>
-                      <AppNavigation />
-                    </ScanDraftProvider>
-                  </CartProvider>
-                </InAppAnnouncementsProvider>
-              </AuthProvider>
+              <HomeScreenImagesProvider>
+                <AuthProvider>
+                  <InAppAnnouncementsProvider>
+                    <CartProvider>
+                      <ScanDraftProvider>
+                        <AppNavigation />
+                      </ScanDraftProvider>
+                    </CartProvider>
+                  </InAppAnnouncementsProvider>
+                </AuthProvider>
+              </HomeScreenImagesProvider>
             </NetworkGate>
           </LanguageProvider>
         </ThemeProvider>
