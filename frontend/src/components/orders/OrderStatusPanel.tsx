@@ -58,6 +58,8 @@ type Props = {
   status: OrderStatus;
   showClose?: boolean;
   onClose?: () => void;
+  showHome?: boolean;
+  onHome?: () => void;
 };
 
 const OrderStatusPanel = ({
@@ -67,6 +69,8 @@ const OrderStatusPanel = ({
   status,
   showClose,
   onClose,
+  showHome,
+  onHome,
 }: Props) => {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
@@ -195,13 +199,34 @@ const OrderStatusPanel = ({
         )}
 
         <View style={[styles.heroInner, { paddingTop: insets.top + spacing.sm }]}>
-          {showClose ? (
-            <Pressable onPress={onClose} hitSlop={12} style={styles.close}>
-              <Ionicons name="arrow-back" size={20} color="#fff" />
-            </Pressable>
-          ) : (
-            <View style={styles.closeSpacer} />
-          )}
+          <View style={styles.topBar}>
+            {showClose ? (
+              <Pressable
+                onPress={onClose}
+                hitSlop={12}
+                style={styles.heroIconBtn}
+                accessibilityRole="button"
+                accessibilityLabel={t('common.back')}
+              >
+                <Ionicons name="arrow-back" size={20} color="#fff" />
+              </Pressable>
+            ) : (
+              <View style={styles.heroIconSpacer} />
+            )}
+            {showHome && onHome ? (
+              <Pressable
+                onPress={onHome}
+                hitSlop={12}
+                style={styles.heroIconBtn}
+                accessibilityRole="button"
+                accessibilityLabel={t('orders.homeA11y')}
+              >
+                <Ionicons name="home-outline" size={20} color="#fff" />
+              </Pressable>
+            ) : (
+              <View style={styles.heroIconSpacer} />
+            )}
+          </View>
 
           <View style={styles.textOverlay}>
             <Animated.View style={[styles.statusChip, { backgroundColor: accent }, kickerAnim]}>
@@ -302,7 +327,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.xl + 8,
   },
-  close: {
+  topBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  heroIconBtn: {
     width: 38,
     height: 38,
     borderRadius: 19,
@@ -310,7 +340,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  closeSpacer: {
+  heroIconSpacer: {
+    width: 38,
     height: 38,
   },
   textOverlay: {

@@ -11,17 +11,16 @@ import {
   UIManager,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';
 import type { CartOffer } from '@/types/cartQuote.types';
 import { formatInr } from '@/utils/cartBilling';
+import { FestiveOfferCoupon } from '@/components/cart/FestiveCouponCard';
 import theme from '@/styles/theme';
 
 const { colors, spacing, typography, borderRadius, moderateScale, shadows } = theme;
 
 const NAVY = '#111152';
 const GREEN = '#0C831F';
-const DIWALI_GRADIENT = ['#FF8A00', '#E85D04', '#9D0208'] as const;
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -53,14 +52,22 @@ const CartOffersSection = ({
     [offers],
   );
 
+  const deliveryFeatured = useMemo(
+    () => offers.find((o) => o.stackGroup === 'delivery' && o.promoType === 'free_delivery'),
+    [offers],
+  );
+
   const others = useMemo(
-    () => offers.filter((o) => o.id !== featured?.id),
-    [offers, featured?.id],
+    () =>
+      offers.filter((o) => o.id !== featured?.id && o.id !== deliveryFeatured?.id),
+    [offers, featured?.id, deliveryFeatured?.id],
   );
 
   if (offers.length === 0) {
     return null;
   }
+
+  const appliedLabel = t('cart.offersApplied');
 
   return (
     <View style={styles.wrap}>
@@ -70,37 +77,32 @@ const CartOffersSection = ({
       </View>
 
       {featured ? (
-        <LinearGradient
-          colors={[...DIWALI_GRADIENT]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.featuredCard}
-        >
-          <View style={styles.featuredTop}>
-            <View style={styles.featuredBadge}>
-              <Ionicons name="sparkles" size={12} color={DIWALI_GRADIENT[0]} />
-              <Text style={styles.featuredBadgeText}>{t('cart.offersFestive')}</Text>
-            </View>
-            {featured.applied ? (
-              <View style={styles.appliedPill}>
-                <Ionicons name="checkmark-circle" size={14} color={GREEN} />
-                <Text style={styles.appliedPillText}>{t('cart.offersApplied')}</Text>
-              </View>
-            ) : null}
-          </View>
-          <Text style={styles.featuredTitle}>{featured.title}</Text>
-          <Text style={styles.featuredSub}>{featured.subtitle}</Text>
-          {featured.code ? (
-            <View style={styles.codeChip}>
-              <Text style={styles.codeChipText}>{featured.code}</Text>
-            </View>
-          ) : null}
-          {!featured.eligible && featured.gapPaise > 0 ? (
-            <Text style={styles.featuredGap}>
-              {t('cart.offersAddMore', { amount: formatInr(featured.gapPaise / 100) })}
-            </Text>
-          ) : null}
-        </LinearGradient>
+        <FestiveOfferCoupon
+          variant="diwali"
+          offer={featured}
+          badgeLabel={t('cart.offersFestive')}
+          appliedLabel={appliedLabel}
+          gapText={
+            !featured.eligible && featured.gapPaise > 0
+              ? t('cart.offersAddMore', { amount: formatInr(featured.gapPaise / 100) })
+              : null
+          }
+        />
+      ) : null}
+
+      {deliveryFeatured ? (
+        <FestiveOfferCoupon
+          variant="delivery"
+          offer={deliveryFeatured}
+          badgeLabel={t('cart.offersAutoAppliedDeliveryShort')}
+          appliedLabel={appliedLabel}
+          stubLabel={t('cart.free')}
+          gapText={
+            !deliveryFeatured.eligible && deliveryFeatured.gapPaise > 0
+              ? t('cart.offersAddMore', { amount: formatInr(deliveryFeatured.gapPaise / 100) })
+              : null
+          }
+        />
       ) : null}
 
       <View style={styles.listCard}>
@@ -108,7 +110,7 @@ const CartOffersSection = ({
           <OfferRow key={offer.id} offer={offer} />
         ))}
 
-        <View style={styles.codeRow}>
+        <View style={[styles.codeRow, others.length === 0 && styles.codeRowStandalone]}>
           <Ionicons name="ticket-outline" size={18} color={NAVY} />
           <TextInput
             value={draftCode}
@@ -213,76 +215,6 @@ const styles = StyleSheet.create({
     flexShrink: 1,
     textAlign: 'right',
   },
-  featuredCard: {
-    borderRadius: borderRadius.lg,
-    padding: spacing.lg,
-    gap: spacing.xs,
-    ...shadows.md,
-  },
-  featuredTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  featuredBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: colors.white,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
-    borderRadius: borderRadius.full,
-  },
-  featuredBadgeText: {
-    fontSize: moderateScale(10, 0.35),
-    fontWeight: '800',
-    color: DIWALI_GRADIENT[1],
-    textTransform: 'uppercase',
-  },
-  appliedPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: 'rgba(255,255,255,0.92)',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
-    borderRadius: borderRadius.full,
-  },
-  appliedPillText: {
-    fontSize: moderateScale(11, 0.35),
-    fontWeight: '700',
-    color: GREEN,
-  },
-  featuredTitle: {
-    fontSize: moderateScale(18, 0.35),
-    fontWeight: '800',
-    color: colors.white,
-  },
-  featuredSub: {
-    ...typography.bodySmall,
-    color: 'rgba(255,255,255,0.92)',
-  },
-  codeChip: {
-    alignSelf: 'flex-start',
-    marginTop: spacing.xs,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.5)',
-    borderStyle: 'dashed',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
-    borderRadius: borderRadius.sm,
-  },
-  codeChipText: {
-    fontWeight: '800',
-    letterSpacing: 1,
-    color: colors.white,
-    fontSize: moderateScale(12, 0.35),
-  },
-  featuredGap: {
-    ...typography.caption,
-    color: 'rgba(255,255,255,0.85)',
-    marginTop: spacing.xxs,
-  },
   listCard: {
     backgroundColor: colors.white,
     borderRadius: borderRadius.lg,
@@ -351,6 +283,10 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: colors.borderLight,
     paddingTop: spacing.md,
+  },
+  codeRowStandalone: {
+    borderTopWidth: 0,
+    paddingTop: 0,
   },
   codeInput: {
     flex: 1,

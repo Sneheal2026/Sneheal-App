@@ -15,6 +15,7 @@ import type { RouteProp } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import OrderLoader from '@/components/orders/OrderLoader';
 import OrderStatusPanel from '@/components/orders/OrderStatusPanel';
+import OrderDeliverySupportCard from '@/components/orders/OrderDeliverySupportCard';
 import { useLiveOrderStatus } from '@/hooks/useLiveOrderStatus';
 import { fetchOrderById } from '@/services/orderService';
 import { ApiError } from '@/services/apiClient';
@@ -69,6 +70,13 @@ const OrderDetailScreen = () => {
 
   const liveStatus = useLiveOrderStatus(params.orderId, order?.status ?? 'confirmed');
 
+  const goHome = useCallback(() => {
+    navigation.reset({
+      index: 0,
+      routes: [{ name: 'Main', params: { screen: 'Home' } }],
+    });
+  }, [navigation]);
+
   if (loading && !order) {
     return (
       <View style={styles.centered}>
@@ -86,6 +94,11 @@ const OrderDetailScreen = () => {
   }
 
   const paid = order.paymentStatus === 'paid';
+  const showActiveSupport =
+    order.paymentStatus !== 'failed' &&
+    liveStatus !== 'cancelled' &&
+    liveStatus !== 'delivered';
+  const showDeliveredSupport = liveStatus === 'delivered';
   const addressParts = [order.address.flatNumber, order.address.addressLine, order.address.landmark]
     .filter((part, index, list) => {
       const value = part?.trim();
@@ -96,7 +109,9 @@ const OrderDetailScreen = () => {
   return (
     <View style={styles.root}>
       <ScrollView
-        contentContainerStyle={{ paddingBottom: insets.bottom + spacing.xxl }}
+        contentContainerStyle={{
+          paddingBottom: Math.max(insets.bottom, spacing.lg) + spacing.xxl,
+        }}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={() => void load(true)} />
@@ -109,6 +124,8 @@ const OrderDetailScreen = () => {
           status={liveStatus}
           showClose
           onClose={() => navigation.goBack()}
+          showHome
+          onHome={goHome}
         />
 
         <View style={styles.sheet}>
@@ -170,6 +187,9 @@ const OrderDetailScreen = () => {
             ))}
           </View>
         </View>
+
+        {showActiveSupport ? <OrderDeliverySupportCard variant="active" /> : null}
+        {showDeliveredSupport ? <OrderDeliverySupportCard variant="delivered" /> : null}
       </ScrollView>
     </View>
   );

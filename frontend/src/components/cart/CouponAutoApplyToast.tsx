@@ -8,7 +8,6 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
   FadeIn,
   FadeOut,
@@ -21,12 +20,16 @@ import Animated, {
 import { useTranslation } from 'react-i18next';
 import { formatInr } from '@/utils/cartBilling';
 import type { AutoApplyToastPayload } from '@/context/CartContext';
+import {
+  FestiveCouponShell,
+  festiveCouponModalStyles,
+  type FestiveCouponVariant,
+} from '@/components/cart/FestiveCouponCard';
 import theme from '@/styles/theme';
 
-const { colors, spacing, borderRadius, moderateScale, shadows } = theme;
+const { spacing, shadows } = theme;
 
 const GREEN = '#0C831F';
-const DIWALI_GRADIENT = ['#FF8A00', '#E85D04', '#9D0208'] as const;
 export const AUTO_APPLY_TOAST_MS = 2800;
 
 type Props = {
@@ -38,6 +41,19 @@ type Props = {
 const isDiwaliOffer = (payload: AutoApplyToastPayload) =>
   payload.code === 'DIWALI25' ||
   payload.title.toLowerCase().includes('diwali');
+
+const resolveToastVariant = (
+  payload: AutoApplyToastPayload,
+  hasSavings: boolean,
+): FestiveCouponVariant => {
+  if (isDiwaliOffer(payload)) {
+    return 'diwali';
+  }
+  if (payload.deliveryUnlocked && !hasSavings) {
+    return 'delivery';
+  }
+  return 'diwali';
+};
 
 const CouponAutoApplyToast = ({ visible, payload, onDismiss }: Props) => {
   const { t } = useTranslation();
@@ -83,10 +99,13 @@ const CouponAutoApplyToast = ({ visible, payload, onDismiss }: Props) => {
     return null;
   }
 
-  const diwali = isDiwaliOffer(payload);
   const hasSavings = payload.promoDiscount > 0;
+  const variant = resolveToastVariant(payload, hasSavings);
+  const diwali = variant === 'diwali';
 
-  const eyebrow = diwali ? t('cart.offersDiwaliBadge') : t('cart.offersApplied');
+  const badgeLabel = diwali
+    ? t('cart.offersDiwaliBadge')
+    : t('cart.offersAutoAppliedDeliveryShort');
 
   const mainLine = hasSavings
     ? t('cart.offersAutoAppliedSaved', { amount: formatInr(payload.promoDiscount) })
@@ -99,38 +118,45 @@ const CouponAutoApplyToast = ({ visible, payload, onDismiss }: Props) => {
       ? t('cart.offersAutoAppliedDeliveryShort')
       : null;
 
+  const stubCode = payload.code;
+  const stubLabel = !stubCode && payload.deliveryUnlocked ? t('cart.free') : null;
+
+  const subtitleLine =
+    extraLine ??
+    (payload.title && payload.title !== mainLine ? payload.title : undefined);
+
   return (
     <Modal transparent visible animationType="none" statusBarTranslucent onRequestClose={onDismiss}>
       <Pressable style={styles.backdrop} onPress={onDismiss}>
         <Animated.View
           entering={FadeIn.duration(240)}
           exiting={FadeOut.duration(180)}
-          style={[styles.cardWrap, { maxWidth: Math.min(width - spacing.xl * 2, 300) }]}
+          style={[styles.cardWrap, { maxWidth: Math.min(width - spacing.xl * 2, 320) }]}
         >
           <Pressable onPress={(e) => e.stopPropagation()}>
-            <LinearGradient
-              colors={[...DIWALI_GRADIENT]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.card}
+            <FestiveCouponShell
+              variant={variant}
+              badgeLabel={badgeLabel}
+              applied
+              appliedLabel={t('cart.offersApplied')}
+              title={mainLine}
+              subtitle={subtitleLine}
+              stubCode={stubCode}
+              stubLabel={stubLabel}
+              footer={
+                <View style={festiveCouponModalStyles.timerTrack}>
+                  <Animated.View
+                    style={[festiveCouponModalStyles.timerFill, timerBarStyle]}
+                  />
+                </View>
+              }
             >
-              <View style={styles.badge}>
-                <Ionicons name="sparkles" size={11} color={DIWALI_GRADIENT[1]} />
-                <Text style={styles.badgeText}>{eyebrow}</Text>
+              <View style={festiveCouponModalStyles.checkRingOuter}>
+                <View style={festiveCouponModalStyles.checkRingInner}>
+                  <Ionicons name="checkmark" size={28} color={GREEN} />
+                </View>
               </View>
-
-              <View style={styles.checkRing}>
-                <Ionicons name="checkmark" size={28} color={GREEN} />
-              </View>
-
-              <Text style={styles.mainLine}>{mainLine}</Text>
-
-              {extraLine ? <Text style={styles.extraLine}>{extraLine}</Text> : null}
-
-              <View style={styles.timerTrack}>
-                <Animated.View style={[styles.timerFill, timerBarStyle]} />
-              </View>
-            </LinearGradient>
+            </FestiveCouponShell>
           </Pressable>
         </Animated.View>
       </Pressable>
@@ -141,7 +167,7 @@ const CouponAutoApplyToast = ({ visible, payload, onDismiss }: Props) => {
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(17, 17, 82, 0.45)',
+    backgroundColor: 'rgba(17, 17, 82, 0.5)',
     alignItems: 'center',
     justifyContent: 'center',
     padding: spacing.xl,
@@ -149,65 +175,6 @@ const styles = StyleSheet.create({
   cardWrap: {
     width: '100%',
     ...shadows.lg,
-  },
-  card: {
-    borderRadius: borderRadius.xl,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.md,
-    paddingHorizontal: spacing.lg,
-    alignItems: 'center',
-    overflow: 'hidden',
-  },
-  badge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: colors.white,
-    paddingHorizontal: spacing.sm + 2,
-    paddingVertical: 5,
-    borderRadius: borderRadius.full,
-    marginBottom: spacing.sm,
-  },
-  badgeText: {
-    fontSize: moderateScale(10, 0.35),
-    fontWeight: '800',
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
-    color: DIWALI_GRADIENT[1],
-  },
-  checkRing: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: colors.white,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.sm,
-  },
-  mainLine: {
-    fontSize: moderateScale(22, 0.35),
-    fontWeight: '800',
-    color: colors.white,
-    textAlign: 'center',
-  },
-  extraLine: {
-    fontSize: moderateScale(12, 0.35),
-    fontWeight: '600',
-    color: 'rgba(255,255,255,0.85)',
-    marginTop: spacing.xs,
-  },
-  timerTrack: {
-    alignSelf: 'stretch',
-    height: 3,
-    borderRadius: 2,
-    backgroundColor: 'rgba(255,255,255,0.3)',
-    marginTop: spacing.md,
-    overflow: 'hidden',
-  },
-  timerFill: {
-    height: '100%',
-    backgroundColor: colors.white,
-    borderRadius: 2,
   },
 });
 

@@ -1,11 +1,20 @@
 import React, { useCallback } from 'react';
-import { View, Text, StyleSheet, Pressable, BackHandler, Platform } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Pressable,
+  BackHandler,
+  Platform,
+  ScrollView,
+} from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import OrderStatusPanel from '@/components/orders/OrderStatusPanel';
+import OrderDeliverySupportCard from '@/components/orders/OrderDeliverySupportCard';
 import { useLiveOrderStatus } from '@/hooks/useLiveOrderStatus';
 import type { AuthStackParamList } from '@/navigation/types';
 import theme from '@/styles/theme';
@@ -30,6 +39,13 @@ const OrderPlacedScreen = () => {
     });
   }, [navigation]);
 
+  const goHome = useCallback(() => {
+    navigation.reset({
+      index: 0,
+      routes: [{ name: 'Main', params: { screen: 'Home' } }],
+    });
+  }, [navigation]);
+
   useFocusEffect(
     useCallback(() => {
       const sub = BackHandler.addEventListener('hardwareBackPress', () => {
@@ -40,36 +56,54 @@ const OrderPlacedScreen = () => {
     }, [goOrders]),
   );
 
+  const showActiveSupport = liveStatus !== 'cancelled' && liveStatus !== 'delivered';
+  const showDeliveredSupport = liveStatus === 'delivered';
+  const bottomInset = Math.max(insets.bottom, spacing.lg);
+
   return (
     <View style={styles.root}>
-      <OrderStatusPanel
-        publicId={params?.publicId ?? ''}
-        grandTotal={params?.grandTotal ?? 0}
-        paymentStatus="pending"
-        status={liveStatus}
-      />
-      <View style={styles.footer}>
-        <Pressable
-          onPress={goOrders}
-          android_ripple={{ color: 'rgba(255,255,255,0.18)' }}
-          style={({ pressed }) => [
-            styles.btn,
-            { marginBottom: Math.max(insets.bottom, 16) },
-            pressed && Platform.OS === 'ios' && styles.pressed,
-          ]}
-        >
-          <Text style={styles.btnText}>{t('orders.viewOrders')}</Text>
-        </Pressable>
-      </View>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        bounces={false}
+        contentContainerStyle={[styles.scroll, { paddingBottom: bottomInset + spacing.md }]}
+      >
+        <OrderStatusPanel
+          publicId={params?.publicId ?? ''}
+          grandTotal={params?.grandTotal ?? 0}
+          paymentStatus="pending"
+          status={liveStatus}
+          showHome
+          onHome={goHome}
+        />
+
+        {showActiveSupport ? <OrderDeliverySupportCard variant="active" /> : null}
+        {showDeliveredSupport ? <OrderDeliverySupportCard variant="delivered" /> : null}
+
+        <View style={styles.footer}>
+          <Pressable
+            onPress={goOrders}
+            android_ripple={{ color: 'rgba(255,255,255,0.18)' }}
+            style={({ pressed }) => [
+              styles.btn,
+              pressed && Platform.OS === 'ios' && styles.pressed,
+            ]}
+          >
+            <Text style={styles.btnText}>{t('orders.viewOrders')}</Text>
+          </Pressable>
+        </View>
+      </ScrollView>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.white },
+  scroll: {
+    flexGrow: 1,
+  },
   footer: {
-    flex: 1,
-    justifyContent: 'flex-end',
+    marginTop: 'auto',
+    paddingTop: spacing.xl,
     paddingHorizontal: spacing.xl,
   },
   btn: {
