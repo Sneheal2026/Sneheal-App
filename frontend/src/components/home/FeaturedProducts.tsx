@@ -26,7 +26,6 @@ const CARD_WIDTH = device.isSmallDevice
   ? SCREEN_WIDTH * 0.44
   : SCREEN_WIDTH * 0.42;
 const CARD_MARGIN = spacing.md;
-const ADD_BTN_SIZE = moderateScale(34, 0.35);
 
 interface ProductCardProps {
   item: Product;
@@ -46,28 +45,31 @@ const ProductCard = ({ item, quantity, onIncrement, onDecrement, onPress }: Prod
     </View>
 
     <View style={styles.info}>
-      <Text style={styles.name} numberOfLines={2}>
-        {item.name}
-      </Text>
+      <View style={styles.textBlock}>
+        <Text style={styles.name} numberOfLines={2}>
+          {item.name}
+        </Text>
+        {item.unit ? (
+          <Text style={styles.unit} numberOfLines={1}>
+            {item.unit}
+          </Text>
+        ) : null}
+      </View>
 
       <View style={styles.footer}>
         <View style={styles.priceBox}>
-          <Text
-            style={[styles.price, { color: colors.primary }]}
-            numberOfLines={1}
-            adjustsFontSizeToFit
-            minimumFontScale={0.85}
-          >
-            ₹{item.price.toFixed(2)}
-          </Text>
-          {item.originalPrice ? (
-            <Text style={styles.oldPrice} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>
-              ₹{item.originalPrice.toFixed(2)}
+          <View style={styles.priceLine}>
+            <Text style={[styles.price, { color: colors.primary }]}>
+              ₹{item.price.toFixed(2)}
             </Text>
-          ) : null}
+            {item.originalPrice ? (
+              <Text style={styles.oldPrice}>₹{item.originalPrice.toFixed(2)}</Text>
+            ) : null}
+          </View>
         </View>
-
         <QuantityStepper
+          size="xs"
+          reserveSlot={false}
           quantity={quantity}
           onIncrement={() => onIncrement(item.id)}
           onDecrement={() => onDecrement(item.id)}
@@ -85,7 +87,9 @@ const SkeletonCard = () => (
     </View>
     <View style={styles.info}>
       <Shimmer width="90%" height={moderateScale(13)} />
-      <View style={{ height: spacing.sm }} />
+      <View style={{ height: 2 }} />
+      <Shimmer width="65%" height={moderateScale(11)} />
+      <View style={{ height: spacing.xxs }} />
       <Shimmer width="55%" height={moderateScale(16)} />
     </View>
   </View>
@@ -258,43 +262,56 @@ const styles = StyleSheet.create({
     height: '75%',
   },
   info: {
-    padding: spacing.sm,
-    paddingTop: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    paddingBottom: spacing.sm,
+    paddingTop: spacing.xxs,
+  },
+  textBlock: {
+    gap: 1,
+    marginBottom: spacing.xxs,
   },
   name: {
     fontSize: moderateScale(13),
     fontWeight: '500',
     color: colors.textPrimary,
-    lineHeight: moderateScale(17),
-    marginBottom: spacing.xs,
-    minHeight: moderateScale(34),
+    lineHeight: moderateScale(22),
+  },
+  unit: {
+    fontSize: moderateScale(11),
+    fontWeight: '500',
+    color: colors.textSecondary,
+    lineHeight: moderateScale(13),
   },
   footer: {
     flexDirection: 'row',
-    alignItems: 'flex-end',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    minHeight: ADD_BTN_SIZE,
-    paddingTop: spacing.xxs,
+    gap: spacing.xxs,
   },
   priceBox: {
     flex: 1,
     minWidth: 0,
-    justifyContent: 'flex-end',
-    paddingRight: spacing.sm,
-    paddingBottom: spacing.xxs,
+  },
+  priceLine: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'baseline',
+    columnGap: spacing.xxs,
+    rowGap: 1,
   },
   price: {
-    fontSize: moderateScale(18, 0.35),
+    fontSize: moderateScale(16, 0.35),
     fontWeight: '700',
-    lineHeight: moderateScale(22, 0.35),
+    lineHeight: moderateScale(20, 0.35),
+    flexShrink: 0,
   },
   oldPrice: {
-    fontSize: moderateScale(12, 0.35),
+    fontSize: moderateScale(11, 0.35),
     fontWeight: '500',
     color: colors.textSecondary,
     textDecorationLine: 'line-through',
-    lineHeight: moderateScale(15, 0.35),
-    marginTop: 2,
+    lineHeight: moderateScale(14, 0.35),
+    flexShrink: 0,
   },
 });
 

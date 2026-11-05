@@ -23,6 +23,16 @@ const ADD_GREEN_LIGHT = '#E8F7EE';
 const ADD_GREEN_DARK = '#188A47';
 
 const SIZE = {
+  xs: {
+    addBtn: moderateScale(30, 0.35),
+    slot: moderateScale(76, 0.35),
+    inner: moderateScale(24, 0.35),
+    iconAdd: moderateScale(17, 0.35),
+    iconStep: moderateScale(12, 0.35),
+    qtyFont: moderateScale(12, 0.35),
+    qtyLine: moderateScale(14, 0.35),
+    pad: moderateScale(2, 0.35),
+  },
   sm: {
     addBtn: moderateScale(34, 0.35),
     slot: moderateScale(92, 0.35),
@@ -82,7 +92,7 @@ export interface QuantityStepperProps {
   quantity: number;
   onIncrement: () => void;
   onDecrement: () => void;
-  /** `sm` for product cards / cart rows. `lg` for the product details footer. */
+  /** `xs` for tight product cards. `sm` for cart rows / category grid. `lg` for product details footer. */
   size?: StepperSize;
   /** Keep a fixed width so card layouts do not jump. Footer should turn this off. */
   reserveSlot?: boolean;
@@ -115,6 +125,7 @@ const QuantityStepper = ({
         styles.actionSlot,
         slotStyle,
         size === 'sm' && styles.cardElevation,
+        size === 'xs' && styles.cardElevation,
       ]}
     >
       {quantity === 0 ? (
