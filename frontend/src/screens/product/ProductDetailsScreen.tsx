@@ -24,7 +24,7 @@ import theme from '@/styles/theme';
 import type { AuthStackParamList } from '@/navigation/types';
 import { useProductDetails } from '@/hooks/useCatalog';
 import { useCart } from '@/context/CartContext';
-import { SimilarItems } from '@/components/product';
+import { SimilarItems, ProductImageGallery } from '@/components/product';
 import Loader from '@/components/common/Loader';
 import QuantityStepper from '@/components/common/QuantityStepper';
 import FloatingCartBar, {
@@ -127,15 +127,13 @@ const ProductDetailsScreen = () => {
         }}
         bounces={Platform.OS === 'ios'}
       >
-        {/* Hero image */}
-        <View style={[styles.hero, { height: HERO_HEIGHT + topInset }]}>
-          <Animated.Image
-            entering={FadeIn.duration(320)}
-            source={medicine.image}
-            style={styles.heroImage}
-            resizeMode="contain"
-          />
-        </View>
+        {/* Multi-image hero gallery with fallback */}
+        <ProductImageGallery
+          images={medicine.images}
+          fallbackImage={medicine.image}
+          height={HERO_HEIGHT}
+          topInset={topInset}
+        />
 
         {/* Body */}
         <Animated.View entering={FadeInUp.duration(360)} style={styles.body}>

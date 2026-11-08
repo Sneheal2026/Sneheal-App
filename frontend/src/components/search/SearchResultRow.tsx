@@ -1,9 +1,10 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, Image, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/hooks/useTheme';
+import { PRODUCT_IMAGE_PLACEHOLDER } from '@/utils/productImage';
 import type { Product } from '@/types/product.types';
 
 const RATING_GOLD = '#F5A623';
@@ -18,8 +19,9 @@ interface SearchResultRowProps {
 const SearchResultRow: React.FC<SearchResultRowProps> = ({ medicine, index, onPress }) => {
   const { t } = useTranslation();
   const { colors, spacing, typography, borderRadius, shadows, moderateScale } = useTheme();
+  const [imageFailed, setImageFailed] = useState(false);
 
-  const discount = medicine.originalPrice
+  const discount = medicine.originalPrice && medicine.price > 0
     ? Math.round((1 - medicine.price / medicine.originalPrice) * 100)
     : 0;
 
@@ -125,7 +127,12 @@ const SearchResultRow: React.FC<SearchResultRowProps> = ({ medicine, index, onPr
         accessibilityLabel={medicine.name}
       >
         <View style={styles.imageBox}>
-          <Image source={medicine.image} style={styles.image} resizeMode="contain" />
+          <Image
+            source={imageFailed ? PRODUCT_IMAGE_PLACEHOLDER : medicine.image}
+            style={styles.image}
+            resizeMode="contain"
+            onError={() => setImageFailed(true)}
+          />
         </View>
 
         <View style={styles.info}>
@@ -147,13 +154,21 @@ const SearchResultRow: React.FC<SearchResultRowProps> = ({ medicine, index, onPr
           </View>
 
           <View style={styles.priceRow}>
-            <Text style={styles.price}>₹{medicine.price.toFixed(2)}</Text>
-            {medicine.originalPrice ? (
-              <Text style={styles.oldPrice}>₹{medicine.originalPrice.toFixed(2)}</Text>
-            ) : null}
-            {discount > 0 ? (
-              <Text style={styles.discount}>{t('search.offBadge', { percent: discount })}</Text>
-            ) : null}
+            {medicine.price > 0 ? (
+              <>
+                <Text style={styles.price}>₹{medicine.price.toFixed(2)}</Text>
+                {medicine.originalPrice ? (
+                  <Text style={styles.oldPrice}>₹{medicine.originalPrice.toFixed(2)}</Text>
+                ) : null}
+                {discount > 0 ? (
+                  <Text style={styles.discount}>{t('search.offBadge', { percent: discount })}</Text>
+                ) : null}
+              </>
+            ) : (
+              <Text style={[styles.unit, { color: colors.primary, fontWeight: '600' }]}>
+                {t('search.viewDetailsForPrice', 'View details & pricing')}
+              </Text>
+            )}
           </View>
         </View>
 

@@ -19,13 +19,16 @@ const mapProduct = (row) => {
 
   return {
     id: String(row.id),
+    drugsetuId: row.drugsetu_id ?? null,
     name: row.name,
     manufacturer: row.manufacturer,
+    distributorName: row.distributor_name ?? null,
     brandName: row.brand_name ?? null,
     genericName: row.generic_name ?? null,
     strength: row.strength ?? null,
     form: row.form ?? null,
     imageUrl: row.image_url ?? null,
+    images: parseJsonField(row.images, row.image_url ? [row.image_url] : []),
     price: Number(row.price),
     originalPrice:
       originalPrice != null && !Number.isNaN(originalPrice)
@@ -41,14 +44,15 @@ const mapProduct = (row) => {
     prescriptionRequired: Boolean(row.prescription_required),
     isFeatured: Boolean(row.is_featured),
     isActive: Boolean(row.is_active),
+    source: row.source || 'distributor',
   };
 };
 
 const PRODUCT_SELECT = `
-  id, name, manufacturer, brand_name, generic_name, strength, form,
-  image_url, price, original_price, unit, rating, reviews,
+  id, drugsetu_id, name, manufacturer, distributor_name, brand_name, generic_name, strength, form,
+  image_url, images, price, original_price, unit, rating, reviews,
   uses, description, highlights, category_id,
-  prescription_required, is_featured, is_active
+  prescription_required, is_featured, is_active, source
 `;
 
 const clampInt = (value, fallback, min, max) => {
@@ -167,9 +171,13 @@ const search = async (query, { limit = 20, offset = 0 } = {}, connection = db) =
 };
 
 const findSimilar = async (id, { limit = 6 } = {}, connection = db) => {
-  const product = await findById(id, connection);
+  let product = await findById(id, connection);
+  if (!product) {
+    product = await findByDrugSetuId(id, connection);
+  }
   if (!product) return [];
 
+  const targetId = product.id;
   const safeLimit = clampInt(limit, 6, 1, 20);
 
   if (product.categoryId) {
@@ -179,7 +187,7 @@ const findSimilar = async (id, { limit = 6 } = {}, connection = db) => {
        WHERE is_active = 1 AND id <> ? AND category_id = ?
        ORDER BY rating DESC, reviews DESC
        LIMIT ${safeLimit}`,
-      [id, product.categoryId],
+      [targetId, product.categoryId],
     );
 
     if (rows.length > 0) {
@@ -193,16 +201,86 @@ const findSimilar = async (id, { limit = 6 } = {}, connection = db) => {
      WHERE is_active = 1 AND id <> ?
      ORDER BY is_featured DESC, rating DESC
      LIMIT ${safeLimit}`,
-    [id],
+    [targetId],
   );
 
   return fallback.map(mapProduct);
+};
+
+const findByDrugSetuId = async (drugsetId, connection = db) => {
+  const [rows] = await connection.execute(
+    `SELECT ${PRODUCT_SELECT}
+     FROM products
+     WHERE drugsetu_id = ?
+     LIMIT 1`,
+    [drugsetId],
+  );
+
+  return mapProduct(rows[0]);
+};
+
+const upsertDrugSetuProduct = async (productData, connection = db) => {
+  const usesJson = JSON.stringify(productData.uses || []);
+  const highlightsJson = JSON.stringify(productData.highlights || []);
+  const imagesJson = JSON.stringify(productData.images || (productData.imageUrl ? [productData.imageUrl] : []));
+
+  await connection.execute(
+    `INSERT INTO products (
+      drugsetu_id, name, manufacturer, distributor_name, brand_name, generic_name,
+      strength, form, image_url, images, price, original_price, unit,
+      rating, reviews, uses, description, highlights, category_id,
+      prescription_required, is_featured, is_active, source
+    ) VALUES (
+      ?, ?, ?, NULL, ?, ?,
+      ?, ?, ?, ?, ?, ?, ?,
+      ?, ?, ?, ?, ?, ?,
+      ?, ?, 1, 'drugsetu'
+    )
+    ON DUPLICATE KEY UPDATE
+      name = VALUES(name),
+      manufacturer = VALUES(manufacturer),
+      generic_name = VALUES(generic_name),
+      image_url = VALUES(image_url),
+      images = VALUES(images),
+      price = VALUES(price),
+      original_price = VALUES(original_price),
+      unit = VALUES(unit),
+      description = VALUES(description),
+      uses = VALUES(uses),
+      is_active = 1`,
+    [
+      productData.drugsetuId,
+      productData.name,
+      productData.manufacturer,
+      productData.brandName ?? null,
+      productData.genericName ?? null,
+      productData.strength ?? null,
+      productData.form ?? 'Medicine',
+      productData.imageUrl ?? null,
+      imagesJson,
+      productData.price || 0,
+      productData.originalPrice || productData.price || 0,
+      productData.unit || '1 Pack',
+      productData.rating || 4.5,
+      productData.reviews || 0,
+      usesJson,
+      productData.description || '',
+      highlightsJson,
+      productData.categoryId ?? null,
+      productData.prescriptionRequired ? 1 : 0,
+      productData.isFeatured ? 1 : 0,
+    ],
+  );
+
+  return findByDrugSetuId(productData.drugsetuId, connection);
 };
 
 module.exports = {
   findMany,
   findById,
   findByIds,
+  findByDrugSetuId,
+  upsertDrugSetuProduct,
   search,
   findSimilar,
 };

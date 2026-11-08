@@ -8,13 +8,16 @@ export interface ProductHighlight {
 /** Raw product shape returned by the catalog API. */
 export interface ApiProduct {
   id: string;
+  drugsetuId?: string | null;
   name: string;
   manufacturer: string;
+  distributorName?: string | null;
   brandName: string | null;
   genericName: string | null;
   strength: string | null;
   form: string | null;
   imageUrl: string | null;
+  images?: string[];
   price: number;
   originalPrice: number | null;
   unit: string;
@@ -27,6 +30,7 @@ export interface ApiProduct {
   prescriptionRequired: boolean;
   isFeatured: boolean;
   isActive: boolean;
+  source?: 'distributor' | 'drugsetu';
 }
 
 /**
