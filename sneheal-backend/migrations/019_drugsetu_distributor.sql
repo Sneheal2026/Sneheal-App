@@ -3,7 +3,6 @@
 ALTER TABLE products
   ADD COLUMN drugsetu_id VARCHAR(64) NULL AFTER id;
 
-
 ALTER TABLE products
   ADD UNIQUE KEY uq_products_drugsetu_id (drugsetu_id);
 
