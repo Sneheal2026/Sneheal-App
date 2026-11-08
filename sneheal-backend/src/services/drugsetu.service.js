@@ -127,7 +127,7 @@ const transformProductDetails = (raw) => {
 const searchProducts = async (query) => {
   if (!isEnabled()) return [];
   const term = String(query || '').trim();
-  if (!term || term.length < 2) return [];
+  if (!term || term.length < 3) return [];
 
   const url = `${BASE_URL}/products/search?q=${encodeURIComponent(term)}`;
 

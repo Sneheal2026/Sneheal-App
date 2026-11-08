@@ -1,7 +1,6 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import {
   View,
-  Image,
   StyleSheet,
   Dimensions,
   FlatList,
@@ -11,9 +10,8 @@ import {
 } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { PRODUCT_IMAGE_PLACEHOLDER } from '@/utils/productImage';
-import theme from '@/styles/theme';
+import { useTheme } from '@/hooks/useTheme';
 
-const { colors, spacing, borderRadius } = theme;
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 interface ProductImageGalleryProps {
@@ -59,6 +57,7 @@ export const ProductImageGallery: React.FC<ProductImageGalleryProps> = ({
   height,
   topInset,
 }) => {
+  const { colors } = useTheme();
   const [activeIndex, setActiveIndex] = useState(0);
 
   const validImages = useMemo(() => {
@@ -123,7 +122,9 @@ export const ProductImageGallery: React.FC<ProductImageGalleryProps> = ({
             key={`dot-${idx}`}
             style={[
               styles.dot,
-              idx === activeIndex ? styles.activeDot : styles.inactiveDot,
+              idx === activeIndex
+                ? [styles.activeDot, { backgroundColor: colors.primary }]
+                : styles.inactiveDot,
             ]}
           />
         ))}
@@ -146,32 +147,30 @@ const styles = StyleSheet.create({
   slide: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: 20,
   },
   image: {
-    width: '78%',
-    height: '78%',
+    width: '82%',
+    height: '82%',
   },
   paginationRow: {
     position: 'absolute',
-    bottom: spacing.sm,
+    bottom: 12,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xs,
+    gap: 6,
   },
   dot: {
-    height: 7,
-    borderRadius: 3.5,
+    height: 6,
+    borderRadius: 3,
   },
   activeDot: {
-    width: 20,
-    backgroundColor: colors.primary,
+    width: 22,
   },
   inactiveDot: {
-    width: 7,
-    backgroundColor: '#D1D5DB',
+    width: 6,
+    backgroundColor: '#CBD5E1',
   },
 });
 
 export default ProductImageGallery;
-

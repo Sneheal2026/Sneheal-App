@@ -76,7 +76,7 @@ const SearchScreen = () => {
     loadMore,
   } = useProductSearch(query);
 
-  const hasQuery = query.trim().length > 0;
+  const hasQuery = query.trim().length >= 3;
   const tabBarHeight = getTabBarHeight(insets.bottom);
   const tabBarScrollHandler = useTabBarScrollHandler();
 

@@ -6,6 +6,7 @@ import {
   TextInput,
   TouchableOpacity,
   ActivityIndicator,
+  Keyboard,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import {
@@ -47,6 +48,8 @@ const OtpScreen = ({ navigation, route }: AuthScreenProps<'Otp'>) => {
   const [isAutoFilling, setIsAutoFilling] = useState(false);
   const inputRefs = useRef<(TextInput | null)[]>([]);
 
+  const isOtpComplete = otpValues.every((val) => val !== '');
+
   const applyOtpSmoothly = useCallback((otp: string | undefined, source: string) => {
     if (!otp) return undefined;
 
@@ -63,7 +66,10 @@ const OtpScreen = ({ navigation, route }: AuthScreenProps<'Otp'>) => {
           return next;
         });
       },
-      () => setIsAutoFilling(false),
+      () => {
+        setIsAutoFilling(false);
+        Keyboard.dismiss();
+      },
     );
   }, []);
 
@@ -81,10 +87,10 @@ const OtpScreen = ({ navigation, route }: AuthScreenProps<'Otp'>) => {
   }, [resendTimer]);
 
   useEffect(() => {
-    if (isAutoFilling) return undefined;
+    if (isAutoFilling || isOtpComplete) return undefined;
     const timer = setTimeout(() => inputRefs.current[0]?.focus(), 400);
     return () => clearTimeout(timer);
-  }, [isAutoFilling]);
+  }, [isAutoFilling, isOtpComplete]);
 
   const handleChange = (text: string, index: number) => {
     if (!/^\d*$/.test(text)) return;
@@ -171,7 +177,6 @@ const OtpScreen = ({ navigation, route }: AuthScreenProps<'Otp'>) => {
     }
   };
 
-  const isOtpComplete = otpValues.every((val) => val !== '');
   const displayPhone = formatPhoneNumber(phoneNumber);
 
   return (
@@ -191,7 +196,9 @@ const OtpScreen = ({ navigation, route }: AuthScreenProps<'Otp'>) => {
 
       {__DEV__ && initialDevOtp ? (
         <Text style={styles.devHint}>
-          Dev mode: OTP auto-filled from API response
+          {isAutoFilling
+            ? 'Auto-detecting OTP from SMS...'
+            : 'Dev mode: OTP auto-filled from API response'}
         </Text>
       ) : null}
 

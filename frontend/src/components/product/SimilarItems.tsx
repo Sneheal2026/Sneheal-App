@@ -8,16 +8,14 @@ import {
   FlatList,
   Dimensions,
 } from 'react-native';
-import theme from '@/styles/theme';
+import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '@/hooks/useTheme';
 import Shimmer from '@/components/common/Shimmer';
 import { useSimilarProducts } from '@/hooks/useCatalog';
 import type { Product } from '@/types/product.types';
 
-const { colors, spacing, moderateScale } = theme;
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-
-const CARD_WIDTH = SCREEN_WIDTH * 0.4;
-const PRICE_BLUE = '#0A74DA';
+const CARD_WIDTH = SCREEN_WIDTH * 0.42;
 
 export interface SimilarItemsProps {
   productId: string;
@@ -32,49 +30,82 @@ const SimilarCard = ({
 }: {
   item: Product;
   onPress: (id: string) => void;
-}) => (
-  <Pressable
-    style={styles.card}
-    onPress={() => onPress(item.id)}
-    accessibilityRole="button"
-    accessibilityLabel={item.name}
-  >
-    <View style={styles.imageBox}>
-      <Image source={item.image} style={styles.image} resizeMode="contain" />
-    </View>
-    <View style={styles.info}>
-      <Text style={styles.name} numberOfLines={2}>
-        {item.name}
-      </Text>
-      <View style={styles.priceRow}>
-        <Text style={styles.price}>₹{item.price.toFixed(2)}</Text>
-        {item.originalPrice ? (
-          <Text style={styles.oldPrice}>₹{item.originalPrice.toFixed(2)}</Text>
+}) => {
+  const { colors, moderateScale } = useTheme();
+  const discountPercent =
+    item.originalPrice && item.originalPrice > item.price
+      ? Math.round(((item.originalPrice - item.price) / item.originalPrice) * 100)
+      : 0;
+
+  return (
+    <Pressable
+      style={({ pressed }) => [
+        styles.card,
+        {
+          borderColor: colors.borderLight,
+          opacity: pressed ? 0.92 : 1,
+          transform: [{ scale: pressed ? 0.98 : 1 }],
+        },
+      ]}
+      onPress={() => onPress(item.id)}
+      accessibilityRole="button"
+      accessibilityLabel={item.name}
+    >
+      <View style={styles.imageBox}>
+        <Image source={item.image} style={styles.image} resizeMode="contain" />
+        {discountPercent > 0 ? (
+          <View style={[styles.discountBadge, { backgroundColor: colors.successLight }]}>
+            <Text style={[styles.discountText, { color: colors.success }]}>
+              {discountPercent}% OFF
+            </Text>
+          </View>
         ) : null}
       </View>
-    </View>
-  </Pressable>
-);
+      <View style={styles.info}>
+        <Text style={[styles.name, { color: colors.textPrimary }]} numberOfLines={2}>
+          {item.name}
+        </Text>
+        <Text style={[styles.unit, { color: colors.textMuted }]} numberOfLines={1}>
+          {item.unit}
+        </Text>
+        <View style={styles.priceRow}>
+          <Text style={[styles.price, { color: colors.textPrimary }]}>
+            ₹{item.price.toFixed(2)}
+          </Text>
+          {item.originalPrice && item.originalPrice > item.price ? (
+            <Text style={[styles.oldPrice, { color: colors.textMuted }]}>
+              ₹{item.originalPrice.toFixed(2)}
+            </Text>
+          ) : null}
+        </View>
+      </View>
+    </Pressable>
+  );
+};
 
-const SimilarSkeleton = () => (
-  <View style={styles.card}>
-    <View style={styles.imageBox}>
-      <Shimmer width="72%" height="72%" borderRadius={moderateScale(8)} />
+const SimilarSkeleton = () => {
+  const { moderateScale } = useTheme();
+  return (
+    <View style={styles.card}>
+      <View style={styles.imageBox}>
+        <Shimmer width="72%" height="72%" borderRadius={moderateScale(8)} />
+      </View>
+      <View style={styles.info}>
+        <Shimmer width="90%" height={moderateScale(12)} />
+        <View style={{ height: 6 }} />
+        <Shimmer width="50%" height={moderateScale(14)} />
+      </View>
     </View>
-    <View style={styles.info}>
-      <Shimmer width="90%" height={moderateScale(12)} />
-      <View style={{ height: spacing.sm }} />
-      <Shimmer width="50%" height={moderateScale(14)} />
-    </View>
-  </View>
-);
+  );
+};
 
-const SimilarItems = ({
+export const SimilarItems = ({
   productId,
   onPressItem,
-  title = 'Similar items',
+  title = 'Similar Medicines & Alternatives',
   limit = 6,
 }: SimilarItemsProps) => {
+  const { colors, moderateScale } = useTheme();
   const { data: items, loading } = useSimilarProducts(productId, limit);
 
   const renderItem = useCallback(
@@ -87,7 +118,10 @@ const SimilarItems = ({
   if (loading) {
     return (
       <View style={styles.container}>
-        <Text style={styles.title}>{title}</Text>
+        <View style={styles.headerRow}>
+          <Ionicons name="repeat-outline" size={moderateScale(18)} color={colors.primary} />
+          <Text style={[styles.title, { color: colors.textPrimary }]}>{title}</Text>
+        </View>
         <View style={[styles.list, styles.skeletonRow]}>
           {[0, 1, 2].map((key) => (
             <View key={key} style={styles.skeletonItem}>
@@ -103,7 +137,10 @@ const SimilarItems = ({
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>{title}</Text>
+      <View style={styles.headerRow}>
+        <Ionicons name="repeat-outline" size={moderateScale(18)} color={colors.primary} />
+        <Text style={[styles.title, { color: colors.textPrimary }]}>{title}</Text>
+      </View>
       <FlatList
         data={items}
         keyExtractor={(item) => item.id}
@@ -120,71 +157,95 @@ const SimilarItems = ({
 
 const styles = StyleSheet.create({
   container: {
-    marginTop: spacing.sm,
+    marginTop: 18,
+    marginBottom: 8,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12,
   },
   title: {
-    fontSize: moderateScale(16),
+    fontSize: 16,
     fontWeight: '700',
-    color: colors.textPrimary,
-    marginTop: spacing.xl,
-    marginBottom: spacing.sm,
+    letterSpacing: -0.2,
   },
   list: {
-    paddingVertical: spacing.xs,
-    paddingRight: spacing.lg,
+    paddingVertical: 4,
+    paddingRight: 16,
   },
   skeletonRow: {
     flexDirection: 'row',
   },
   skeletonItem: {
-    marginRight: spacing.md,
+    marginRight: 12,
   },
   separator: {
-    width: spacing.md,
+    width: 12,
   },
   card: {
     width: CARD_WIDTH,
-    backgroundColor: colors.white,
-    borderRadius: moderateScale(10),
-    borderWidth: 1.5,
-    borderColor: colors.cardBorder,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
     overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 2,
   },
   imageBox: {
     width: '100%',
     height: CARD_WIDTH * 0.78,
-    backgroundColor: '#F5F8FA',
+    backgroundColor: '#F8FAFC',
     alignItems: 'center',
     justifyContent: 'center',
+    position: 'relative',
   },
   image: {
-    width: '72%',
-    height: '72%',
+    width: '74%',
+    height: '74%',
+  },
+  discountBadge: {
+    position: 'absolute',
+    top: 6,
+    left: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  discountText: {
+    fontSize: 10,
+    fontWeight: '700',
   },
   info: {
-    padding: spacing.sm,
+    padding: 10,
   },
   name: {
-    fontSize: moderateScale(12.5),
-    fontWeight: '500',
-    color: colors.textPrimary,
-    lineHeight: moderateScale(16),
-    minHeight: moderateScale(32),
+    fontSize: 13,
+    fontWeight: '600',
+    lineHeight: 17,
+    minHeight: 34,
+  },
+  unit: {
+    fontSize: 11,
+    marginTop: 2,
+    marginBottom: 4,
   },
   priceRow: {
     flexDirection: 'row',
     alignItems: 'baseline',
-    gap: spacing.xs,
-    marginTop: spacing.xs,
+    gap: 6,
   },
   price: {
-    fontSize: moderateScale(15),
-    fontWeight: '700',
-    color: PRICE_BLUE,
+    fontSize: 15,
+    fontWeight: '800',
   },
   oldPrice: {
-    fontSize: moderateScale(11),
-    color: colors.textSecondary,
+    fontSize: 11,
     textDecorationLine: 'line-through',
   },
 });

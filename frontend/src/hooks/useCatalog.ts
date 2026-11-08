@@ -130,7 +130,7 @@ export const useSimilarProducts = (productId: string, limit = 6) => {
  * - Waits `debounceMs` after typing stops before first page fetch
  * - `loadMore` appends the next page while `hasMore` is true
  */
-export const useProductSearch = (query: string, debounceMs = 300) => {
+export const useProductSearch = (query: string, debounceMs = 500) => {
   const [items, setItems] = useState<Product[]>([]);
   const [total, setTotal] = useState(0);
   const [hasMore, setHasMore] = useState(false);
@@ -146,7 +146,8 @@ export const useProductSearch = (query: string, debounceMs = 300) => {
   useEffect(() => {
     const term = query.trim();
 
-    if (!term) {
+    // Require at least 3 letters before triggering search
+    if (!term || term.length < 3) {
       requestIdRef.current += 1;
       setItems([]);
       setTotal(0);

@@ -312,6 +312,7 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
   const skipDraftSyncRef = useRef(false);
 
   useEffect(() => {
+    if (skipDraftSyncRef.current) return;
     if (hydratedFromDraftRef.current || !draft?.pickedImage) return;
     hydratedFromDraftRef.current = true;
     setPickedImage(draft.pickedImage);
@@ -327,11 +328,7 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
       hydratedFromDraftRef.current = true;
     }
     if (!hydratedFromDraftRef.current) return;
-    if (!pickedImage) {
-      skipDraftSyncRef.current = false;
-      return;
-    }
-    if (skipDraftSyncRef.current) {
+    if (skipDraftSyncRef.current || !pickedImage) {
       return;
     }
     setDraft({
@@ -342,7 +339,7 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
       scanError,
       isSaved,
     });
-  }, [pickedImage, medicines, hasScanned, imageType, scanError, isSaved, setDraft, draft?.pickedImage]);
+  }, [pickedImage, medicines, hasScanned, imageType, scanError, isSaved, setDraft]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -396,6 +393,7 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
     async (source: 'camera' | 'gallery') => {
       if (isPicking || isScanning || isSaving) return;
 
+      skipDraftSyncRef.current = false;
       setIsPicking(true);
       setMedicines([]);
       setScanError(null);
@@ -433,6 +431,7 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
     setIsSaved(false);
     setIsScanning(false);
     clearDraft();
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
   }, [clearDraft]);
 
   const handleScan = useCallback(() => {
@@ -481,7 +480,7 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
       const term = query.trim();
       if (!term) return;
       void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      if (pickedImage) {
+      if (pickedImage && !skipDraftSyncRef.current) {
         setDraft({
           pickedImage,
           medicines,
