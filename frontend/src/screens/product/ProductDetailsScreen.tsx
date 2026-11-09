@@ -948,19 +948,24 @@ const styles = StyleSheet.create({
   },
   specRow: {
     flexDirection: 'row',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
-    paddingVertical: 8,
+    paddingVertical: 9,
     borderBottomWidth: 1,
+    gap: 12,
   },
   specLabel: {
     fontSize: 13,
     fontWeight: '500',
+    flexShrink: 0,
+    lineHeight: 18,
   },
   specValue: {
+    flex: 1,
     fontSize: 13,
     fontWeight: '600',
     textAlign: 'right',
-    maxWidth: '60%',
+    lineHeight: 18,
   },
   usesBox: {
     gap: 10,

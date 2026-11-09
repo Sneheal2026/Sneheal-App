@@ -29,6 +29,8 @@ const TITLE_FLOWER_SIZE = moderateScale(38);
 const CARD_WIDTH = device.isSmallDevice
   ? SCREEN_WIDTH * 0.44
   : SCREEN_WIDTH * 0.42;
+const IMAGE_BOX_HEIGHT = CARD_WIDTH * 0.88;
+const CARD_HEIGHT = IMAGE_BOX_HEIGHT + moderateScale(110);
 const CARD_MARGIN = spacing.md;
 
 interface ProductCardProps {
@@ -43,58 +45,66 @@ const ProductCard = ({ item, quantity, onIncrement, onDecrement, onPress }: Prod
   const { colors } = useTheme();
 
   return (
-  <Pressable style={styles.card} onPress={() => onPress?.(item.id)}>
-    <View style={styles.imageBox}>
-      <Image source={item.image} style={styles.image} resizeMode="contain" />
-    </View>
+    <Pressable style={styles.card} onPress={() => onPress?.(item.id)}>
+      <View style={styles.imageBox}>
+        <Image source={item.image} style={styles.image} resizeMode="contain" />
+      </View>
 
-    <View style={styles.info}>
-      <View style={styles.textBlock}>
-        <Text style={styles.name} numberOfLines={2}>
-          {item.name}
-        </Text>
-        {item.unit ? (
-          <Text style={styles.unit} numberOfLines={1}>
-            {item.unit}
+      <View style={styles.info}>
+        <View style={styles.textBlock}>
+          <Text style={styles.name} numberOfLines={2}>
+            {item.name}
           </Text>
-        ) : null}
-      </View>
-
-      <View style={styles.footer}>
-        <View style={styles.priceBox}>
-          <View style={styles.priceLine}>
-            <Text style={[styles.price, { color: colors.primary }]}>
-              ₹{item.price.toFixed(2)}
-            </Text>
-            {item.originalPrice ? (
-              <Text style={styles.oldPrice}>₹{item.originalPrice.toFixed(2)}</Text>
-            ) : null}
-          </View>
+          <Text style={styles.unit} numberOfLines={1}>
+            {item.unit || ' '}
+          </Text>
         </View>
-        <QuantityStepper
-          size="xs"
-          reserveSlot={false}
-          quantity={quantity}
-          onIncrement={() => onIncrement(item.id)}
-          onDecrement={() => onDecrement(item.id)}
-        />
+
+        <View style={styles.footer}>
+          <View style={styles.priceBox}>
+            <View style={styles.priceLine}>
+              <Text style={[styles.price, { color: colors.primary }]}>
+                ₹{item.price.toFixed(2)}
+              </Text>
+              {item.originalPrice ? (
+                <Text style={styles.oldPrice}>₹{item.originalPrice.toFixed(2)}</Text>
+              ) : null}
+            </View>
+          </View>
+          <QuantityStepper
+            size="xs"
+            reserveSlot={false}
+            quantity={quantity}
+            onIncrement={() => onIncrement(item.id)}
+            onDecrement={() => onDecrement(item.id)}
+          />
+        </View>
       </View>
-    </View>
-  </Pressable>
+    </Pressable>
   );
 };
 
 const SkeletonCard = () => (
   <View style={styles.card}>
     <View style={styles.imageBox}>
-      <Shimmer width="75%" height="75%" borderRadius={moderateScale(6)} />
+      <Shimmer width="88%" height="88%" borderRadius={moderateScale(6)} />
     </View>
     <View style={styles.info}>
-      <Shimmer width="90%" height={moderateScale(13)} />
-      <View style={{ height: 2 }} />
-      <Shimmer width="65%" height={moderateScale(11)} />
-      <View style={{ height: spacing.xxs }} />
-      <Shimmer width="55%" height={moderateScale(16)} />
+      <View style={styles.textBlock}>
+        <Shimmer width="90%" height={moderateScale(14)} />
+        <View style={{ height: 4 }} />
+        <Shimmer width="60%" height={moderateScale(14)} />
+        <View style={{ height: 4 }} />
+        <Shimmer width="45%" height={moderateScale(12)} />
+      </View>
+      <View style={styles.footer}>
+        <Shimmer width="50%" height={moderateScale(16)} />
+        <Shimmer
+          width={moderateScale(28)}
+          height={moderateScale(28)}
+          borderRadius={moderateScale(14)}
+        />
+      </View>
     </View>
   </View>
 );
@@ -196,7 +206,7 @@ const FeaturedProducts = ({
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: spacing.xxs,
+    marginBottom: spacing.sm,
     marginTop: spacing.xl,
     zIndex: 10,
     elevation: 10,
@@ -253,10 +263,12 @@ const styles = StyleSheet.create({
   },
   card: {
     width: CARD_WIDTH,
+    height: CARD_HEIGHT,
     backgroundColor: colors.white,
     borderRadius: moderateScale(8),
     borderWidth: 2,
     borderColor: colors.cardBorder,
+    overflow: 'hidden',
     ...Platform.select({
       ios: {
         shadowColor: '#000',
@@ -271,11 +283,11 @@ const styles = StyleSheet.create({
   },
   imageBox: {
     width: '100%',
-    height: CARD_WIDTH * 0.8,
+    height: IMAGE_BOX_HEIGHT,
     backgroundColor: '#F5F8FA',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: spacing.sm,
+    padding: 4,
     borderBottomWidth: 1,
     borderBottomColor: colors.borderLight,
     borderTopLeftRadius: moderateScale(6),
@@ -283,35 +295,39 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   image: {
-    width: '75%',
-    height: '75%',
+    width: '88%',
+    height: '88%',
   },
   info: {
+    flex: 1,
+    justifyContent: 'space-between',
     paddingHorizontal: spacing.sm,
     paddingBottom: spacing.sm,
-    paddingTop: spacing.xxs,
+    paddingTop: spacing.xs,
   },
   textBlock: {
-    gap: 1,
-    marginBottom: spacing.xxs,
+    gap: 2,
   },
   name: {
     fontSize: moderateScale(13),
-    fontWeight: '500',
+    fontWeight: '600',
     color: colors.textPrimary,
-    lineHeight: moderateScale(22),
+    lineHeight: moderateScale(18),
+    height: moderateScale(36),
   },
   unit: {
     fontSize: moderateScale(11),
     fontWeight: '500',
     color: colors.textSecondary,
-    lineHeight: moderateScale(13),
+    lineHeight: moderateScale(15),
+    height: moderateScale(15),
   },
   footer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: spacing.xxs,
+    marginTop: spacing.xs,
   },
   priceBox: {
     flex: 1,

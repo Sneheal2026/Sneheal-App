@@ -51,8 +51,8 @@ const styles = StyleSheet.create({
   container: {
     width: SCREEN_WIDTH,
     alignSelf: 'center',
-    marginTop: spacing.xxs,
-    marginBottom: verticalScale(6),
+    marginTop: spacing.lg,
+    marginBottom: verticalScale(8),
     zIndex: 5,
     elevation: 5,
   },

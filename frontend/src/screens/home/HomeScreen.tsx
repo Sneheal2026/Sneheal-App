@@ -404,10 +404,11 @@ const HomeScreen = () => {
               onDecrement={handleDecrement}
               onPressItem={handleOpenProduct}
             />
-            <DevResetStorageButton />
           </View>
 
           <DiwaliBorder />
+
+          <DevResetStorageButton />
 
           <View style={styles.pillImageWrap} pointerEvents="none">
             <Image
