@@ -25,6 +25,7 @@ const SQL_FILES = [
   '014_agent_delivered_orders_index.sql',
   '015_promotions.sql',
   '016_remove_sneheal10_promo.sql',
+  '017_in_app_announcements.sql',
   '018_home_screen_images.sql',
   '019_drugsetu_distributor.sql',
   '020_family_members.sql',
