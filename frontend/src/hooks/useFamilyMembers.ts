@@ -1,23 +1,28 @@
 import { useCallback, useState } from 'react';
 import {
   deleteFamilyMember,
+  getCachedFamilyMembers,
   getFamilyMembers,
   upsertFamilyMember,
 } from '@/services/familyMemberStorage';
-import {
-  createFamilyMemberId,
-  type FamilyMember,
-  type FamilyMemberFormData,
+import type {
+  FamilyMember,
+  FamilyMemberFormData,
 } from '@/types/family.types';
 
 export const useFamilyMembers = () => {
   const [members, setMembers] = useState<FamilyMember[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const refresh = useCallback(async () => {
-    setLoading(true);
+  const refresh = useCallback(async (forceRefresh = false) => {
     try {
-      const next = await getFamilyMembers();
+      // If we don't have members in memory yet, prime with cache immediately to avoid empty screen flicker
+      const cached = await getCachedFamilyMembers();
+      if (cached.length > 0) {
+        setMembers(cached);
+        setLoading(false);
+      }
+      const next = await getFamilyMembers(forceRefresh);
       setMembers(next);
     } finally {
       setLoading(false);
@@ -25,37 +30,26 @@ export const useFamilyMembers = () => {
   }, []);
 
   const addMember = useCallback(async (data: FamilyMemberFormData) => {
-    const now = new Date().toISOString();
-    const member: FamilyMember = {
-      id: createFamilyMemberId(),
-      ...data,
-      name: data.name.trim(),
-      currentMedicines: data.currentMedicines.trim(),
-      createdAt: now,
-      updatedAt: now,
-    };
-    await upsertFamilyMember(member);
-    setMembers((prev) => [...prev, member]);
+    const member = await upsertFamilyMember(data);
+    setMembers((prev) => {
+      const idx = prev.findIndex((m) => m.id === member.id);
+      if (idx >= 0) {
+        return prev.map((m, i) => (i === idx ? member : m));
+      }
+      return [...prev, member];
+    });
     return member;
   }, []);
 
   const updateMember = useCallback(
     async (id: string, data: FamilyMemberFormData) => {
-      const existing = members.find((item) => item.id === id);
-      if (!existing) return null;
-
-      const updated: FamilyMember = {
-        ...existing,
-        ...data,
-        name: data.name.trim(),
-        currentMedicines: data.currentMedicines.trim(),
-        updatedAt: new Date().toISOString(),
-      };
-      await upsertFamilyMember(updated);
-      setMembers((prev) => prev.map((item) => (item.id === id ? updated : item)));
+      const updated = await upsertFamilyMember({ ...data, id });
+      setMembers((prev) =>
+        prev.map((item) => (item.id === id || item.id === updated.id ? updated : item)),
+      );
       return updated;
     },
-    [members],
+    [],
   );
 
   const removeMember = useCallback(async (id: string) => {

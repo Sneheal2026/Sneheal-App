@@ -27,6 +27,7 @@ const SQL_FILES = [
   '016_remove_sneheal10_promo.sql',
   '018_home_screen_images.sql',
   '019_drugsetu_distributor.sql',
+  '020_family_members.sql',
 ];
 
 const splitStatements = (sql) =>
