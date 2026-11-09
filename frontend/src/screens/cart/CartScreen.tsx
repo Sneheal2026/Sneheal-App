@@ -7,6 +7,7 @@ import {
   ScrollView,
   Pressable,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
@@ -135,7 +136,12 @@ const CartScreen = ({ navigation: tabNavigation }: TabScreenProps<'Cart'>) => {
     goHome();
   }, [goHome]);
 
+  const isUpdating = quoteLoading || couponApplying;
+  const isContinueDisabled = isUpdating || lines.length === 0;
+
   const onContinue = useCallback(() => {
+    if (isContinueDisabled) return;
+
     if (!selectedAddress) {
       setAddressMissing(true);
       Alert.alert(t('cart.addressRequiredTitle'), t('cart.addressRequiredBody'), [
@@ -147,7 +153,7 @@ const CartScreen = ({ navigation: tabNavigation }: TabScreenProps<'Cart'>) => {
 
     const parent = navigation.getParent<NativeStackNavigationProp<AuthStackParamList>>();
     parent?.navigate('PaymentMethod');
-  }, [navigation, openAddresses, selectedAddress, t]);
+  }, [isContinueDisabled, navigation, openAddresses, selectedAddress, t]);
 
   const subtitle =
     totalItems > 0
@@ -189,97 +195,119 @@ const CartScreen = ({ navigation: tabNavigation }: TabScreenProps<'Cart'>) => {
             { paddingBottom: tabBarHeight + spacing.xl },
           ]}
         >
-            <Pressable
-              onPress={openAddresses}
-              style={({ pressed }) => [
-                styles.addressCard,
-                addressMissing && styles.addressCardWarn,
-                pressed && styles.pressed,
-              ]}
-            >
-              <View style={[styles.addressIcon, addressMissing && styles.addressIconWarn]}>
-                <Ionicons
-                  name={addressMissing ? 'alert-circle' : 'location'}
-                  size={16}
-                  color={addressMissing ? colors.error : CART_GREEN}
-                />
-              </View>
-              <View style={styles.addressText}>
-                <Text style={[styles.addressKicker, addressMissing && styles.addressKickerWarn]}>
-                  {addressTag
-                    ? `${t('cart.deliverTo')} ${addressTag}`
-                    : t('cart.addAddress')}
-                </Text>
-                <Text style={styles.addressLine} numberOfLines={1}>
-                  {addressLabel ?? t('cart.addAddress')}
-                </Text>
-              </View>
+          <Pressable
+            onPress={openAddresses}
+            style={({ pressed }) => [
+              styles.addressCard,
+              addressMissing && styles.addressCardWarn,
+              pressed && styles.pressed,
+            ]}
+          >
+            <View style={[styles.addressIcon, addressMissing && styles.addressIconWarn]}>
               <Ionicons
-                name="chevron-forward"
+                name={addressMissing ? 'alert-circle' : 'location'}
                 size={16}
-                color={addressMissing ? colors.error : colors.textMuted}
+                color={addressMissing ? colors.error : CART_GREEN}
               />
-            </Pressable>
-
-            {addressMissing ? (
-              <Text style={styles.addressWarnText}>{t('cart.addressNeededHint')}</Text>
-            ) : null}
-
-            <Text style={styles.sectionTitle}>{t('cart.itemsInCart')}</Text>
-            <View style={styles.itemsList}>
-              {lines.map((line) => (
-                <CartItemRow
-                  key={line.productId}
-                  name={line.name}
-                  image={resolveCatalogImage(line.imageUrl)}
-                  price={line.price}
-                  originalPrice={line.originalPrice}
-                  quantity={line.quantity}
-                  unit={line.unit}
-                  onIncrement={() => increment(line.productId)}
-                  onDecrement={() => decrement(line.productId)}
-                />
-              ))}
             </View>
-
-            <CartOffersSection
-              offers={quote?.offers ?? []}
-              draftCode={couponDraft}
-              onChangeDraftCode={setCouponDraft}
-              onApplyCode={applyCouponDraft}
-              onClearCode={clearCoupon}
-              applyError={couponApplyError}
-              applyLoading={couponApplying}
+            <View style={styles.addressText}>
+              <Text style={[styles.addressKicker, addressMissing && styles.addressKickerWarn]}>
+                {addressTag
+                  ? `${t('cart.deliverTo')} ${addressTag}`
+                  : t('cart.addAddress')}
+              </Text>
+              <Text style={styles.addressLine} numberOfLines={1}>
+                {addressLabel ?? t('cart.addAddress')}
+              </Text>
+            </View>
+            <Ionicons
+              name="chevron-forward"
+              size={16}
+              color={addressMissing ? colors.error : colors.textMuted}
             />
+          </Pressable>
 
-            {quoteError ? (
-              <Text style={styles.quoteErrorText}>{quoteError}</Text>
-            ) : null}
+          {addressMissing ? (
+            <Text style={styles.addressWarnText}>{t('cart.addressNeededHint')}</Text>
+          ) : null}
 
+          <Text style={styles.sectionTitle}>{t('cart.itemsInCart')}</Text>
+          <View style={styles.itemsList}>
+            {lines.map((line) => (
+              <CartItemRow
+                key={line.productId}
+                name={line.name}
+                image={resolveCatalogImage(line.imageUrl)}
+                price={line.price}
+                originalPrice={line.originalPrice}
+                quantity={line.quantity}
+                unit={line.unit}
+                onIncrement={() => increment(line.productId)}
+                onDecrement={() => decrement(line.productId)}
+              />
+            ))}
+          </View>
+
+          <CartOffersSection
+            offers={quote?.offers ?? []}
+            draftCode={couponDraft}
+            onChangeDraftCode={setCouponDraft}
+            onApplyCode={applyCouponDraft}
+            onClearCode={clearCoupon}
+            applyError={couponApplyError}
+            applyLoading={couponApplying}
+          />
+
+          {quoteError ? (
+            <Text style={styles.quoteErrorText}>{quoteError}</Text>
+          ) : null}
+
+          <View style={isUpdating ? styles.billingDimmed : undefined}>
             <CartBilling
               lines={billLines}
               savings={bill.savings}
               grandTotal={bill.grandTotal}
             />
+          </View>
 
-            <View style={styles.checkoutBar}>
-              <View>
-                <Text style={styles.checkoutKicker}>{t('cart.toPay')}</Text>
-                <Text style={styles.checkoutTotal}>
-                  {quoteLoading && !quote ? '…' : formatInr(bill.grandTotal)}
+          <View style={styles.checkoutBar}>
+            <View>
+              <Text style={styles.checkoutKicker}>{t('cart.toPay')}</Text>
+              <View style={styles.totalRowWrap}>
+                <Text style={[styles.checkoutTotal, isUpdating && styles.checkoutTotalDimmed]}>
+                  {formatInr(bill.grandTotal)}
                 </Text>
+                {isUpdating ? (
+                  <ActivityIndicator size="small" color={CART_GREEN} style={styles.updatingSpinner} />
+                ) : null}
               </View>
-              <Pressable
-                onPress={onContinue}
-                style={({ pressed }) => [styles.proceedBtn, pressed && styles.pressed]}
-                accessibilityRole="button"
-                accessibilityLabel={t('common.continue')}
-              >
-                <Text style={styles.proceedText}>{t('common.continue')}</Text>
-                <Ionicons name="arrow-forward" size={16} color={colors.white} />
-              </Pressable>
             </View>
-          </ScrollView>
+            <Pressable
+              onPress={onContinue}
+              disabled={isContinueDisabled}
+              style={({ pressed }) => [
+                styles.proceedBtn,
+                isContinueDisabled && styles.proceedBtnDisabled,
+                pressed && !isContinueDisabled && styles.pressed,
+              ]}
+              accessibilityRole="button"
+              accessibilityLabel={t('common.continue')}
+              accessibilityState={{ disabled: isContinueDisabled }}
+            >
+              {isUpdating ? (
+                <View style={styles.updatingBtnContent}>
+                  <ActivityIndicator size="small" color={colors.white} />
+                  <Text style={styles.proceedText}>{t('cart.updating', 'Updating…')}</Text>
+                </View>
+              ) : (
+                <>
+                  <Text style={styles.proceedText}>{t('common.continue')}</Text>
+                  {/* <Ionicons name="arrow-forward" size={16} color={colors.white} /> */}
+                </>
+              )}
+            </Pressable>
+          </View>
+        </ScrollView>
       )}
     </View>
   );
@@ -444,6 +472,27 @@ const styles = StyleSheet.create({
     color: colors.error,
     fontWeight: '600',
     textAlign: 'center',
+  },
+  billingDimmed: {
+    opacity: 0.6,
+  },
+  totalRowWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  checkoutTotalDimmed: {
+    opacity: 0.45,
+  },
+  updatingSpinner: {
+    marginLeft: 6,
+  },
+  proceedBtnDisabled: {
+    opacity: 0.55,
+  },
+  updatingBtnContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
   },
 });
 

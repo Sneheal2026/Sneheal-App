@@ -16,7 +16,7 @@ import { MAX_CART_QTY, productToCartLine, type CartLine } from '@/types/cart.typ
 import type { CartQuote } from '@/types/cartQuote.types';
 import type { Product } from '@/types/product.types';
 
-const QUOTE_DEBOUNCE_MS = 450;
+const QUOTE_DEBOUNCE_MS = 250;
 
 export type AutoApplyToastPayload = {
   title: string;
@@ -120,7 +120,6 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     async (
       nextLines: CartLine[],
       couponCode: string | null,
-      options: { background?: boolean } = {},
     ) => {
       if (nextLines.length === 0) {
         setQuote(null);
@@ -132,9 +131,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       }
 
       const requestId = ++quoteRequestId.current;
-      if (!options.background) {
-        setQuoteLoading(true);
-      }
+      setQuoteLoading(true);
       setQuoteError(null);
 
       try {
@@ -152,7 +149,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
           err instanceof ApiError ? err.message : 'Could not refresh cart totals';
         setQuoteError(message);
       } finally {
-        if (requestId === quoteRequestId.current && !options.background) {
+        if (requestId === quoteRequestId.current) {
           setQuoteLoading(false);
         }
       }
@@ -175,8 +172,11 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       return;
     }
 
+    // Immediately flag that cart calculation is in-flight so checkout cannot race ahead
+    setQuoteLoading(true);
+
     debounceTimer.current = setTimeout(() => {
-      void runQuote(lines, appliedCouponRef.current, { background: true });
+      void runQuote(lines, appliedCouponRef.current);
     }, QUOTE_DEBOUNCE_MS);
 
     return () => {
@@ -236,7 +236,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       setAppliedCouponCode(null);
       setCouponDraftState('');
       setCouponApplyError(null);
-      void runQuote(lines, null, { background: true });
+      void runQuote(lines, null);
       return;
     }
 
@@ -288,7 +288,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     setAppliedCouponCode(null);
     appliedCouponRef.current = null;
     setCouponApplyError(null);
-    void runQuote(lines, null, { background: true });
+    void runQuote(lines, null);
   }, [lines, runQuote]);
 
   const getQuantity = useCallback(

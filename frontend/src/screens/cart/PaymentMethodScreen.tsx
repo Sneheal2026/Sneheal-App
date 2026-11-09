@@ -207,7 +207,7 @@ const PaymentMethodScreen = () => {
             style={({ pressed }) => [
               styles.placeBtn,
               pressed && styles.pressed,
-              submitting && styles.placeDisabled,
+              (submitting || quoteLoading) && styles.placeDisabled,
             ]}
             accessibilityRole="button"
             accessibilityLabel={t('cart.placeOrder')}
