@@ -22,6 +22,7 @@ import type { AuthStackParamList } from '@/navigation/types';
 import { resolveAuthRoute } from '@/navigation/resolveAuthRoute';
 import { doctorTheme } from '@/components/doctor/doctorTheme';
 import { deliveryTheme } from '@/components/delivery/deliveryTheme';
+import { SUPPORT_CONTACT } from '@/constants/helpFaq';
 import theme from '@/styles/theme';
 
 const { spacing, typography, borderRadius, shadows } = theme;
@@ -41,13 +42,12 @@ const VerificationPendingScreen = () => {
   const roleTheme = isDoctor
     ? {
         primary: doctorTheme.primary,
-        primarySoft: doctorTheme.primarySoft,
+        primarySoft: '#116B74',
         accent: doctorTheme.accent,
         accentBg: '#E6FFFA',
         badgeBg: '#CCFBF1',
         iconName: 'medkit' as IoniconName,
         portalTitle: 'Doctor Portal',
-        docLabel: 'License & Practice Details',
       }
     : {
         primary: deliveryTheme.primary,
@@ -56,8 +56,7 @@ const VerificationPendingScreen = () => {
         accentBg: deliveryTheme.accentLight,
         badgeBg: '#FEF3C7',
         iconName: 'bicycle' as IoniconName,
-        portalTitle: 'Delivery Partner Portal',
-        docLabel: 'Aadhaar & Driving License',
+        portalTitle: 'Partner Portal',
       };
 
   const handleCheckStatus = useCallback(
@@ -69,7 +68,7 @@ const VerificationPendingScreen = () => {
         const freshUser = await refreshCurrentUser();
         if (freshUser?.verificationStatus === 'approved') {
           setFeedbackType('success');
-          setFeedbackMessage('Account verified! Redirecting...');
+          setFeedbackMessage('Account verified! Redirecting to dashboard...');
           const { route: nextRoute, params } = resolveAuthRoute(freshUser);
           setTimeout(() => {
             if (params) {
@@ -83,23 +82,23 @@ const VerificationPendingScreen = () => {
                 routes: [{ name: nextRoute }],
               });
             }
-          }, 600);
+          }, 500);
           return;
         }
 
         if (freshUser?.verificationStatus === 'rejected') {
           setFeedbackType('warning');
-          setFeedbackMessage('Verification could not be approved. Please contact support.');
+          setFeedbackMessage('Verification could not be approved. Please contact Sneheal support.');
         } else if (!silent) {
           setFeedbackType('info');
-          setFeedbackMessage('Verification is currently under review. Please check back shortly.');
-          setTimeout(() => setFeedbackMessage(null), 4000);
+          setFeedbackMessage('Your verification is under review. Please check back shortly.');
+          setTimeout(() => setFeedbackMessage(null), 3500);
         }
       } catch {
         if (!silent) {
           setFeedbackType('warning');
-          setFeedbackMessage('Could not connect to server. Please try again.');
-          setTimeout(() => setFeedbackMessage(null), 4000);
+          setFeedbackMessage('Unable to check status. Please check your internet connection.');
+          setTimeout(() => setFeedbackMessage(null), 3500);
         }
       } finally {
         if (!silent) setIsChecking(false);
@@ -108,7 +107,7 @@ const VerificationPendingScreen = () => {
     [isChecking, navigation, refreshCurrentUser],
   );
 
-  // Check automatically when app comes to foreground
+  // Check automatically when user returns to app
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (nextState) => {
       if (nextState === 'active') {
@@ -121,7 +120,7 @@ const VerificationPendingScreen = () => {
   const handleConfirmLogout = () => {
     Alert.alert(
       'Sign Out',
-      'Are you sure you want to sign out?',
+      'Are you sure you want to sign out from this account?',
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -136,21 +135,19 @@ const VerificationPendingScreen = () => {
     );
   };
 
-  const handleContactSupport = () => {
-    Alert.alert(
-      'Sneheal Support',
-      'Have questions regarding your verification status?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Call Helpline',
-          onPress: () => {
-            void Linking.openURL('tel:18001234567').catch(() => {});
-          },
-        },
-      ],
-      { cancelable: true },
+  const handleCallSupport = () => {
+    const dialNumber = SUPPORT_CONTACT.phone.replace(/\s/g, '');
+    void Linking.openURL(`tel:${dialNumber}`).catch(() => {});
+  };
+
+  const handleWhatsAppSupport = () => {
+    const cleanPhone = SUPPORT_CONTACT.phone.replace(/\D/g, '');
+    const message = encodeURIComponent(
+      `Hello Sneheal Team, I registered as a ${isDoctor ? 'Doctor' : 'Delivery Partner'} (${user?.username || ''}, Phone: ${user?.phone || ''}) and would like to check my verification status.`,
     );
+    void Linking.openURL(`https://wa.me/${cleanPhone}?text=${message}`).catch(() => {
+      handleCallSupport();
+    });
   };
 
   const topInset = Math.max(
@@ -161,19 +158,27 @@ const VerificationPendingScreen = () => {
   const isRejected = user?.verificationStatus === 'rejected';
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: roleTheme.primary }]}>
       <StatusBar
         barStyle="light-content"
         backgroundColor={roleTheme.primary}
         translucent={Platform.OS === 'android'}
       />
 
-      {/* Top Header with Portal Name & Logout */}
-      <View style={[styles.header, { paddingTop: topInset + spacing.md }]}>
+      {/* Top Header - Seamlessly merged into Safe Area */}
+      <View
+        style={[
+          styles.header,
+          {
+            backgroundColor: roleTheme.primary,
+            paddingTop: topInset + (Platform.OS === 'android' ? spacing.sm : spacing.xs),
+          },
+        ]}
+      >
         <View style={styles.headerLeft}>
-          <View style={[styles.rolePill, { backgroundColor: roleTheme.primarySoft }]}>
-            <Ionicons name={roleTheme.iconName} size={15} color={roleTheme.accent} />
-            <Text style={styles.rolePillText}>{roleTheme.portalTitle}</Text>
+          <View style={[styles.brandPill, { backgroundColor: 'rgba(255, 255, 255, 0.15)' }]}>
+            <Ionicons name={roleTheme.iconName} size={15} color="#FFFFFF" />
+            <Text style={styles.brandPillText}>Sneheal {roleTheme.portalTitle}</Text>
           </View>
         </View>
 
@@ -181,234 +186,186 @@ const VerificationPendingScreen = () => {
           onPress={handleConfirmLogout}
           style={({ pressed }) => [
             styles.logoutBtn,
-            { backgroundColor: roleTheme.primarySoft },
+            { backgroundColor: 'rgba(255, 255, 255, 0.15)' },
             pressed && styles.pressed,
           ]}
           accessibilityRole="button"
           accessibilityLabel="Sign Out"
         >
-          <Ionicons name="log-out-outline" size={17} color="#FCA5A5" />
+          <Ionicons name="log-out-outline" size={16} color="#FFFFFF" />
           <Text style={styles.logoutBtnText}>Sign Out</Text>
         </Pressable>
       </View>
 
-      <ScrollView
-        contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + spacing.xl }]}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={isChecking}
-            onRefresh={() => handleCheckStatus(false)}
-            tintColor={roleTheme.accent}
-            colors={[roleTheme.primary]}
-          />
-        }
-      >
-        {/* Creative Verification Visual Card */}
-        <View style={styles.heroCard}>
-          <View
-            style={[
-              styles.iconGlowRing,
-              { backgroundColor: isRejected ? '#FEE2E2' : roleTheme.accentBg },
-            ]}
-          >
+      {/* Main Body with Clean Light Background */}
+      <View style={styles.bodyWrapper}>
+        <ScrollView
+          contentContainerStyle={[
+            styles.scrollContent,
+            { paddingBottom: insets.bottom + spacing.xl },
+          ]}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={isChecking}
+              onRefresh={() => handleCheckStatus(false)}
+              tintColor={roleTheme.primary}
+              colors={[roleTheme.primary]}
+            />
+          }
+        >
+          {/* Main Verification Card */}
+          <View style={styles.card}>
             <View
               style={[
-                styles.iconCore,
-                { backgroundColor: isRejected ? '#DC2626' : roleTheme.primary },
+                styles.iconCircle,
+                { backgroundColor: isRejected ? '#FEE2E2' : roleTheme.accentBg },
               ]}
             >
               <Ionicons
                 name={isRejected ? 'alert-circle' : 'hourglass-outline'}
-                size={38}
-                color={isRejected ? '#FFFFFF' : roleTheme.accent}
+                size={40}
+                color={isRejected ? '#DC2626' : isDoctor ? doctorTheme.primary : deliveryTheme.accent}
               />
             </View>
-          </View>
 
-          <View
-            style={[
-              styles.statusBadge,
-              { backgroundColor: isRejected ? '#FEE2E2' : roleTheme.badgeBg },
-            ]}
-          >
-            <Ionicons
-              name={isRejected ? 'close-circle' : 'time'}
-              size={14}
-              color={isRejected ? '#DC2626' : isDoctor ? '#0F766E' : '#B45309'}
-            />
-            <Text
+            <View
               style={[
-                styles.statusBadgeText,
-                { color: isRejected ? '#DC2626' : isDoctor ? '#0F766E' : '#B45309' },
+                styles.statusBadge,
+                { backgroundColor: isRejected ? '#FEE2E2' : '#FEF3C7' },
               ]}
             >
-              {isRejected ? 'Verification Declined' : 'Verification Under Process'}
-            </Text>
-          </View>
-
-          <Text style={styles.title}>
-            {isRejected
-              ? 'Verification Update'
-              : isDoctor
-                ? 'Doctor Account Pending'
-                : 'Partner Account Pending'}
-          </Text>
-
-          <Text style={styles.subtitle}>
-            {isRejected
-              ? 'Our compliance team could not verify the submitted credentials. Please contact our support team.'
-              : 'Your credentials have been received. We are completing manual background verification before granting dashboard access.'}
-          </Text>
-
-          {user?.username ? (
-            <View style={styles.userSnippet}>
-              <Ionicons name="person-circle-outline" size={16} color="#64748B" />
-              <Text style={styles.userSnippetText}>
-                {isDoctor ? `Dr. ${user.username}` : user.username} • {user.phone}
-              </Text>
-            </View>
-          ) : null}
-        </View>
-
-        {/* Dynamic Feedback Banner if any */}
-        {feedbackMessage && (
-          <View
-            style={[
-              styles.feedbackBanner,
-              feedbackType === 'success' && styles.feedbackSuccess,
-              feedbackType === 'warning' && styles.feedbackWarning,
-            ]}
-          >
-            <Ionicons
-              name={
-                feedbackType === 'success'
-                  ? 'checkmark-circle'
-                  : feedbackType === 'warning'
-                    ? 'alert-circle'
-                    : 'information-circle'
-              }
-              size={18}
-              color={
-                feedbackType === 'success'
-                  ? '#059669'
-                  : feedbackType === 'warning'
-                    ? '#DC2626'
-                    : '#0284C7'
-              }
-            />
-            <Text
-              style={[
-                styles.feedbackText,
-                feedbackType === 'success' && styles.feedbackSuccessText,
-                feedbackType === 'warning' && styles.feedbackWarningText,
-              ]}
-            >
-              {feedbackMessage}
-            </Text>
-          </View>
-        )}
-
-        {/* 3-Step Simple Progress Timeline */}
-        <View style={styles.timelineCard}>
-          <Text style={styles.sectionHeader}>Verification Status</Text>
-
-          {/* Step 1 */}
-          <View style={styles.timelineRow}>
-            <View style={styles.timelineIconCol}>
-              <View style={[styles.stepCircle, styles.stepCompleted]}>
-                <Ionicons name="checkmark" size={14} color="#FFFFFF" />
-              </View>
-              <View style={[styles.stepLine, styles.stepLineActive]} />
-            </View>
-            <View style={styles.timelineBody}>
-              <Text style={styles.stepTitle}>Profile & Details Submitted</Text>
-              <Text style={styles.stepSub}>Basic info and documents uploaded</Text>
-            </View>
-          </View>
-
-          {/* Step 2 */}
-          <View style={styles.timelineRow}>
-            <View style={styles.timelineIconCol}>
-              <View
-                style={[
-                  styles.stepCircle,
-                  isRejected ? styles.stepDeclined : styles.stepInProgress,
-                  { borderColor: isRejected ? '#DC2626' : roleTheme.accent },
-                ]}
-              >
-                {isChecking ? (
-                  <ActivityIndicator size="small" color={roleTheme.accent} />
-                ) : (
-                  <Ionicons
-                    name={isRejected ? 'close' : 'sync-outline'}
-                    size={14}
-                    color={isRejected ? '#FFFFFF' : isDoctor ? doctorTheme.primary : deliveryTheme.accent}
-                  />
-                )}
-              </View>
-              <View style={styles.stepLine} />
-            </View>
-            <View style={styles.timelineBody}>
+              <Ionicons
+                name={isRejected ? 'close-circle' : 'time'}
+                size={13}
+                color={isRejected ? '#DC2626' : '#B45309'}
+              />
               <Text
                 style={[
-                  styles.stepTitle,
-                  { color: isRejected ? '#DC2626' : theme.colors.textPrimary },
+                  styles.statusBadgeText,
+                  { color: isRejected ? '#DC2626' : '#B45309' },
                 ]}
               >
-                {isRejected ? 'Review Not Approved' : 'Compliance & Manual Check'}
+                {isRejected ? 'Verification Declined' : 'Verification Under Process'}
               </Text>
-              <Text style={styles.stepSub}>{roleTheme.docLabel}</Text>
             </View>
+
+            <Text style={styles.userTitle}>
+              {isDoctor
+                ? `Dr. ${user?.username || 'Doctor'}`
+                : user?.username || 'Delivery Partner'}
+            </Text>
+
+            <Text style={styles.subtitle}>
+              {isRejected
+                ? 'Your registration could not be verified. Please contact our support desk below.'
+                : 'Thank you for registering with Sneheal! Our team is reviewing your profile. You will get instant access to your flow as soon as you are verified.'}
+            </Text>
+
+            {/* Check Status Button */}
+            <Pressable
+              onPress={() => handleCheckStatus(false)}
+              disabled={isChecking}
+              style={({ pressed }) => [
+                styles.checkBtn,
+                { backgroundColor: roleTheme.primary },
+                pressed && styles.pressed,
+                isChecking && styles.disabledBtn,
+              ]}
+            >
+              {isChecking ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <>
+                  <Ionicons name="refresh" size={17} color="#FFFFFF" style={{ marginRight: 6 }} />
+                  <Text style={styles.checkBtnText}>Check Verification Status</Text>
+                </>
+              )}
+            </Pressable>
+
+            {feedbackMessage && (
+              <View
+                style={[
+                  styles.feedbackBox,
+                  feedbackType === 'success' && styles.feedbackSuccess,
+                  feedbackType === 'warning' && styles.feedbackWarning,
+                ]}
+              >
+                <Ionicons
+                  name={
+                    feedbackType === 'success'
+                      ? 'checkmark-circle'
+                      : feedbackType === 'warning'
+                        ? 'alert-circle'
+                        : 'information-circle'
+                  }
+                  size={16}
+                  color={
+                    feedbackType === 'success'
+                      ? '#059669'
+                      : feedbackType === 'warning'
+                        ? '#DC2626'
+                        : '#0284C7'
+                  }
+                />
+                <Text
+                  style={[
+                    styles.feedbackText,
+                    feedbackType === 'success' && styles.feedbackSuccessText,
+                    feedbackType === 'warning' && styles.feedbackWarningText,
+                  ]}
+                >
+                  {feedbackMessage}
+                </Text>
+              </View>
+            )}
           </View>
 
-          {/* Step 3 */}
-          <View style={styles.timelineRow}>
-            <View style={styles.timelineIconCol}>
-              <View style={[styles.stepCircle, styles.stepPending]}>
-                <Ionicons name="lock-closed" size={12} color="#94A3B8" />
+          {/* Simple Official Sneheal Support Card */}
+          <View style={styles.supportCard}>
+            <View style={styles.supportHeader}>
+              <View style={styles.supportIconWrap}>
+                <Ionicons name="headset" size={20} color={roleTheme.primary} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.supportTitle}>Need Immediate Verification?</Text>
+                <Text style={styles.supportSubtitle}>
+                  Contact Sneheal Support directly for express review
+                </Text>
               </View>
             </View>
-            <View style={styles.timelineBody}>
-              <Text style={[styles.stepTitle, { color: '#94A3B8' }]}>
-                {isDoctor ? 'Doctor Dashboard Unlocked' : 'Delivery Orders Unlocked'}
-              </Text>
-              <Text style={styles.stepSub}>Full system access granted upon approval</Text>
+
+            <View style={styles.supportContactRow}>
+              <View style={styles.contactItem}>
+                <Ionicons name="call-outline" size={15} color="#475569" />
+                <Text style={styles.contactText}>{SUPPORT_CONTACT.phone}</Text>
+              </View>
+              <View style={styles.contactItem}>
+                <Ionicons name="mail-outline" size={15} color="#475569" />
+                <Text style={styles.contactText}>{SUPPORT_CONTACT.email}</Text>
+              </View>
+            </View>
+
+            <View style={styles.supportBtnRow}>
+              <Pressable
+                onPress={handleCallSupport}
+                style={({ pressed }) => [styles.actionCallBtn, pressed && styles.pressed]}
+              >
+                <Ionicons name="call" size={15} color="#0F766E" />
+                <Text style={styles.actionCallText}>Call Helpline</Text>
+              </Pressable>
+
+              <Pressable
+                onPress={handleWhatsAppSupport}
+                style={({ pressed }) => [styles.actionWhatsAppBtn, pressed && styles.pressed]}
+              >
+                <Ionicons name="logo-whatsapp" size={16} color="#FFFFFF" />
+                <Text style={styles.actionWhatsAppText}>WhatsApp</Text>
+              </Pressable>
             </View>
           </View>
-        </View>
-
-        {/* Main Action Buttons */}
-        <View style={styles.actionsContainer}>
-          <Pressable
-            onPress={() => handleCheckStatus(false)}
-            disabled={isChecking}
-            style={({ pressed }) => [
-              styles.primaryBtn,
-              { backgroundColor: roleTheme.primary },
-              pressed && styles.pressed,
-              isChecking && styles.disabledBtn,
-            ]}
-          >
-            {isChecking ? (
-              <ActivityIndicator size="small" color="#FFFFFF" />
-            ) : (
-              <>
-                <Ionicons name="refresh" size={18} color="#FFFFFF" style={styles.btnIcon} />
-                <Text style={styles.primaryBtnText}>Check Status</Text>
-              </>
-            )}
-          </Pressable>
-
-          <Pressable
-            onPress={handleContactSupport}
-            style={({ pressed }) => [styles.secondaryBtn, pressed && styles.pressed]}
-          >
-            <Ionicons name="chatbubbles-outline" size={17} color="#475569" style={styles.btnIcon} />
-            <Text style={styles.secondaryBtnText}>Need Help? Contact Support</Text>
-          </Pressable>
-        </View>
-      </ScrollView>
+        </ScrollView>
+      </View>
     </View>
   );
 };
@@ -416,59 +373,62 @@ const VerificationPendingScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
   },
   header: {
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.md,
-    backgroundColor: '#0F172A',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(255,255,255,0.1)',
   },
   headerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  rolePill: {
+  brandPill: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderRadius: borderRadius.full,
   },
-  rolePillText: {
+  brandPillText: {
     ...typography.caption,
-    color: '#F8FAFC',
-    fontWeight: '600',
+    color: '#FFFFFF',
+    fontWeight: '700',
     fontSize: 12,
   },
   logoutBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: 4,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: borderRadius.full,
   },
   logoutBtnText: {
     ...typography.caption,
-    color: '#FCA5A5',
+    color: '#FFFFFF',
     fontWeight: '600',
     fontSize: 12,
   },
   pressed: {
-    opacity: 0.75,
+    opacity: 0.78,
     transform: [{ scale: 0.98 }],
+  },
+  bodyWrapper: {
+    flex: 1,
+    backgroundColor: '#F8FAFC',
+    borderTopLeftRadius: borderRadius.xxl,
+    borderTopRightRadius: borderRadius.xxl,
+    overflow: 'hidden',
   },
   scrollContent: {
     padding: spacing.lg,
     gap: spacing.lg,
   },
-  heroCard: {
+  card: {
     backgroundColor: '#FFFFFF',
     borderRadius: borderRadius.xl,
     padding: spacing.xl,
@@ -477,28 +437,20 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E2E8F0',
   },
-  iconGlowRing: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
+  iconCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: spacing.md,
-  },
-  iconCore: {
-    width: 66,
-    height: 66,
-    borderRadius: 33,
-    justifyContent: 'center',
-    alignItems: 'center',
-    ...shadows.md,
   },
   statusBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
     borderRadius: borderRadius.full,
     marginBottom: spacing.md,
   },
@@ -506,9 +458,9 @@ const styles = StyleSheet.create({
     ...typography.caption,
     fontWeight: '700',
     fontSize: 11,
-    letterSpacing: 0.3,
+    letterSpacing: 0.2,
   },
-  title: {
+  userTitle: {
     ...typography.h3,
     color: '#0F172A',
     fontWeight: '700',
@@ -520,32 +472,37 @@ const styles = StyleSheet.create({
     color: '#64748B',
     textAlign: 'center',
     lineHeight: 20,
-    paddingHorizontal: spacing.sm,
+    paddingHorizontal: spacing.xs,
+    marginBottom: spacing.lg,
   },
-  userSnippet: {
+  checkBtn: {
+    width: '100%',
     flexDirection: 'row',
+    justifyContent: 'center',
     alignItems: 'center',
-    gap: 6,
+    paddingVertical: 14,
+    borderRadius: borderRadius.lg,
+    ...shadows.sm,
+  },
+  checkBtnText: {
+    ...typography.button,
+    color: '#FFFFFF',
+    fontWeight: '700',
+  },
+  disabledBtn: {
+    opacity: 0.7,
+  },
+  feedbackBox: {
+    width: '100%',
     marginTop: spacing.md,
-    backgroundColor: '#F1F5F9',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: borderRadius.full,
-  },
-  userSnippetText: {
-    ...typography.caption,
-    color: '#475569',
-    fontWeight: '500',
-  },
-  feedbackBanner: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: '#E0F2FE',
+    backgroundColor: '#F0F9FF',
     borderWidth: 1,
     borderColor: '#BAE6FD',
     borderRadius: borderRadius.md,
-    padding: spacing.md,
+    padding: spacing.sm + 2,
   },
   feedbackSuccess: {
     backgroundColor: '#ECFDF5',
@@ -556,10 +513,10 @@ const styles = StyleSheet.create({
     borderColor: '#FECACA',
   },
   feedbackText: {
-    ...typography.bodySmall,
+    ...typography.caption,
     color: '#0369A1',
     flex: 1,
-    fontSize: 13,
+    fontWeight: '500',
   },
   feedbackSuccessText: {
     color: '#047857',
@@ -567,7 +524,7 @@ const styles = StyleSheet.create({
   feedbackWarningText: {
     color: '#B91C1C',
   },
-  timelineCard: {
+  supportCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: borderRadius.xl,
     padding: spacing.lg,
@@ -575,104 +532,80 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E2E8F0',
   },
-  sectionHeader: {
-    ...typography.subtitle,
-    color: '#0F172A',
-    fontWeight: '700',
+  supportHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
     marginBottom: spacing.md,
   },
-  timelineRow: {
-    flexDirection: 'row',
-  },
-  timelineIconCol: {
-    alignItems: 'center',
-    width: 32,
-    marginRight: spacing.sm,
-  },
-  stepCircle: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+  supportIconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#F1F5F9',
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1.5,
   },
-  stepCompleted: {
-    backgroundColor: '#10B981',
-    borderColor: '#10B981',
-  },
-  stepInProgress: {
-    backgroundColor: '#FFFFFF',
-  },
-  stepDeclined: {
-    backgroundColor: '#DC2626',
-    borderColor: '#DC2626',
-  },
-  stepPending: {
-    backgroundColor: '#F1F5F9',
-    borderColor: '#CBD5E1',
-  },
-  stepLine: {
-    width: 2,
-    flex: 1,
-    minHeight: 28,
-    backgroundColor: '#E2E8F0',
-    marginVertical: 3,
-  },
-  stepLineActive: {
-    backgroundColor: '#10B981',
-  },
-  timelineBody: {
-    flex: 1,
-    paddingBottom: spacing.md,
-  },
-  stepTitle: {
+  supportTitle: {
     ...typography.bodySmall,
     color: '#0F172A',
-    fontWeight: '600',
-  },
-  stepSub: {
-    ...typography.caption,
-    color: '#64748B',
-    marginTop: 2,
-  },
-  actionsContainer: {
-    gap: spacing.sm,
-    marginTop: spacing.xs,
-  },
-  primaryBtn: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 14,
-    borderRadius: borderRadius.lg,
-    ...shadows.sm,
-  },
-  primaryBtnText: {
-    ...typography.button,
-    color: '#FFFFFF',
     fontWeight: '700',
   },
-  btnIcon: {
-    marginRight: 6,
+  supportSubtitle: {
+    ...typography.caption,
+    color: '#64748B',
+    marginTop: 1,
   },
-  disabledBtn: {
-    opacity: 0.7,
+  supportContactRow: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    gap: spacing.xs,
+    marginBottom: spacing.md,
   },
-  secondaryBtn: {
+  contactItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  contactText: {
+    ...typography.caption,
+    color: '#334155',
+    fontWeight: '600',
+  },
+  supportBtnRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  actionCallBtn: {
+    flex: 1,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 13,
-    borderRadius: borderRadius.lg,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
+    gap: 6,
+    paddingVertical: 11,
+    borderRadius: borderRadius.md,
+    backgroundColor: '#CCFBF1',
   },
-  secondaryBtnText: {
-    ...typography.bodySmall,
-    color: '#475569',
-    fontWeight: '600',
+  actionCallText: {
+    ...typography.caption,
+    color: '#0F766E',
+    fontWeight: '700',
+  },
+  actionWhatsAppBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 11,
+    borderRadius: borderRadius.md,
+    backgroundColor: '#25D366',
+  },
+  actionWhatsAppText: {
+    ...typography.caption,
+    color: '#FFFFFF',
+    fontWeight: '700',
   },
 });
 
