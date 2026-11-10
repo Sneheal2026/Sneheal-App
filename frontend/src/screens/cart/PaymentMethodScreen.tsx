@@ -18,6 +18,8 @@ import { useCart } from '@/context/CartContext';
 import { useSavedAddresses } from '@/hooks/useSavedAddresses';
 import { emptyCartBill, formatInr } from '@/utils/cartBilling';
 import { createCheckoutOrder, seedOrderInCache } from '@/services/orderService';
+import { isLocationServiceable } from '@/utils/serviceableArea';
+import { CartLocationWarningModal } from '@/components/cart';
 import { ApiError } from '@/services/apiClient';
 import type { AuthStackParamList } from '@/navigation/types';
 import theme from '@/styles/theme';
@@ -36,6 +38,7 @@ const PaymentMethodScreen = () => {
   const { selectedAddress, addresses, refresh } = useSavedAddresses();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showLocationWarning, setShowLocationWarning] = useState(false);
 
   const bill = quote?.bill ?? emptyCartBill();
 
@@ -74,6 +77,11 @@ const PaymentMethodScreen = () => {
         { text: t('common.cancel'), style: 'cancel' },
         { text: t('cart.addAddress'), onPress: openAddresses },
       ]);
+      return;
+    }
+
+    if (!isLocationServiceable(selectedAddress.coords, selectedAddress.addressLine)) {
+      setShowLocationWarning(true);
       return;
     }
 
@@ -223,6 +231,15 @@ const PaymentMethodScreen = () => {
           </Pressable>
         </View>
       </View>
+      <CartLocationWarningModal
+        visible={showLocationWarning}
+        onClose={() => setShowLocationWarning(false)}
+        onChangeAddress={() => {
+          setShowLocationWarning(false);
+          openAddresses();
+        }}
+        selectedAddressText={selectedAddress?.addressLine}
+      />
     </SafeAreaView>
   );
 };

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -9,11 +9,12 @@ import {
   ScrollView,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '@/context/AuthContext';
+import { useInAppAnnouncements } from '@/context/InAppAnnouncementsContext';
 import DevResetStorageButton from '@/components/common/DevResetStorageButton';
 import { doctorTheme } from '@/components/doctor/doctorTheme';
 import PatientSearchBar from '@/components/doctor/PatientSearchBar';
@@ -32,6 +33,13 @@ const DoctorHomeScreen = () => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NativeStackNavigationProp<AuthStackParamList>>();
   const { user } = useAuth();
+  const { unreadCount: notificationUnreadCount, refreshAnnouncements } = useInAppAnnouncements();
+
+  useFocusEffect(
+    useCallback(() => {
+      refreshAnnouncements();
+    }, [refreshAnnouncements]),
+  );
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<DoctorCustomer[]>([]);
   const [message, setMessage] = useState('');
@@ -111,14 +119,26 @@ const DoctorHomeScreen = () => {
             <Ionicons name="medkit-outline" size={14} color={doctorTheme.accent} />
             <Text style={styles.workspaceText}>{t('doctor.homeWorkspace')}</Text>
           </View>
-          <Pressable
-            onPress={() => navigation.navigate('DoctorAccount')}
-            style={({ pressed }) => [styles.accountBtn, pressed && styles.pressed]}
-            accessibilityRole="button"
-            accessibilityLabel={t('doctor.accountA11y')}
-          >
-            <Ionicons name="person-outline" size={20} color={doctorTheme.textOnDark} />
-          </Pressable>
+          <View style={styles.headerActions}>
+            <Pressable
+              onPress={() => navigation.navigate('Notifications')}
+              style={({ pressed }) => [styles.accountBtn, pressed && styles.pressed]}
+              accessibilityRole="button"
+              accessibilityLabel="Notifications"
+            >
+              <Ionicons name="notifications-outline" size={20} color={doctorTheme.textOnDark} />
+              {notificationUnreadCount > 0 && <View style={styles.unreadDot} />}
+            </Pressable>
+
+            <Pressable
+              onPress={() => navigation.navigate('DoctorAccount')}
+              style={({ pressed }) => [styles.accountBtn, pressed && styles.pressed]}
+              accessibilityRole="button"
+              accessibilityLabel={t('doctor.accountA11y')}
+            >
+              <Ionicons name="person-outline" size={20} color={doctorTheme.textOnDark} />
+            </Pressable>
+          </View>
         </View>
 
         <Text style={styles.greeting}>{greeting}</Text>
@@ -281,6 +301,11 @@ const styles = StyleSheet.create({
     letterSpacing: 0.4,
     textTransform: 'uppercase',
   },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
   accountBtn: {
     width: 40,
     height: 40,
@@ -290,6 +315,18 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.12)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.2)',
+    position: 'relative',
+  },
+  unreadDot: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#EF4444',
+    borderWidth: 1.5,
+    borderColor: doctorTheme.primary,
   },
   greeting: {
     ...typography.caption,

@@ -12,6 +12,7 @@ const {
 const promotionRepo = require('../repositories/promotion.repository');
 const { evaluatePromotions } = require('./promotion.service');
 const mailService = require('./mail.service');
+const { isLocationServiceable } = require('../utils/serviceableArea');
 
 const makePublicId = () => {
   const rand = crypto.randomBytes(3).toString('hex').toUpperCase();
@@ -136,6 +137,13 @@ const createCheckoutOrder = async (userId, body) => {
   const address = await addressRepo.findByIdAndUserId(addressId, userId);
   if (!address) {
     throw new AppError(400, 'Delivery address not found');
+  }
+
+  if (!isLocationServiceable(address)) {
+    throw new AppError(
+      400,
+      'Delivery is currently available only in Solapur, Akkalkot, and nearby areas.',
+    );
   }
 
   const pricedLines = await buildPricedLines(requested);

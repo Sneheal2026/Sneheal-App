@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Loader from '@/components/common/Loader';
 import { fetchLiveLocation, reverseGeocodeGoogle } from '@/services/locationService';
+import { isLocationServiceable } from '@/utils/serviceableArea';
 import type { Coordinates } from '@/types/location.types';
 import type { AuthStackParamList } from '@/navigation/types';
 import theme from '@/styles/theme';
@@ -112,8 +113,10 @@ const MapScreen = () => {
     }
   }, []);
 
+  const isServiceable = isLocationServiceable(pinCoords, addressLine);
+
   const handleConfirm = useCallback(() => {
-    if (!pinCoords || isGeocoding) return;
+    if (!pinCoords || isGeocoding || !isLocationServiceable(pinCoords, addressLine)) return;
 
     navigation.navigate('AddressDetails', {
       draft: { coords: pinCoords, addressLine },
@@ -219,6 +222,32 @@ const MapScreen = () => {
       {/* ── Bottom card: address + confirm ── */}
       <SafeAreaView style={styles.bottomSafe} edges={['bottom']} pointerEvents="box-none">
         <View style={styles.bottomCard}>
+          {/* Serviceable status indicator */}
+          {!isGeocoding && (
+            <View
+              style={[
+                styles.zoneBadge,
+                isServiceable ? styles.zoneBadgeServiceable : styles.zoneBadgeOutside,
+              ]}
+            >
+              <Ionicons
+                name={isServiceable ? 'checkmark-circle' : 'alert-circle'}
+                size={14}
+                color={isServiceable ? '#059669' : '#DC2626'}
+              />
+              <Text
+                style={[
+                  styles.zoneBadgeText,
+                  { color: isServiceable ? '#059669' : '#DC2626' },
+                ]}
+              >
+                {isServiceable
+                  ? 'Delivery Available in this Area'
+                  : 'Outside Delivery Zone (Solapur & Akkalkot Only)'}
+              </Text>
+            </View>
+          )}
+
           <View style={styles.addressRow}>
             <Ionicons name="location-sharp" size={moderateScale(18)} color={colors.primary} />
             <View style={styles.addressContent}>
@@ -235,17 +264,28 @@ const MapScreen = () => {
             </View>
           </View>
 
-          <Text style={styles.helpText}>{t('addresses.adjustPinHelp')}</Text>
+          <Text style={styles.helpText}>
+            {isServiceable
+              ? t('addresses.adjustPinHelp')
+              : 'Move pin to Solapur, Akkalkot or nearby serviceable areas to proceed.'}
+          </Text>
 
           <TouchableOpacity
-            style={[styles.confirmButton, (isGeocoding) && styles.confirmDisabled]}
+            style={[
+              styles.confirmButton,
+              (isGeocoding || !isServiceable) && styles.confirmDisabled,
+            ]}
             onPress={handleConfirm}
-            disabled={isGeocoding}
+            disabled={isGeocoding || !isServiceable}
             activeOpacity={0.85}
             accessibilityRole="button"
             accessibilityLabel={t('addresses.confirmA11y')}
           >
-            <Text style={styles.confirmText}>{t('addresses.confirmLocation')}</Text>
+            <Text style={styles.confirmText}>
+              {isServiceable
+                ? t('addresses.confirmLocation')
+                : 'Select within Solapur / Akkalkot'}
+            </Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -315,6 +355,26 @@ const styles = StyleSheet.create({
     paddingTop: spacing.xl,
     paddingBottom: spacing.lg,
     ...shadows.lg,
+  },
+  zoneBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: moderateScale(8),
+    marginBottom: spacing.md,
+  },
+  zoneBadgeServiceable: {
+    backgroundColor: '#ECFDF5',
+  },
+  zoneBadgeOutside: {
+    backgroundColor: '#FEF2F2',
+  },
+  zoneBadgeText: {
+    ...typography.caption,
+    fontWeight: '700',
+    fontSize: 12,
   },
   addressRow: {
     flexDirection: 'row',

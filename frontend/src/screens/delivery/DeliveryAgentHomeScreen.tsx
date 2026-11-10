@@ -19,6 +19,7 @@ import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import type { AuthStackParamList } from '@/navigation/types';
 import { useAuth } from '@/context/AuthContext';
+import { useInAppAnnouncements } from '@/context/InAppAnnouncementsContext';
 import theme from '@/styles/theme';
 import {
   DeliveryHomeHeader,
@@ -43,6 +44,13 @@ const DeliveryAgentHomeScreen = () => {
   const { t } = useTranslation();
   const navigation = useNavigation<NativeStackNavigationProp<AuthStackParamList>>();
   const { user } = useAuth();
+  const { unreadCount: notificationUnreadCount, refreshAnnouncements } = useInAppAnnouncements();
+
+  useFocusEffect(
+    useCallback(() => {
+      refreshAnnouncements();
+    }, [refreshAnnouncements]),
+  );
   const [isOnline, setIsOnline] = useState(true);
   const [latestOrders, setLatestOrders] = useState<DeliveryQueueOrder[]>([]);
   const [totalCount, setTotalCount] = useState(0);
@@ -141,6 +149,8 @@ const DeliveryAgentHomeScreen = () => {
         agentName={user?.username?.trim() || undefined}
         isOnline={isOnline}
         onProfilePress={() => navigation.navigate('DeliveryAgentProfile')}
+        onNotificationsPress={() => navigation.navigate('Notifications')}
+        hasUnreadNotifications={notificationUnreadCount > 0}
       />
 
       <OnlineStatusCard isOnline={isOnline} onToggle={setIsOnline} />

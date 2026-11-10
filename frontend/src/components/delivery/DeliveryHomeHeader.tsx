@@ -13,6 +13,8 @@ interface DeliveryHomeHeaderProps {
   agentName?: string;
   isOnline: boolean;
   onProfilePress: () => void;
+  onNotificationsPress?: () => void;
+  hasUnreadNotifications?: boolean;
 }
 
 const DeliveryHomeHeader: React.FC<DeliveryHomeHeaderProps> = ({
@@ -20,6 +22,8 @@ const DeliveryHomeHeader: React.FC<DeliveryHomeHeaderProps> = ({
   agentName,
   isOnline,
   onProfilePress,
+  onNotificationsPress,
+  hasUnreadNotifications = false,
 }) => {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
@@ -44,14 +48,28 @@ const DeliveryHomeHeader: React.FC<DeliveryHomeHeaderProps> = ({
           </View>
         </View>
 
-        <Pressable
-          onPress={onProfilePress}
-          style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}
-          accessibilityRole="button"
-          accessibilityLabel={t('delivery.profileA11y')}
-        >
-          <Ionicons name="person-outline" size={22} color={deliveryTheme.textOnDark} />
-        </Pressable>
+        <View style={styles.headerActions}>
+          {onNotificationsPress && (
+            <Pressable
+              onPress={onNotificationsPress}
+              style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}
+              accessibilityRole="button"
+              accessibilityLabel="Notifications"
+            >
+              <Ionicons name="notifications-outline" size={22} color={deliveryTheme.textOnDark} />
+              {hasUnreadNotifications && <View style={styles.unreadDot} />}
+            </Pressable>
+          )}
+
+          <Pressable
+            onPress={onProfilePress}
+            style={({ pressed }) => [styles.iconBtn, pressed && styles.pressed]}
+            accessibilityRole="button"
+            accessibilityLabel={t('delivery.profileA11y')}
+          >
+            <Ionicons name="person-outline" size={22} color={deliveryTheme.textOnDark} />
+          </Pressable>
+        </View>
       </View>
 
       <View style={styles.statusPill}>
@@ -104,6 +122,11 @@ const styles = StyleSheet.create({
     color: deliveryTheme.textOnDark,
     fontWeight: '700',
   },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
   iconBtn: {
     width: 44,
     height: 44,
@@ -111,6 +134,18 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.08)',
     alignItems: 'center',
     justifyContent: 'center',
+    position: 'relative',
+  },
+  unreadDot: {
+    position: 'absolute',
+    top: 9,
+    right: 9,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#EF4444',
+    borderWidth: 1.5,
+    borderColor: deliveryTheme.primary,
   },
   statusPill: {
     flexDirection: 'row',

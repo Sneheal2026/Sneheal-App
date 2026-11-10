@@ -16,12 +16,20 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ScreenHeader from '@/components/common/ScreenHeader';
 import HeaderHomeButton from '@/components/common/HeaderHomeButton';
-import { CartBilling, CartItemRow, CartOffersSection, CouponAutoApplyToast, type BillLine } from '@/components/cart';
+import {
+  CartBilling,
+  CartItemRow,
+  CartOffersSection,
+  CouponAutoApplyToast,
+  CartLocationWarningModal,
+  type BillLine,
+} from '@/components/cart';
 import { useCart } from '@/context/CartContext';
 import { useSavedAddresses } from '@/hooks/useSavedAddresses';
 import { emptyCartBill, formatInr } from '@/utils/cartBilling';
 import { resolveCatalogImage } from '@/utils/productImage';
 import { getTabBarHeight } from '@/navigation/tabBarConfig';
+import { isLocationServiceable } from '@/utils/serviceableArea';
 import type { AuthStackParamList, TabScreenProps } from '@/navigation/types';
 import theme from '@/styles/theme';
 
@@ -55,6 +63,7 @@ const CartScreen = ({ navigation: tabNavigation }: TabScreenProps<'Cart'>) => {
   } = useCart();
   const { selectedAddress, addresses, refresh } = useSavedAddresses();
   const [addressMissing, setAddressMissing] = useState(false);
+  const [showLocationWarning, setShowLocationWarning] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -115,6 +124,11 @@ const CartScreen = ({ navigation: tabNavigation }: TabScreenProps<'Cart'>) => {
       : selectedAddress.type.charAt(0).toUpperCase() + selectedAddress.type.slice(1)
     : null;
 
+  const isAddressServiceable = useMemo(() => {
+    if (!selectedAddress) return true;
+    return isLocationServiceable(selectedAddress.coords, selectedAddress.addressLine);
+  }, [selectedAddress]);
+
   useEffect(() => {
     if (selectedAddress) setAddressMissing(false);
   }, [selectedAddress]);
@@ -148,6 +162,11 @@ const CartScreen = ({ navigation: tabNavigation }: TabScreenProps<'Cart'>) => {
         { text: t('common.cancel'), style: 'cancel' },
         { text: t('cart.addAddress'), onPress: openAddresses },
       ]);
+      return;
+    }
+
+    if (!isLocationServiceable(selectedAddress.coords, selectedAddress.addressLine)) {
+      setShowLocationWarning(true);
       return;
     }
 
@@ -200,22 +219,54 @@ const CartScreen = ({ navigation: tabNavigation }: TabScreenProps<'Cart'>) => {
             style={({ pressed }) => [
               styles.addressCard,
               addressMissing && styles.addressCardWarn,
+              !isAddressServiceable && styles.addressCardOutZone,
               pressed && styles.pressed,
             ]}
           >
-            <View style={[styles.addressIcon, addressMissing && styles.addressIconWarn]}>
+            <View
+              style={[
+                styles.addressIcon,
+                addressMissing && styles.addressIconWarn,
+                !isAddressServiceable && styles.addressIconOutZone,
+              ]}
+            >
               <Ionicons
-                name={addressMissing ? 'alert-circle' : 'location'}
+                name={
+                  addressMissing
+                    ? 'alert-circle'
+                    : !isAddressServiceable
+                    ? 'warning'
+                    : 'location'
+                }
                 size={16}
-                color={addressMissing ? colors.error : CART_GREEN}
+                color={
+                  addressMissing
+                    ? colors.error
+                    : !isAddressServiceable
+                    ? '#D97706'
+                    : CART_GREEN
+                }
               />
             </View>
             <View style={styles.addressText}>
-              <Text style={[styles.addressKicker, addressMissing && styles.addressKickerWarn]}>
-                {addressTag
-                  ? `${t('cart.deliverTo')} ${addressTag}`
-                  : t('cart.addAddress')}
-              </Text>
+              <View style={styles.addressKickerRow}>
+                <Text
+                  style={[
+                    styles.addressKicker,
+                    addressMissing && styles.addressKickerWarn,
+                    !isAddressServiceable && styles.addressKickerOutZone,
+                  ]}
+                >
+                  {addressTag
+                    ? `${t('cart.deliverTo')} ${addressTag}`
+                    : t('cart.addAddress')}
+                </Text>
+                {!isAddressServiceable && selectedAddress ? (
+                  <View style={styles.outZonePill}>
+                    <Text style={styles.outZonePillText}>Outside Zone</Text>
+                  </View>
+                ) : null}
+              </View>
               <Text style={styles.addressLine} numberOfLines={1}>
                 {addressLabel ?? t('cart.addAddress')}
               </Text>
@@ -223,12 +274,40 @@ const CartScreen = ({ navigation: tabNavigation }: TabScreenProps<'Cart'>) => {
             <Ionicons
               name="chevron-forward"
               size={16}
-              color={addressMissing ? colors.error : colors.textMuted}
+              color={
+                addressMissing
+                  ? colors.error
+                  : !isAddressServiceable
+                  ? '#D97706'
+                  : colors.textMuted
+              }
             />
           </Pressable>
 
           {addressMissing ? (
             <Text style={styles.addressWarnText}>{t('cart.addressNeededHint')}</Text>
+          ) : null}
+
+          {!isAddressServiceable && selectedAddress ? (
+            <Pressable
+              onPress={() => setShowLocationWarning(true)}
+              style={({ pressed }) => [
+                styles.inlineZoneWarning,
+                pressed && styles.pressed,
+              ]}
+              accessibilityRole="button"
+              accessibilityLabel="Delivery outside serviceable zone. Tap for details."
+            >
+              <Ionicons name="alert-circle" size={18} color="#D97706" />
+              <View style={styles.inlineZoneWarningContent}>
+                <Text style={styles.inlineZoneWarningTitle}>
+                  Delivery unavailable at this location
+                </Text>
+                <Text style={styles.inlineZoneWarningAction}>
+                  Sneheal delivers in Solapur & Akkalkot only. Tap to change →
+                </Text>
+              </View>
+            </Pressable>
           ) : null}
 
           <Text style={styles.sectionTitle}>{t('cart.itemsInCart')}</Text>
@@ -309,6 +388,16 @@ const CartScreen = ({ navigation: tabNavigation }: TabScreenProps<'Cart'>) => {
           </View>
         </ScrollView>
       )}
+
+      <CartLocationWarningModal
+        visible={showLocationWarning}
+        onClose={() => setShowLocationWarning(false)}
+        onChangeAddress={() => {
+          setShowLocationWarning(false);
+          openAddresses();
+        }}
+        selectedAddressText={selectedAddress?.addressLine}
+      />
     </View>
   );
 };
@@ -380,6 +469,10 @@ const styles = StyleSheet.create({
     borderColor: colors.error,
     backgroundColor: colors.errorLight,
   },
+  addressCardOutZone: {
+    borderColor: '#FDE68A',
+    backgroundColor: '#FFFBEB',
+  },
   pressed: {
     opacity: 0.85,
   },
@@ -394,9 +487,17 @@ const styles = StyleSheet.create({
   addressIconWarn: {
     backgroundColor: colors.errorLight,
   },
+  addressIconOutZone: {
+    backgroundColor: '#FEF3C7',
+  },
   addressText: {
     flex: 1,
     minWidth: 0,
+  },
+  addressKickerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
   },
   addressKicker: {
     ...typography.caption,
@@ -406,6 +507,23 @@ const styles = StyleSheet.create({
   },
   addressKickerWarn: {
     color: colors.error,
+  },
+  addressKickerOutZone: {
+    color: '#D97706',
+  },
+  outZonePill: {
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+  },
+  outZonePillText: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: '#B45309',
+    textTransform: 'uppercase',
   },
   addressLine: {
     ...typography.bodySmall,
@@ -418,6 +536,33 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginTop: -spacing.xs,
     paddingHorizontal: spacing.xs,
+  },
+  inlineZoneWarning: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    backgroundColor: '#FFFBEB',
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+    borderRadius: borderRadius.md,
+    padding: spacing.sm,
+    paddingHorizontal: spacing.md,
+    marginTop: -spacing.xs,
+  },
+  inlineZoneWarningContent: {
+    flex: 1,
+  },
+  inlineZoneWarningTitle: {
+    ...typography.caption,
+    fontWeight: '700',
+    color: '#92400E',
+  },
+  inlineZoneWarningAction: {
+    ...typography.caption,
+    fontSize: 11,
+    color: '#B45309',
+    fontWeight: '600',
+    marginTop: 2,
   },
   sectionTitle: {
     ...typography.bodySmall,

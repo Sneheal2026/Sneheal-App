@@ -34,6 +34,8 @@ import FloatingCartBar, { FLOATING_CART_BAR_HEIGHT } from '@/components/cart/Flo
 import DevResetStorageButton from '@/components/common/DevResetStorageButton';
 import { useTabBarScrollState } from '@/hooks/useTabBarScrollHandler';
 import { useLiveLocation } from '@/hooks/useLiveLocation';
+import { LocationNotServiceableModal } from '@/components/location';
+import { isLocationServiceable } from '@/utils/serviceableArea';
 import { useSavedAddresses } from '@/hooks/useSavedAddresses';
 import { updateTabBarOnScroll } from '@/utils/tabBarScrollWorklet';
 import { useFeaturedProducts } from '@/hooks/useCatalog';
@@ -203,6 +205,42 @@ const HomeScreen = () => {
     }, [refreshAddresses]),
   );
 
+  const isCurrentLocationServiceable = useMemo(() => {
+    if (selectedAddress) {
+      return isLocationServiceable(selectedAddress.coords, selectedAddress.addressLine);
+    }
+    if (location) {
+      return isLocationServiceable(location.coords, location.addressLine);
+    }
+    return true;
+  }, [selectedAddress, location]);
+
+  const [showLocationModal, setShowLocationModal] = useState(false);
+  const promptedLocationRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    const key = selectedAddress
+      ? `addr_${selectedAddress.id}`
+      : location
+        ? `${location.coords.latitude.toFixed(3)}_${location.coords.longitude.toFixed(3)}`
+        : null;
+
+    if (key && !isCurrentLocationServiceable && promptedLocationRef.current !== key) {
+      promptedLocationRef.current = key;
+      setShowLocationModal(true);
+    }
+  }, [isCurrentLocationServiceable, selectedAddress, location]);
+
+  const handleSelectSolapurAddress = useCallback(() => {
+    setShowLocationModal(false);
+    const parent = navigation.getParent<NativeStackNavigationProp<AuthStackParamList>>();
+    if (addresses.length > 0) {
+      parent?.navigate('SavedAddresses');
+    } else {
+      parent?.navigate('LocationMap', { returnTo: 'Main' });
+    }
+  }, [navigation, addresses.length]);
+
   const addressLabel = useMemo(() => {
     if (selectedAddress) return selectedAddress.addressLine;
     if (locationStatus === 'loading') return 'Fetching your location...';
@@ -215,10 +253,16 @@ const HomeScreen = () => {
       if (selectedAddress.type === 'other') return selectedAddress.customTypeLabel || 'Other';
       return selectedAddress.type.charAt(0).toUpperCase() + selectedAddress.type.slice(1);
     }
+    if (!isCurrentLocationServiceable) return 'Outside Zone';
     return location?.shortLabel;
-  }, [selectedAddress, location?.shortLabel]);
+  }, [selectedAddress, location, isCurrentLocationServiceable]);
 
   const handleLocationPress = useCallback(() => {
+    if (!isCurrentLocationServiceable) {
+      setShowLocationModal(true);
+      return;
+    }
+
     if (locationStatus === 'error' && addresses.length === 0 && !selectedAddress) {
       void refreshLocation();
       return;
@@ -232,7 +276,7 @@ const HomeScreen = () => {
     }
 
     parent?.navigate('LocationMap', { returnTo: 'Main' });
-  }, [navigation, locationStatus, refreshLocation, selectedAddress, addresses.length]);
+  }, [navigation, locationStatus, refreshLocation, selectedAddress, addresses.length, isCurrentLocationServiceable]);
 
   const contentTopInset = Math.max(
     insets.top,
@@ -423,6 +467,12 @@ const HomeScreen = () => {
           totalItems={totalItems}
           previewImages={previewImages}
           onPress={handleOpenCart}
+        />
+        <LocationNotServiceableModal
+          visible={showLocationModal}
+          onClose={() => setShowLocationModal(false)}
+          onSelectSolapurAddress={handleSelectSolapurAddress}
+          currentAddressName={selectedAddress?.addressLine || location?.addressLine}
         />
       </View>
     </SafeAreaView>

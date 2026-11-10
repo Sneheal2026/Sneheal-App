@@ -1,6 +1,7 @@
 const addressRepo = require('../repositories/address.repository');
 const AppError = require('../utils/AppError');
 const { PHONE_REGEX } = require('../utils/phone');
+const { isLocationServiceable } = require('../utils/serviceableArea');
 
 const ADDRESS_TYPES = new Set(['home', 'work', 'other']);
 
@@ -58,6 +59,13 @@ const validatePayload = (data) => {
     data.longitude > 180
   ) {
     throw new AppError(400, 'Valid latitude and longitude are required');
+  }
+
+  if (!isLocationServiceable(data)) {
+    throw new AppError(
+      400,
+      'Delivery is currently available only in Solapur, Akkalkot, and nearby areas.',
+    );
   }
 };
 
