@@ -29,20 +29,24 @@ const getProduct = async (id) => {
 
   // 1. If it looks like a DrugSetu product ID (e.g. starts with "prod_")
   if (identifier.startsWith('prod_')) {
-    // Check if already cached in MySQL
+    // Check if already cached in MySQL with a valid non-zero price
     const cached = await productRepo.findByDrugSetuId(identifier);
-    if (cached) {
+    if (cached && Number(cached.price) > 0) {
       return cached;
     }
 
-    // Fetch from DrugSetu API
+    // Fetch fresh data from DrugSetu API (or repair previously cached 0-rupee products)
     if (drugsetuService.isEnabled()) {
       const drugsetData = await drugsetuService.getProductById(identifier);
       if (drugsetData) {
-        // Save into MySQL so it has a stable internal ID and local cache
+        // Save/update MySQL so it has a valid price and local cache
         const saved = await productRepo.upsertDrugSetuProduct(drugsetData);
         return saved || drugsetData;
       }
+    }
+
+    if (cached) {
+      return cached;
     }
 
     throw new AppError(404, 'Product not found');

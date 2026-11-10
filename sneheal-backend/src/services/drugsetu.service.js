@@ -71,28 +71,36 @@ const parseUsage = (usageText) => {
 const transformSearchHit = (item) => {
   if (!item) return null;
   const productId = item.product_id;
+  const packaging = Array.isArray(item.packagings) && item.packagings.length > 0 ? item.packagings[0] : {};
+  const rawMrp = item.mrp != null ? item.mrp : packaging.mrp;
+  const mrp = rawMrp != null && !isNaN(Number(rawMrp)) ? Number(rawMrp) : 0;
+  const unit = item.packaging || packaging.packaging || (item.package ? `${item.package} of ${item.qty || 1}` : '1 Pack');
+  const form = item.product_form || packaging.product_form || (item.product_type === 'drug' ? 'Medicine' : (item.product_type || 'Medicine'));
+  const rawImages = Array.isArray(item.product_images) ? item.product_images.filter(Boolean) : [];
+  const primaryImage = rawImages[0] || null;
+
   return {
     id: productId, // string drugsetu ID for route navigation
     drugsetuId: productId,
     name: item.product_name || 'Medicine',
     brandName: null,
     genericName: item.composition || null,
-    manufacturer: item.marketing_company || 'Pharmaceuticals',
+    manufacturer: item.marketing_company || item.manufacturing_company || 'Pharmaceuticals',
     distributorName: null,
     strength: null,
-    form: item.product_type === 'drug' ? 'Medicine' : (item.product_type || 'Medicine'),
-    imageUrl: null,
-    images: [],
-    price: 0,
-    originalPrice: null,
-    unit: '1 Pack',
+    form,
+    imageUrl: primaryImage,
+    images: rawImages,
+    price: mrp,
+    originalPrice: mrp,
+    unit,
     rating: 4.5,
     reviews: 0,
     uses: [],
-    description: '',
+    description: item.product_information || '',
     highlights: [],
-    categoryId: null,
-    prescriptionRequired: true,
+    categoryId: item.category_id || null,
+    prescriptionRequired: item.product_type === 'drug',
     isFeatured: false,
     isActive: true,
     source: 'drugsetu',
@@ -106,13 +114,19 @@ const transformProductDetails = (raw) => {
   if (!raw) return null;
 
   const packaging = Array.isArray(raw.packagings) && raw.packagings.length > 0 ? raw.packagings[0] : {};
-  const mrp = packaging.mrp != null ? Number(packaging.mrp) : 0;
+  const rawMrp = raw.mrp != null ? raw.mrp : packaging.mrp;
+  const mrp = rawMrp != null && !isNaN(Number(rawMrp)) ? Number(rawMrp) : 0;
+  const unit = raw.packaging || packaging.packaging || (raw.package ? `${raw.package} of ${raw.qty || 1}` : '1 Pack');
+  const form = raw.product_form || packaging.product_form || (raw.product_type === 'drug' ? 'Medicine' : (raw.product_type || 'Medicine'));
   const rawImages = Array.isArray(raw.product_images) ? raw.product_images.filter(Boolean) : [];
   const primaryImage = rawImages[0] || null;
 
   const uses = parseUsage(raw.product_usage);
   if (raw.action_class && !uses.includes(raw.action_class)) {
     uses.push(raw.action_class);
+  }
+  if (raw.benefits && uses.length === 0) {
+    uses.push('Health & Wellness');
   }
 
   const highlights = [
@@ -131,19 +145,19 @@ const transformProductDetails = (raw) => {
     manufacturer: raw.marketing_company || raw.manufacturing_company || 'Pharmaceuticals',
     distributorName: null,
     strength: null,
-    form: packaging.product_form || 'Medicine',
+    form,
     imageUrl: primaryImage,
     images: rawImages,
     price: mrp,
     originalPrice: mrp,
-    unit: packaging.packaging || (packaging.package ? `${packaging.package} of ${packaging.qty || 1}` : '1 Pack'),
+    unit,
     rating: 4.6,
     reviews: 120,
     uses,
-    description: raw.product_information || `${raw.product_name} is used as directed by your physician.`,
+    description: raw.product_information || raw.benefits || `${raw.product_name} is used as directed by your physician.`,
     highlights,
-    categoryId: null,
-    prescriptionRequired: true,
+    categoryId: raw.category_id || null,
+    prescriptionRequired: raw.product_type === 'drug',
     isFeatured: false,
     isActive: true,
     source: 'drugsetu',
