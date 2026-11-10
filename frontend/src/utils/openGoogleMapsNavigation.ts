@@ -67,22 +67,26 @@ export const openGoogleMapsNavigation = async (options: {
   address?: string;
 }): Promise<boolean> => {
   const dest = resolveDestination(options.coords, options.address);
-  if (!dest) return false;
+  if (!dest || !dest.httpsParam) return false;
 
   const universalUrl = buildUniversalNavigateUrl(dest.httpsParam);
   const query = dest.coordQuery;
 
   if (Platform.OS === 'android') {
-    const navUrl = buildAndroidTurnByTurnUrl(query);
-    if (await tryOpen(navUrl)) return true;
+    if (query) {
+      const navUrl = buildAndroidTurnByTurnUrl(query);
+      if (await tryOpen(navUrl)) return true;
+    }
     return tryOpen(universalUrl);
   }
 
   if (Platform.OS === 'ios') {
     if (await tryOpen(universalUrl)) return true;
-    const nativeUrl = buildIosNativeDirectionsUrl(query);
-    if (await Linking.canOpenURL(nativeUrl)) {
-      return tryOpen(nativeUrl);
+    if (query) {
+      const nativeUrl = buildIosNativeDirectionsUrl(query);
+      if (await Linking.canOpenURL(nativeUrl)) {
+        return tryOpen(nativeUrl);
+      }
     }
     return tryOpen(universalUrl);
   }

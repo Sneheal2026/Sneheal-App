@@ -3,6 +3,14 @@
     "name": "SnehealApp",
     "slug": "sneheal-app",
     "version": "0.0.3",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/0ecd72c6-b621-4e90-bbae-2cb584ae8f61",
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0
+    },
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "userInterfaceStyle": "light",
@@ -106,6 +114,7 @@
         }
       ],
       "@react-native-community/datetimepicker",
+      "expo-asset",
       [
         "expo-build-properties",
         {

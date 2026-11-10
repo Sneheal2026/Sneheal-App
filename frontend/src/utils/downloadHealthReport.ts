@@ -123,7 +123,7 @@ export async function downloadHealthReport(
       dialogTitle: 'Save report',
       ...(Platform.OS === 'ios' && isPdf ? { UTI: 'com.adobe.pdf' as const } : {}),
     });
-  } else if (Platform.OS === 'android') {
+  } else {
     Alert.alert(
       'Report saved',
       `Saved in the app as ${result.fileName}. Use a file manager to copy from app storage if needed.`,
