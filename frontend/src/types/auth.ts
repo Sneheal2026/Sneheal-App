@@ -1,5 +1,7 @@
 import type { UserRole } from '@/navigation/types';
 
+export type VerificationStatus = 'pending' | 'approved' | 'rejected';
+
 export type AuthUser = {
   id: number;
   phone: string;
@@ -7,6 +9,7 @@ export type AuthUser = {
   language: string | null;
   role: UserRole | null;
   profileCompleted: boolean;
+  verificationStatus?: VerificationStatus;
   createdAt?: string;
 };
 

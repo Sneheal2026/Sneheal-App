@@ -1,5 +1,7 @@
 import { apiRequest } from './apiClient';
+import { authenticatedApiRequest } from './authTokenManager';
 import type {
+  AuthUser,
   SendOtpResponse,
   VerifyOtpResponse,
   RefreshSessionResponse,
@@ -51,4 +53,10 @@ export const completeRegistration = async (
     body: payload,
     token: accessToken,
   });
+};
+
+export const fetchCurrentUser = async (): Promise<AuthUser> => {
+  devLog('Auth', 'fetchCurrentUser called');
+  const res = await authenticatedApiRequest<{ user: AuthUser }>('/api/auth/me');
+  return res.user;
 };

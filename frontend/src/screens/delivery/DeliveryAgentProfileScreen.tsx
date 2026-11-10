@@ -212,13 +212,45 @@ const DeliveryAgentProfileScreen = () => {
 
         <Text style={styles.sectionLabel}>{t('delivery.profileDocuments')}</Text>
         <View style={styles.card}>
-          <View style={styles.verificationBanner}>
-            <View style={styles.verificationIcon}>
-              <Ionicons name="time-outline" size={18} color="#B45309" />
+          <View
+            style={[
+              styles.verificationBanner,
+              user?.verificationStatus === 'approved' && { backgroundColor: '#ECFDF5' },
+            ]}
+          >
+            <View
+              style={[
+                styles.verificationIcon,
+                user?.verificationStatus === 'approved' && { backgroundColor: '#D1FAE5' },
+              ]}
+            >
+              <Ionicons
+                name={user?.verificationStatus === 'approved' ? 'shield-checkmark' : 'time-outline'}
+                size={18}
+                color={user?.verificationStatus === 'approved' ? '#059669' : '#B45309'}
+              />
             </View>
             <View style={styles.infoCopy}>
-              <Text style={styles.verificationTitle}>{t('delivery.profileVerificationPending')}</Text>
-              <Text style={styles.verificationSub}>{t('delivery.profileVerificationHint')}</Text>
+              <Text
+                style={[
+                  styles.verificationTitle,
+                  user?.verificationStatus === 'approved' && { color: '#065F46' },
+                ]}
+              >
+                {user?.verificationStatus === 'approved'
+                  ? 'KYC Verified Partner'
+                  : t('delivery.profileVerificationPending')}
+              </Text>
+              <Text
+                style={[
+                  styles.verificationSub,
+                  user?.verificationStatus === 'approved' && { color: '#047857' },
+                ]}
+              >
+                {user?.verificationStatus === 'approved'
+                  ? 'Identity and driving documents are verified.'
+                  : t('delivery.profileVerificationHint')}
+              </Text>
             </View>
           </View>
           {documentRows.map((row, index) => (

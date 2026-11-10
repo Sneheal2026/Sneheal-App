@@ -20,10 +20,16 @@ export const resolveAuthRoute = (user: AuthUser | null): ResolvedAuthRoute => {
   }
 
   if (user.role === 'delivery_agent') {
+    if (user.verificationStatus !== 'approved') {
+      return { route: 'VerificationPending' };
+    }
     return { route: 'DeliveryAgentMain' };
   }
 
   if (user.role === 'doctor') {
+    if (user.verificationStatus !== 'approved') {
+      return { route: 'VerificationPending' };
+    }
     return { route: 'DoctorMain' };
   }
 

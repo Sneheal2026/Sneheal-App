@@ -1,7 +1,7 @@
 const express = require('express');
 const orderController = require('../controllers/order.controller');
 const asyncHandler = require('../utils/asyncHandler');
-const { authenticateToken, requireRole } = require('../middleware/validateAuth');
+const { authenticateToken, requireRole, requireVerified } = require('../middleware/validateAuth');
 
 const router = express.Router();
 
@@ -47,6 +47,7 @@ router.get(
   '/delivery/queue',
   authenticateToken,
   requireRole('delivery_agent'),
+  requireVerified,
   asyncHandler(orderController.listDeliveryQueue),
 );
 
@@ -54,6 +55,7 @@ router.get(
   '/delivery/mine/delivered',
   authenticateToken,
   requireRole('delivery_agent'),
+  requireVerified,
   asyncHandler(orderController.listAgentDeliveredOrders),
 );
 
@@ -70,6 +72,7 @@ router.patch(
   '/:id/status',
   authenticateToken,
   requireRole('delivery_agent'),
+  requireVerified,
   asyncHandler(orderController.updateStatus),
 );
 

@@ -19,6 +19,7 @@ import {
 import { buildAuthInitialState } from '@/navigation/buildAuthInitialState';
 import { resolveAuthRoute } from '@/navigation/resolveAuthRoute';
 import { invalidateOrdersCache } from '@/services/orderService';
+import { fetchCurrentUser } from '@/services/authService';
 import { devLog } from '@/utils/devLogger';
 import type { AuthUser, VerifyOtpResponse } from '@/types/auth';
 
@@ -31,6 +32,7 @@ type AuthContextValue = {
   signIn: (data: VerifyOtpResponse) => Promise<void>;
   signOut: () => Promise<void>;
   updateUser: (user: AuthUser) => Promise<void>;
+  refreshCurrentUser: () => Promise<AuthUser | null>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -71,8 +73,29 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         userId: restored.user.id,
         profileCompleted: restored.user.profileCompleted,
         role: restored.user.role,
+        verificationStatus: restored.user.verificationStatus,
       });
-      applySession(restored);
+
+      let activeSession = restored;
+      if (
+        restored.user.profileCompleted &&
+        (restored.user.role === 'doctor' || restored.user.role === 'delivery_agent')
+      ) {
+        try {
+          const freshUser = await fetchCurrentUser();
+          if (freshUser) {
+            activeSession = { ...restored, user: freshUser };
+            await saveAuthSession(restored.accessToken, restored.refreshToken, freshUser);
+            devLog('Auth', 'Refreshed user profile on bootstrap', {
+              verificationStatus: freshUser.verificationStatus,
+            });
+          }
+        } catch (e) {
+          devLog('Auth', 'Could not refresh profile on bootstrap, using cached session', e);
+        }
+      }
+
+      applySession(activeSession);
     } catch (error) {
       devLog('Auth', 'Bootstrap failed', error);
       await clearAuthSession();
@@ -126,6 +149,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     });
   }, [applySession, session]);
 
+  const refreshCurrentUser = useCallback(async (): Promise<AuthUser | null> => {
+    try {
+      const freshUser = await fetchCurrentUser();
+      if (session && freshUser) {
+        const nextSession = { ...session, user: freshUser };
+        await saveAuthSession(nextSession.accessToken, nextSession.refreshToken, freshUser);
+        applySession(nextSession);
+      }
+      return freshUser;
+    } catch (e) {
+      devLog('Auth', 'Failed to refresh current user', e);
+      return null;
+    }
+  }, [applySession, session]);
+
   const value = useMemo<AuthContextValue>(
     () => ({
       isBootstrapping,
@@ -136,8 +174,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       signIn,
       signOut,
       updateUser,
+      refreshCurrentUser,
     }),
-    [isBootstrapping, session, initialNavState, signIn, signOut, updateUser],
+    [
+      isBootstrapping,
+      session,
+      initialNavState,
+      signIn,
+      signOut,
+      updateUser,
+      refreshCurrentUser,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

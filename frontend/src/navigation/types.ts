@@ -27,6 +27,7 @@ export type AuthStackParamList = {
   PhoneNumber: undefined;
   Otp: { phoneNumber: string; devOtp?: string };
   Registration: { phoneNumber: string };
+  VerificationPending: undefined;
   Main: NavigatorScreenParams<TabParamList> | undefined;
   Settings: undefined;
   Notifications: undefined;

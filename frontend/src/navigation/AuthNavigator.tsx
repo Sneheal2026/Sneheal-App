@@ -3,6 +3,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import PhoneNumberScreen from '@/screens/auth/PhoneNumberScreen';
 import OtpScreen from '@/screens/auth/OtpScreen';
 import RegistrationScreen from '@/screens/auth/RegistrationScreen';
+import VerificationPendingScreen from '@/screens/auth/VerificationPendingScreen';
 import DeliveryAgentHomeScreen from '@/screens/delivery/DeliveryAgentHomeScreen';
 import DeliveryAgentProfileScreen from '@/screens/delivery/DeliveryAgentProfileScreen';
 import DeliveryAgentDeliveredScreen from '@/screens/delivery/DeliveryAgentDeliveredScreen';
@@ -56,6 +57,7 @@ const AuthNavigator = () => {
       <Stack.Screen name="PhoneNumber" component={PhoneNumberScreen} />
       <Stack.Screen name="Otp" component={OtpScreen} />
       <Stack.Screen name="Registration" component={RegistrationScreen} />
+      <Stack.Screen name="VerificationPending" component={VerificationPendingScreen} />
       <Stack.Screen name="Main" component={AppNavigator} />
       <Stack.Screen name="Settings" component={SettingsScreen} />
       <Stack.Screen name="Notifications" component={NotificationsScreen} />

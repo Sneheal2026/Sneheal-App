@@ -1,11 +1,11 @@
 const express = require('express');
 const doctorController = require('../controllers/doctor.controller');
 const asyncHandler = require('../utils/asyncHandler');
-const { authenticateToken, requireRole } = require('../middleware/validateAuth');
+const { authenticateToken, requireRole, requireVerified } = require('../middleware/validateAuth');
 
 const router = express.Router();
 
-router.use(authenticateToken, requireRole('doctor'));
+router.use(authenticateToken, requireRole('doctor'), requireVerified);
 
 router.get('/patients', asyncHandler(doctorController.listPatients));
 router.get('/customers', asyncHandler(doctorController.searchCustomers));

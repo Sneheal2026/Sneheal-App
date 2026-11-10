@@ -9,6 +9,7 @@ const signAccessToken = (user) => {
       phone: user.phone,
       profileCompleted: user.profileCompleted,
       role: user.role,
+      verificationStatus: user.verificationStatus,
     },
     process.env.JWT_SECRET,
     { expiresIn: process.env.JWT_ACCESS_EXPIRES || '7d' }

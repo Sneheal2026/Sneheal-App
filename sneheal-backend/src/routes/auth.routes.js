@@ -26,5 +26,6 @@ router.post(
   validateCompleteRegistration,
   asyncHandler(authController.completeRegistration)
 );
+router.get('/me', authenticateToken, asyncHandler(authController.getMe));
 
 module.exports = router;

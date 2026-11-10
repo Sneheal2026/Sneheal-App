@@ -1,7 +1,22 @@
 const db = require('../config/db');
 
+const USER_BASE_SELECT = `
+  SELECT u.id, u.phone, u.username, u.language, u.role, u.profile_completed, u.created_at,
+         COALESCE(dp.verification_status, dap.verification_status) AS verification_status
+  FROM users u
+  LEFT JOIN doctor_profiles dp ON dp.user_id = u.id AND u.role = 'doctor'
+  LEFT JOIN delivery_agent_profiles dap ON dap.user_id = u.id AND u.role = 'delivery_agent'
+`;
+
 const mapUser = (row) => {
   if (!row) return null;
+  let verificationStatus = null;
+  if (row.role === 'customer') {
+    verificationStatus = 'approved';
+  } else if (row.role === 'doctor' || row.role === 'delivery_agent') {
+    verificationStatus = row.verification_status || 'pending';
+  }
+
   return {
     id: row.id,
     phone: row.phone,
@@ -9,13 +24,14 @@ const mapUser = (row) => {
     language: row.language,
     role: row.role,
     profileCompleted: Boolean(row.profile_completed),
+    verificationStatus,
     createdAt: row.created_at,
   };
 };
 
 const findByPhone = async (phone, connection = db) => {
   const [rows] = await connection.execute(
-    'SELECT id, phone, username, language, role, profile_completed, created_at FROM users WHERE phone = ? LIMIT 1',
+    `${USER_BASE_SELECT} WHERE u.phone = ? LIMIT 1`,
     [phone]
   );
   return mapUser(rows[0]);
@@ -23,7 +39,7 @@ const findByPhone = async (phone, connection = db) => {
 
 const findById = async (id, connection = db) => {
   const [rows] = await connection.execute(
-    'SELECT id, phone, username, language, role, profile_completed, created_at FROM users WHERE id = ? LIMIT 1',
+    `${USER_BASE_SELECT} WHERE u.id = ? LIMIT 1`,
     [id]
   );
   return mapUser(rows[0]);
@@ -45,6 +61,24 @@ const completeProfile = async (userId, { username, language, role }, connection 
     [username, language, role, userId]
   );
   return findById(userId, connection);
+};
+
+const isUserApproved = async (userId, role, connection = db) => {
+  if (role === 'doctor') {
+    const [rows] = await connection.execute(
+      'SELECT verification_status FROM doctor_profiles WHERE user_id = ? LIMIT 1',
+      [userId]
+    );
+    return rows.length > 0 && rows[0].verification_status === 'approved';
+  }
+  if (role === 'delivery_agent') {
+    const [rows] = await connection.execute(
+      'SELECT verification_status FROM delivery_agent_profiles WHERE user_id = ? LIMIT 1',
+      [userId]
+    );
+    return rows.length > 0 && rows[0].verification_status === 'approved';
+  }
+  return true;
 };
 
 const maskPhone = (phone) => {
@@ -145,7 +179,7 @@ const listEngagedPatients = async (connection = db) => {
 
 const findByIdForUpdate = async (id, connection) => {
   const [rows] = await connection.execute(
-    'SELECT id, phone, username, language, role, profile_completed, created_at FROM users WHERE id = ? FOR UPDATE',
+    `${USER_BASE_SELECT} WHERE u.id = ? FOR UPDATE`,
     [id]
   );
   return mapUser(rows[0]);
@@ -159,5 +193,6 @@ module.exports = {
   findByIdForUpdate,
   createByPhone,
   completeProfile,
+  isUserApproved,
   mapUser,
 };

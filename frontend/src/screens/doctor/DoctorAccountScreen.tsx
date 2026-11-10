@@ -171,6 +171,9 @@ const DoctorAccountScreen = () => {
             <View style={styles.roleChip}>
               <Ionicons name="medkit-outline" size={14} color={doctorTheme.primary} />
               <Text style={styles.roleChipText}>{t('doctor.accountRole')}</Text>
+              {user?.verificationStatus === 'approved' ? (
+                <Ionicons name="checkmark-circle" size={14} color="#059669" style={{ marginLeft: 3 }} />
+              ) : null}
             </View>
           </View>
         </View>

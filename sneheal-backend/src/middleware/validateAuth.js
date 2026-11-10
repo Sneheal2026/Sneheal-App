@@ -3,6 +3,7 @@ const { validatePhone } = require('../utils/phone');
 const { OTP_LENGTH } = require('../utils/otp');
 const { fail } = require('../utils/response');
 const AppError = require('../utils/AppError');
+const userRepo = require('../repositories/user.repository');
 
 /**
  * Middleware to verify JWT token from Authorization header
@@ -124,9 +125,31 @@ const requireRole = (...roles) => (req, res, next) => {
   next();
 };
 
+const requireVerified = async (req, res, next) => {
+  const role = req.user?.role;
+  if (!role || role === 'customer') {
+    return next();
+  }
+
+  try {
+    const isApproved = await userRepo.isUserApproved(req.user.sub, role);
+    if (!isApproved) {
+      return fail(
+        res,
+        403,
+        'Your account verification is currently under process. Please wait until approved.',
+      );
+    }
+    next();
+  } catch (error) {
+    return fail(res, 500, 'Error verifying account authorization');
+  }
+};
+
 module.exports = {
   authenticateToken,
   requireRole,
+  requireVerified,
   validateSendOtp,
   validateVerifyOtp,
   validateRefreshToken,
