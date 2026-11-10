@@ -55,6 +55,19 @@ const getProduct = async (id) => {
   // 2. Otherwise search MySQL by internal ID
   const product = await productRepo.findById(identifier);
   if (product) {
+    // If it was previously cached from DrugSetu with ₹0 price, auto-repair it
+    if (
+      product.source === 'drugsetu' &&
+      product.drugsetuId &&
+      Number(product.price) <= 0 &&
+      drugsetuService.isEnabled()
+    ) {
+      const drugsetData = await drugsetuService.getProductById(product.drugsetuId);
+      if (drugsetData && Number(drugsetData.price) > 0) {
+        const saved = await productRepo.upsertDrugSetuProduct(drugsetData);
+        return saved || { ...product, ...drugsetData, id: product.id };
+      }
+    }
     return product;
   }
 
@@ -84,9 +97,31 @@ const searchProducts = async (query, queryParams = {}) => {
   if (drugsetuService.isEnabled()) {
     const drugsetuResults = await drugsetuService.searchProducts(term);
     if (drugsetuResults.length > 0) {
+      // Enrich with any products already cached in MySQL (so prices/images display immediately)
+      const drugsetuIds = drugsetuResults.map((r) => r.drugsetuId).filter(Boolean);
+      const cachedProducts = await productRepo.findByDrugSetuIds(drugsetuIds);
+      const cachedMap = new Map(cachedProducts.map((p) => [p.drugsetuId, p]));
+
+      const enrichedResults = drugsetuResults.map((item) => {
+        const cached = cachedMap.get(item.drugsetuId);
+        if (cached && Number(cached.price) > 0) {
+          return {
+            ...item,
+            id: String(cached.id),
+            price: Number(cached.price),
+            originalPrice: Number(cached.originalPrice ?? cached.price),
+            unit: cached.unit || item.unit,
+            form: cached.form || item.form,
+            imageUrl: cached.imageUrl || item.imageUrl,
+            images: cached.images?.length > 0 ? cached.images : item.images,
+          };
+        }
+        return item;
+      });
+
       return {
-        items: drugsetuResults,
-        total: drugsetuResults.length,
+        items: enrichedResults,
+        total: enrichedResults.length,
         limit: queryParams.limit ? Number(queryParams.limit) : 20,
         offset: 0,
         hasMore: false,

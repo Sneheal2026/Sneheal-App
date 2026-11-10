@@ -213,9 +213,7 @@ const searchProducts = async (query) => {
 
     const payload = await response.json();
     const items = Array.isArray(payload) ? payload : Array.isArray(payload?.data) ? payload.data : [];
-    const results = items
-      .map(transformSearchHit)
-      .filter((hit) => Boolean(hit && hit.price > 0));
+    const results = items.map(transformSearchHit).filter(Boolean);
 
     // Cache non-empty search results for 10 minutes to save money & latency
     if (results.length > 0) {

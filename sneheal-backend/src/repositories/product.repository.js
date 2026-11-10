@@ -219,6 +219,20 @@ const findByDrugSetuId = async (drugsetId, connection = db) => {
   return mapProduct(rows[0]);
 };
 
+const findByDrugSetuIds = async (drugsetuIds, connection = db) => {
+  if (!Array.isArray(drugsetuIds) || drugsetuIds.length === 0) return [];
+  const cleanIds = drugsetuIds.map((id) => String(id || '').trim()).filter(Boolean);
+  if (cleanIds.length === 0) return [];
+  const placeholders = cleanIds.map(() => '?').join(',');
+  const [rows] = await connection.execute(
+    `SELECT ${PRODUCT_SELECT}
+     FROM products
+     WHERE drugsetu_id IN (${placeholders})`,
+    cleanIds,
+  );
+  return rows.map(mapProduct);
+};
+
 const upsertDrugSetuProduct = async (productData, connection = db) => {
   const usesJson = JSON.stringify(productData.uses || []);
   const highlightsJson = JSON.stringify(productData.highlights || []);
@@ -280,6 +294,7 @@ module.exports = {
   findById,
   findByIds,
   findByDrugSetuId,
+  findByDrugSetuIds,
   upsertDrugSetuProduct,
   search,
   findSimilar,
