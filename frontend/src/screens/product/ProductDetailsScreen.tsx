@@ -45,7 +45,7 @@ const ProductDetailsScreen = () => {
   const navigation = useNavigation<Nav>();
   const route = useRoute<Rt>();
   const insets = useSafeAreaInsets();
-  const { colors, spacing, borderRadius, shadows, moderateScale } = useTheme();
+  const { colors, spacing, borderRadius, shadows, moderateScale, typography } = useTheme();
   const { productId } = route.params;
 
   const { data: medicine, loading, error, refetch } = useProductDetails(productId);
@@ -75,12 +75,12 @@ const ProductDetailsScreen = () => {
     spacing.lg;
 
   const handleAdd = useCallback(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => { });
     if (medicine) addProduct(medicine);
   }, [medicine, addProduct]);
 
   const handleRemove = useCallback(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => { });
     decrement(productId);
   }, [decrement, productId]);
 
@@ -266,23 +266,33 @@ const ProductDetailsScreen = () => {
 
             {/* Pricing Section */}
             <View style={styles.priceContainer}>
-              <View style={styles.priceRow}>
-                <Text style={[styles.price, { color: colors.textPrimary }]}>
-                  ₹{medicine.price.toFixed(2)}
-                </Text>
-                {medicine.originalPrice && medicine.originalPrice > medicine.price ? (
-                  <Text style={[styles.oldPrice, { color: colors.textMuted }]}>
-                    MRP ₹{medicine.originalPrice.toFixed(2)}
+              {medicine.price > 0 ? (
+                <View style={styles.priceRow}>
+                  <Text style={[styles.price, { color: colors.textPrimary }]}>
+                    ₹{medicine.price.toFixed(2)}
                   </Text>
-                ) : null}
-                {discountPercent > 0 ? (
-                  <View style={[styles.savePill, { backgroundColor: colors.successLight }]}>
-                    <Text style={[styles.savePillText, { color: colors.success }]}>
-                      {discountPercent}% OFF
+                  {medicine.originalPrice && medicine.originalPrice > medicine.price ? (
+                    <Text style={[styles.oldPrice, { color: colors.textMuted }]}>
+                      MRP ₹{medicine.originalPrice.toFixed(2)}
+                    </Text>
+                  ) : null}
+                  {discountPercent > 0 ? (
+                    <View style={[styles.savePill, { backgroundColor: colors.successLight }]}>
+                      <Text style={[styles.savePillText, { color: colors.success }]}>
+                        {discountPercent}% OFF
+                      </Text>
+                    </View>
+                  ) : null}
+                </View>
+              ) : (
+                <View style={styles.priceRow}>
+                  <View style={[styles.savePill, { backgroundColor: colors.surfaceSecondary, paddingHorizontal: spacing.sm, paddingVertical: 4 }]}>
+                    <Text style={[styles.savePillText, { color: colors.textMuted, fontWeight: '700' }]}>
+                      CURRENTLY UNAVAILABLE
                     </Text>
                   </View>
-                ) : null}
-              </View>
+                </View>
+              )}
 
               <View style={styles.taxRow}>
                 <Text style={[styles.taxNote, { color: colors.textMuted }]}>
@@ -648,27 +658,37 @@ const ProductDetailsScreen = () => {
           },
         ]}
       >
-        <View style={styles.bottomPrice}>
-          <Text style={[styles.bottomPriceLabel, { color: colors.textSecondary }]}>
-            TOTAL PRICE
-          </Text>
-          <View style={styles.bottomPriceRow}>
-            <Text style={[styles.bottomPriceValue, { color: colors.textPrimary }]}>
-              ₹{((quantity > 0 ? quantity : 1) * medicine.price).toFixed(2)}
-            </Text>
-            <Text style={[styles.bottomPriceUnit, { color: colors.textMuted }]}>
-              /{medicine.unit}
+        {medicine.price > 0 ? (
+          <>
+            <View style={styles.bottomPrice}>
+              <Text style={[styles.bottomPriceLabel, { color: colors.textSecondary }]}>
+                TOTAL PRICE
+              </Text>
+              <View style={styles.bottomPriceRow}>
+                <Text style={[styles.bottomPriceValue, { color: colors.textPrimary }]}>
+                  ₹{((quantity > 0 ? quantity : 1) * medicine.price).toFixed(2)}
+                </Text>
+                <Text style={[styles.bottomPriceUnit, { color: colors.textMuted }]}>
+                  /{medicine.unit}
+                </Text>
+              </View>
+            </View>
+
+            <QuantityStepper
+              size="lg"
+              reserveSlot={false}
+              quantity={quantity}
+              onIncrement={handleAdd}
+              onDecrement={handleRemove}
+            />
+          </>
+        ) : (
+          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 6 }}>
+            <Text style={{ ...typography.bodySmall, color: colors.textMuted, fontWeight: '700' }}>
+              Item is currently unpriced or unavailable
             </Text>
           </View>
-        </View>
-
-        <QuantityStepper
-          size="lg"
-          reserveSlot={false}
-          quantity={quantity}
-          onIncrement={handleAdd}
-          onDecrement={handleRemove}
-        />
+        )}
       </Animated.View>
 
       <FloatingCartBar

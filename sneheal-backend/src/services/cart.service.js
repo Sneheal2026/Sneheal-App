@@ -47,6 +47,9 @@ const buildPricedLines = async (rawItems) => {
     if (!product) {
       throw new AppError(400, 'One or more products are unavailable');
     }
+    if (!product.price || Number(product.price) <= 0) {
+      throw new AppError(400, `${product.name} is currently out of stock or unavailable`);
+    }
     return {
       productId: product.id,
       quantity: item.quantity,

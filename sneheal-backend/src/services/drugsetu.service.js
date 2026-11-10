@@ -74,8 +74,9 @@ const transformSearchHit = (item) => {
   const packaging = Array.isArray(item.packagings) && item.packagings.length > 0 ? item.packagings[0] : {};
   const rawMrp = item.mrp != null ? item.mrp : packaging.mrp;
   const mrp = rawMrp != null && !isNaN(Number(rawMrp)) ? Number(rawMrp) : 0;
-  const unit = item.packaging || packaging.packaging || (item.package ? `${item.package} of ${item.qty || 1}` : '1 Pack');
-  const form = item.product_form || packaging.product_form || (item.product_type === 'drug' ? 'Medicine' : (item.product_type || 'Medicine'));
+  const unit = item.packaging || packaging.packaging || (item.package ? `${item.package} of ${item.qty || 1}` : (item.product_type === 'non-med' ? '1 Piece' : '1 Pack'));
+  const isDrug = item.product_type === 'drug';
+  const form = item.product_form || packaging.product_form || (isDrug ? 'Medicine' : (item.product_type || 'Item'));
   const rawImages = Array.isArray(item.product_images) ? item.product_images.filter(Boolean) : [];
   const primaryImage = rawImages[0] || null;
 
@@ -100,9 +101,9 @@ const transformSearchHit = (item) => {
     description: item.product_information || '',
     highlights: [],
     categoryId: item.category_id || null,
-    prescriptionRequired: item.product_type === 'drug',
+    prescriptionRequired: isDrug,
     isFeatured: false,
-    isActive: true,
+    isActive: mrp > 0,
     source: 'drugsetu',
   };
 };
@@ -116,8 +117,9 @@ const transformProductDetails = (raw) => {
   const packaging = Array.isArray(raw.packagings) && raw.packagings.length > 0 ? raw.packagings[0] : {};
   const rawMrp = raw.mrp != null ? raw.mrp : packaging.mrp;
   const mrp = rawMrp != null && !isNaN(Number(rawMrp)) ? Number(rawMrp) : 0;
-  const unit = raw.packaging || packaging.packaging || (raw.package ? `${raw.package} of ${raw.qty || 1}` : '1 Pack');
-  const form = raw.product_form || packaging.product_form || (raw.product_type === 'drug' ? 'Medicine' : (raw.product_type || 'Medicine'));
+  const unit = raw.packaging || packaging.packaging || (raw.package ? `${raw.package} of ${raw.qty || 1}` : (raw.product_type === 'non-med' ? '1 Piece' : '1 Pack'));
+  const isDrug = raw.product_type === 'drug';
+  const form = raw.product_form || packaging.product_form || (isDrug ? 'Medicine' : (raw.product_type || 'Item'));
   const rawImages = Array.isArray(raw.product_images) ? raw.product_images.filter(Boolean) : [];
   const primaryImage = rawImages[0] || null;
 
@@ -157,9 +159,9 @@ const transformProductDetails = (raw) => {
     description: raw.product_information || raw.benefits || `${raw.product_name} is used as directed by your physician.`,
     highlights,
     categoryId: raw.category_id || null,
-    prescriptionRequired: raw.product_type === 'drug',
+    prescriptionRequired: isDrug,
     isFeatured: false,
-    isActive: true,
+    isActive: mrp > 0,
     source: 'drugsetu',
   };
 };
@@ -211,7 +213,9 @@ const searchProducts = async (query) => {
 
     const payload = await response.json();
     const items = Array.isArray(payload) ? payload : Array.isArray(payload?.data) ? payload.data : [];
-    const results = items.map(transformSearchHit).filter(Boolean);
+    const results = items
+      .map(transformSearchHit)
+      .filter((hit) => Boolean(hit && hit.price > 0));
 
     // Cache non-empty search results for 10 minutes to save money & latency
     if (results.length > 0) {
