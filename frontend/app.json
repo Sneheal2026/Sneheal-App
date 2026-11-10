@@ -3,6 +3,7 @@
     "name": "SnehealApp",
     "slug": "sneheal-app",
     "version": "0.0.3",
+    "platforms": ["android", "ios"],
     "runtimeVersion": {
       "policy": "appVersion"
     },
@@ -69,10 +70,6 @@
         "android.permission.VIBRATE",
         "android.permission.RECEIVE_BOOT_COMPLETED"
       ]
-    },
-    "web": {
-      "output": "single",
-      "favicon": "./assets/images/favicon-48.png"
     },
     "plugins": [
       [
