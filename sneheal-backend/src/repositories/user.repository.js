@@ -1,7 +1,13 @@
+const crypto = require('crypto');
 const db = require('../config/db');
 
+const makeUserPublicId = () => {
+  const rand = crypto.randomBytes(4).toString('hex').toUpperCase();
+  return `SNH-U${rand}`;
+};
+
 const USER_BASE_SELECT = `
-  SELECT u.id, u.phone, u.username, u.language, u.role, u.profile_completed, u.created_at,
+  SELECT u.id, u.public_id, u.phone, u.username, u.language, u.role, u.profile_completed, u.created_at,
          COALESCE(dp.verification_status, dap.verification_status) AS verification_status
   FROM users u
   LEFT JOIN doctor_profiles dp ON dp.user_id = u.id AND u.role = 'doctor'
@@ -19,6 +25,7 @@ const mapUser = (row) => {
 
   return {
     id: row.id,
+    publicId: row.public_id || (row.id ? `SNH-U${String(row.id).padStart(6, '0')}` : null),
     phone: row.phone,
     username: row.username,
     language: row.language,
@@ -45,12 +52,42 @@ const findById = async (id, connection = db) => {
   return mapUser(rows[0]);
 };
 
-const createByPhone = async (phone, connection = db) => {
-  const [result] = await connection.execute(
-    'INSERT INTO users (phone) VALUES (?)',
-    [phone]
+const findByPublicId = async (publicId, connection = db) => {
+  const [rows] = await connection.execute(
+    `${USER_BASE_SELECT} WHERE u.public_id = ? LIMIT 1`,
+    [publicId]
   );
-  return findById(result.insertId, connection);
+  return mapUser(rows[0]);
+};
+
+const findByIdOrPublicId = async (idOrPublicId, connection = db) => {
+  const trimmed = String(idOrPublicId || '').trim();
+  if (!trimmed) return null;
+  if (/^\d{1,18}$/.test(trimmed)) {
+    const user = await findById(trimmed, connection);
+    if (user) return user;
+  }
+  return findByPublicId(trimmed, connection);
+};
+
+const createByPhone = async (phone, connection = db) => {
+  const publicId = makeUserPublicId();
+  try {
+    const [result] = await connection.execute(
+      'INSERT INTO users (phone, public_id) VALUES (?, ?)',
+      [phone, publicId]
+    );
+    return findById(result.insertId, connection);
+  } catch (err) {
+    if (err.code === 'ER_BAD_FIELD_ERROR') {
+      const [result] = await connection.execute(
+        'INSERT INTO users (phone) VALUES (?)',
+        [phone]
+      );
+      return findById(result.insertId, connection);
+    }
+    throw err;
+  }
 };
 
 const completeProfile = async (userId, { username, language, role }, connection = db) => {
@@ -91,28 +128,42 @@ const mapCustomerSummary = (row) => {
   if (!row) return null;
   return {
     id: String(row.id),
+    publicId: row.public_id || (row.id ? `SNH-U${String(row.id).padStart(6, '0')}` : null),
     username: row.username || 'Customer',
     phone: row.phone || '',
     phoneMasked: maskPhone(row.phone),
   };
 };
 
-const searchCustomers = async ({ id, usernameLike }, connection = db) => {
+const searchCustomers = async ({ id, publicId, usernameLike }, connection = db) => {
   if (id) {
     const [rows] = await connection.execute(
-      `SELECT id, phone, username
+      `SELECT id, public_id, phone, username
        FROM users
        WHERE role = 'customer' AND profile_completed = 1
-         AND (id = ? OR username = ?)
+         AND (id = ? OR public_id = ? OR username = ?)
        ORDER BY username ASC
        LIMIT 15`,
-      [id, id],
+      [id, id, id],
+    );
+    return rows.map(mapCustomerSummary);
+  }
+
+  if (publicId) {
+    const [rows] = await connection.execute(
+      `SELECT id, public_id, phone, username
+       FROM users
+       WHERE role = 'customer' AND profile_completed = 1
+         AND public_id = ?
+       ORDER BY username ASC
+       LIMIT 15`,
+      [publicId],
     );
     return rows.map(mapCustomerSummary);
   }
 
   const [rows] = await connection.execute(
-    `SELECT id, phone, username
+    `SELECT id, public_id, phone, username
      FROM users
      WHERE role = 'customer' AND profile_completed = 1
        AND username LIKE ? ESCAPE '\\\\'
@@ -125,6 +176,7 @@ const searchCustomers = async ({ id, usernameLike }, connection = db) => {
 
 const mapEngagedPatient = (row) => ({
   id: String(row.id),
+  publicId: row.public_id || (row.id ? `SNH-U${String(row.id).padStart(6, '0')}` : null),
   username: row.username || 'Customer',
   phone: row.phone || '',
   phoneMasked: maskPhone(row.phone),
@@ -138,6 +190,7 @@ const listEngagedPatients = async (connection = db) => {
   const [rows] = await connection.execute(
     `SELECT
        u.id,
+       u.public_id,
        u.phone,
        u.username,
        COALESCE(o_stats.order_count, 0) AS order_count,
@@ -188,6 +241,8 @@ const findByIdForUpdate = async (id, connection) => {
 module.exports = {
   findByPhone,
   findById,
+  findByPublicId,
+  findByIdOrPublicId,
   searchCustomers,
   listEngagedPatients,
   findByIdForUpdate,

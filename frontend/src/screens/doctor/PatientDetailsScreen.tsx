@@ -222,7 +222,7 @@ const PatientDetailsScreen = () => {
               <View style={styles.identityText}>
                 <Text style={styles.patientName}>{customer.username}</Text>
                 <Text style={styles.patientMeta}>
-                  {t('doctor.patientId')} {customer.id}
+                  {t('doctor.patientId')} {customer.publicId || customer.id}
                 </Text>
                 <Pressable
                   onPress={() => {

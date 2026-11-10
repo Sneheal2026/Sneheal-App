@@ -14,17 +14,19 @@ const maskPhone = (phone) => {
 };
 
 const getCustomer = async (userId) => {
-  if (!/^\d{1,18}$/.test(String(userId || ''))) {
+  const trimmed = String(userId || '').trim();
+  if (!trimmed) {
     throw new AppError(404, 'Customer not found');
   }
 
-  const user = await userRepo.findById(userId);
+  const user = await userRepo.findByIdOrPublicId(trimmed);
   if (!user || user.role !== 'customer') {
     throw new AppError(404, 'Customer not found');
   }
 
   return {
     id: String(user.id),
+    publicId: user.publicId || String(user.id),
     username: user.username || 'Customer',
     phone: user.phone || '',
     phoneMasked: maskPhone(user.phone),
@@ -46,6 +48,10 @@ const searchCustomers = async (rawQuery) => {
     return userRepo.searchCustomers({ id: query });
   }
 
+  if (/^SNH-U/i.test(query)) {
+    return userRepo.searchCustomers({ publicId: query.toUpperCase() });
+  }
+
   if (query.length < 2) {
     throw new AppError(400, 'Enter a user id, or at least 2 letters of the name');
   }
@@ -56,8 +62,8 @@ const searchCustomers = async (rawQuery) => {
 };
 
 const listCustomerOrders = async (userId) => {
-  await getCustomer(userId);
-  const orders = await orderRepo.findByUserId(userId);
+  const customer = await getCustomer(userId);
+  const orders = await orderRepo.findByUserId(customer.id);
   const items = await orderRepo.findItemsByOrderIds(orders.map((order) => order.id));
   const byOrder = new Map();
 
@@ -80,8 +86,8 @@ const listCustomerOrders = async (userId) => {
 };
 
 const listCustomerPrescriptions = async (userId) => {
-  await getCustomer(userId);
-  return prescriptionRepo.findByUserId(userId);
+  const customer = await getCustomer(userId);
+  return prescriptionRepo.findByUserId(customer.id);
 };
 
 const inferReportResourceType = (report) => {
@@ -126,8 +132,8 @@ const resolveReportFileUrl = (report) => {
 };
 
 const listCustomerReports = async (userId) => {
-  await getCustomer(userId);
-  const rows = await healthReportRepo.findByUserIdInternal(userId);
+  const customer = await getCustomer(userId);
+  const rows = await healthReportRepo.findByUserIdInternal(customer.id);
   return rows.map((row) => ({
     id: row.id,
     title: row.title,
@@ -155,8 +161,8 @@ const fetchRemoteReportBuffer = async (url) => {
 };
 
 const getCustomerReportFile = async (userId, reportId) => {
-  await getCustomer(userId);
-  const report = await healthReportRepo.findByIdAndUserId(reportId, userId);
+  const customer = await getCustomer(userId);
+  const report = await healthReportRepo.findByIdAndUserId(reportId, customer.id);
   if (!report) {
     throw new AppError(404, 'Report not found');
   }

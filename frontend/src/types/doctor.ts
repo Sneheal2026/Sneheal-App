@@ -1,5 +1,6 @@
 export type DoctorCustomer = {
   id: string;
+  publicId?: string;
   username: string;
   /** Full number for authenticated doctor views */
   phone: string;

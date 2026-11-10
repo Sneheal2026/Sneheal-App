@@ -4,6 +4,7 @@ export type VerificationStatus = 'pending' | 'approved' | 'rejected';
 
 export type AuthUser = {
   id: number;
+  publicId?: string;
   phone: string;
   username: string | null;
   language: string | null;

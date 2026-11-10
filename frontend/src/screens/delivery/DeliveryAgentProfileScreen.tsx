@@ -62,7 +62,7 @@ const DeliveryAgentProfileScreen = () => {
     ? formatPhoneNumber(toLocalPhone(user.phone))
     : t('delivery.profilePhoneUnavailable');
   const languageLabel = getLanguageNativeLabel(language);
-  const partnerId = user?.id != null ? `DA-${String(user.id).padStart(5, '0')}` : '—';
+  const partnerId = user?.publicId || (user?.id != null ? `DA-${String(user.id).padStart(5, '0')}` : '—');
   const memberSince = useMemo(() => {
     if (!user?.createdAt) return t('delivery.profileMemberSinceUnknown');
     const date = new Date(user.createdAt);

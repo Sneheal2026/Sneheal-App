@@ -6,6 +6,7 @@ const signAccessToken = (user) => {
   return jwt.sign(
     {
       sub: user.id,
+      publicId: user.publicId,
       phone: user.phone,
       profileCompleted: user.profileCompleted,
       role: user.role,

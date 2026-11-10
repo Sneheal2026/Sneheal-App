@@ -103,7 +103,7 @@ const DoctorPatientsScreen = () => {
       <View style={styles.rowBody}>
         <Text style={styles.rowName} numberOfLines={1}>{item.username}</Text>
         <Text style={styles.rowMeta} numberOfLines={1}>
-          {t('doctor.patientId')} {item.id} · {formatDoctorPatientPhone(item)}
+          {t('doctor.patientId')} {item.publicId || item.id} · {formatDoctorPatientPhone(item)}
         </Text>
         <View style={styles.badgeRow}>
           {item.orderCount > 0 ? (

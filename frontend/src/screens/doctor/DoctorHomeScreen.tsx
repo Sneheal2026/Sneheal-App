@@ -246,7 +246,7 @@ const DoctorHomeScreen = () => {
                   <View style={styles.patientCopy}>
                     <Text style={styles.patientName}>{patient.username}</Text>
                     <Text style={styles.patientMeta}>
-                      {t('doctor.patientId')} {patient.id}
+                      {t('doctor.patientId')} {patient.publicId || patient.id}
                     </Text>
                     <Text style={styles.patientPhone}>
                       {formatDoctorPatientPhone(patient)}
