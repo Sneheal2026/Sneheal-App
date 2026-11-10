@@ -371,7 +371,7 @@ const SettingsScreen = () => {
 
         <Animated.View entering={FadeInDown.delay(300).duration(400)} style={styles.footer}>
           <Text style={styles.brandName}>sneheal</Text>
-          <Text style={styles.versionText}>v{APP_VERSION}</Text>
+          <Text style={styles.versionText}>v{APP_VERSION} • Live</Text>
           <Image
             source={SOLAPUR_IMAGE}
             style={styles.solapurImage}
