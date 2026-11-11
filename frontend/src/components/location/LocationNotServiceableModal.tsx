@@ -6,13 +6,16 @@ import {
   Modal,
   Pressable,
   Linking,
-  Platform,
+  Image,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { SUPPORT_CONTACT } from '@/constants/helpFaq';
 import theme from '@/styles/theme';
 
-const { colors, spacing, typography, borderRadius, shadows } = theme;
+const { spacing, borderRadius, shadows } = theme;
+
+const NOT_IN_AREA_IMG = require('../../../assets/images/Not_In_Your_Area.webp');
 
 interface LocationNotServiceableModalProps {
   visible: boolean;
@@ -25,7 +28,6 @@ export const LocationNotServiceableModal: React.FC<LocationNotServiceableModalPr
   visible,
   onClose,
   onSelectSolapurAddress,
-  currentAddressName,
 }) => {
   const handleCallSupport = () => {
     const dial = SUPPORT_CONTACT.phone.replace(/\s/g, '');
@@ -52,100 +54,100 @@ export const LocationNotServiceableModal: React.FC<LocationNotServiceableModalPr
         <Pressable style={styles.backdrop} onPress={onClose} />
 
         <View style={styles.modalCard}>
-          {/* Top handle & close */}
-          <View style={styles.topRow}>
-            <View style={styles.brandBadge}>
-              <Ionicons name="location" size={14} color="#CA2164" />
-              <Text style={styles.brandBadgeText}>Delivery Coverage</Text>
-            </View>
+          {/* Warm gold gradient — top portion only */}
+          <LinearGradient
+            colors={['#FFF6DC', '#FFF9EA', '#FFFFFF']}
+            locations={[0, 0.55, 1]}
+            style={styles.gradientTop}
+            pointerEvents="none"
+          />
 
-            <Pressable
-              onPress={onClose}
-              hitSlop={10}
-              style={({ pressed }) => [styles.closeBtn, pressed && styles.pressed]}
-              accessibilityRole="button"
-              accessibilityLabel="Close"
-            >
-              <Ionicons name="close" size={20} color="#64748B" />
-            </Pressable>
+          {/* Close button */}
+          <Pressable
+            onPress={onClose}
+            hitSlop={10}
+            style={({ pressed }) => [styles.closeBtn, pressed && styles.pressed]}
+            accessibilityRole="button"
+            accessibilityLabel="Close"
+          >
+            <Ionicons name="close" size={18} color="#64748B" />
+          </Pressable>
+
+          {/* Hero illustration */}
+          <Image
+            source={NOT_IN_AREA_IMG}
+            style={styles.heroImage}
+            resizeMode="contain"
+          />
+
+          {/* Yellow badge */}
+          <View style={styles.alertBadge}>
+            <Text style={styles.alertBadgeIcon}>⚠️</Text>
+            <Text style={styles.alertBadgeText}>DELIVERY AREA UPDATE</Text>
           </View>
 
-          {/* Icon Badge */}
-          <View style={styles.iconContainer}>
-            <View style={styles.iconRing}>
-              <Ionicons name="navigate-circle-outline" size={44} color="#CA2164" />
-            </View>
-          </View>
+          {/* Main heading */}
+          <Text style={styles.title}>We don't deliver here yet</Text>
 
-          {/* Heading */}
-          <Text style={styles.title}>Not in Your Area Yet</Text>
-
-          {currentAddressName ? (
-            <View style={styles.detectedPill}>
-              <Ionicons name="pin-outline" size={13} color="#64748B" />
-              <Text style={styles.detectedPillText} numberOfLines={1}>
-                {currentAddressName}
-              </Text>
-            </View>
-          ) : null}
-
-          {/* Description */}
+          {/* Subtitle */}
           <Text style={styles.subtitle}>
-            Sneheal is currently live and delivering medicines exclusively in{' '}
-            <Text style={styles.boldText}>Solapur</Text>,{' '}
-            <Text style={styles.boldText}>Akkalkot</Text>, and nearest regions.
+            Sneheal currently delivers medicines{'\n'}
+            only in <Text style={styles.boldText}>these areas:</Text>
           </Text>
 
-          {/* Coverage highlights */}
+          {/* Coverage list */}
           <View style={styles.coverageBox}>
             <View style={styles.coverageRow}>
-              <Ionicons name="checkmark-circle" size={16} color="#059669" />
-              <Text style={styles.coverageText}>Solapur City & District</Text>
+              <View style={styles.checkCircle}>
+                <Ionicons name="checkmark" size={12} color="#FFFFFF" />
+              </View>
+              <Text style={styles.coverageText}>Solapur City</Text>
             </View>
             <View style={styles.coverageRow}>
-              <Ionicons name="checkmark-circle" size={16} color="#059669" />
-              <Text style={styles.coverageText}>Akkalkot & Surrounding Rural Hubs</Text>
+              <View style={styles.checkCircle}>
+                <Ionicons name="checkmark" size={12} color="#FFFFFF" />
+              </View>
+              <Text style={styles.coverageText}>Akkalkot &amp; surrounding rural areas</Text>
             </View>
           </View>
 
-          {/* Buttons */}
-          <View style={styles.actionGroup}>
+          {/* Primary button — Deliver to Solapur / Akkalkot */}
+          <Pressable
+            onPress={onSelectSolapurAddress}
+            style={({ pressed }) => [styles.primaryBtn, pressed && styles.pressed]}
+          >
+            <Text style={styles.primaryBtnText}>Deliver to Solapur / Akkalkot</Text>
+          </Pressable>
+
+          {/* Secondary button — Explore medicines */}
+          <Pressable
+            onPress={onClose}
+            style={({ pressed }) => [styles.secondaryBtn, pressed && styles.pressed]}
+          >
+            <Text style={styles.secondaryBtnText}>Explore medicines</Text>
+          </Pressable>
+
+          {/* Need help footer */}
+          <Text style={styles.helpLabel}>Need help?</Text>
+
+          <View style={styles.helpButtonsRow}>
+            {/* Call Sneheal */}
             <Pressable
-              onPress={onSelectSolapurAddress}
-              style={({ pressed }) => [styles.primaryBtn, pressed && styles.pressed]}
+              onPress={handleCallSupport}
+              style={({ pressed }) => [styles.helpBtn, pressed && styles.pressed]}
             >
-              <Ionicons name="map-outline" size={17} color="#FFFFFF" style={{ marginRight: 6 }} />
-              <Text style={styles.primaryBtnText}>Deliver to Solapur / Akkalkot</Text>
+              <Ionicons name="call-outline" size={15} color="#15803D" />
+              <Text style={styles.helpBtnText}>Call Sneheal</Text>
             </Pressable>
 
+            {/* WhatsApp */}
             <Pressable
-              onPress={onClose}
-              style={({ pressed }) => [styles.secondaryBtn, pressed && styles.pressed]}
+              onPress={handleWhatsApp}
+              style={({ pressed }) => [styles.helpBtn, pressed && styles.pressed]}
             >
-              <Text style={styles.secondaryBtnText}>Explore Medicines (View Catalog)</Text>
+              <Ionicons name="logo-whatsapp" size={15} color="#15803D" />
+              <Text style={styles.helpBtnText}>WhatsApp</Text>
             </Pressable>
-          </View>
-
-          {/* Helpline Footer */}
-          <View style={styles.helpFooter}>
-            <Text style={styles.helpLabel}>Have questions? Reach out to Sneheal Support</Text>
-            <View style={styles.helpButtonsRow}>
-              <Pressable
-                onPress={handleCallSupport}
-                style={({ pressed }) => [styles.helpMiniBtn, pressed && styles.pressed]}
-              >
-                <Ionicons name="call" size={13} color="#0F766E" />
-                <Text style={styles.helpMiniBtnText}>Call Helpline</Text>
-              </Pressable>
-
-              <Pressable
-                onPress={handleWhatsApp}
-                style={({ pressed }) => [styles.helpMiniBtn, styles.whatsAppBtn, pressed && styles.pressed]}
-              >
-                <Ionicons name="logo-whatsapp" size={14} color="#15803D" />
-                <Text style={styles.whatsAppText}>WhatsApp</Text>
-              </Pressable>
-            </View>
           </View>
         </View>
       </View>
@@ -166,184 +168,183 @@ const styles = StyleSheet.create({
   },
   modalCard: {
     width: '100%',
-    maxWidth: 400,
+    maxWidth: 380,
     backgroundColor: '#FFFFFF',
-    borderRadius: borderRadius.xxl,
-    padding: spacing.xl,
+    borderRadius: 24,
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    paddingBottom: 14,
     alignItems: 'center',
+    overflow: 'hidden',
     ...shadows.lg,
   },
-  topRow: {
+
+  /* ── Gold gradient overlay (top → centre) ── */
+  gradientTop: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 24,
+    // covers only the top ~55% via locations above
+  },
+
+  /* ── Close button (top-right) ── */
+  closeBtn: {
+    alignSelf: 'flex-end',
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#F1F5F9',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 2,
+  },
+
+  /* ── Hero image ── */
+  heroImage: {
     width: '100%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: spacing.sm,
+    height: 130,
+    marginBottom: 8,
   },
-  brandBadge: {
+
+  /* ── Yellow alert badge ── */
+  alertBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    backgroundColor: '#FCE8F0',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    backgroundColor: '#FEF3C7',
     borderRadius: borderRadius.full,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    marginBottom: 6,
+    gap: 5,
   },
-  brandBadgeText: {
-    ...typography.caption,
-    color: '#CA2164',
-    fontWeight: '700',
+  alertBadgeIcon: {
     fontSize: 11,
   },
-  closeBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#F1F5F9',
-    justifyContent: 'center',
-    alignItems: 'center',
+  alertBadgeText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#92400E',
+    letterSpacing: 0.5,
   },
-  pressed: {
-    opacity: 0.8,
-    transform: [{ scale: 0.98 }],
-  },
-  iconContainer: {
-    marginTop: spacing.xs,
-    marginBottom: spacing.md,
-  },
-  iconRing: {
-    width: 76,
-    height: 76,
-    borderRadius: 38,
-    backgroundColor: '#FCE8F0',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+
+  /* ── Heading ── */
   title: {
-    ...typography.h3,
+    fontSize: 20,
+    fontWeight: '800',
     color: '#0F172A',
-    fontWeight: '700',
     textAlign: 'center',
-    marginBottom: spacing.xs,
+    marginBottom: 4,
+    lineHeight: 26,
   },
-  detectedPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    backgroundColor: '#F1F5F9',
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    borderRadius: borderRadius.full,
-    maxWidth: '90%',
-    marginBottom: spacing.sm,
-  },
-  detectedPillText: {
-    ...typography.caption,
-    color: '#475569',
-    fontWeight: '500',
-  },
+
+  /* ── Subtitle ── */
   subtitle: {
-    ...typography.bodySmall,
+    fontSize: 12,
     color: '#64748B',
     textAlign: 'center',
-    lineHeight: 20,
-    marginBottom: spacing.md,
-    paddingHorizontal: spacing.xs,
+    lineHeight: 18,
+    marginBottom: 8,
   },
   boldText: {
     color: '#0F172A',
     fontWeight: '700',
   },
+
+  /* ── Coverage box ── */
   coverageBox: {
     width: '100%',
     backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: borderRadius.lg,
-    padding: spacing.md,
+    borderRadius: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
     gap: 6,
-    marginBottom: spacing.lg,
+    marginBottom: 10,
   },
   coverageRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
   },
+  checkCircle: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#16A34A',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   coverageText: {
-    ...typography.caption,
-    color: '#334155',
-    fontWeight: '600',
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#1E293B',
   },
-  actionGroup: {
-    width: '100%',
-    gap: spacing.sm,
-    marginBottom: spacing.md,
+
+  /* ── Buttons shared ── */
+  pressed: {
+    opacity: 0.82,
+    transform: [{ scale: 0.985 }],
   },
+
+  /* Primary button */
   primaryBtn: {
+    width: '100%',
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 13,
-    borderRadius: borderRadius.lg,
-    backgroundColor: '#CA2164',
+    paddingVertical: 11,
+    borderRadius: 12,
+    backgroundColor: '#B01E5A',
+    marginBottom: 8,
     ...shadows.sm,
   },
   primaryBtnText: {
-    ...typography.button,
+    fontSize: 14,
+    fontWeight: '800',
     color: '#FFFFFF',
-    fontWeight: '700',
+    letterSpacing: 0.2,
   },
+
+  /* Secondary button */
   secondaryBtn: {
+    width: '100%',
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 12,
-    borderRadius: borderRadius.lg,
+    paddingVertical: 11,
+    borderRadius: 12,
     backgroundColor: '#F1F5F9',
+    marginBottom: 10,
   },
   secondaryBtnText: {
-    ...typography.bodySmall,
+    fontSize: 14,
+    fontWeight: '700',
     color: '#475569',
-    fontWeight: '600',
   },
-  helpFooter: {
-    width: '100%',
-    alignItems: 'center',
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#E2E8F0',
-    paddingTop: spacing.md,
-  },
+
+  /* ── Help footer ── */
   helpLabel: {
-    ...typography.caption,
-    color: '#94A3B8',
     fontSize: 11,
-    marginBottom: spacing.xs,
+    color: '#94A3B8',
+    marginBottom: 6,
   },
   helpButtonsRow: {
     flexDirection: 'row',
-    gap: spacing.md,
+    gap: 8,
+    width: '100%',
   },
-  helpMiniBtn: {
+  helpBtn: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 5,
-    backgroundColor: '#E6FFFA',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    backgroundColor: '#DCFCE7',
+    paddingVertical: 8,
     borderRadius: borderRadius.full,
   },
-  helpMiniBtnText: {
-    ...typography.caption,
-    color: '#0F766E',
+  helpBtnText: {
+    fontSize: 12,
     fontWeight: '700',
-  },
-  whatsAppBtn: {
-    backgroundColor: '#DCFCE7',
-  },
-  whatsAppText: {
-    ...typography.caption,
     color: '#15803D',
-    fontWeight: '700',
   },
 });
 
