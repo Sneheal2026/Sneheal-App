@@ -1,11 +1,8 @@
 import React, { useEffect } from 'react';
-import { Image, StyleSheet, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
+import { StyleSheet, Text, View } from 'react-native';
+import Svg, { Path, G, Defs, LinearGradient, Stop } from 'react-native-svg';
 import Animated, {
   Easing,
-  FadeIn,
-  FadeInDown,
   interpolate,
   useAnimatedStyle,
   useSharedValue,
@@ -16,392 +13,398 @@ import Animated, {
   cancelAnimation,
 } from 'react-native-reanimated';
 import { useTranslation } from 'react-i18next';
-import { AUTH_HERO_IMAGES } from './authTheme';
-import { APP_CONFIG } from '@/constants';
 import { useTheme } from '@/hooks/useTheme';
-import { mixWithWhite, withAlpha } from '@/utils/colorUtils';
 
-type IoniconName = keyof typeof Ionicons.glyphMap;
+const PRODUCT_IMAGES = [
+  require('../../../assets/images/Splash_Pill.webp'),
+  require('../../../assets/images/Splash_Bottle.webp'),
+];
 
-type FloatIcon = {
-  name: IoniconName;
-  tint: string;
-  wash: string;
-  top: number;
-  left: number;
-  delay: number;
-  distance: number;
+// Canvas sizing
+const STAGE_SIZE = 260;
+const HALF_STAGE = STAGE_SIZE / 2;
+const PRODUCT_SIZE = 120;
+
+// Ellipse orbit parameters (in circular un-projected coordinates)
+const SVG_CENTER = 110;
+const ORBIT_RADIUS = 76;
+
+/**
+ * Helper to compute an SVG arc path between two angles (degrees)
+ */
+const describeArc = (
+  cx: number,
+  cy: number,
+  r: number,
+  startAngle: number,
+  endAngle: number,
+) => {
+  const toRad = (deg: number) => ((deg - 90) * Math.PI) / 180.0;
+  const startRad = toRad(endAngle);
+  const endRad = toRad(startAngle);
+
+  const start = {
+    x: cx + r * Math.cos(startRad),
+    y: cy + r * Math.sin(startRad),
+  };
+  const end = {
+    x: cx + r * Math.cos(endRad),
+    y: cy + r * Math.sin(endRad),
+  };
+
+  const largeArcFlag = endAngle - startAngle <= 180 ? '0' : '1';
+
+  return `M ${start.x.toFixed(2)} ${start.y.toFixed(2)} A ${r} ${r} 0 ${largeArcFlag} 0 ${end.x.toFixed(2)} ${end.y.toFixed(2)}`;
 };
 
-const STAGE = 236;
-
-const PulseRing = ({
-  color,
-  delay,
-  size,
-}: {
-  color: string;
-  delay: number;
-  size: number;
-}) => {
-  const pulse = useSharedValue(0);
-
-  useEffect(() => {
-    pulse.value = withDelay(
-      delay,
-      withRepeat(
-        withTiming(1, { duration: 2200, easing: Easing.out(Easing.quad) }),
-        -1,
-        false,
-      ),
-    );
-
-    return () => cancelAnimation(pulse);
-  }, [delay, pulse]);
-
-  const style = useAnimatedStyle(() => ({
-    opacity: interpolate(pulse.value, [0, 1], [0.28, 0]),
-    transform: [{ scale: interpolate(pulse.value, [0, 1], [0.92, 1.42]) }],
-  }));
+/**
+ * Pure SVG containing the two revolving arcs with Head-to-Tail pink gradients:
+ * 1. Primary Arc: Vibrant hot-pink head (#FF1F6D) fading towards a translucent blush tail (#FFAEC8)
+ * 2. Secondary Arc: Glowing pink head (#FF2D78) fading towards a soft pastel tail (#FFD1E3)
+ */
+const OrbitSvg = () => {
+  // Arc 1: 110° span (thick primary front arc)
+  const arc1Path = describeArc(SVG_CENTER, SVG_CENTER, ORBIT_RADIUS, 15, 125);
+  // Arc 2: 110° span on opposite side (secondary back arc)
+  const arc2Path = describeArc(SVG_CENTER, SVG_CENTER, ORBIT_RADIUS, 195, 305);
 
   return (
-    <Animated.View
-      pointerEvents="none"
-      style={[
-        styles.pulseRing,
-        {
-          width: size,
-          height: size,
-          borderRadius: size / 2,
-          borderColor: color,
-          top: (STAGE - size) / 2,
-          left: (STAGE - size) / 2,
-        },
-        style,
-      ]}
-    />
+    <Svg width={220} height={220} viewBox="0 0 220 220">
+      <Defs>
+        {/* Arc 1 Glow Trail Gradient (Head: 172.25, 153.59 -> Tail: 129.67, 36.59) */}
+        <LinearGradient
+          id="arc1GlowGrad"
+          x1="172.25"
+          y1="153.59"
+          x2="129.67"
+          y2="36.59"
+          gradientUnits="userSpaceOnUse"
+        >
+          <Stop offset="0%" stopColor="#FF1F6D" stopOpacity="0.30" />
+          <Stop offset="60%" stopColor="#FF6B9E" stopOpacity="0.12" />
+          <Stop offset="100%" stopColor="#FFAEC8" stopOpacity="0.0" />
+        </LinearGradient>
+
+        {/* Arc 1 Main Stroke Gradient */}
+        <LinearGradient
+          id="arc1MainGrad"
+          x1="172.25"
+          y1="153.59"
+          x2="129.67"
+          y2="36.59"
+          gradientUnits="userSpaceOnUse"
+        >
+          <Stop offset="0%" stopColor="#FF1F6D" stopOpacity="1" />
+          <Stop offset="40%" stopColor="#FF4789" stopOpacity="0.95" />
+          <Stop offset="75%" stopColor="#FF82AD" stopOpacity="0.55" />
+          <Stop offset="100%" stopColor="#FFAEC8" stopOpacity="0.12" />
+        </LinearGradient>
+
+        {/* Arc 2 Stroke Gradient (Head: 47.75, 66.41 -> Tail: 90.33, 183.41) */}
+        <LinearGradient
+          id="arc2MainGrad"
+          x1="47.75"
+          y1="66.41"
+          x2="90.33"
+          y2="183.41"
+          gradientUnits="userSpaceOnUse"
+        >
+          <Stop offset="0%" stopColor="#FF2D78" stopOpacity="0.95" />
+          <Stop offset="45%" stopColor="#FF659B" stopOpacity="0.75" />
+          <Stop offset="80%" stopColor="#FFA5C5" stopOpacity="0.40" />
+          <Stop offset="100%" stopColor="#FFD1E3" stopOpacity="0.10" />
+        </LinearGradient>
+      </Defs>
+
+      <G>
+        {/* Soft neon glow aura under Arc 1 */}
+        <Path
+          d={arc1Path}
+          stroke="url(#arc1GlowGrad)"
+          strokeWidth={13}
+          strokeLinecap="round"
+          fill="none"
+        />
+        {/* Arc 1 main stroke */}
+        <Path
+          d={arc1Path}
+          stroke="url(#arc1MainGrad)"
+          strokeWidth={5.8}
+          strokeLinecap="round"
+          fill="none"
+        />
+        {/* Arc 2 secondary stroke */}
+        <Path
+          d={arc2Path}
+          stroke="url(#arc2MainGrad)"
+          strokeWidth={2.8}
+          strokeLinecap="round"
+          fill="none"
+        />
+      </G>
+    </Svg>
   );
 };
 
-const FloatingIcon = ({
-  name,
-  tint,
-  wash,
-  top,
-  left,
-  delay,
-  distance,
-}: FloatIcon) => {
-  const float = useSharedValue(0);
+/**
+ * Organic fluid wave corners (Top-Left and Bottom-Right)
+ * Rendered using layered translucent pastel-pink gradients
+ */
+const CornerWaves = () => (
+  <>
+    {/* Top-Left Corner Waves */}
+    <View pointerEvents="none" style={styles.cornerTopLeft}>
+      <Svg width={230} height={230} viewBox="0 0 230 230">
+        <Defs>
+          <LinearGradient id="waveGrad1" x1="0" y1="0" x2="220" y2="220" gradientUnits="userSpaceOnUse">
+            <Stop offset="0%" stopColor="#F472B6" stopOpacity="0.38" />
+            <Stop offset="50%" stopColor="#FBCFE8" stopOpacity="0.22" />
+            <Stop offset="100%" stopColor="#FFFFFF" stopOpacity="0" />
+          </LinearGradient>
+          <LinearGradient id="waveGrad2" x1="0" y1="0" x2="170" y2="170" gradientUnits="userSpaceOnUse">
+            <Stop offset="0%" stopColor="#FF1F6D" stopOpacity="0.20" />
+            <Stop offset="60%" stopColor="#F472B6" stopOpacity="0.08" />
+            <Stop offset="100%" stopColor="#FFFFFF" stopOpacity="0" />
+          </LinearGradient>
+          <LinearGradient id="waveGrad3" x1="0" y1="0" x2="230" y2="150" gradientUnits="userSpaceOnUse">
+            <Stop offset="0%" stopColor="#FCE7F3" stopOpacity="0.65" />
+            <Stop offset="65%" stopColor="#FCE7F3" stopOpacity="0.18" />
+            <Stop offset="100%" stopColor="#FFFFFF" stopOpacity="0" />
+          </LinearGradient>
+        </Defs>
 
-  useEffect(() => {
-    float.value = withDelay(
-      delay,
-      withRepeat(
-        withSequence(
-          withTiming(1, { duration: 1600, easing: Easing.inOut(Easing.sin) }),
-          withTiming(0, { duration: 1600, easing: Easing.inOut(Easing.sin) }),
-        ),
-        -1,
-        false,
-      ),
-    );
+        {/* Outer broad ambient curve */}
+        <Path
+          d="M 0 0 L 230 0 C 185 55, 135 95, 85 155 C 50 195, 22 218, 0 230 Z"
+          fill="url(#waveGrad3)"
+        />
+        {/* Mid flowing silk curve */}
+        <Path
+          d="M 0 0 L 205 0 C 160 50, 110 90, 68 145 C 38 180, 15 200, 0 210 Z"
+          fill="url(#waveGrad1)"
+        />
+        {/* Inner delicate wave crest */}
+        <Path
+          d="M 0 0 L 155 0 C 122 38, 78 70, 48 115 C 26 145, 10 162, 0 170 Z"
+          fill="url(#waveGrad2)"
+        />
+      </Svg>
+    </View>
 
-    return () => cancelAnimation(float);
-  }, [delay, float]);
+    {/* Bottom-Right Corner Waves (Mirrored via 180° rotation) */}
+    <View pointerEvents="none" style={styles.cornerBottomRight}>
+      <View style={styles.rotate180}>
+        <Svg width={230} height={230} viewBox="0 0 230 230">
+          <Defs>
+            <LinearGradient id="waveGradBR1" x1="0" y1="0" x2="220" y2="220" gradientUnits="userSpaceOnUse">
+              <Stop offset="0%" stopColor="#F472B6" stopOpacity="0.38" />
+              <Stop offset="50%" stopColor="#FBCFE8" stopOpacity="0.22" />
+              <Stop offset="100%" stopColor="#FFFFFF" stopOpacity="0" />
+            </LinearGradient>
+            <LinearGradient id="waveGradBR2" x1="0" y1="0" x2="170" y2="170" gradientUnits="userSpaceOnUse">
+              <Stop offset="0%" stopColor="#FF1F6D" stopOpacity="0.20" />
+              <Stop offset="60%" stopColor="#F472B6" stopOpacity="0.08" />
+              <Stop offset="100%" stopColor="#FFFFFF" stopOpacity="0" />
+            </LinearGradient>
+            <LinearGradient id="waveGradBR3" x1="0" y1="0" x2="230" y2="150" gradientUnits="userSpaceOnUse">
+              <Stop offset="0%" stopColor="#FCE7F3" stopOpacity="0.65" />
+              <Stop offset="65%" stopColor="#FCE7F3" stopOpacity="0.18" />
+              <Stop offset="100%" stopColor="#FFFFFF" stopOpacity="0" />
+            </LinearGradient>
+          </Defs>
 
-  const style = useAnimatedStyle(() => ({
-    transform: [
-      { translateY: interpolate(float.value, [0, 1], [0, -distance]) },
-      { scale: interpolate(float.value, [0, 0.5, 1], [1, 1.08, 1]) },
-    ],
-  }));
-
-  return (
-    <Animated.View
-      style={[
-        styles.floatBubble,
-        { top, left, backgroundColor: wash },
-        style,
-      ]}
-    >
-      <Ionicons name={name} size={18} color={tint} />
-    </Animated.View>
-  );
-};
-
-const CapsuleBubble = ({
-  top,
-  left,
-  delay,
-}: {
-  top: number;
-  left: number;
-  delay: number;
-}) => {
-  const float = useSharedValue(0);
-
-  useEffect(() => {
-    float.value = withDelay(
-      delay,
-      withRepeat(
-        withSequence(
-          withTiming(1, { duration: 1700, easing: Easing.inOut(Easing.sin) }),
-          withTiming(0, { duration: 1700, easing: Easing.inOut(Easing.sin) }),
-        ),
-        -1,
-        false,
-      ),
-    );
-
-    return () => cancelAnimation(float);
-  }, [delay, float]);
-
-  const style = useAnimatedStyle(() => ({
-    transform: [
-      { translateY: interpolate(float.value, [0, 1], [0, -10]) },
-      { rotate: `${interpolate(float.value, [0, 1], [-12, 10])}deg` },
-    ],
-  }));
-
-  return (
-    <Animated.View style={[styles.capsuleWrap, { top, left }, style]}>
-      <View style={styles.capsule}>
-        <View style={[styles.capsuleHalf, styles.capsuleLeft]} />
-        <View style={[styles.capsuleHalf, styles.capsuleRight]} />
+          <Path
+            d="M 0 0 L 230 0 C 185 55, 135 95, 85 155 C 50 195, 22 218, 0 230 Z"
+            fill="url(#waveGradBR3)"
+          />
+          <Path
+            d="M 0 0 L 205 0 C 160 50, 110 90, 68 145 C 38 180, 15 200, 0 210 Z"
+            fill="url(#waveGradBR1)"
+          />
+          <Path
+            d="M 0 0 L 155 0 C 122 38, 78 70, 48 115 C 26 145, 10 162, 0 170 Z"
+            fill="url(#waveGradBR2)"
+          />
+        </Svg>
       </View>
-    </Animated.View>
-  );
-};
+    </View>
+  </>
+);
 
-const LoadingDots = ({ color }: { color: string }) => {
+/**
+ * 4-Segmented Progress Indicator Pills (== -- -- --)
+ */
+const SegmentedProgressBar = ({ activeIndex }: { activeIndex: number }) => {
   return (
-    <View style={styles.dotsRow}>
-      {[0, 1, 2].map((index) => (
-        <LoadingDot key={index} color={color} delay={index * 160} />
-      ))}
+    <View style={styles.segmentedRow}>
+      {[0, 1, 2, 3].map((idx) => {
+        const isActive = idx <= activeIndex;
+        return (
+          <View
+            key={idx}
+            style={[
+              styles.segmentPill,
+              isActive ? styles.segmentPillActive : styles.segmentPillInactive,
+            ]}
+          />
+        );
+      })}
     </View>
   );
 };
 
-const LoadingDot = ({ color, delay }: { color: string; delay: number }) => {
-  const bounce = useSharedValue(0);
+const SessionRestoreVisual = () => {
+  const { colors } = useTheme();
+  const { t } = useTranslation();
+
+  // 1. Continuous 360° orbital revolution of the arcs
+  const orbitRotation = useSharedValue(0);
+
+  // 2. Gentle vertical bobbing / floating of the center product
+  const floatVal = useSharedValue(0);
+
+  // 3. Smooth cross-fade between Splash_Pill and Splash_Bottle
+  const switchVal = useSharedValue(0);
+
+  // 4. Segmented progress step (0 to 3)
+  const [activeStep, setActiveStep] = React.useState(1);
 
   useEffect(() => {
-    bounce.value = withDelay(
-      delay,
-      withRepeat(
-        withSequence(
-          withTiming(1, { duration: 320, easing: Easing.out(Easing.quad) }),
-          withTiming(0, { duration: 320, easing: Easing.in(Easing.quad) }),
-        ),
-        -1,
-        false,
-      ),
+    // 1. Continuous linear revolution
+    orbitRotation.value = withRepeat(
+      withTiming(360, { duration: 3400, easing: Easing.linear }),
+      -1,
+      false,
     );
 
-    return () => cancelAnimation(bounce);
-  }, [bounce, delay]);
-
-  const style = useAnimatedStyle(() => ({
-    opacity: interpolate(bounce.value, [0, 1], [0.35, 1]),
-    transform: [
-      { translateY: interpolate(bounce.value, [0, 1], [0, -5]) },
-      { scale: interpolate(bounce.value, [0, 1], [0.75, 1]) },
-    ],
-  }));
-
-  return (
-    <Animated.View style={[styles.dot, { backgroundColor: color }, style]} />
-  );
-};
-
-const SessionRestoreVisual = () => {
-  const { t } = useTranslation();
-  const { colors, typography, spacing, moderateScale } = useTheme();
-  const bounce = useSharedValue(0);
-
-  const washBlue = mixWithWhite(colors.primary, 0.86);
-  const washTeal = mixWithWhite(colors.secondary, 0.84);
-  const washPink = mixWithWhite('#F472B6', 0.78);
-  const washGold = mixWithWhite(colors.accentGold, 0.72);
-
-  const floatingIcons: FloatIcon[] = [
-    {
-      name: 'medical',
-      tint: colors.primary,
-      wash: washBlue,
-      top: 8,
-      left: 88,
-      delay: 0,
-      distance: 10,
-    },
-    {
-      name: 'heart',
-      tint: '#EC4899',
-      wash: washPink,
-      top: 46,
-      left: 8,
-      delay: 180,
-      distance: 12,
-    },
-    {
-      name: 'bag-handle',
-      tint: colors.secondary,
-      wash: washTeal,
-      top: 46,
-      left: 176,
-      delay: 240,
-      distance: 11,
-    },
-    {
-      name: 'cart',
-      tint: '#EA580C',
-      wash: mixWithWhite('#FB923C', 0.72),
-      top: 154,
-      left: 18,
-      delay: 80,
-      distance: 9,
-    },
-    {
-      name: 'sparkles',
-      tint: '#D97706',
-      wash: washGold,
-      top: 154,
-      left: 168,
-      delay: 320,
-      distance: 13,
-    },
-  ];
-
-  useEffect(() => {
-    bounce.value = withRepeat(
+    // 2. Float up & down smoothly
+    floatVal.value = withRepeat(
       withSequence(
-        withTiming(1, { duration: 780, easing: Easing.out(Easing.quad) }),
-        withTiming(0, { duration: 780, easing: Easing.inOut(Easing.quad) }),
+        withTiming(1, { duration: 1300, easing: Easing.inOut(Easing.quad) }),
+        withTiming(-1, { duration: 1300, easing: Easing.inOut(Easing.quad) }),
+      ),
+      -1,
+      true,
+    );
+
+    // 3. Product carousel switch (cycles every 2.4s)
+    switchVal.value = withRepeat(
+      withSequence(
+        withDelay(2200, withTiming(1, { duration: 600, easing: Easing.inOut(Easing.cubic) })),
+        withDelay(2200, withTiming(0, { duration: 600, easing: Easing.inOut(Easing.cubic) })),
       ),
       -1,
       false,
     );
 
-    return () => cancelAnimation(bounce);
-  }, [bounce]);
+    // 4. Segmented pill loader step animation
+    const progressTimer = setInterval(() => {
+      setActiveStep((prev) => (prev + 1) % 4);
+    }, 550);
 
-  const heroStyle = useAnimatedStyle(() => ({
-    transform: [
-      { translateY: interpolate(bounce.value, [0, 1], [0, -8]) },
-      { scale: interpolate(bounce.value, [0, 1], [1, 1.04]) },
-    ],
+    return () => {
+      cancelAnimation(orbitRotation);
+      cancelAnimation(floatVal);
+      cancelAnimation(switchVal);
+      clearInterval(progressTimer);
+    };
+  }, [orbitRotation, floatVal, switchVal]);
+
+  // Orbit rotating transform
+  const animatedOrbitStyle = useAnimatedStyle(() => ({
+    transform: [{ rotateZ: `${orbitRotation.value}deg` }],
   }));
 
-  return (
+  // Float transform for the product container
+  const animatedProductFloat = useAnimatedStyle(() => ({
+    transform: [{ translateY: interpolate(floatVal.value, [-1, 1], [-7, 7]) }],
+  }));
+
+  // Image 1 (Splash_Pill) cross-fade style
+  const animatedPillStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(switchVal.value, [0, 1], [1, 0]),
+    transform: [{ scale: interpolate(switchVal.value, [0, 1], [1, 0.84]) }],
+  }));
+
+  // Image 2 (Splash_Bottle) cross-fade style
+  const animatedBottleStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(switchVal.value, [0, 1], [0, 1]),
+    transform: [{ scale: interpolate(switchVal.value, [0, 1], [0.84, 1]) }],
+  }));
+
+  /**
+   * Render either the back or front half of the revolving 3D orbit:
+   * - Back half: rendered behind the medicine (zIndex: 1)
+   * - Front half: rendered in front of the medicine (zIndex: 20)
+   */
+  const renderOrbitHalf = (isFront: boolean) => (
     <View
-      style={styles.root}
-      accessibilityRole="progressbar"
-      accessibilityLabel={t('auth.restoringMessage')}
+      pointerEvents="none"
+      style={[
+        styles.orbitPerspectiveContainer,
+        { zIndex: isFront ? 20 : 1 },
+      ]}
     >
-      <LinearGradient
-        colors={[
-          mixWithWhite(colors.primary, 0.9),
-          colors.white,
-          mixWithWhite(colors.secondary, 0.94),
-        ]}
-        locations={[0, 0.46, 1]}
-        start={{ x: 0.1, y: 0 }}
-        end={{ x: 0.9, y: 1 }}
-        style={StyleSheet.absoluteFill}
-      />
-
       <View
-        pointerEvents="none"
         style={[
-          styles.blob,
-          styles.blobTop,
-          { backgroundColor: withAlpha(colors.primary, 0.1) },
+          styles.orbitClipWindow,
+          { top: isFront ? HALF_STAGE : 0 },
         ]}
-      />
-      <View
-        pointerEvents="none"
-        style={[
-          styles.blob,
-          styles.blobBottom,
-          { backgroundColor: withAlpha(colors.secondary, 0.1) },
-        ]}
-      />
-
-      <Animated.View entering={FadeIn.duration(420)} style={styles.content}>
-        <View style={styles.stage}>
-          <PulseRing color={withAlpha(colors.primary, 0.45)} delay={0} size={148} />
-          <PulseRing color={withAlpha(colors.secondary, 0.4)} delay={700} size={148} />
-
-          {floatingIcons.map((icon) => (
-            <FloatingIcon key={icon.name} {...icon} />
-          ))}
-          <CapsuleBubble top={108} left={-6} delay={140} />
-          <CapsuleBubble top={108} left={198} delay={400} />
-
-          <Animated.View style={[styles.heroWrap, heroStyle]}>
-            <LinearGradient
-              colors={[colors.white, mixWithWhite(colors.primary, 0.88)]}
-              start={{ x: 0.2, y: 0 }}
-              end={{ x: 0.9, y: 1 }}
-              style={styles.heroCircle}
-            >
-              <View
-                style={[
-                  styles.bagWell,
-                  { backgroundColor: mixWithWhite(colors.primary, 0.82) },
-                ]}
-              >
-                <Ionicons
-                  name="bag-handle"
-                  size={moderateScale(34)}
-                  color={colors.primary}
-                />
-              </View>
-              <View
-                style={[
-                  styles.plusBadge,
-                  { backgroundColor: colors.primary },
-                ]}
-              >
-                <Ionicons name="medical" size={12} color={colors.white} />
-              </View>
-            </LinearGradient>
+      >
+        <View
+          style={[
+            styles.orbitForeshortenLayer,
+            { top: isFront ? -HALF_STAGE : 0 },
+          ]}
+        >
+          <Animated.View style={[styles.orbitSpinner, animatedOrbitStyle]}>
+            <OrbitSvg />
           </Animated.View>
         </View>
+      </View>
+    </View>
+  );
 
-        <Animated.View
-          entering={FadeInDown.delay(120).duration(420)}
-          style={styles.copy}
-        >
-          <Image
-            source={AUTH_HERO_IMAGES.logo}
-            style={styles.logo}
+  return (
+    <View style={styles.root}>
+      {/* Background Corner Wave Designs (Top-Left & Bottom-Right) */}
+      <CornerWaves />
+
+      {/* Visual Animation Stage */}
+      <View style={styles.stage}>
+        {/* 1. Orbit Arc Layer (Back half - behind product) */}
+        {renderOrbitHalf(false)}
+
+        {/* 2. Center Product Stage */}
+        <Animated.View style={[styles.productStage, animatedProductFloat]}>
+          {/* Product 1: Splash_Pill */}
+          <Animated.Image
+            source={PRODUCT_IMAGES[0]}
+            style={[styles.productImage, animatedPillStyle]}
             resizeMode="contain"
-            accessibilityLabel={APP_CONFIG.APP_NAME}
           />
-          <Text
-            style={[
-              typography.h4,
-              styles.title,
-              { color: colors.textPrimary, marginTop: spacing.md },
-            ]}
-          >
-            {t('auth.restoringTitle')}
-          </Text>
-          <Text
-            style={[
-              typography.bodySmall,
-              styles.subtitle,
-              { color: colors.textSecondary, marginTop: spacing.xs },
-            ]}
-          >
-            {t('auth.restoringMessage')}
-          </Text>
-          <LoadingDots color={colors.primary} />
+
+          {/* Product 2: Splash_Bottle */}
+          <Animated.Image
+            source={PRODUCT_IMAGES[1]}
+            style={[styles.productImage, styles.productImageOverlap, animatedBottleStyle]}
+            resizeMode="contain"
+          />
         </Animated.View>
-      </Animated.View>
+
+        {/* 3. Orbit Arc Layer (Front half - in front of product) */}
+        {renderOrbitHalf(true)}
+      </View>
+
+      {/* Copy / Message */}
+      <View style={styles.copyContainer}>
+        <Text style={[styles.title, { color: colors.textPrimary || '#1E293B' }]}>
+          {t('auth.restoringMessage', 'Getting Sneheal ready...')}
+        </Text>
+
+        {/* 4-Segmented Progress Indicator */}
+        <SegmentedProgressBar activeIndex={activeStep} />
+      </View>
     </View>
   );
 };
@@ -411,142 +414,113 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 24,
   },
-  blob: {
+
+  // Corner Wave Decorations
+  cornerTopLeft: {
     position: 'absolute',
+    top: 0,
+    left: 0,
+    zIndex: 0,
+  },
+  cornerBottomRight: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    zIndex: 0,
+  },
+  rotate180: {
+    transform: [{ rotate: '180deg' }],
+  },
+
+  stage: {
+    width: STAGE_SIZE,
+    height: STAGE_SIZE,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1,
+  },
+
+  // 3D Orbit Layering Containers
+  orbitPerspectiveContainer: {
+    position: 'absolute',
+    width: STAGE_SIZE,
+    height: STAGE_SIZE,
+    alignItems: 'center',
+    justifyContent: 'center',
+    transform: [{ rotateZ: '-22deg' }],
+  },
+  orbitClipWindow: {
+    position: 'absolute',
+    width: STAGE_SIZE,
+    height: HALF_STAGE,
+    overflow: 'hidden',
+    alignItems: 'center',
+  },
+  orbitForeshortenLayer: {
+    position: 'absolute',
+    width: STAGE_SIZE,
+    height: STAGE_SIZE,
+    alignItems: 'center',
+    justifyContent: 'center',
+    transform: [{ rotateX: '66deg' }],
+  },
+  orbitSpinner: {
     width: 220,
     height: 220,
-    borderRadius: 110,
-  },
-  blobTop: {
-    top: -70,
-    right: -50,
-  },
-  blobBottom: {
-    bottom: -80,
-    left: -60,
-  },
-  content: {
-    alignItems: 'center',
-    paddingHorizontal: 28,
-  },
-  stage: {
-    width: STAGE,
-    height: STAGE,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  pulseRing: {
+
+  // Center Product Stage
+  productStage: {
+    zIndex: 10,
+    width: PRODUCT_SIZE,
+    height: PRODUCT_SIZE,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  productImage: {
+    width: PRODUCT_SIZE,
+    height: PRODUCT_SIZE,
+  },
+  productImageOverlap: {
     position: 'absolute',
-    borderWidth: 2,
+    top: 0,
+    left: 0,
   },
-  floatBubble: {
-    position: 'absolute',
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+
+  // Copy & Progress
+  copyContainer: {
     alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
-    elevation: 3,
-  },
-  capsuleWrap: {
-    position: 'absolute',
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#EEF2FF',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
-    elevation: 3,
-  },
-  capsule: {
-    width: 26,
-    height: 14,
-    borderRadius: 7,
-    overflow: 'hidden',
-    flexDirection: 'row',
-    borderWidth: 1,
-    borderColor: 'rgba(15, 23, 42, 0.06)',
-  },
-  capsuleHalf: {
-    flex: 1,
-    height: '100%',
-  },
-  capsuleLeft: {
-    backgroundColor: '#60A5FA',
-  },
-  capsuleRight: {
-    backgroundColor: '#FFFFFF',
-  },
-  heroWrap: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  heroCircle: {
-    width: 112,
-    height: 112,
-    borderRadius: 56,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#CA2164',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.16,
-    shadowRadius: 18,
-    elevation: 8,
-  },
-  bagWell: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  plusBadge: {
-    position: 'absolute',
-    right: 14,
-    bottom: 16,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: '#FFFFFF',
-  },
-  copy: {
-    alignItems: 'center',
-    marginTop: 28,
-  },
-  logo: {
-    width: 56,
-    height: 56,
+    marginTop: 24,
+    zIndex: 1,
   },
   title: {
-    textAlign: 'center',
+    fontSize: 19,
     fontWeight: '700',
-  },
-  subtitle: {
+    letterSpacing: -0.3,
     textAlign: 'center',
   },
-  dotsRow: {
+  segmentedRow: {
     flexDirection: 'row',
-    alignItems: 'flex-end',
-    gap: 7,
-    marginTop: 18,
-    height: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 20,
+    gap: 8,
   },
-  dot: {
-    width: 7,
+  segmentPill: {
+    width: 26,
     height: 7,
     borderRadius: 4,
+  },
+  segmentPillActive: {
+    backgroundColor: '#FF1F6D',
+  },
+  segmentPillInactive: {
+    backgroundColor: '#FCE7F3',
   },
 });
 

@@ -96,6 +96,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
 
       applySession(activeSession);
+      // Hold for 2 seconds on success so user enjoys the branded splash experience
+      await new Promise((resolve) => setTimeout(resolve, 2000));
     } catch (error) {
       devLog('Auth', 'Bootstrap failed', error);
       await clearAuthSession();
