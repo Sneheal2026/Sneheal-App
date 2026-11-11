@@ -287,11 +287,11 @@ const SessionRestoreVisual = () => {
       true,
     );
 
-    // 3. Product carousel switch (cycles every 2.4s)
+    // 3. Snappy product carousel switch (shows both items smoothly within ~2s)
     switchVal.value = withRepeat(
       withSequence(
-        withDelay(2200, withTiming(1, { duration: 600, easing: Easing.inOut(Easing.cubic) })),
-        withDelay(2200, withTiming(0, { duration: 600, easing: Easing.inOut(Easing.cubic) })),
+        withDelay(850, withTiming(1, { duration: 420, easing: Easing.inOut(Easing.cubic) })),
+        withDelay(850, withTiming(0, { duration: 420, easing: Easing.inOut(Easing.cubic) })),
       ),
       -1,
       false,
