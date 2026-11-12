@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Dimensions, StyleSheet, Text, View } from 'react-native';
 import Svg, { Path, G, Defs, LinearGradient, Stop } from 'react-native-svg';
 import Animated, {
   Easing,
@@ -19,6 +19,24 @@ const PRODUCT_IMAGES = [
   require('../../../assets/images/Splash_Pill.webp'),
   require('../../../assets/images/Splash_Bottle.webp'),
 ];
+
+const MANDALA_IMAGE = require('../../../assets/images/Splash_Mandala_Diwali.webp');
+const LANTERN_LEFT_IMAGE = require('../../../assets/images/Splash_Lantern.webp');
+const LANTERN_RIGHT_IMAGE = require('../../../assets/images/Splash_Lantern_Right.webp');
+const GARLAND_IMAGE = require('../../../assets/images/Splash_Lights_Garland.webp');
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+// Circular mandala: reduced size and width to sit comfortably inside header
+const MANDALA_SIZE = Math.min(Math.max(SCREEN_WIDTH * 0.74, 250), 320);
+
+// Lantern dimensions: reduced size and width to remain elegant & proportional
+// Aspect ratio of Splash_Lantern is 159 x 311 (~0.511)
+const LANTERN_HEIGHT = Math.min(Math.max(SCREEN_WIDTH * 0.33, 115), 145);
+const LANTERN_WIDTH = Math.round(LANTERN_HEIGHT * (159 / 311));
+
+// Fairy lights garland spanning full top edge (866 x 232 aspect ratio ~0.268)
+const GARLAND_HEIGHT = Math.round(SCREEN_WIDTH * (232 / 866));
 
 // Canvas sizing
 const STAGE_SIZE = 260;
@@ -147,89 +165,52 @@ const OrbitSvg = () => {
 };
 
 /**
- * Organic fluid wave corners (Top-Left and Bottom-Right)
- * Rendered using layered translucent pastel-pink gradients
+ * Organic layered fluid waves flowing along the bottom screen edge
+ * Recreated from user reference design with soft translucent pink gradients
  */
-const CornerWaves = () => (
-  <>
-    {/* Top-Left Corner Waves */}
-    <View pointerEvents="none" style={styles.cornerTopLeft}>
-      <Svg width={230} height={230} viewBox="0 0 230 230">
+const BottomWaves = () => {
+  return (
+    <View pointerEvents="none" style={styles.bottomWavesContainer}>
+      <Svg width="100%" height={95} viewBox="0 0 1000 130" preserveAspectRatio="none">
         <Defs>
-          <LinearGradient id="waveGrad1" x1="0" y1="0" x2="220" y2="220" gradientUnits="userSpaceOnUse">
-            <Stop offset="0%" stopColor="#F472B6" stopOpacity="0.38" />
-            <Stop offset="50%" stopColor="#FBCFE8" stopOpacity="0.22" />
+          <LinearGradient id="bottomWaveGrad1" x1="0" y1="1" x2="1" y2="0">
+            <Stop offset="0%" stopColor="#FD84BA" stopOpacity="0.45" />
+            <Stop offset="50%" stopColor="#FE9CC5" stopOpacity="0.25" />
+            <Stop offset="100%" stopColor="#FDB3D7" stopOpacity="0.08" />
+          </LinearGradient>
+          <LinearGradient id="bottomWaveGrad2" x1="0" y1="1" x2="0.8" y2="0">
+            <Stop offset="0%" stopColor="#F43F5E" stopOpacity="0.30" />
+            <Stop offset="60%" stopColor="#FD84BA" stopOpacity="0.16" />
             <Stop offset="100%" stopColor="#FFFFFF" stopOpacity="0" />
           </LinearGradient>
-          <LinearGradient id="waveGrad2" x1="0" y1="0" x2="170" y2="170" gradientUnits="userSpaceOnUse">
-            <Stop offset="0%" stopColor="#FF1F6D" stopOpacity="0.20" />
-            <Stop offset="60%" stopColor="#F472B6" stopOpacity="0.08" />
-            <Stop offset="100%" stopColor="#FFFFFF" stopOpacity="0" />
-          </LinearGradient>
-          <LinearGradient id="waveGrad3" x1="0" y1="0" x2="230" y2="150" gradientUnits="userSpaceOnUse">
-            <Stop offset="0%" stopColor="#FCE7F3" stopOpacity="0.65" />
-            <Stop offset="65%" stopColor="#FCE7F3" stopOpacity="0.18" />
+          <LinearGradient id="bottomWaveGrad3" x1="0.2" y1="1" x2="1" y2="0">
+            <Stop offset="0%" stopColor="#FCE7F3" stopOpacity="0.75" />
+            <Stop offset="60%" stopColor="#FDF2F8" stopOpacity="0.25" />
             <Stop offset="100%" stopColor="#FFFFFF" stopOpacity="0" />
           </LinearGradient>
         </Defs>
 
-        {/* Outer broad ambient curve */}
+        {/* Ambient broad wave (Layer 1 - deepest) */}
         <Path
-          d="M 0 0 L 230 0 C 185 55, 135 95, 85 155 C 50 195, 22 218, 0 230 Z"
-          fill="url(#waveGrad3)"
+          d="M 0 35 C 130 18, 280 25, 420 52 C 540 76, 700 82, 850 20 C 910 10, 960 16, 1000 28 L 1000 130 L 0 130 Z"
+          fill="url(#bottomWaveGrad3)"
         />
-        {/* Mid flowing silk curve */}
+
+        {/* Soft pastel pink flowing ribbon (Layer 2) */}
         <Path
-          d="M 0 0 L 205 0 C 160 50, 110 90, 68 145 C 38 180, 15 200, 0 210 Z"
-          fill="url(#waveGrad1)"
+          d="M 0 55 C 140 38, 290 44, 430 72 C 550 96, 710 102, 860 40 C 920 30, 970 36, 1000 48 L 1000 130 L 0 130 Z"
+          fill="url(#bottomWaveGrad1)"
         />
-        {/* Inner delicate wave crest */}
+
+        {/* Vibrant rose crest curve (Layer 3 - front accent) */}
         <Path
-          d="M 0 0 L 155 0 C 122 38, 78 70, 48 115 C 26 145, 10 162, 0 170 Z"
-          fill="url(#waveGrad2)"
+          d="M 0 76 C 150 58, 300 64, 440 90 C 560 114, 720 120, 870 60 C 930 50, 980 56, 1000 68 L 1000 130 L 0 130 Z"
+          fill="url(#bottomWaveGrad2)"
         />
       </Svg>
     </View>
-
-    {/* Bottom-Right Corner Waves (Mirrored via 180° rotation) */}
-    <View pointerEvents="none" style={styles.cornerBottomRight}>
-      <View style={styles.rotate180}>
-        <Svg width={230} height={230} viewBox="0 0 230 230">
-          <Defs>
-            <LinearGradient id="waveGradBR1" x1="0" y1="0" x2="220" y2="220" gradientUnits="userSpaceOnUse">
-              <Stop offset="0%" stopColor="#F472B6" stopOpacity="0.38" />
-              <Stop offset="50%" stopColor="#FBCFE8" stopOpacity="0.22" />
-              <Stop offset="100%" stopColor="#FFFFFF" stopOpacity="0" />
-            </LinearGradient>
-            <LinearGradient id="waveGradBR2" x1="0" y1="0" x2="170" y2="170" gradientUnits="userSpaceOnUse">
-              <Stop offset="0%" stopColor="#FF1F6D" stopOpacity="0.20" />
-              <Stop offset="60%" stopColor="#F472B6" stopOpacity="0.08" />
-              <Stop offset="100%" stopColor="#FFFFFF" stopOpacity="0" />
-            </LinearGradient>
-            <LinearGradient id="waveGradBR3" x1="0" y1="0" x2="230" y2="150" gradientUnits="userSpaceOnUse">
-              <Stop offset="0%" stopColor="#FCE7F3" stopOpacity="0.65" />
-              <Stop offset="65%" stopColor="#FCE7F3" stopOpacity="0.18" />
-              <Stop offset="100%" stopColor="#FFFFFF" stopOpacity="0" />
-            </LinearGradient>
-          </Defs>
-
-          <Path
-            d="M 0 0 L 230 0 C 185 55, 135 95, 85 155 C 50 195, 22 218, 0 230 Z"
-            fill="url(#waveGradBR3)"
-          />
-          <Path
-            d="M 0 0 L 205 0 C 160 50, 110 90, 68 145 C 38 180, 15 200, 0 210 Z"
-            fill="url(#waveGradBR1)"
-          />
-          <Path
-            d="M 0 0 L 155 0 C 122 38, 78 70, 48 115 C 26 145, 10 162, 0 170 Z"
-            fill="url(#waveGradBR2)"
-          />
-        </Svg>
-      </View>
-    </View>
-  </>
-);
+  );
+};
 
 /**
  * 4-Segmented Progress Indicator Pills (== -- -- --)
@@ -257,6 +238,16 @@ const SessionRestoreVisual = () => {
   const { colors } = useTheme();
   const { t } = useTranslation();
 
+  // 0. Continuous 360° rotation of the top background mandala (festive circular motion)
+  const mandalaRotation = useSharedValue(0);
+
+  // Subtle organic pendulum sway for left and right hanging lanterns
+  const leftLanternSway = useSharedValue(0);
+  const rightLanternSway = useSharedValue(0);
+
+  // Subtle warm glow twinkle for fairy lights garland
+  const garlandGlow = useSharedValue(1);
+
   // 1. Continuous 360° orbital revolution of the arcs
   const orbitRotation = useSharedValue(0);
 
@@ -270,6 +261,46 @@ const SessionRestoreVisual = () => {
   const [activeStep, setActiveStep] = React.useState(1);
 
   useEffect(() => {
+    // 0. Slow, continuous circular motion for the top mandala
+    mandalaRotation.value = withRepeat(
+      withTiming(360, { duration: 16000, easing: Easing.linear }),
+      -1,
+      false,
+    );
+
+    // Subtle pendulum swing for left hanging lanterns (-2.4deg to +2.4deg)
+    leftLanternSway.value = withRepeat(
+      withSequence(
+        withTiming(1, { duration: 2500, easing: Easing.inOut(Easing.quad) }),
+        withTiming(-1, { duration: 2500, easing: Easing.inOut(Easing.quad) }),
+      ),
+      -1,
+      true,
+    );
+
+    // Subtle pendulum swing for right hanging lanterns (slightly offset duration & phase)
+    rightLanternSway.value = withDelay(
+      350,
+      withRepeat(
+        withSequence(
+          withTiming(-1, { duration: 2900, easing: Easing.inOut(Easing.quad) }),
+          withTiming(1, { duration: 2900, easing: Easing.inOut(Easing.quad) }),
+        ),
+        -1,
+        true,
+      ),
+    );
+
+    // Subtle fairy lights warm glow breathing effect
+    garlandGlow.value = withRepeat(
+      withSequence(
+        withTiming(0.86, { duration: 1600, easing: Easing.inOut(Easing.quad) }),
+        withTiming(1, { duration: 1600, easing: Easing.inOut(Easing.quad) }),
+      ),
+      -1,
+      true,
+    );
+
     // 1. Continuous linear revolution
     orbitRotation.value = withRepeat(
       withTiming(360, { duration: 3400, easing: Easing.linear }),
@@ -303,12 +334,42 @@ const SessionRestoreVisual = () => {
     }, 550);
 
     return () => {
+      cancelAnimation(mandalaRotation);
+      cancelAnimation(leftLanternSway);
+      cancelAnimation(rightLanternSway);
+      cancelAnimation(garlandGlow);
       cancelAnimation(orbitRotation);
       cancelAnimation(floatVal);
       cancelAnimation(switchVal);
       clearInterval(progressTimer);
     };
-  }, [orbitRotation, floatVal, switchVal]);
+  }, [mandalaRotation, leftLanternSway, rightLanternSway, garlandGlow, orbitRotation, floatVal, switchVal]);
+
+  // Top mandala slow continuous circular rotation style
+  const animatedMandalaStyle = useAnimatedStyle(() => ({
+    transform: [{ rotateZ: `${mandalaRotation.value}deg` }],
+  }));
+
+  // Fairy lights garland gentle twinkle style
+  const animatedGarlandStyle = useAnimatedStyle(() => ({
+    opacity: garlandGlow.value,
+  }));
+
+  // Left lantern pendulum sway (anchored at top)
+  const animatedLeftLanternStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateY: interpolate(leftLanternSway.value, [-1, 1], [-1.2, 1.2]) },
+      { rotateZ: `${interpolate(leftLanternSway.value, [-1, 1], [-2.4, 2.4])}deg` },
+    ],
+  }));
+
+  // Right lantern pendulum sway (anchored at top)
+  const animatedRightLanternStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateY: interpolate(rightLanternSway.value, [-1, 1], [-1.2, 1.2]) },
+      { rotateZ: `${interpolate(rightLanternSway.value, [-1, 1], [-2.4, 2.4])}deg` },
+    ],
+  }));
 
   // Orbit rotating transform
   const animatedOrbitStyle = useAnimatedStyle(() => ({
@@ -367,8 +428,47 @@ const SessionRestoreVisual = () => {
 
   return (
     <View style={styles.root}>
-      {/* Background Corner Wave Designs (Top-Left & Bottom-Right) */}
-      <CornerWaves />
+      {/* 1. Top Center Half-Exposed Rotating Background Mandala */}
+      <View pointerEvents="none" style={styles.topMandalaWrapper}>
+        <Animated.Image
+          source={MANDALA_IMAGE}
+          style={[styles.topMandala, animatedMandalaStyle]}
+          resizeMode="contain"
+        />
+      </View>
+
+      {/* 2. Top Edge Hanging Fairy Lights Garland */}
+      <Animated.View pointerEvents="none" style={[styles.garlandWrapper, animatedGarlandStyle]}>
+        <Animated.Image
+          source={GARLAND_IMAGE}
+          style={styles.garlandImage}
+          resizeMode="stretch"
+        />
+      </Animated.View>
+
+      {/* 3. Left Hanging Lanterns (Gentle Pendulum Sway) */}
+      <Animated.View
+        pointerEvents="none"
+        style={[styles.leftLanternWrapper, animatedLeftLanternStyle]}
+      >
+        <Animated.Image
+          source={LANTERN_LEFT_IMAGE}
+          style={styles.lanternImage}
+          resizeMode="contain"
+        />
+      </Animated.View>
+
+      {/* 4. Right Hanging Lanterns - Mirrored (Gentle Pendulum Sway) */}
+      <Animated.View
+        pointerEvents="none"
+        style={[styles.rightLanternWrapper, animatedRightLanternStyle]}
+      >
+        <Animated.Image
+          source={LANTERN_RIGHT_IMAGE}
+          style={styles.lanternImage}
+          resizeMode="contain"
+        />
+      </Animated.View>
 
       {/* Visual Animation Stage */}
       <View style={styles.stage}>
@@ -405,6 +505,9 @@ const SessionRestoreVisual = () => {
         {/* 4-Segmented Progress Indicator */}
         <SegmentedProgressBar activeIndex={activeStep} />
       </View>
+
+      {/* 5. Bottom Screen Organic Fluid Wave Pattern */}
+      <BottomWaves />
     </View>
   );
 };
@@ -415,24 +518,72 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#FFFFFF',
-    paddingHorizontal: 24,
+    overflow: 'hidden',
   },
 
-  // Corner Wave Decorations
-  cornerTopLeft: {
+  // Bottom Screen Fluid Waves
+  bottomWavesContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    width: '100%',
+    height: 95,
+    zIndex: 0,
+  },
+
+  // Top Center Background Mandala
+  topMandalaWrapper: {
     position: 'absolute',
     top: 0,
     left: 0,
-    zIndex: 0,
-  },
-  cornerBottomRight: {
-    position: 'absolute',
-    bottom: 0,
     right: 0,
+    alignItems: 'center',
     zIndex: 0,
   },
-  rotate180: {
-    transform: [{ rotate: '180deg' }],
+  topMandala: {
+    width: MANDALA_SIZE,
+    height: MANDALA_SIZE,
+    marginTop: -MANDALA_SIZE * 0.46,
+    opacity: 0.95,
+  },
+
+  // Fairy Lights Garland
+  garlandWrapper: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: SCREEN_WIDTH,
+    height: GARLAND_HEIGHT,
+    zIndex: 1,
+  },
+  garlandImage: {
+    width: SCREEN_WIDTH,
+    height: GARLAND_HEIGHT,
+  },
+
+  // Hanging Lanterns (Equidistant from left and right edges for exact center symmetry)
+  leftLanternWrapper: {
+    position: 'absolute',
+    top: 0,
+    left: 10,
+    width: LANTERN_WIDTH,
+    height: LANTERN_HEIGHT,
+    zIndex: 2,
+    transformOrigin: 'top center',
+  },
+  rightLanternWrapper: {
+    position: 'absolute',
+    top: 0,
+    right: 10,
+    width: LANTERN_WIDTH,
+    height: LANTERN_HEIGHT,
+    zIndex: 2,
+    transformOrigin: 'top center',
+  },
+  lanternImage: {
+    width: LANTERN_WIDTH,
+    height: LANTERN_HEIGHT,
   },
 
   stage: {
@@ -496,6 +647,7 @@ const styles = StyleSheet.create({
   copyContainer: {
     alignItems: 'center',
     marginTop: 24,
+    paddingHorizontal: 24,
     zIndex: 1,
   },
   title: {
