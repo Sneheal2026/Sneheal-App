@@ -165,7 +165,6 @@ const OrdersScreen = ({ navigation: tabNavigation }: TabScreenProps<'Orders'>) =
       return (
         <View style={styles.loaderWrap}>
           <OrderLoader />
-          <Text style={styles.loadingText}>{t('orders.loading')}</Text>
         </View>
       );
     }

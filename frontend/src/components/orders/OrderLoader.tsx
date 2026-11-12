@@ -1,102 +1,155 @@
 import React, { useEffect } from 'react';
-import { StyleSheet, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
+import { StyleSheet, Text, View } from 'react-native';
+import Svg, { Path, Defs, LinearGradient, Stop } from 'react-native-svg';
 import Animated, {
   cancelAnimation,
   Easing,
-  interpolate,
   useAnimatedStyle,
   useSharedValue,
   withRepeat,
   withTiming,
 } from 'react-native-reanimated';
+import { useTranslation } from 'react-i18next';
 
-const NAVY = '#111152';
+export interface OrderLoaderProps {
+  title?: string;
+  subtitle?: string;
+  showText?: boolean;
+}
 
-/** Tiny “parcel on its way” loop — one clock, no copy. */
-const OrderLoader = () => {
-  const t = useSharedValue(0);
+/**
+ * Professional dual-arc gradient spinner loader matching the reference UI:
+ * - Opposing smooth hot-pink to blush gradient arcs with rounded end caps
+ * - High-speed continuous 360° rotation (UI-thread hardware accelerated)
+ * - Deep wine/burgundy bold title ("Loading Your Orders...")
+ * - Muted slate subtitle ("Fetching your active and past orders")
+ */
+const OrderLoader: React.FC<OrderLoaderProps> = ({
+  title,
+  subtitle,
+  showText = true,
+}) => {
+  const { t } = useTranslation();
+  const spin = useSharedValue(0);
 
   useEffect(() => {
-    t.value = withRepeat(
-      withTiming(1, { duration: 1800, easing: Easing.inOut(Easing.quad) }),
+    spin.value = withRepeat(
+      withTiming(360, { duration: 1100, easing: Easing.linear }),
       -1,
-      true,
+      false,
     );
-    return () => cancelAnimation(t);
-  }, [t]);
+    return () => cancelAnimation(spin);
+  }, [spin]);
 
-  const halo = useAnimatedStyle(() => ({
-    opacity: interpolate(t.value, [0, 1], [0.22, 0.5]),
-    transform: [{ scale: interpolate(t.value, [0, 1], [0.86, 1.08]) }],
+  const animatedSpinnerStyle = useAnimatedStyle(() => ({
+    transform: [{ rotateZ: `${spin.value}deg` }],
   }));
 
-  const parcel = useAnimatedStyle(() => ({
-    transform: [
-      { translateY: interpolate(t.value, [0, 1], [4, -8]) },
-      { rotate: `${interpolate(t.value, [0, 1], [-6, 6])}deg` },
-    ],
-  }));
-
-  const rider = useAnimatedStyle(() => ({
-    transform: [{ translateX: interpolate(t.value, [0, 1], [-34, 34]) }],
-  }));
+  const displayTitle = title ?? t('orders.loadingTitle', 'Loading Your Orders...');
+  const displaySubtitle =
+    subtitle ?? t('orders.loadingSubtitle', 'Fetching your active and past orders');
 
   return (
-    <View style={styles.wrap} accessibilityRole="progressbar">
-      <Animated.View style={[styles.halo, halo]} />
-      <Animated.View style={parcel}>
-        <LinearGradient colors={['#2A2A86', NAVY]} style={styles.box}>
-          <Ionicons name="cube" size={26} color="#fff" />
-        </LinearGradient>
+    <View style={styles.container} accessibilityRole="progressbar">
+      {/* 360° Rotating Gradient Ring Spinner */}
+      <Animated.View style={[styles.spinnerWrapper, animatedSpinnerStyle]}>
+        <Svg width={80} height={80} viewBox="0 0 80 80">
+          <Defs>
+            {/* Arc 1 Gradient: Top-Right Head -> Faded Tail */}
+            <LinearGradient
+              id="orderArcGrad1"
+              x1="58.0"
+              y1="18.55"
+              x2="37.56"
+              y2="67.89"
+              gradientUnits="userSpaceOnUse"
+            >
+              <Stop offset="0%" stopColor="#E91E63" stopOpacity="1" />
+              <Stop offset="40%" stopColor="#F06292" stopOpacity="0.75" />
+              <Stop offset="75%" stopColor="#F8BBD0" stopOpacity="0.30" />
+              <Stop offset="100%" stopColor="#FCE4EC" stopOpacity="0.04" />
+            </LinearGradient>
+
+            {/* Arc 2 Gradient: Bottom-Left Head -> Faded Tail (180° Symmetrical) */}
+            <LinearGradient
+              id="orderArcGrad2"
+              x1="22.0"
+              y1="61.45"
+              x2="42.44"
+              y2="12.11"
+              gradientUnits="userSpaceOnUse"
+            >
+              <Stop offset="0%" stopColor="#E91E63" stopOpacity="1" />
+              <Stop offset="40%" stopColor="#F06292" stopOpacity="0.75" />
+              <Stop offset="75%" stopColor="#F8BBD0" stopOpacity="0.30" />
+              <Stop offset="100%" stopColor="#FCE4EC" stopOpacity="0.04" />
+            </LinearGradient>
+          </Defs>
+
+          {/* Symmetrical Dual Arcs with Rounded End Caps */}
+          <Path
+            d="M 58.0 18.55 A 28 28 0 0 1 37.56 67.89"
+            stroke="url(#orderArcGrad1)"
+            strokeWidth={7.5}
+            strokeLinecap="round"
+            fill="none"
+          />
+          <Path
+            d="M 22.0 61.45 A 28 28 0 0 1 42.44 12.11"
+            stroke="url(#orderArcGrad2)"
+            strokeWidth={7.5}
+            strokeLinecap="round"
+            fill="none"
+          />
+        </Svg>
       </Animated.View>
-      <View style={styles.track}>
-        <View style={styles.dash} />
-        <Animated.View style={[styles.bike, rider]}>
-          <Ionicons name="bicycle" size={20} color={NAVY} />
-        </Animated.View>
-      </View>
+
+      {/* Copy: Title & Subtitle matching reference design */}
+      {showText && (
+        <View style={styles.textContainer}>
+          <Text style={styles.title} numberOfLines={2}>
+            {displayTitle}
+          </Text>
+          <Text style={styles.subtitle} numberOfLines={2}>
+            {displaySubtitle}
+          </Text>
+        </View>
+      )}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  wrap: {
-    width: 140,
-    height: 132,
+  container: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+  },
+  spinnerWrapper: {
+    width: 80,
+    height: 80,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  halo: {
-    position: 'absolute',
-    top: 10,
-    width: 88,
-    height: 88,
-    borderRadius: 44,
-    backgroundColor: 'rgba(17,17,82,0.1)',
-  },
-  box: {
-    width: 56,
-    height: 56,
-    borderRadius: 18,
+  textContainer: {
     alignItems: 'center',
-    justifyContent: 'center',
+    marginTop: 20,
+    paddingHorizontal: 24,
   },
-  track: {
-    width: 108,
-    height: 28,
-    marginTop: 10,
-    justifyContent: 'center',
+  title: {
+    fontSize: 21,
+    fontWeight: '700',
+    color: '#461427',
+    textAlign: 'center',
+    letterSpacing: -0.3,
   },
-  dash: {
-    height: 2,
-    borderRadius: 1,
-    backgroundColor: 'rgba(17,17,82,0.16)',
-  },
-  bike: {
-    position: 'absolute',
-    alignSelf: 'center',
+  subtitle: {
+    fontSize: 14,
+    fontWeight: '400',
+    color: '#6B7280',
+    textAlign: 'center',
+    letterSpacing: -0.1,
+    marginTop: 6,
   },
 });
 

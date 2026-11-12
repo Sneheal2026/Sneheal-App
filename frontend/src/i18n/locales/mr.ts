@@ -270,6 +270,8 @@ const mr: TranslationResources = {
     emptyErrorHint: 'खाली ओढून रिफ्रेश करा आणि पुन्हा प्रयत्न करा.',
     shopNow: 'औषधे पहा',
     loading: 'ऑर्डर लोड होत आहेत…',
+    loadingTitle: 'तुमचे ऑर्डर लोड होत आहेत...',
+    loadingSubtitle: 'तुमचे सक्रिय आणि मागील ऑर्डर आणत आहोत',
     loadFailed: 'ऑर्डर लोड झाले नाहीत. पुन्हा ओढा.',
     total: 'एकूण',
     itemFallback: 'औषध ऑर्डर',

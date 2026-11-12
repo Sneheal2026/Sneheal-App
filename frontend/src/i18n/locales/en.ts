@@ -271,6 +271,8 @@ const en = {
     emptyErrorHint: 'Pull down to refresh and try again.',
     shopNow: 'Browse medicines',
     loading: 'Loading your orders…',
+    loadingTitle: 'Loading Your Orders...',
+    loadingSubtitle: 'Fetching your active and past orders',
     loadFailed: 'Could not load orders. Pull to retry.',
     total: 'Total',
     itemFallback: 'Medicine order',

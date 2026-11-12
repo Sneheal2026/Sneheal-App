@@ -270,6 +270,8 @@ const hi: TranslationResources = {
     emptyErrorHint: 'नीचे खींचकर रिफ्रेश करें और फिर कोशिश करें।',
     shopNow: 'दवाइयाँ देखें',
     loading: 'ऑर्डर लोड हो रहे हैं…',
+    loadingTitle: 'आपके ऑर्डर लोड हो रहे हैं...',
+    loadingSubtitle: 'आपके सक्रिय और पुराने ऑर्डर प्राप्त किए जा रहे हैं',
     loadFailed: 'ऑर्डर लोड नहीं हुए। फिर से खींचें।',
     total: 'कुल',
     itemFallback: 'दवा ऑर्डर',
