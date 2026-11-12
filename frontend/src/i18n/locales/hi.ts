@@ -82,6 +82,7 @@ const hi: TranslationResources = {
     openingHome: 'होम खोला जा रहा है...',
     restoringTitle: 'आपकी फार्मेसी तैयार हो रही है',
     restoringMessage: 'स्नेहील तैयार हो रहा है...',
+    restoringSubtitle: 'आपकी सेहत, घर तक डिलीवरी के लिए तैयार',
     continuePreviewShort: 'बिना लॉगिन जारी रखें (प्रीव्यू)',
     termsPrefix: 'जारी रखकर, आप हमारी',
     termsOfService: 'सेवा की शर्तें',

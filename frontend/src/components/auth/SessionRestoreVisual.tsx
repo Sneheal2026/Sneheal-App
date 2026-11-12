@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { Dimensions, StyleSheet, Text, View } from 'react-native';
-import Svg, { Path, G, Defs, LinearGradient, Stop } from 'react-native-svg';
+import Svg, { Path, G, Defs, LinearGradient, Stop, Line } from 'react-native-svg';
 import Animated, {
   Easing,
   interpolate,
@@ -13,6 +13,7 @@ import Animated, {
   cancelAnimation,
 } from 'react-native-reanimated';
 import { useTranslation } from 'react-i18next';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/hooks/useTheme';
 
 const PRODUCT_IMAGES = [
@@ -25,7 +26,12 @@ const LANTERN_LEFT_IMAGE = require('../../../assets/images/Splash_Lantern.webp')
 const LANTERN_RIGHT_IMAGE = require('../../../assets/images/Splash_Lantern_Right.webp');
 const GARLAND_IMAGE = require('../../../assets/images/Splash_Lights_Garland.webp');
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+
+// Progress bar dimensions matching exact reference design
+const BAR_WIDTH = Math.min(Math.max(Math.round(SCREEN_WIDTH * 0.58), 210), 245);
+const BAR_HEIGHT = 12;
+const BAR_RADIUS = 6;
 
 // Circular mandala: reduced size and width to sit comfortably inside header
 const MANDALA_SIZE = Math.min(Math.max(SCREEN_WIDTH * 0.74, 250), 320);
@@ -166,46 +172,60 @@ const OrbitSvg = () => {
 
 /**
  * Organic layered fluid waves flowing along the bottom screen edge
- * Recreated from user reference design with soft translucent pink gradients
+ * Enlarged and heightened to remain prominently visible above navigation bars on all mobiles
  */
-const BottomWaves = () => {
+const BottomWaves = ({ height }: { height: number }) => {
   return (
-    <View pointerEvents="none" style={styles.bottomWavesContainer}>
-      <Svg width="100%" height={95} viewBox="0 0 1000 130" preserveAspectRatio="none">
+    <View pointerEvents="none" style={[styles.bottomWavesContainer, { height }]}>
+      <Svg width="100%" height={height} viewBox="0 0 1000 180" preserveAspectRatio="none">
         <Defs>
-          <LinearGradient id="bottomWaveGrad1" x1="0" y1="1" x2="1" y2="0">
-            <Stop offset="0%" stopColor="#FD84BA" stopOpacity="0.45" />
-            <Stop offset="50%" stopColor="#FE9CC5" stopOpacity="0.25" />
-            <Stop offset="100%" stopColor="#FDB3D7" stopOpacity="0.08" />
-          </LinearGradient>
-          <LinearGradient id="bottomWaveGrad2" x1="0" y1="1" x2="0.8" y2="0">
-            <Stop offset="0%" stopColor="#F43F5E" stopOpacity="0.30" />
-            <Stop offset="60%" stopColor="#FD84BA" stopOpacity="0.16" />
+          {/* Ambient soft glow gradient (deepest layer) */}
+          <LinearGradient id="bottomWaveGrad1" x1="0.2" y1="1" x2="0.8" y2="0">
+            <Stop offset="0%" stopColor="#FCE7F3" stopOpacity="0.85" />
+            <Stop offset="55%" stopColor="#FDF2F8" stopOpacity="0.40" />
             <Stop offset="100%" stopColor="#FFFFFF" stopOpacity="0" />
           </LinearGradient>
-          <LinearGradient id="bottomWaveGrad3" x1="0.2" y1="1" x2="1" y2="0">
-            <Stop offset="0%" stopColor="#FCE7F3" stopOpacity="0.75" />
-            <Stop offset="60%" stopColor="#FDF2F8" stopOpacity="0.25" />
+
+          {/* Fluid ribbon gradient (middle layer) */}
+          <LinearGradient id="bottomWaveGrad2" x1="0" y1="1" x2="1" y2="0">
+            <Stop offset="0%" stopColor="#FD84BA" stopOpacity="0.45" />
+            <Stop offset="50%" stopColor="#FE9CC5" stopOpacity="0.26" />
+            <Stop offset="100%" stopColor="#FDB3D7" stopOpacity="0.08" />
+          </LinearGradient>
+
+          {/* Vibrant rose crest gradient (front layer) */}
+          <LinearGradient id="bottomWaveGrad3" x1="0" y1="1" x2="0.8" y2="0">
+            <Stop offset="0%" stopColor="#F43F5E" stopOpacity="0.36" />
+            <Stop offset="55%" stopColor="#FD84BA" stopOpacity="0.18" />
             <Stop offset="100%" stopColor="#FFFFFF" stopOpacity="0" />
           </LinearGradient>
         </Defs>
 
-        {/* Ambient broad wave (Layer 1 - deepest) */}
+        {/* Ambient broad wave (Layer 1 - deepest, rises tallest) */}
         <Path
-          d="M 0 35 C 130 18, 280 25, 420 52 C 540 76, 700 82, 850 20 C 910 10, 960 16, 1000 28 L 1000 130 L 0 130 Z"
-          fill="url(#bottomWaveGrad3)"
-        />
-
-        {/* Soft pastel pink flowing ribbon (Layer 2) */}
-        <Path
-          d="M 0 55 C 140 38, 290 44, 430 72 C 550 96, 710 102, 860 40 C 920 30, 970 36, 1000 48 L 1000 130 L 0 130 Z"
+          d="M 0 35 C 160 12, 320 20, 470 55 C 610 88, 760 30, 890 15 C 935 9, 970 18, 1000 28 L 1000 180 L 0 180 Z"
           fill="url(#bottomWaveGrad1)"
         />
 
-        {/* Vibrant rose crest curve (Layer 3 - front accent) */}
+        {/* Soft pastel pink flowing ribbon (Layer 2 - middle) */}
         <Path
-          d="M 0 76 C 150 58, 300 64, 440 90 C 560 114, 720 120, 870 60 C 930 50, 980 56, 1000 68 L 1000 130 L 0 130 Z"
+          d="M 0 68 C 150 42, 310 50, 460 84 C 590 114, 760 55, 890 38 C 935 32, 970 42, 1000 52 L 1000 180 L 0 180 Z"
           fill="url(#bottomWaveGrad2)"
+        />
+
+        {/* Vibrant rose crest curve (Layer 3 - front accent, rich fluid crest) */}
+        <Path
+          d="M 0 102 C 150 76, 310 84, 460 116 C 590 144, 760 90, 890 70 C 935 62, 970 72, 1000 84 L 1000 180 L 0 180 Z"
+          fill="url(#bottomWaveGrad3)"
+        />
+
+        {/* Delicate glowing highlight along crest line */}
+        <Path
+          d="M 0 102 C 150 76, 310 84, 460 116 C 590 144, 760 90, 890 70 C 935 62, 970 72, 1000 84"
+          stroke="#FF1F6D"
+          strokeWidth={1.5}
+          strokeOpacity={0.24}
+          fill="none"
         />
       </Svg>
     </View>
@@ -213,30 +233,84 @@ const BottomWaves = () => {
 };
 
 /**
- * 4-Segmented Progress Indicator Pills (== -- -- --)
+ * Barber-pole candy-striped capsule progress bar matching the exact design:
+ * - Rounded pill container with soft blush track (#FDE8F1)
+ * - Hot-pink active fill (#FF1764)
+ * - Seamless diagonal candy stripes (/ / / / /) with continuous smooth glide
+ * - Smooth progress fill transition to exact ~68% fill ratio
  */
-const SegmentedProgressBar = ({ activeIndex }: { activeIndex: number }) => {
+const CandyStripedProgressBar = () => {
+  const stripeOffset = useSharedValue(0);
+  const fillProgress = useSharedValue(0.25);
+
+  useEffect(() => {
+    // Smooth entry easing to exact ~68% fill ratio
+    fillProgress.value = withTiming(0.68, {
+      duration: 1100,
+      easing: Easing.out(Easing.cubic),
+    });
+
+    // Seamless continuous barber-pole candy stripe translation
+    stripeOffset.value = withRepeat(
+      withTiming(-16, { duration: 800, easing: Easing.linear }),
+      -1,
+      false,
+    );
+
+    return () => {
+      cancelAnimation(stripeOffset);
+      cancelAnimation(fillProgress);
+    };
+  }, [stripeOffset, fillProgress]);
+
+  const animatedFillStyle = useAnimatedStyle(() => ({
+    width: interpolate(fillProgress.value, [0, 1], [0, BAR_WIDTH]),
+  }));
+
+  const animatedStripesStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: stripeOffset.value }],
+  }));
+
+  const stripeCount = Math.ceil((BAR_WIDTH + 64) / 16) + 4;
+
   return (
-    <View style={styles.segmentedRow}>
-      {[0, 1, 2, 3].map((idx) => {
-        const isActive = idx <= activeIndex;
-        return (
-          <View
-            key={idx}
-            style={[
-              styles.segmentPill,
-              isActive ? styles.segmentPillActive : styles.segmentPillInactive,
-            ]}
-          />
-        );
-      })}
+    <View style={styles.progressTrack}>
+      <Animated.View style={[styles.progressFill, animatedFillStyle]}>
+        <Animated.View style={[styles.stripesStrip, animatedStripesStyle]}>
+          <Svg
+            width={BAR_WIDTH + 64}
+            height={BAR_HEIGHT}
+            viewBox={`0 0 ${BAR_WIDTH + 64} ${BAR_HEIGHT}`}
+          >
+            {Array.from({ length: stripeCount }).map((_, i) => (
+              <Line
+                key={i}
+                x1={i * 16 - 12}
+                y1={18}
+                x2={i * 16 + 8}
+                y2={-6}
+                stroke="rgba(255, 255, 255, 0.32)"
+                strokeWidth={7}
+                strokeLinecap="square"
+              />
+            ))}
+          </Svg>
+        </Animated.View>
+      </Animated.View>
     </View>
   );
 };
 
 const SessionRestoreVisual = () => {
+  const insets = useSafeAreaInsets();
   const { colors } = useTheme();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+
+  // Bottom waves height: dynamically calculated with safe-area bottom insets
+  // to ensure the wave crests and design stay prominently visible above device navigation bars
+  const bottomInset = Math.max(insets.bottom, 0);
+  const waveBaseHeight = Math.min(Math.max(SCREEN_HEIGHT * 0.17, 140), 175);
+  const totalWaveHeight = waveBaseHeight + bottomInset;
 
   // 0. Continuous 360° rotation of the top background mandala (festive circular motion)
   const mandalaRotation = useSharedValue(0);
@@ -256,9 +330,6 @@ const SessionRestoreVisual = () => {
 
   // 3. Smooth cross-fade between Splash_Pill and Splash_Bottle
   const switchVal = useSharedValue(0);
-
-  // 4. Segmented progress step (0 to 3)
-  const [activeStep, setActiveStep] = React.useState(1);
 
   useEffect(() => {
     // 0. Slow, continuous circular motion for the top mandala
@@ -328,11 +399,6 @@ const SessionRestoreVisual = () => {
       false,
     );
 
-    // 4. Segmented pill loader step animation
-    const progressTimer = setInterval(() => {
-      setActiveStep((prev) => (prev + 1) % 4);
-    }, 550);
-
     return () => {
       cancelAnimation(mandalaRotation);
       cancelAnimation(leftLanternSway);
@@ -341,7 +407,6 @@ const SessionRestoreVisual = () => {
       cancelAnimation(orbitRotation);
       cancelAnimation(floatVal);
       cancelAnimation(switchVal);
-      clearInterval(progressTimer);
     };
   }, [mandalaRotation, leftLanternSway, rightLanternSway, garlandGlow, orbitRotation, floatVal, switchVal]);
 
@@ -496,18 +561,39 @@ const SessionRestoreVisual = () => {
         {renderOrbitHalf(true)}
       </View>
 
-      {/* Copy / Message */}
+      {/* Copy / Message matching exact reference design */}
       <View style={styles.copyContainer}>
-        <Text style={[styles.title, { color: colors.textPrimary || '#1E293B' }]}>
-          {t('auth.restoringMessage', 'Getting Sneheal ready...')}
+        <Text style={styles.title} numberOfLines={1} adjustsFontSizeToFit>
+          {i18n.language === 'hi' ? (
+            <>
+              <Text style={styles.titleBrand}>स्नेहील</Text>
+              <Text style={styles.titleRegular}> तैयार हो रहा है...</Text>
+            </>
+          ) : i18n.language === 'mr' ? (
+            <>
+              <Text style={styles.titleBrand}>स्नेहील</Text>
+              <Text style={styles.titleRegular}> तयार होत आहे...</Text>
+            </>
+          ) : (
+            <>
+              <Text style={styles.titleRegular}>Getting </Text>
+              <Text style={styles.titleBrand}>Sneheal</Text>
+              <Text style={styles.titleRegular}> Ready...</Text>
+            </>
+          )}
         </Text>
 
-        {/* 4-Segmented Progress Indicator */}
-        <SegmentedProgressBar activeIndex={activeStep} />
+        {/* Subtitle: Preparing your health, for home delivery */}
+        <Text style={styles.subtitle}>
+          {t('auth.restoringSubtitle', 'Preparing your health, for home delivery')}
+        </Text>
+
+        {/* Barber-Pole Candy Striped Capsule Progress Bar */}
+        <CandyStripedProgressBar />
       </View>
 
-      {/* 5. Bottom Screen Organic Fluid Wave Pattern */}
-      <BottomWaves />
+      {/* 5. Bottom Screen Organic Fluid Wave Pattern (Enlarged & Heightened above nav bar) */}
+      <BottomWaves height={totalWaveHeight} />
     </View>
   );
 };
@@ -528,7 +614,6 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     width: '100%',
-    height: 95,
     zIndex: 0,
   },
 
@@ -643,36 +728,58 @@ const styles = StyleSheet.create({
     left: 0,
   },
 
-  // Copy & Progress
+  // Copy & Progress matching exact reference design
   copyContainer: {
     alignItems: 'center',
     marginTop: 24,
-    paddingHorizontal: 24,
+    paddingHorizontal: 20,
     zIndex: 1,
   },
   title: {
-    fontSize: 19,
-    fontWeight: '700',
+    fontSize: 20,
     letterSpacing: -0.3,
     textAlign: 'center',
   },
-  segmentedRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 20,
-    gap: 8,
+  titleRegular: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#263238',
+    letterSpacing: -0.3,
   },
-  segmentPill: {
-    width: 26,
-    height: 7,
-    borderRadius: 4,
+  titleBrand: {
+    fontSize: 20,
+    fontWeight: '800',
+    fontStyle: 'italic',
+    color: '#FF1764',
+    letterSpacing: -0.3,
   },
-  segmentPillActive: {
-    backgroundColor: '#FF1F6D',
+  subtitle: {
+    marginTop: 6,
+    fontSize: 13.5,
+    fontWeight: '400',
+    color: '#64748B',
+    textAlign: 'center',
+    letterSpacing: -0.1,
   },
-  segmentPillInactive: {
-    backgroundColor: '#FCE7F3',
+  progressTrack: {
+    width: BAR_WIDTH,
+    height: BAR_HEIGHT,
+    borderRadius: BAR_RADIUS,
+    backgroundColor: '#FDE8F1',
+    overflow: 'hidden',
+    marginTop: 18,
+  },
+  progressFill: {
+    height: BAR_HEIGHT,
+    borderRadius: BAR_RADIUS,
+    backgroundColor: '#FF1764',
+    overflow: 'hidden',
+  },
+  stripesStrip: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    height: BAR_HEIGHT,
   },
 });
 

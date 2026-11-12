@@ -82,6 +82,7 @@ const mr: TranslationResources = {
     openingHome: 'होम उघडत आहे...',
     restoringTitle: 'तुमची फार्मसी तयार होत आहे',
     restoringMessage: 'स्नेहील तयार होत आहे...',
+    restoringSubtitle: 'तुमचे आरोग्य, घरपोच डिलिव्हरीसाठी सज्ज',
     continuePreviewShort: 'लॉगिनशिवाय सुरू ठेवा (प्रीव्यू)',
     termsPrefix: 'सुरू ठेवून, तुम्ही आमच्या',
     termsOfService: 'सेवा अटी',
