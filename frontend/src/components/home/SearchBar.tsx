@@ -204,14 +204,14 @@ const SearchBar = React.forwardRef<TextInput, SearchBarProps>(({
           shadowRadius: 14,
           elevation: 6,
         },
-        !insideHeader && !elevated && {
-          ...shadows.md,
-          shadowColor: colors.black,
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.08,
-          shadowRadius: 12,
-          elevation: 4,
-        },
+        // !insideHeader && !elevated && {
+        //   ...shadows.md,
+        //   shadowColor: colors.black,
+        //   shadowOffset: { width: 0, height: 4 },
+        //   shadowOpacity: 0.08,
+        //   shadowRadius: 12,
+        //   elevation: 4,
+        // },
         onDocumentPress != null && styles.searchContainerWithAction,
       ]}
     >
@@ -222,53 +222,53 @@ const SearchBar = React.forwardRef<TextInput, SearchBarProps>(({
         accessibilityRole={isLaunchOnly ? 'search' : undefined}
         accessibilityLabel={isLaunchOnly ? t('tabs.search') : undefined}
       >
-      <Ionicons
-        name="search"
-        size={19}
-        color={colors.headerTextDark}
-        style={styles.searchIcon}
-      />
-      <View style={styles.inputWrap} pointerEvents={isLaunchOnly ? 'none' : 'auto'}>
-        <TextInput
-          ref={setInputRef}
-          style={[styles.searchInput, typography.bodySmall, { color: colors.textPrimary }]}
-          placeholder={showStaticPlaceholder ? resolvedPlaceholder : ''}
-          placeholderTextColor={colors.textMuted}
-          value={value}
-          onChangeText={onChangeText}
-          onFocus={handleFocus}
-          onBlur={handleBlur}
-          editable={!isLaunchOnly}
-          showSoftInputOnFocus={!isLaunchOnly}
-          onPressIn={() => {
-            if (isLaunchOnly) {
-              handleFieldPress();
-              return;
-            }
-            if (!value) {
-              requestAnimationFrame(() => {
-                inputRef.current?.setSelection(0, 0);
-              });
-            }
-          }}
-          returnKeyType="search"
-          selection={!value && isFocused ? { start: 0, end: 0 } : undefined}
+        <Ionicons
+          name="search"
+          size={19}
+          color={colors.headerTextDark}
+          style={styles.searchIcon}
         />
-        {showAnimatedPlaceholder && (
-          <AnimatedPlaceholder
-            terms={resolvedSuggestions}
-            searchPrefix={t('home.searchPrefix')}
-            paused={isFocused}
+        <View style={styles.inputWrap} pointerEvents={isLaunchOnly ? 'none' : 'auto'}>
+          <TextInput
+            ref={setInputRef}
+            style={[styles.searchInput, typography.bodySmall, { color: colors.textPrimary }]}
+            placeholder={showStaticPlaceholder ? resolvedPlaceholder : ''}
+            placeholderTextColor={colors.textMuted}
+            value={value}
+            onChangeText={onChangeText}
+            onFocus={handleFocus}
+            onBlur={handleBlur}
+            editable={!isLaunchOnly}
+            showSoftInputOnFocus={!isLaunchOnly}
+            onPressIn={() => {
+              if (isLaunchOnly) {
+                handleFieldPress();
+                return;
+              }
+              if (!value) {
+                requestAnimationFrame(() => {
+                  inputRef.current?.setSelection(0, 0);
+                });
+              }
+            }}
+            returnKeyType="search"
+            selection={!value && isFocused ? { start: 0, end: 0 } : undefined}
           />
-        )}
-        {showListeningPlaceholder && (
-          <View style={styles.placeholderRow} pointerEvents="none">
-            <Text style={[typography.bodySmall, { color: colors.primary, fontWeight: '500' }]}>
-              {t('voice.listening')}
-            </Text>
-          </View>
-        )}
-      </View>
+          {showAnimatedPlaceholder && (
+            <AnimatedPlaceholder
+              terms={resolvedSuggestions}
+              searchPrefix={t('home.searchPrefix')}
+              paused={isFocused}
+            />
+          )}
+          {showListeningPlaceholder && (
+            <View style={styles.placeholderRow} pointerEvents="none">
+              <Text style={[typography.bodySmall, { color: colors.primary, fontWeight: '500' }]}>
+                {t('voice.listening')}
+              </Text>
+            </View>
+          )}
+        </View>
       </Pressable>
       {showClearButton && !isLaunchOnly && (
         <TouchableOpacity
@@ -321,12 +321,12 @@ const SearchBar = React.forwardRef<TextInput, SearchBarProps>(({
           {
             borderRadius: borderRadius.xl,
             backgroundColor: colors.surface,
-            ...shadows.md,
-            shadowColor: colors.black,
-            shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.15,
-            shadowRadius: 14,
-            elevation: 6,
+            // ...shadows.md,
+            // shadowColor: colors.black,
+            // shadowOffset: { width: 0, height: 4 },
+            // shadowOpacity: 0.15,
+            // shadowRadius: 14,
+            // elevation: 6,
           },
           compact && styles.documentBtnCompact,
           compact && { borderRadius: borderRadius.lg },
