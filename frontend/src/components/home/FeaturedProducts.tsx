@@ -1,11 +1,9 @@
-import React, { useCallback } from 'react';
+import React, { useMemo } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   Pressable,
-  Dimensions,
-  FlatList,
   Image,
   Platform,
 } from 'react-native';
@@ -20,18 +18,10 @@ import type { Product } from '@/types/product.types';
 
 export type { Product } from '@/types/product.types';
 
-const { colors, spacing, typography, moderateScale, device } = theme;
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const { colors, spacing, typography, moderateScale } = theme;
 
 const FLOWER_DESIGN = require('../../../assets/images/FlowerDesignn.webp');
 const TITLE_FLOWER_SIZE = moderateScale(38);
-
-const CARD_WIDTH = device.isSmallDevice
-  ? SCREEN_WIDTH * 0.44
-  : SCREEN_WIDTH * 0.42;
-const IMAGE_BOX_HEIGHT = CARD_WIDTH * 0.88;
-const CARD_HEIGHT = IMAGE_BOX_HEIGHT + moderateScale(110);
-const CARD_MARGIN = spacing.md;
 
 interface ProductCardProps {
   item: Product;
@@ -41,53 +31,75 @@ interface ProductCardProps {
   onPress?: (id: string) => void;
 }
 
-const ProductCard = ({ item, quantity, onIncrement, onDecrement, onPress }: ProductCardProps) => {
-  const { colors } = useTheme();
+const ProductCard = React.memo(
+  ({ item, quantity, onIncrement, onDecrement, onPress }: ProductCardProps) => {
+    const { colors } = useTheme();
 
-  return (
-    <Pressable style={styles.card} onPress={() => onPress?.(item.id)}>
-      <View style={styles.imageBox}>
-        <Image source={item.image} style={styles.image} resizeMode="contain" />
-      </View>
+    const discountPercent =
+      item.originalPrice && item.originalPrice > item.price
+        ? Math.round(((item.originalPrice - item.price) / item.originalPrice) * 100)
+        : 0;
 
-      <View style={styles.info}>
-        <View style={styles.textBlock}>
-          <Text style={styles.name} numberOfLines={2}>
-            {item.name}
-          </Text>
-          <Text style={styles.unit} numberOfLines={1}>
-            {item.unit || ' '}
-          </Text>
-        </View>
-
-        <View style={styles.footer}>
-          <View style={styles.priceBox}>
-            <View style={styles.priceLine}>
-              <Text style={[styles.price, { color: colors.primary }]}>
-                ₹{item.price.toFixed(2)}
-              </Text>
-              {item.originalPrice ? (
-                <Text style={styles.oldPrice}>₹{item.originalPrice.toFixed(2)}</Text>
-              ) : null}
+    return (
+      <Pressable
+        style={({ pressed }) => [
+          styles.card,
+          { borderColor: colors.cardBorder },
+          pressed && styles.cardPressed,
+        ]}
+        onPress={() => onPress?.(item.id)}
+        accessibilityRole="button"
+        accessibilityLabel={`${item.name}, ₹${item.price.toFixed(2)}`}
+      >
+        <View style={styles.imageBox}>
+          {discountPercent > 0 ? (
+            <View style={styles.discountBadge}>
+              <Text style={styles.discountText}>{discountPercent}% OFF</Text>
             </View>
-          </View>
-          <QuantityStepper
-            size="xs"
-            reserveSlot={false}
-            quantity={quantity}
-            onIncrement={() => onIncrement(item.id)}
-            onDecrement={() => onDecrement(item.id)}
-          />
+          ) : null}
+          <Image source={item.image} style={styles.image} resizeMode="contain" />
         </View>
-      </View>
-    </Pressable>
-  );
-};
 
-const SkeletonCard = () => (
+        <View style={styles.info}>
+          <View style={styles.textBlock}>
+            <Text style={styles.name} numberOfLines={2}>
+              {item.name}
+            </Text>
+            <Text style={styles.unit} numberOfLines={1}>
+              {item.unit || ' '}
+            </Text>
+          </View>
+
+          <View style={styles.footer}>
+            <View style={styles.priceBox}>
+              <View style={styles.priceLine}>
+                <Text style={[styles.price, { color: colors.primary }]}>
+                  ₹{item.price.toFixed(2)}
+                </Text>
+                {item.originalPrice ? (
+                  <Text style={styles.oldPrice}>₹{item.originalPrice.toFixed(2)}</Text>
+                ) : null}
+              </View>
+            </View>
+            <QuantityStepper
+              size="xs"
+              reserveSlot={false}
+              quantity={quantity}
+              onIncrement={() => onIncrement(item.id)}
+              onDecrement={() => onDecrement(item.id)}
+            />
+          </View>
+        </View>
+      </Pressable>
+    );
+  },
+);
+ProductCard.displayName = 'ProductCard';
+
+const SkeletonCard = React.memo(() => (
   <View style={styles.card}>
     <View style={styles.imageBox}>
-      <Shimmer width="88%" height="88%" borderRadius={moderateScale(6)} />
+      <Shimmer width="72%" height="72%" borderRadius={moderateScale(8)} />
     </View>
     <View style={styles.info}>
       <View style={styles.textBlock}>
@@ -107,7 +119,8 @@ const SkeletonCard = () => (
       </View>
     </View>
   </View>
-);
+));
+SkeletonCard.displayName = 'SkeletonCard';
 
 interface FeaturedProductsProps {
   products: Product[];
@@ -119,6 +132,8 @@ interface FeaturedProductsProps {
   onPressItem?: (id: string) => void;
   onRetry?: () => void;
 }
+
+const SKELETON_ROWS = [[0, 1], [2, 3], [4, 5]];
 
 const FeaturedProducts = ({
   products,
@@ -133,18 +148,13 @@ const FeaturedProducts = ({
   const { colors } = useTheme();
   const { t } = useTranslation();
 
-  const renderItem = useCallback(
-    ({ item }: { item: Product }) => (
-      <ProductCard
-        item={item}
-        quantity={quantities[item.id] ?? 0}
-        onIncrement={onIncrement}
-        onDecrement={onDecrement}
-        onPress={onPressItem}
-      />
-    ),
-    [quantities, onIncrement, onDecrement, onPressItem],
-  );
+  const productRows = useMemo(() => {
+    const rows: Product[][] = [];
+    for (let i = 0; i < products.length; i += 2) {
+      rows.push(products.slice(i, i + 2));
+    }
+    return rows;
+  }, [products]);
 
   const showSkeletons = loading && products.length === 0;
   const showError = !loading && error && products.length === 0;
@@ -171,10 +181,12 @@ const FeaturedProducts = ({
       </View>
 
       {showSkeletons ? (
-        <View style={[styles.list, styles.skeletonRow]}>
-          {[0, 1, 2].map((key) => (
-            <View key={key} style={{ marginRight: CARD_MARGIN }}>
-              <SkeletonCard />
+        <View style={styles.grid}>
+          {SKELETON_ROWS.map((row, index) => (
+            <View key={`skeleton-row-${index}`} style={styles.row}>
+              {row.map((item) => (
+                <SkeletonCard key={`skeleton-${item}`} />
+              ))}
             </View>
           ))}
         </View>
@@ -189,16 +201,23 @@ const FeaturedProducts = ({
           <Text style={styles.stateText}>{t('home.noProducts')}</Text>
         </View>
       ) : (
-        <FlatList
-          data={products}
-          renderItem={renderItem}
-          keyExtractor={(item) => item.id}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.list}
-          ItemSeparatorComponent={() => <View style={{ width: CARD_MARGIN }} />}
-          nestedScrollEnabled
-        />
+        <View style={styles.grid}>
+          {productRows.map((row, rowIndex) => (
+            <View key={`row-${rowIndex}`} style={styles.row}>
+              {row.map((item) => (
+                <ProductCard
+                  key={item.id}
+                  item={item}
+                  quantity={quantities[item.id] ?? 0}
+                  onIncrement={onIncrement}
+                  onDecrement={onDecrement}
+                  onPress={onPressItem}
+                />
+              ))}
+              {row.length === 1 ? <View style={styles.cardSpacer} /> : null}
+            </View>
+          ))}
+        </View>
       )}
     </View>
   );
@@ -238,35 +257,19 @@ const styles = StyleSheet.create({
     letterSpacing: -0.3,
     marginBottom: 0,
   },
-  list: {
+  grid: {
     paddingHorizontal: spacing.lg,
   },
-  skeletonRow: {
+  row: {
     flexDirection: 'row',
-  },
-  stateBox: {
-    marginHorizontal: spacing.lg,
-    paddingVertical: spacing.xl,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.xs,
-  },
-  stateText: {
-    fontSize: moderateScale(13),
-    color: colors.textSecondary,
-    textAlign: 'center',
-  },
-  stateAction: {
-    fontSize: moderateScale(13),
-    fontWeight: '700',
-    marginTop: spacing.xxs,
+    gap: spacing.md,
+    marginBottom: spacing.md,
   },
   card: {
-    width: CARD_WIDTH,
-    height: CARD_HEIGHT,
+    flex: 1,
     backgroundColor: colors.white,
-    borderRadius: moderateScale(8),
-    borderWidth: 2,
+    borderRadius: moderateScale(10),
+    borderWidth: 1.5,
     borderColor: colors.cardBorder,
     overflow: 'hidden',
     ...Platform.select({
@@ -277,33 +280,58 @@ const styles = StyleSheet.create({
         shadowRadius: 6,
       },
       android: {
-        elevation: 4,
+        elevation: 2,
       },
     }),
   },
+  cardPressed: {
+    opacity: 0.94,
+    transform: [{ scale: 0.985 }],
+  },
+  cardSpacer: {
+    flex: 1,
+  },
   imageBox: {
     width: '100%',
-    height: IMAGE_BOX_HEIGHT,
+    aspectRatio: 1,
     backgroundColor: '#F5F8FA',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 4,
+    padding: spacing.xs,
     borderBottomWidth: 1,
     borderBottomColor: colors.borderLight,
-    borderTopLeftRadius: moderateScale(6),
-    borderTopRightRadius: moderateScale(6),
+    borderTopLeftRadius: moderateScale(8),
+    borderTopRightRadius: moderateScale(8),
     overflow: 'hidden',
+    position: 'relative',
   },
   image: {
-    width: '88%',
-    height: '88%',
+    width: '82%',
+    height: '82%',
+  },
+  discountBadge: {
+    position: 'absolute',
+    top: spacing.xs + 2,
+    left: spacing.xs + 2,
+    backgroundColor: '#E8F7EE',
+    paddingHorizontal: spacing.xs + 2,
+    paddingVertical: 2,
+    borderRadius: moderateScale(4),
+    borderWidth: 0.5,
+    borderColor: '#C6EED5',
+    zIndex: 2,
+  },
+  discountText: {
+    fontSize: moderateScale(9.5),
+    fontWeight: '700',
+    color: '#1F9D55',
   },
   info: {
     flex: 1,
     justifyContent: 'space-between',
     paddingHorizontal: spacing.sm,
     paddingBottom: spacing.sm,
-    paddingTop: spacing.xs,
+    paddingTop: spacing.xs + 2,
   },
   textBlock: {
     gap: 2,
@@ -313,14 +341,14 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.textPrimary,
     lineHeight: moderateScale(18),
-    height: moderateScale(36),
+    minHeight: moderateScale(36),
   },
   unit: {
     fontSize: moderateScale(11),
     fontWeight: '500',
     color: colors.textSecondary,
     lineHeight: moderateScale(15),
-    height: moderateScale(15),
+    minHeight: moderateScale(15),
   },
   footer: {
     flexDirection: 'row',
@@ -341,9 +369,9 @@ const styles = StyleSheet.create({
     rowGap: 1,
   },
   price: {
-    fontSize: moderateScale(16, 0.35),
+    fontSize: moderateScale(15, 0.35),
     fontWeight: '700',
-    lineHeight: moderateScale(20, 0.35),
+    lineHeight: moderateScale(19, 0.35),
     flexShrink: 0,
   },
   oldPrice: {
@@ -353,6 +381,23 @@ const styles = StyleSheet.create({
     textDecorationLine: 'line-through',
     lineHeight: moderateScale(14, 0.35),
     flexShrink: 0,
+  },
+  stateBox: {
+    marginHorizontal: spacing.lg,
+    paddingVertical: spacing.xl,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+  },
+  stateText: {
+    fontSize: moderateScale(13),
+    color: colors.textSecondary,
+    textAlign: 'center',
+  },
+  stateAction: {
+    fontSize: moderateScale(13),
+    fontWeight: '700',
+    marginTop: spacing.xxs,
   },
 });
 

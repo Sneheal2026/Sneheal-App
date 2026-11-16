@@ -79,7 +79,7 @@ const validateRefreshToken = (req, res, next) => {
   next();
 };
 
-const VALID_ROLES = new Set(['customer', 'doctor', 'delivery_agent']);
+const VALID_ROLES = new Set(['customer', 'doctor', 'delivery_agent', 'admin']);
 const VALID_LANGUAGES = new Set(['ENGLISH', 'HINDI', 'MARATHI']);
 
 const validateCompleteRegistration = (req, res, next) => {
