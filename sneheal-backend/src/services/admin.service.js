@@ -82,7 +82,129 @@ const getOverviewStats = async () => {
   return await adminRepo.getOverviewStats();
 };
 
+/**
+ * List doctors with optional filter & search
+ */
+const listDoctors = async (query = {}) => {
+  const { status, search } = query;
+  return await adminRepo.listDoctors({ status, search });
+};
+
+/**
+ * Update doctor verification status
+ */
+const updateDoctorStatus = async (userId, status) => {
+  if (!userId) {
+    throw new AppError('Doctor ID is required', 400);
+  }
+  const valid = ['pending', 'approved', 'rejected'];
+  if (!valid.includes(status)) {
+    throw new AppError(`Invalid status. Must be one of: ${valid.join(', ')}`, 400);
+  }
+
+  await adminRepo.updateDoctorVerificationStatus(userId, status);
+  return { userId, verificationStatus: status };
+};
+
+/**
+ * List delivery agents
+ */
+const listDeliveryAgents = async (query = {}) => {
+  const { status, search } = query;
+  return await adminRepo.listDeliveryAgents({ status, search });
+};
+
+/**
+ * Retrieve delivery agent document
+ */
+const getDeliveryAgentDocument = async (userId, docType) => {
+  if (!userId || !docType) {
+    throw new AppError('User ID and document type are required', 400);
+  }
+  const cleanDoc = docType.toLowerCase().trim();
+  if (cleanDoc !== 'aadhar' && cleanDoc !== 'license') {
+    throw new AppError('Document type must be aadhar or license', 400);
+  }
+
+  const doc = await adminRepo.getDeliveryAgentDocument(userId, cleanDoc);
+  if (!doc) {
+    throw new AppError('Document not found for this delivery agent', 404);
+  }
+  return doc;
+};
+
+/**
+ * Update delivery agent status
+ */
+const updateDeliveryAgentStatus = async (userId, status) => {
+  if (!userId) {
+    throw new AppError('Delivery agent ID is required', 400);
+  }
+  const valid = ['pending', 'approved', 'rejected'];
+  if (!valid.includes(status)) {
+    throw new AppError(`Invalid status. Must be one of: ${valid.join(', ')}`, 400);
+  }
+
+  await adminRepo.updateDeliveryAgentVerificationStatus(userId, status);
+  return { userId, verificationStatus: status };
+};
+
+/**
+ * List orders with optional status & search filters
+ */
+const listOrders = async (query = {}) => {
+  const { status, search } = query;
+  return await adminRepo.listOrders({ status, search });
+};
+
+/**
+ * Fetch detailed order breakdown with items & delivery agent info
+ */
+const getOrderDetails = async (orderId) => {
+  if (!orderId) {
+    throw new AppError('Order ID is required', 400);
+  }
+  const order = await adminRepo.getOrderDetails(orderId);
+  if (!order) {
+    throw new AppError('Order not found', 404);
+  }
+  return order;
+};
+
+/**
+ * Update order fulfillment status
+ */
+const updateOrderStatus = async (orderId, status) => {
+  if (!orderId || !status) {
+    throw new AppError('Order ID and status are required', 400);
+  }
+  const valid = ['awaiting_payment', 'confirmed', 'out_for_delivery', 'delivered', 'cancelled'];
+  if (!valid.includes(status)) {
+    throw new AppError(`Invalid status. Must be one of: ${valid.join(', ')}`, 400);
+  }
+
+  await adminRepo.updateOrderStatus(orderId, status);
+  return { orderId, status };
+};
+
+/**
+ * List customer uploaded prescriptions
+ */
+const listPrescriptions = async (query = {}) => {
+  const { search } = query;
+  return await adminRepo.listPrescriptions({ search });
+};
+
 module.exports = {
   login,
   getOverviewStats,
+  listDoctors,
+  updateDoctorStatus,
+  listDeliveryAgents,
+  getDeliveryAgentDocument,
+  updateDeliveryAgentStatus,
+  listOrders,
+  getOrderDetails,
+  updateOrderStatus,
+  listPrescriptions,
 };

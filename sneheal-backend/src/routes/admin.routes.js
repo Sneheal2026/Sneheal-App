@@ -13,4 +13,21 @@ router.post('/auth/login', authLimiter, asyncHandler(adminController.login));
 router.get('/auth/me', authenticateToken, requireRole('admin'), asyncHandler(adminController.me));
 router.get('/overview-stats', authenticateToken, requireRole('admin'), asyncHandler(adminController.getOverviewStats));
 
+// Doctor management
+router.get('/doctors', authenticateToken, requireRole('admin'), asyncHandler(adminController.listDoctors));
+router.patch('/doctors/:userId/status', authenticateToken, requireRole('admin'), asyncHandler(adminController.updateDoctorStatus));
+
+// Delivery Fleet management
+router.get('/agents', authenticateToken, requireRole('admin'), asyncHandler(adminController.listDeliveryAgents));
+router.get('/agents/:userId/document/:docType', authenticateToken, requireRole('admin'), asyncHandler(adminController.getDeliveryAgentDocument));
+router.patch('/agents/:userId/status', authenticateToken, requireRole('admin'), asyncHandler(adminController.updateDeliveryAgentStatus));
+
+// Orders & Sales management
+router.get('/orders', authenticateToken, requireRole('admin'), asyncHandler(adminController.listOrders));
+router.get('/orders/:orderId', authenticateToken, requireRole('admin'), asyncHandler(adminController.getOrderDetails));
+router.patch('/orders/:orderId/status', authenticateToken, requireRole('admin'), asyncHandler(adminController.updateOrderStatus));
+
+// Prescriptions Desk
+router.get('/prescriptions', authenticateToken, requireRole('admin'), asyncHandler(adminController.listPrescriptions));
+
 module.exports = router;
