@@ -280,6 +280,25 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
   const { width: screenWidth } = useWindowDimensions();
   const previewHeight = Math.min(screenWidth - spacing.xl * 2, moderateScale(300));
 
+  const scrollRef = useRef<ScrollView>(null);
+  const resultsYRef = useRef(0);
+  const hasAutoScrolledRef = useRef(false);
+
+  const scrollToResults = useCallback(() => {
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    if (resultsYRef.current > 0) {
+      scrollRef.current?.scrollTo({
+        y: Math.max(0, resultsYRef.current - moderateScale(16)),
+        animated: true,
+      });
+    } else {
+      scrollRef.current?.scrollTo({
+        y: previewHeight + moderateScale(110),
+        animated: true,
+      });
+    }
+  }, [previewHeight]);
+
   const [pickedImage, setPickedImage] = useState<PickedImage | null>(null);
   const [isPicking, setIsPicking] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
@@ -376,6 +395,12 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
       setImageType(result.imageType || 'prescription');
       setHasScanned(true);
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      if (result.medicines && result.medicines.length > 0) {
+        hasAutoScrolledRef.current = false;
+        setTimeout(() => {
+          scrollToResults();
+        }, 220);
+      }
     } catch (error: any) {
       if (!mountedRef.current || generation !== scanGenerationRef.current) return;
       const errorMessage = error?.message || 'Failed to scan image';
@@ -394,6 +419,8 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
       if (isPicking || isScanning || isSaving) return;
 
       skipDraftSyncRef.current = false;
+      hasAutoScrolledRef.current = false;
+      resultsYRef.current = 0;
       setIsPicking(true);
       setMedicines([]);
       setScanError(null);
@@ -421,6 +448,8 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
 
   const handleClearImage = useCallback(() => {
     skipDraftSyncRef.current = true;
+    hasAutoScrolledRef.current = false;
+    resultsYRef.current = 0;
     scanGenerationRef.current += 1;
     scanInFlightRef.current = false;
     setPickedImage(null);
@@ -431,11 +460,13 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
     setIsSaved(false);
     setIsScanning(false);
     clearDraft();
+    scrollRef.current?.scrollTo({ y: 0, animated: false });
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
   }, [clearDraft]);
 
   const handleScan = useCallback(() => {
     if (!pickedImage) return;
+    hasAutoScrolledRef.current = false;
     void runScan(pickedImage.uri);
   }, [pickedImage, runScan]);
 
@@ -567,6 +598,7 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
       </SafeAreaView>
 
       <ScrollView
+        ref={scrollRef}
         style={styles.scroll}
         contentContainerStyle={[
           styles.scrollContent,
@@ -643,10 +675,29 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
                           colors={['transparent', 'rgba(18,11,36,0.78)']}
                           style={styles.previewGradient}
                         >
-                          <View style={styles.readyPill}>
-                            <Ionicons name="checkmark-circle" size={14} color={SCAN.mint} />
-                            <Text style={styles.readyPillText}>{t('scan.ready')}</Text>
-                          </View>
+                          <Pressable
+                            onPress={medicines.length > 0 ? scrollToResults : undefined}
+                            style={[
+                              styles.readyPill,
+                              medicines.length > 0 && styles.readyPillDetected,
+                            ]}
+                          >
+                            <Ionicons
+                              name="checkmark-circle"
+                              size={14}
+                              color={medicines.length > 0 ? SCAN.white : SCAN.mint}
+                            />
+                            <Text
+                              style={[
+                                styles.readyPillText,
+                                medicines.length > 0 && styles.readyPillDetectedText,
+                              ]}
+                            >
+                              {medicines.length > 0
+                                ? `${medicines.length} ${medicines.length === 1 ? 'Medicine' : 'Medicines'} Detected ↓`
+                                : t('scan.ready')}
+                            </Text>
+                          </Pressable>
                         </LinearGradient>
                       )}
                     </>
@@ -729,28 +780,21 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
           </LinearGradient>
         </Animated.View>
 
-        <Animated.View entering={FadeInUp.delay(180).duration(400)} style={styles.tipsCard}>
-          <View style={styles.tipsHeader}>
-            <LinearGradient colors={[SCAN.amberSoft, '#FFF7ED']} style={styles.tipsHeaderIcon}>
-              <Ionicons name="bulb" size={16} color={SCAN.amber} />
-            </LinearGradient>
-            <Text style={styles.tipsHeaderText}>{t('scan.tipsHeader')}</Text>
-          </View>
-          <View style={styles.tipsRow}>
-            {SCAN_TIPS.map((tip) => (
-              <View key={tip.labelKey} style={[styles.tipChip, { backgroundColor: tip.bg }]}>
-                <View style={styles.tipIconWrap}>
-                  <Ionicons name={tip.icon} size={14} color={tip.tint} />
-                </View>
-                <Text style={styles.tipChipText}>{t(tip.labelKey)}</Text>
-                <Text style={styles.tipChipDesc}>{t(tip.descKey)}</Text>
-              </View>
-            ))}
-          </View>
-        </Animated.View>
-
         {medicines.length > 0 && (
-          <Animated.View entering={FadeInUp.duration(350)} style={styles.medicineBox}>
+          <Animated.View
+            entering={FadeInUp.duration(350)}
+            style={styles.medicineBox}
+            onLayout={(e: LayoutChangeEvent) => {
+              const y = e.nativeEvent.layout.y;
+              resultsYRef.current = y;
+              if (!hasAutoScrolledRef.current) {
+                hasAutoScrolledRef.current = true;
+                setTimeout(() => {
+                  scrollToResults();
+                }, 100);
+              }
+            }}
+          >
             <LinearGradient
               colors={[SCAN.mintSoft, SCAN.surface]}
               start={{ x: 0, y: 0 }}
@@ -809,6 +853,26 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
             </View>
           </Animated.View>
         )}
+
+        <Animated.View entering={FadeInUp.delay(180).duration(400)} style={styles.tipsCard}>
+          <View style={styles.tipsHeader}>
+            <LinearGradient colors={[SCAN.amberSoft, '#FFF7ED']} style={styles.tipsHeaderIcon}>
+              <Ionicons name="bulb" size={16} color={SCAN.amber} />
+            </LinearGradient>
+            <Text style={styles.tipsHeaderText}>{t('scan.tipsHeader')}</Text>
+          </View>
+          <View style={styles.tipsRow}>
+            {SCAN_TIPS.map((tip) => (
+              <View key={tip.labelKey} style={[styles.tipChip, { backgroundColor: tip.bg }]}>
+                <View style={styles.tipIconWrap}>
+                  <Ionicons name={tip.icon} size={14} color={tip.tint} />
+                </View>
+                <Text style={styles.tipChipText}>{t(tip.labelKey)}</Text>
+                <Text style={styles.tipChipDesc}>{t(tip.descKey)}</Text>
+              </View>
+            ))}
+          </View>
+        </Animated.View>
       </ScrollView>
 
       {showFooter ? (
@@ -820,6 +884,25 @@ const MedicineScanScreen = ({ navigation }: AuthScreenProps<'MedicineScan'>) => 
                 {t('scan.analyzing')}
               </Text>
             </View>
+          ) : medicines.length > 0 ? (
+            <Pressable
+              onPress={scrollToResults}
+              style={styles.footerDetectedHint}
+              accessibilityRole="button"
+              accessibilityLabel={`${medicines.length} medicines detected, tap to scroll to list`}
+            >
+              <View style={styles.footerDetectedBadge}>
+                <Ionicons name="medical" size={12} color={SCAN.white} />
+                <Text style={styles.footerDetectedBadgeText}>{medicines.length}</Text>
+              </View>
+              <Text style={styles.footerDetectedText}>
+                {medicines.length === 1 ? '1 medicine detected' : `${medicines.length} medicines detected`}
+              </Text>
+              <View style={styles.footerDetectedArrow}>
+                <Text style={styles.footerDetectedArrowText}>View list</Text>
+                <Ionicons name="chevron-down" size={14} color={SCAN.mintDeep} />
+              </View>
+            </Pressable>
           ) : canSave ? (
             <View style={styles.footerHint}>
               <Ionicons name="cloud-upload-outline" size={14} color={SCAN.violet} />
@@ -1191,6 +1274,13 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: SCAN.ink,
   },
+  readyPillDetected: {
+    backgroundColor: 'rgba(5,150,105,0.95)',
+  },
+  readyPillDetectedText: {
+    color: SCAN.white,
+    fontWeight: '800',
+  },
   emptyWrap: {
     flex: 1,
     alignItems: 'center',
@@ -1559,6 +1649,51 @@ const styles = StyleSheet.create({
     ...typography.caption,
     fontWeight: '600',
     color: SCAN.mint,
+  },
+  footerDetectedHint: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#ECFDF5',
+    borderWidth: 1,
+    borderColor: 'rgba(5,150,105,0.25)',
+    borderRadius: borderRadius.full,
+    paddingVertical: spacing.xs + 1,
+    paddingHorizontal: spacing.md,
+    marginBottom: spacing.sm,
+  },
+  footerDetectedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: SCAN.mint,
+    borderRadius: borderRadius.full,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    gap: 3,
+  },
+  footerDetectedBadgeText: {
+    ...typography.caption,
+    fontWeight: '800',
+    color: SCAN.white,
+    fontSize: moderateScale(11),
+  },
+  footerDetectedText: {
+    ...typography.caption,
+    fontWeight: '700',
+    color: SCAN.mintDeep,
+    flex: 1,
+    marginLeft: spacing.xs,
+  },
+  footerDetectedArrow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
+  footerDetectedArrowText: {
+    ...typography.caption,
+    fontWeight: '700',
+    color: SCAN.mintDeep,
+    fontSize: moderateScale(11),
   },
   scanBtn: {
     borderRadius: borderRadius.full,
