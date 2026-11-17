@@ -151,13 +151,14 @@ const buildNameSearch = (plan) => {
 
     if (compact.length <= 4) {
       const pattern = wordBoundary(compact);
-      whereParts.push(`${NAME_TEXT} REGEXP ?`);
-      whereParams.push(pattern);
+      whereParts.push(`(${NAME_TEXT} REGEXP ? OR ${NAME_COMPACT} LIKE ?)`);
+      whereParams.push(pattern, like);
       scoreParts.push(
         `(CASE WHEN LOWER(CONCAT_WS(' ', IFNULL(name,''), IFNULL(brand_name,''))) REGEXP ? THEN 24
-               WHEN ${NAME_TEXT} REGEXP ? THEN 12 ELSE 0 END)`,
+               WHEN ${NAME_TEXT} REGEXP ? THEN 12
+               WHEN ${NAME_COMPACT} LIKE ? THEN 10 ELSE 0 END)`,
       );
-      scoreParams.push(pattern, pattern);
+      scoreParams.push(pattern, pattern, like);
       return;
     }
 

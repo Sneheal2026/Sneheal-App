@@ -150,8 +150,7 @@ const search = async (query, { limit = 20, offset = 0 } = {}, connection = db) =
     return buildPage([], 0, safeLimit, safeOffset);
   }
 
-  // Only include DrugSetu verified products in search results, hiding local database distributor products with worn/outdated MRPs
-  const whereSql = `is_active = 1 AND source = 'drugsetu' AND (${nameSearch.whereSql})`;
+  const whereSql = `is_active = 1 AND (${nameSearch.whereSql})`;
 
   const [countRows] = await connection.execute(
     `SELECT COUNT(*) AS total FROM products WHERE ${whereSql}`,
@@ -163,7 +162,7 @@ const search = async (query, { limit = 20, offset = 0 } = {}, connection = db) =
     `SELECT ${PRODUCT_SELECT}
      FROM products
      WHERE ${whereSql}
-     ORDER BY (${nameSearch.scoreSql}) DESC, rating DESC, name ASC
+     ORDER BY (CASE WHEN source = 'distributor' THEN 100 ELSE 0 END) + (${nameSearch.scoreSql}) DESC, rating DESC, name ASC
      LIMIT ${safeLimit} OFFSET ${safeOffset}`,
     [...nameSearch.whereParams, ...nameSearch.scoreParams],
   );
