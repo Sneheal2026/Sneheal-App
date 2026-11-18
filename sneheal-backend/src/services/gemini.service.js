@@ -4,8 +4,8 @@ const AppError = require('../utils/AppError');
 const { correctMedicineEntry } = require('../utils/medicineDictionary');
 const { isNonMedicineText } = require('../utils/prescriptionFilters');
 
-const PRIMARY_MODEL = 'gemini-2.5-flash';
-const FALLBACK_MODELS = ['gemini-2.0-flash'];
+const PRIMARY_MODEL = 'gemini-3.8-flash';
+const FALLBACK_MODELS = ['gemini-2.5-flash', 'gemini-2.0-flash'];
 const MAX_RETRIES = 3;
 const RETRY_DELAY_MS = 2000;
 const CACHE_VERSION = 'v4';
@@ -50,7 +50,9 @@ const isModelMissingError = (message) => {
   return (
     lower.includes('not found') ||
     lower.includes('not_found') ||
-    lower.includes('is not supported')
+    lower.includes('is not supported') ||
+    lower.includes('no longer available') ||
+    lower.includes('not available')
   );
 };
 
