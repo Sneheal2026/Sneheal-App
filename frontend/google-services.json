@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "806572974016",
+    "firebase_url": "https://sneheal-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "sneheal",
+    "storage_bucket": "sneheal.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:806572974016:android:018c94370c0128fefb3225",
+        "android_client_info": {
+          "package_name": "com.sneheal.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCfx-TbrerKjW54qoTc5gw7T3MCKeEGKVM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

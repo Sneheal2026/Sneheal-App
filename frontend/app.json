@@ -2,8 +2,11 @@
   "expo": {
     "name": "SnehealApp",
     "slug": "sneheal-app",
-    "version": "0.0.3",
-    "platforms": ["android", "ios"],
+    "version": "0.0.4",
+    "platforms": [
+      "android",
+      "ios"
+    ],
     "runtimeVersion": {
       "policy": "appVersion"
     },
@@ -33,6 +36,7 @@
     "android": {
       "package": "com.sneheal.app",
       "versionCode": 6,
+      "googleServicesFile": "./google-services.json",
       "softwareKeyboardLayoutMode": "resize",
       "queries": [
         {

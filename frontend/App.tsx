@@ -2,10 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { StatusBar as RNStatusBar, Platform, AppState } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import {
-  NavigationContainer,
-  createNavigationContainerRef,
-} from '@react-navigation/native';
+import { NavigationContainer } from '@react-navigation/native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import NetworkGate from './src/components/common/NetworkGate';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
@@ -18,14 +15,17 @@ import { ThemeProvider } from './src/context/ThemeContext';
 import RootNavigator from './src/navigation/RootNavigator';
 import AuthBootScreen from './src/screens/auth/AuthBootScreen';
 import type { AuthStackParamList } from './src/navigation/types';
+import { navigationRef } from './src/navigation/navigationRef';
 import {
   addReminderActionListener,
   initializeReminderNotifications,
   rescheduleAllReminders,
 } from './src/services/reminderNotificationService';
+import {
+  initializePushNotifications,
+  addPushNotificationTapListener,
+} from './src/services/pushNotificationService';
 import './src/i18n';
-
-const navigationRef = createNavigationContainerRef<AuthStackParamList>();
 
 const AppNavigation = () => {
   const { isBootstrapping, isAuthenticated, initialNavState } = useAuth();
@@ -75,10 +75,15 @@ export default function App() {
     void (async () => {
       await initializeReminderNotifications();
       await rescheduleAllReminders();
+      await initializePushNotifications();
     })();
 
-    const actionSubscription = addReminderActionListener();
-    return () => actionSubscription.remove();
+    const reminderSub = addReminderActionListener();
+    const pushSub = addPushNotificationTapListener();
+    return () => {
+      reminderSub.remove();
+      pushSub.remove();
+    };
   }, []);
 
   useEffect(() => {
