@@ -24,6 +24,10 @@ const mapOrder = (row) => {
     paymentStatus: row.payment_status,
     assignedAgentId: row.assigned_agent_id != null ? String(row.assigned_agent_id) : null,
     deliveredAt: toIso(row.delivered_at),
+    prescriptionId: row.prescription_id != null ? String(row.prescription_id) : null,
+    prescriptionUrl: row.prescription_url ?? null,
+    prescriptionStatus: row.prescription_status ?? 'not_required',
+    prescriptionRejectedReason: row.prescription_rejected_reason ?? null,
     itemMrpPaise: Number(row.item_mrp_paise),
     itemSellingPaise: Number(row.item_selling_paise),
     discountPaise: Number(row.discount_paise),
@@ -59,6 +63,7 @@ const ORDER_SELECT = `
   id, public_id, user_id, address_id, receiver_name, mobile, address_line,
   flat_number, landmark, latitude, longitude, status, payment_status,
   assigned_agent_id, delivered_at,
+  prescription_id, prescription_url, prescription_status, prescription_rejected_reason,
   item_mrp_paise, item_selling_paise, discount_paise, promo_paise,
   handling_paise, delivery_paise, delivery_original_paise, gst_paise,
   grand_total_paise, currency, created_at, updated_at
@@ -69,10 +74,11 @@ const create = async (data, connection = db) => {
     `INSERT INTO orders (
       public_id, user_id, address_id, receiver_name, mobile, address_line,
       flat_number, landmark, latitude, longitude, status, payment_status,
+      prescription_id, prescription_url, prescription_status,
       item_mrp_paise, item_selling_paise, discount_paise, promo_paise,
       handling_paise, delivery_paise, delivery_original_paise, gst_paise,
       grand_total_paise, currency
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'confirmed', 'pending', ?, ?, ?, ?, ?, ?, ?, ?, ?, 'INR')`,
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'confirmed', 'pending', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'INR')`,
     [
       data.publicId,
       data.userId,
@@ -84,6 +90,9 @@ const create = async (data, connection = db) => {
       data.landmark ?? '',
       data.latitude,
       data.longitude,
+      data.prescriptionId ?? null,
+      data.prescriptionUrl ?? null,
+      data.prescriptionStatus ?? 'not_required',
       data.itemMrpPaise,
       data.itemSellingPaise,
       data.discountPaise,
@@ -273,6 +282,17 @@ const findItemsByOrderIds = async (orderIds, connection = db) => {
   }));
 };
 
+const updatePrescriptionStatus = async (id, status, reason = null, connection = db) => {
+  await connection.execute(
+    `UPDATE orders
+     SET prescription_status = ?,
+         prescription_rejected_reason = ?
+     WHERE id = ?`,
+    [status, reason ?? null, id],
+  );
+  return findById(id, connection);
+};
+
 module.exports = {
   mapOrder,
   create,
@@ -288,6 +308,7 @@ module.exports = {
   countDeliveredByAgentId,
   findDeliveredByAgentPaginated,
   updateFulfillment,
+  updatePrescriptionStatus,
   insertItems,
   findItemsByOrderId,
   findItemsByOrderIds,

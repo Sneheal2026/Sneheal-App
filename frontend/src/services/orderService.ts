@@ -5,6 +5,7 @@ export const createCheckoutOrder = (
   addressId: string,
   items: Array<{ productId: string; quantity: number }>,
   couponCode?: string | null,
+  prescriptionId?: string | null,
 ): Promise<OrderDetail> =>
   authenticatedApiRequest<OrderDetail>('/api/orders', {
     method: 'POST',
@@ -12,6 +13,7 @@ export const createCheckoutOrder = (
       addressId,
       items,
       ...(couponCode ? { couponCode } : {}),
+      ...(prescriptionId ? { prescriptionId } : {}),
     },
   });
 

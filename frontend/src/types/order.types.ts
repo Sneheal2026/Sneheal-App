@@ -6,6 +6,7 @@ export type OrderStatus =
   | 'cancelled';
 export type PaymentStatus = 'pending' | 'paid' | 'failed';
 export type PaymentMethod = 'cod';
+export type PrescriptionStatus = 'not_required' | 'pending_verification' | 'verified' | 'rejected';
 
 export type OrderBill = {
   itemMrp: number;
@@ -53,6 +54,10 @@ export type OrderDetail = {
   currency: string;
   createdAt: string;
   deliveredAt?: string | null;
+  prescriptionId?: string | null;
+  prescriptionUrl?: string | null;
+  prescriptionStatus?: PrescriptionStatus;
+  prescriptionRejectedReason?: string | null;
   grandTotal: number;
   coords?: {
     latitude: number;

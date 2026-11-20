@@ -37,6 +37,7 @@ export type CartOffer = {
 };
 
 export type CartQuote = {
+  hasPrescriptionItems?: boolean;
   bill: CartBill;
   offers: CartOffer[];
   couponCode: string | null;

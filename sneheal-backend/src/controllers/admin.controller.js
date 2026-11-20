@@ -70,6 +70,13 @@ const updateOrderStatus = async (req, res) => {
   return success(res, `Order status updated to ${status}`, result);
 };
 
+const updateOrderPrescriptionStatus = async (req, res) => {
+  const { orderId } = req.params;
+  const { status, reason } = req.body;
+  const result = await adminService.updateOrderPrescriptionStatus(orderId, status, reason);
+  return success(res, `Order prescription status updated to ${status}`, result);
+};
+
 const listPrescriptions = async (req, res) => {
   const prescriptions = await adminService.listPrescriptions(req.query);
   return success(res, 'Prescriptions retrieved successfully', prescriptions);
@@ -87,5 +94,6 @@ module.exports = {
   listOrders,
   getOrderDetails,
   updateOrderStatus,
+  updateOrderPrescriptionStatus,
   listPrescriptions,
 };

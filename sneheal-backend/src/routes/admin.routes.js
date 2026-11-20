@@ -26,6 +26,7 @@ router.patch('/agents/:userId/status', authenticateToken, requireRole('admin'), 
 router.get('/orders', authenticateToken, requireRole('admin'), asyncHandler(adminController.listOrders));
 router.get('/orders/:orderId', authenticateToken, requireRole('admin'), asyncHandler(adminController.getOrderDetails));
 router.patch('/orders/:orderId/status', authenticateToken, requireRole('admin'), asyncHandler(adminController.updateOrderStatus));
+router.patch('/orders/:orderId/prescription-status', authenticateToken, requireRole('admin'), asyncHandler(adminController.updateOrderPrescriptionStatus));
 
 // Prescriptions Desk
 router.get('/prescriptions', authenticateToken, requireRole('admin'), asyncHandler(adminController.listPrescriptions));

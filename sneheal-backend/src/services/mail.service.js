@@ -44,6 +44,8 @@ const buildBodies = (order) => {
 
   const text = [
     `New order ${order.publicId}`,
+    order.prescriptionUrl ? `⚠️ PRESCRIPTION REQUIRED ORDER` : '',
+    order.prescriptionUrl ? `Prescription image: ${order.prescriptionUrl}` : '',
     `Amount: ${inr(order.grandTotal)}`,
     `Payment: Cash on Delivery`,
     '',
@@ -59,8 +61,17 @@ const buildBodies = (order) => {
     .filter(Boolean)
     .join('\n');
 
+  const rxHtml = order.prescriptionUrl
+    ? `<div style="background:#FEF2F2;border:1px solid #FCA5A5;padding:12px;border-radius:8px;margin:12px 0;">
+         <p style="color:#DC2626;font-weight:bold;margin:0 0 8px 0;">⚠️ PRESCRIPTION REQUIRED ORDER (Pharmacist review needed)</p>
+         <p style="margin:0 0 8px 0;"><strong>Attached Prescription:</strong> <a href="${escapeHtml(order.prescriptionUrl)}" target="_blank">Open Full Image</a></p>
+         <img src="${escapeHtml(order.prescriptionUrl)}" alt="Prescription" style="max-width:280px;height:auto;border-radius:6px;border:1px solid #E5E7EB;display:block;" />
+       </div>`
+    : '';
+
   const html = `
     <h2>New order ${escapeHtml(order.publicId)}</h2>
+    ${rxHtml}
     <p><strong>Amount:</strong> ${inr(order.grandTotal)}<br/>
     <strong>Payment:</strong> Cash on Delivery</p>
     <p><strong>Customer:</strong> ${escapeHtml(address.receiverName)}<br/>
@@ -97,7 +108,7 @@ const notifyOpsNewOrder = async (order) => {
         email: process.env.BREVO_FROM_EMAIL,
       },
       to: [{ email: process.env.BREVO_OPS_EMAIL }],
-      subject: `New Sneheal order ${order.publicId}`,
+      subject: `${order.prescriptionUrl ? '⚠️ [Rx REQUIRED] ' : ''}New Sneheal order ${order.publicId}`,
       htmlContent: html,
       textContent: text,
     }),

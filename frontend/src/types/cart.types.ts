@@ -8,6 +8,7 @@ export interface CartLine {
   imageUrl: string | null;
   price: number;
   originalPrice?: number;
+  prescriptionRequired?: boolean;
 }
 
 export const MAX_CART_QTY = 10;
@@ -20,4 +21,5 @@ export const productToCartLine = (product: Product, quantity = 1): CartLine => (
   imageUrl: product.imageUrl,
   price: product.price,
   originalPrice: product.originalPrice,
+  prescriptionRequired: Boolean(product.prescriptionRequired),
 });

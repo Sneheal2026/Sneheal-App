@@ -479,6 +479,10 @@ const getOrderDetails = async (orderId) => {
     status: o.status,
     paymentStatus: o.payment_status,
     paymentProvider: o.payment_provider || (o.razorpay_order_id ? 'razorpay' : 'cod'),
+    prescriptionId: o.prescription_id ? String(o.prescription_id) : null,
+    prescriptionUrl: o.prescription_url || null,
+    prescriptionStatus: o.prescription_status || 'not_required',
+    prescriptionRejectedReason: o.prescription_rejected_reason || null,
     deliveryAgent: o.assigned_agent_id
       ? {
           id: String(o.assigned_agent_id),
@@ -524,6 +528,23 @@ const updateOrderStatus = async (orderId, newStatus) => {
       [newStatus, orderId, orderId]
     );
   }
+
+  return true;
+};
+
+const updateOrderPrescriptionStatus = async (orderId, newStatus, reason = null) => {
+  const valid = ['not_required', 'pending_verification', 'verified', 'rejected'];
+  if (!valid.includes(newStatus)) {
+    throw new Error('Invalid prescription status');
+  }
+
+  await pool.query(
+    `UPDATE orders
+     SET prescription_status = ?,
+         prescription_rejected_reason = ?
+     WHERE id = ? OR public_id = ?`,
+    [newStatus, reason ?? null, orderId, orderId]
+  );
 
   return true;
 };
@@ -590,5 +611,6 @@ module.exports = {
   listOrders,
   getOrderDetails,
   updateOrderStatus,
+  updateOrderPrescriptionStatus,
   listPrescriptions,
 };

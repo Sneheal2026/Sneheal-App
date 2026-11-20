@@ -187,6 +187,19 @@ const updateOrderStatus = async (orderId, status) => {
   return { orderId, status };
 };
 
+const updateOrderPrescriptionStatus = async (orderId, status, reason = null) => {
+  if (!orderId) {
+    throw new AppError('Order ID is required', 400);
+  }
+  const valid = ['not_required', 'pending_verification', 'verified', 'rejected'];
+  if (!valid.includes(status)) {
+    throw new AppError(`Invalid prescription status. Must be one of: ${valid.join(', ')}`, 400);
+  }
+
+  await adminRepo.updateOrderPrescriptionStatus(orderId, status, reason);
+  return { orderId, status, reason };
+};
+
 /**
  * List customer uploaded prescriptions
  */
@@ -206,5 +219,6 @@ module.exports = {
   listOrders,
   getOrderDetails,
   updateOrderStatus,
+  updateOrderPrescriptionStatus,
   listPrescriptions,
 };

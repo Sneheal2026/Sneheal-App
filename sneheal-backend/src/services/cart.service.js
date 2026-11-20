@@ -89,6 +89,7 @@ const quoteCart = async (rawItems, couponCode) => {
       : evaluation.appliedCart.code;
 
   return {
+    hasPrescriptionItems: pricedLines.some((l) => l.prescriptionRequired),
     bill: {
       itemMrp: bill.itemMrp,
       itemSelling: bill.itemSelling,

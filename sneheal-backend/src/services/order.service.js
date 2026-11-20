@@ -10,6 +10,7 @@ const {
   normalizeItems,
 } = require('./cart.service');
 const promotionRepo = require('../repositories/promotion.repository');
+const prescriptionRepo = require('../repositories/prescription.repository');
 const { evaluatePromotions } = require('./promotion.service');
 const mailService = require('./mail.service');
 const { isLocationServiceable } = require('../utils/serviceableArea');
@@ -45,6 +46,10 @@ const toDetailPayload = (order, items, payment) => ({
   currency: order.currency,
   createdAt: order.createdAt,
   deliveredAt: order.deliveredAt,
+  prescriptionId: order.prescriptionId ?? null,
+  prescriptionUrl: order.prescriptionUrl ?? null,
+  prescriptionStatus: order.prescriptionStatus ?? 'not_required',
+  prescriptionRejectedReason: order.prescriptionRejectedReason ?? null,
   coords: {
     latitude: order.latitude,
     longitude: order.longitude,
@@ -163,6 +168,23 @@ const createCheckoutOrder = async (userId, body) => {
     throw new AppError(400, 'Order total is too low');
   }
 
+  const requiresRx = pricedLines.some((line) => line.prescriptionRequired);
+  let attachedPrescription = null;
+
+  if (requiresRx) {
+    const rxId = body.prescriptionId ? String(body.prescriptionId).trim() : null;
+    if (!rxId) {
+      throw new AppError(
+        400,
+        'A valid doctor prescription is required to order prescription medicines. Please upload your prescription before checking out.',
+      );
+    }
+    attachedPrescription = await prescriptionRepo.findByIdAndUserId(rxId, userId);
+    if (!attachedPrescription) {
+      throw new AppError(400, 'Selected prescription was not found or has been removed.');
+    }
+  }
+
   const snapshotItems = pricedLines.map((line) => ({
     productId: line.productId,
     name: line.name,
@@ -191,6 +213,9 @@ const createCheckoutOrder = async (userId, body) => {
         landmark: address.landmark ?? '',
         latitude: address.coords.latitude,
         longitude: address.coords.longitude,
+        prescriptionId: attachedPrescription ? attachedPrescription.id : null,
+        prescriptionUrl: attachedPrescription ? attachedPrescription.imageUrl : null,
+        prescriptionStatus: requiresRx ? 'pending_verification' : 'not_required',
         itemMrpPaise: bill.itemMrpPaise,
         itemSellingPaise: bill.itemSellingPaise,
         discountPaise: bill.itemDiscountPaise,

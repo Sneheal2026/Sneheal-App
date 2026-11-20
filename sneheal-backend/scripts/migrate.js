@@ -30,6 +30,8 @@ const SQL_FILES = [
   '019_drugsetu_distributor.sql',
   '020_family_members.sql',
   '021_user_public_id.sql',
+  '022_admin_users.sql',
+  '023_order_prescriptions.sql',
 ];
 
 const splitStatements = (sql) =>
