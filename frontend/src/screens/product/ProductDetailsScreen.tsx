@@ -211,6 +211,20 @@ const ProductDetailsScreen = () => {
                     </Text>
                   </View>
                 ) : null}
+
+                {medicine.prescriptionRequired ? (
+                  <View
+                    style={[
+                      styles.tagPill,
+                      { backgroundColor: '#FEE2E2', borderColor: '#EF4444', borderWidth: 1 },
+                    ]}
+                  >
+                    <Ionicons name="document-text" size={11} color="#DC2626" />
+                    <Text style={[styles.tagPillText, { color: '#DC2626', fontWeight: '800' }]}>
+                      Rx REQUIRED
+                    </Text>
+                  </View>
+                ) : null}
               </View>
             ) : null}
 
@@ -243,6 +257,19 @@ const ProductDetailsScreen = () => {
                 {medicine.distributorName ? ` • ${medicine.distributorName}` : ''}
               </Text>
             </View>
+
+            {/* Rx Required Notice */}
+            {medicine.prescriptionRequired ? (
+              <View style={styles.rxDetailAlert}>
+                <Ionicons name="document-text" size={16} color="#DC2626" />
+                <Text style={styles.rxDetailAlertText}>
+                  {t(
+                    'product.rxNotice',
+                    'Valid doctor prescription is required to order this medicine. You can upload it during checkout.',
+                  )}
+                </Text>
+              </View>
+            ) : null}
 
             {/* Rating & Packaging Info */}
             <View style={styles.metaRow}>
@@ -863,6 +890,24 @@ const styles = StyleSheet.create({
   },
   mfrBold: {
     fontWeight: '700',
+  },
+  rxDetailAlert: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FECACA',
+    borderRadius: 8,
+    padding: 8,
+    gap: 8,
+    marginTop: 8,
+  },
+  rxDetailAlertText: {
+    fontSize: 12,
+    color: '#991B1B',
+    fontWeight: '500',
+    flex: 1,
+    lineHeight: 16,
   },
   metaRow: {
     flexDirection: 'row',

@@ -7,6 +7,7 @@ import {
   ScrollView,
   ActivityIndicator,
   Alert,
+  Image,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -34,7 +35,16 @@ const PaymentMethodScreen = () => {
   const { t } = useTranslation();
   const navigation = useNavigation<Nav>();
   const insets = useSafeAreaInsets();
-  const { lines, clearCart, ready, quote, quoteLoading, checkoutCouponCode } = useCart();
+  const {
+    lines,
+    clearCart,
+    ready,
+    quote,
+    quoteLoading,
+    checkoutCouponCode,
+    hasRxItems,
+    attachedPrescription,
+  } = useCart();
   const { selectedAddress, addresses, refresh } = useSavedAddresses();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -85,6 +95,18 @@ const PaymentMethodScreen = () => {
       return;
     }
 
+    if (hasRxItems && !attachedPrescription) {
+      Alert.alert(
+        t('cart.rxRequiredTitle', 'Doctor Prescription Required'),
+        t(
+          'cart.rxRequiredAlertBody',
+          'Please attach a valid doctor prescription before placing the order.',
+        ),
+        [{ text: t('common.ok', 'OK'), onPress: () => navigation.goBack() }],
+      );
+      return;
+    }
+
     if (lines.length === 0) {
       navigation.goBack();
       return;
@@ -96,6 +118,7 @@ const PaymentMethodScreen = () => {
         selectedAddress.id,
         lines.map((line) => ({ productId: line.productId, quantity: line.quantity })),
         checkoutCouponCode,
+        attachedPrescription ? attachedPrescription.id : null,
       );
       seedOrderInCache(order);
       clearCart();
@@ -123,6 +146,8 @@ const PaymentMethodScreen = () => {
     checkoutCouponCode,
     selectedAddress,
     submitting,
+    hasRxItems,
+    attachedPrescription,
     t,
   ]);
 
@@ -197,6 +222,36 @@ const PaymentMethodScreen = () => {
         <Animated.View entering={FadeInDown.delay(120).duration(280)} style={styles.trustRow}>
           <Ionicons name="shield-checkmark" size={16} color={NAVY} />
           <Text style={styles.trustText}>{t('cart.codSecureNote')}</Text>
+        </Animated.View>
+
+        {attachedPrescription ? (
+          <Animated.View entering={FadeInDown.delay(140).duration(280)} style={styles.rxSummaryCard}>
+            <Image source={{ uri: attachedPrescription.imageUrl }} style={styles.rxSummaryThumb} />
+            <View style={styles.rxSummaryInfo}>
+              <View style={styles.rxSummaryTitleRow}>
+                <Ionicons name="checkmark-circle" size={16} color="#059669" />
+                <Text style={styles.rxSummaryTitle}>
+                  {t('cart.prescriptionAttached', 'Prescription Attached')}
+                </Text>
+              </View>
+              <Text style={styles.rxSummarySub}>
+                {t(
+                  'cart.pharmacistReviewNotice',
+                  'A registered pharmacist will verify your prescription before dispatch.',
+                )}
+              </Text>
+            </View>
+          </Animated.View>
+        ) : null}
+
+        <Animated.View entering={FadeInDown.delay(160).duration(280)} style={styles.complianceCard}>
+          <Ionicons name="medical-outline" size={16} color="#4B5563" />
+          <Text style={styles.complianceText}>
+            {t(
+              'cart.legalPharmacyNotice',
+              'Fulfilled by licensed retail pharmacy partners under Form 20/21. All prescription medicines are verified by a registered pharmacist before delivery.',
+            )}
+          </Text>
         </Animated.View>
       </ScrollView>
 
@@ -414,6 +469,61 @@ const styles = StyleSheet.create({
   trustText: {
     ...typography.caption,
     color: colors.textSecondary,
+    flex: 1,
+    lineHeight: 16,
+  },
+  rxSummaryCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ECFDF5',
+    borderWidth: 1,
+    borderColor: '#6EE7B7',
+    borderRadius: borderRadius.lg,
+    padding: spacing.md,
+    gap: spacing.md,
+    marginTop: spacing.md,
+  },
+  rxSummaryThumb: {
+    width: 48,
+    height: 48,
+    borderRadius: borderRadius.md,
+    backgroundColor: '#E5E7EB',
+  },
+  rxSummaryInfo: {
+    flex: 1,
+    minWidth: 0,
+  },
+  rxSummaryTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  rxSummaryTitle: {
+    ...typography.bodySmall,
+    fontWeight: '700',
+    color: '#065F46',
+  },
+  rxSummarySub: {
+    ...typography.caption,
+    color: '#047857',
+    marginTop: 2,
+    lineHeight: 15,
+  },
+  complianceCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: '#F3F4F6',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: borderRadius.md,
+    padding: spacing.sm,
+    gap: spacing.xs,
+    marginTop: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  complianceText: {
+    ...typography.caption,
+    color: '#4B5563',
     flex: 1,
     lineHeight: 16,
   },

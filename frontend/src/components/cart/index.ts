@@ -3,5 +3,6 @@ export { default as CartBilling } from './CartBilling';
 export { default as CartOffersSection } from './CartOffersSection';
 export { default as CouponAutoApplyToast } from './CouponAutoApplyToast';
 export { default as CartItemRow } from './CartItemRow';
+export { default as CartPrescriptionCard } from './CartPrescriptionCard';
 export { CartLocationWarningModal } from './CartLocationWarningModal';
 export type { BillLine } from './CartBilling';

@@ -20,6 +20,7 @@ interface CartItemRowProps {
   originalPrice?: number;
   quantity: number;
   unit?: string;
+  prescriptionRequired?: boolean;
   onIncrement?: () => void;
   onDecrement?: () => void;
 }
@@ -31,6 +32,7 @@ const CartItemRow = ({
   originalPrice,
   quantity,
   unit = '1 pack',
+  prescriptionRequired,
   onIncrement,
   onDecrement,
 }: CartItemRowProps) => {
@@ -43,10 +45,20 @@ const CartItemRow = ({
       </View>
 
       <View style={styles.info}>
-        <Text style={styles.name} numberOfLines={2}>
-          {name}
-        </Text>
-        <Text style={styles.unit}>{unit}</Text>
+        <View style={styles.nameHeaderRow}>
+          <Text style={styles.name} numberOfLines={2}>
+            {name}
+          </Text>
+        </View>
+
+        <View style={styles.metaRow}>
+          <Text style={styles.unit}>{unit}</Text>
+          {prescriptionRequired ? (
+            <View style={styles.rxBadge}>
+              <Text style={styles.rxBadgeText}>Rx</Text>
+            </View>
+          ) : null}
+        </View>
 
         <View style={styles.priceRow}>
           <Text style={styles.price}>₹{lineTotal.toFixed(2)}</Text>
@@ -100,6 +112,29 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.textPrimary,
     lineHeight: 19,
+  },
+  nameHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  rxBadge: {
+    backgroundColor: '#FEE2E2',
+    borderWidth: 1,
+    borderColor: '#EF4444',
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: 4,
+  },
+  rxBadgeText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#B91C1C',
+    letterSpacing: 0.5,
   },
   unit: {
     ...typography.caption,

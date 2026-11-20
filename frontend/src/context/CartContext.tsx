@@ -15,6 +15,7 @@ import { ApiError } from '@/services/apiClient';
 import { MAX_CART_QTY, productToCartLine, type CartLine } from '@/types/cart.types';
 import type { CartQuote } from '@/types/cartQuote.types';
 import type { Product } from '@/types/product.types';
+import type { SavedPrescription } from '@/types/prescription';
 
 const QUOTE_DEBOUNCE_MS = 250;
 
@@ -47,6 +48,9 @@ type CartContextValue = {
   checkoutCouponCode: string | null;
   autoApplyToast: AutoApplyToastPayload | null;
   dismissAutoApplyToast: () => void;
+  hasRxItems: boolean;
+  attachedPrescription: SavedPrescription | null;
+  attachPrescription: (rx: SavedPrescription | null) => void;
 };
 
 const CartContext = createContext<CartContextValue | null>(null);
@@ -70,6 +74,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   const [couponApplyError, setCouponApplyError] = useState<string | null>(null);
   const [couponApplying, setCouponApplying] = useState(false);
   const [autoApplyToast, setAutoApplyToast] = useState<AutoApplyToastPayload | null>(null);
+  const [attachedPrescription, setAttachedPrescription] = useState<SavedPrescription | null>(null);
 
   const quoteRequestId = useRef(0);
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -313,6 +318,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
         name: product.name,
         unit: product.unit,
         imageUrl: product.imageUrl,
+        prescriptionRequired: Boolean(product.prescriptionRequired),
       };
       return next;
     });
@@ -352,11 +358,21 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     setLines((prev) => prev.filter((line) => line.productId !== productId));
   }, []);
 
+  const attachPrescription = useCallback((rx: SavedPrescription | null) => {
+    setAttachedPrescription(rx);
+  }, []);
+
   const clearCart = useCallback(() => {
     setLines([]);
     setQuote(null);
+    setAttachedPrescription(null);
     clearCoupon();
   }, [clearCoupon]);
+
+  const hasRxItems = useMemo(
+    () => lines.some((line) => Boolean(line.prescriptionRequired)) || Boolean(quote?.hasPrescriptionItems),
+    [lines, quote?.hasPrescriptionItems],
+  );
 
   const totalItems = useMemo(
     () => lines.reduce((sum, line) => sum + line.quantity, 0),
@@ -389,6 +405,9 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       checkoutCouponCode,
       autoApplyToast,
       dismissAutoApplyToast,
+      hasRxItems,
+      attachedPrescription,
+      attachPrescription,
     }),
     [
       ready,
@@ -412,6 +431,9 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       checkoutCouponCode,
       autoApplyToast,
       dismissAutoApplyToast,
+      hasRxItems,
+      attachedPrescription,
+      attachPrescription,
     ],
   );
 

@@ -22,6 +22,7 @@ import {
   CartOffersSection,
   CouponAutoApplyToast,
   CartLocationWarningModal,
+  CartPrescriptionCard,
   type BillLine,
 } from '@/components/cart';
 import { useCart } from '@/context/CartContext';
@@ -60,10 +61,14 @@ const CartScreen = ({ navigation: tabNavigation }: TabScreenProps<'Cart'>) => {
     autoApplyToast,
     dismissAutoApplyToast,
     quoteError,
+    hasRxItems,
+    attachedPrescription,
+    attachPrescription,
   } = useCart();
   const { selectedAddress, addresses, refresh } = useSavedAddresses();
   const [addressMissing, setAddressMissing] = useState(false);
   const [showLocationWarning, setShowLocationWarning] = useState(false);
+  const [openPickerSignal, setOpenPickerSignal] = useState(0);
 
   useFocusEffect(
     useCallback(() => {
@@ -156,6 +161,25 @@ const CartScreen = ({ navigation: tabNavigation }: TabScreenProps<'Cart'>) => {
   const onContinue = useCallback(() => {
     if (isContinueDisabled) return;
 
+    if (hasRxItems && !attachedPrescription) {
+      setOpenPickerSignal((prev) => prev + 1);
+      Alert.alert(
+        t('cart.rxRequiredTitle', 'Doctor Prescription Required'),
+        t(
+          'cart.rxRequiredAlertBody',
+          'Your order contains prescription medicines. Please upload or select a valid doctor prescription to proceed.',
+        ),
+        [
+          { text: t('common.cancel', 'Cancel'), style: 'cancel' },
+          {
+            text: t('cart.attachPrescriptionCta', 'Attach Prescription'),
+            onPress: () => setOpenPickerSignal((prev) => prev + 1),
+          },
+        ],
+      );
+      return;
+    }
+
     if (!selectedAddress) {
       setAddressMissing(true);
       Alert.alert(t('cart.addressRequiredTitle'), t('cart.addressRequiredBody'), [
@@ -172,7 +196,15 @@ const CartScreen = ({ navigation: tabNavigation }: TabScreenProps<'Cart'>) => {
 
     const parent = navigation.getParent<NativeStackNavigationProp<AuthStackParamList>>();
     parent?.navigate('PaymentMethod');
-  }, [isContinueDisabled, navigation, openAddresses, selectedAddress, t]);
+  }, [
+    isContinueDisabled,
+    hasRxItems,
+    attachedPrescription,
+    navigation,
+    openAddresses,
+    selectedAddress,
+    t,
+  ]);
 
   const subtitle =
     totalItems > 0
@@ -321,11 +353,20 @@ const CartScreen = ({ navigation: tabNavigation }: TabScreenProps<'Cart'>) => {
                 originalPrice={line.originalPrice}
                 quantity={line.quantity}
                 unit={line.unit}
+                prescriptionRequired={line.prescriptionRequired}
                 onIncrement={() => increment(line.productId)}
                 onDecrement={() => decrement(line.productId)}
               />
             ))}
           </View>
+
+          {/* Mandatory Prescription Gate for Rx Medicines */}
+          <CartPrescriptionCard
+            hasRxItems={hasRxItems}
+            attachedPrescription={attachedPrescription}
+            onAttach={attachPrescription}
+            openPickerSignal={openPickerSignal}
+          />
 
           <CartOffersSection
             offers={quote?.offers ?? []}
@@ -366,6 +407,7 @@ const CartScreen = ({ navigation: tabNavigation }: TabScreenProps<'Cart'>) => {
               disabled={isContinueDisabled}
               style={({ pressed }) => [
                 styles.proceedBtn,
+                hasRxItems && !attachedPrescription && styles.proceedBtnRxRequired,
                 isContinueDisabled && styles.proceedBtnDisabled,
                 pressed && !isContinueDisabled && styles.pressed,
               ]}
@@ -377,6 +419,13 @@ const CartScreen = ({ navigation: tabNavigation }: TabScreenProps<'Cart'>) => {
                 <View style={styles.updatingBtnContent}>
                   <ActivityIndicator size="small" color={colors.white} />
                   <Text style={styles.proceedText}>{t('cart.updating', 'Updating…')}</Text>
+                </View>
+              ) : hasRxItems && !attachedPrescription ? (
+                <View style={styles.updatingBtnContent}>
+                  <Ionicons name="document-text-outline" size={16} color={colors.white} />
+                  <Text style={styles.proceedText}>
+                    {t('cart.attachRxToProceed', 'Attach Rx to Continue')}
+                  </Text>
                 </View>
               ) : (
                 <>
@@ -606,6 +655,9 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     minWidth: 120,
     justifyContent: 'center',
+  },
+  proceedBtnRxRequired: {
+    backgroundColor: '#DC2626',
   },
   proceedText: {
     ...typography.bodySmall,

@@ -128,6 +128,62 @@ const OrderDetailScreen = () => {
           onHome={goHome}
         />
 
+        {order.prescriptionStatus === 'pending_verification' ? (
+          <View style={styles.rxStatusCardWarning}>
+            <View style={styles.rxStatusHeader}>
+              <Ionicons name="time" size={18} color="#D97706" />
+              <Text style={styles.rxStatusTitle}>
+                {t('orders.rxUnderReviewTitle', 'Prescription Under Pharmacist Review')}
+              </Text>
+            </View>
+            <Text style={styles.rxStatusBody}>
+              {t(
+                'orders.rxUnderReviewBody',
+                'Our registered pharmacist is reviewing your uploaded prescription before packing your medicines.',
+              )}
+            </Text>
+            {order.prescriptionUrl ? (
+              <View style={styles.rxAttachedThumbRow}>
+                <Image source={{ uri: order.prescriptionUrl }} style={styles.rxOrderThumb} />
+                <Text style={styles.rxAttachedLabel}>
+                  {t('orders.rxAttachedLabel', 'Uploaded prescription slip')}
+                </Text>
+              </View>
+            ) : null}
+          </View>
+        ) : order.prescriptionStatus === 'verified' ? (
+          <View style={styles.rxStatusCardSuccess}>
+            <View style={styles.rxStatusHeader}>
+              <Ionicons name="shield-checkmark" size={18} color="#059669" />
+              <Text style={[styles.rxStatusTitle, { color: '#065F46' }]}>
+                {t('orders.rxVerifiedTitle', 'Prescription Verified ✓')}
+              </Text>
+            </View>
+            <Text style={[styles.rxStatusBody, { color: '#047857' }]}>
+              {t(
+                'orders.rxVerifiedBody',
+                'Verified by a registered pharmacist. Your medicines are approved for fulfillment.',
+              )}
+            </Text>
+          </View>
+        ) : order.prescriptionStatus === 'rejected' ? (
+          <View style={styles.rxStatusCardRejected}>
+            <View style={styles.rxStatusHeader}>
+              <Ionicons name="close-circle" size={18} color="#DC2626" />
+              <Text style={[styles.rxStatusTitle, { color: '#991B1B' }]}>
+                {t('orders.rxRejectedTitle', 'Prescription Rejected')}
+              </Text>
+            </View>
+            <Text style={[styles.rxStatusBody, { color: '#B91C1C' }]}>
+              {order.prescriptionRejectedReason ||
+                t(
+                  'orders.rxRejectedBody',
+                  'The uploaded prescription could not be verified. Our pharmacy team will contact you.',
+                )}
+            </Text>
+          </View>
+        ) : null}
+
         <View style={styles.sheet}>
           <View style={styles.block}>
             <Text style={styles.label}>{t('orders.paymentMethod')}</Text>
@@ -301,6 +357,69 @@ const styles = StyleSheet.create({
     ...typography.body,
     color: colors.error,
     textAlign: 'center',
+  },
+  rxStatusCardWarning: {
+    backgroundColor: '#FFFBEB',
+    borderWidth: 1,
+    borderColor: '#FCD34D',
+    borderRadius: 16,
+    marginHorizontal: spacing.lg,
+    marginTop: spacing.md,
+    padding: spacing.md,
+  },
+  rxStatusCardSuccess: {
+    backgroundColor: '#ECFDF5',
+    borderWidth: 1,
+    borderColor: '#6EE7B7',
+    borderRadius: 16,
+    marginHorizontal: spacing.lg,
+    marginTop: spacing.md,
+    padding: spacing.md,
+  },
+  rxStatusCardRejected: {
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FCA5A5',
+    borderRadius: 16,
+    marginHorizontal: spacing.lg,
+    marginTop: spacing.md,
+    padding: spacing.md,
+  },
+  rxStatusHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginBottom: 4,
+  },
+  rxStatusTitle: {
+    ...typography.bodySmall,
+    fontWeight: '700',
+    color: '#92400E',
+  },
+  rxStatusBody: {
+    ...typography.caption,
+    color: '#B45309',
+    lineHeight: 16,
+  },
+  rxAttachedThumbRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+    paddingTop: spacing.xs,
+    borderTopWidth: 1,
+    borderTopColor: '#FDE68A',
+  },
+  rxOrderThumb: {
+    width: 38,
+    height: 38,
+    borderRadius: 6,
+    backgroundColor: '#E5E7EB',
+  },
+  rxAttachedLabel: {
+    ...typography.caption,
+    color: '#78350F',
+    fontWeight: '600',
   },
 });
 
