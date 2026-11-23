@@ -7,9 +7,15 @@ import {
   useRef,
   useState,
 } from 'react';
-import { LayoutAnimation } from 'react-native';
+import { AppState, LayoutAnimation, type AppStateStatus } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { getCartLines, saveCartLines } from '@/services/cartStorage';
+import NetInfo from '@react-native-community/netinfo';
+import {
+  getCartLines,
+  saveCartLines,
+  getStoredQuote,
+  saveStoredQuote,
+} from '@/services/cartStorage';
 import { fetchCartQuote } from '@/services/cartQuoteService';
 import { ApiError } from '@/services/apiClient';
 import { MAX_CART_QTY, productToCartLine, type CartLine } from '@/types/cart.types';
@@ -39,6 +45,7 @@ type CartContextValue = {
   quote: CartQuote | null;
   quoteLoading: boolean;
   quoteError: string | null;
+  refreshQuote: () => void;
   couponDraft: string;
   setCouponDraft: (value: string) => void;
   applyCouponDraft: () => void;
@@ -83,6 +90,13 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   const prevCartPromoId = useRef<string | null>(null);
   const prevDeliveryFree = useRef(false);
 
+  const linesRef = useRef(lines);
+  linesRef.current = lines;
+  const quoteRef = useRef(quote);
+  quoteRef.current = quote;
+  const quoteErrorRef = useRef(quoteError);
+  quoteErrorRef.current = quoteError;
+
   appliedCouponRef.current = appliedCouponCode;
 
   const scheduleCouponErrorClear = useCallback((message: string) => {
@@ -97,9 +111,12 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     let active = true;
-    void getCartLines().then((stored) => {
+    void Promise.all([getCartLines(), getStoredQuote()]).then(([storedLines, storedQuote]) => {
       if (!active) return;
-      setLines(stored);
+      setLines(storedLines);
+      if (storedQuote && storedLines.length > 0) {
+        setQuote(storedQuote);
+      }
       setReady(true);
     });
     return () => {
@@ -132,6 +149,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
         setQuoteError(null);
         prevCartPromoId.current = null;
         prevDeliveryFree.current = false;
+        void saveStoredQuote(null);
         return;
       }
 
@@ -143,6 +161,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
         const data = await fetchCartQuote(nextLines, couponCode);
         if (requestId !== quoteRequestId.current) return;
         setQuote(data);
+        void saveStoredQuote(data);
         if (data.couponError) {
           scheduleCouponErrorClear(data.couponError);
         } else if (!couponCode) {
@@ -161,6 +180,33 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     },
     [scheduleCouponErrorClear],
   );
+
+  const refreshQuote = useCallback(() => {
+    if (!ready || linesRef.current.length === 0) return;
+    void runQuote(linesRef.current, appliedCouponRef.current);
+  }, [ready, runQuote]);
+
+  useEffect(() => {
+    if (!ready) return;
+
+    const unsubscribe = NetInfo.addEventListener((state) => {
+      const isOnline = Boolean(state.isConnected && state.isInternetReachable !== false);
+      if (isOnline && linesRef.current.length > 0 && (!quoteRef.current || quoteErrorRef.current)) {
+        void runQuote(linesRef.current, appliedCouponRef.current);
+      }
+    });
+
+    const appStateSub = AppState.addEventListener('change', (nextState: AppStateStatus) => {
+      if (nextState === 'active' && linesRef.current.length > 0 && (!quoteRef.current || quoteErrorRef.current)) {
+        void runQuote(linesRef.current, appliedCouponRef.current);
+      }
+    });
+
+    return () => {
+      unsubscribe();
+      appStateSub.remove();
+    };
+  }, [ready, runQuote]);
 
   const linesKey = cartLinesKey(lines);
 
@@ -367,6 +413,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     setQuote(null);
     setAttachedPrescription(null);
     clearCoupon();
+    void saveStoredQuote(null);
   }, [clearCoupon]);
 
   const hasRxItems = useMemo(
@@ -396,6 +443,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       quote,
       quoteLoading,
       quoteError,
+      refreshQuote,
       couponDraft,
       setCouponDraft,
       applyCouponDraft,
@@ -422,6 +470,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       quote,
       quoteLoading,
       quoteError,
+      refreshQuote,
       couponDraft,
       setCouponDraft,
       applyCouponDraft,

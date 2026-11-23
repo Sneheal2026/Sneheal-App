@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -17,7 +17,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useCart } from '@/context/CartContext';
 import { useSavedAddresses } from '@/hooks/useSavedAddresses';
-import { emptyCartBill, formatInr } from '@/utils/cartBilling';
+import { emptyCartBill, estimateCartBill, formatInr } from '@/utils/cartBilling';
 import { createCheckoutOrder, seedOrderInCache } from '@/services/orderService';
 import { isLocationServiceable } from '@/utils/serviceableArea';
 import { CartLocationWarningModal } from '@/components/cart';
@@ -41,6 +41,8 @@ const PaymentMethodScreen = () => {
     ready,
     quote,
     quoteLoading,
+    quoteError,
+    refreshQuote,
     checkoutCouponCode,
     hasRxItems,
     attachedPrescription,
@@ -50,13 +52,20 @@ const PaymentMethodScreen = () => {
   const [error, setError] = useState<string | null>(null);
   const [showLocationWarning, setShowLocationWarning] = useState(false);
 
-  const bill = quote?.bill ?? emptyCartBill();
-
   useFocusEffect(
     useCallback(() => {
       void refresh(false);
-    }, [refresh]),
+      if (lines.length > 0 && (!quote || quoteError)) {
+        refreshQuote();
+      }
+    }, [refresh, lines.length, quote, quoteError, refreshQuote]),
   );
+
+  const bill = useMemo(() => {
+    if (quote?.bill) return quote.bill;
+    if (lines.length > 0) return estimateCartBill(lines);
+    return emptyCartBill();
+  }, [quote?.bill, lines]);
 
   useEffect(() => {
     if (ready && lines.length === 0 && !submitting) {
@@ -112,6 +121,18 @@ const PaymentMethodScreen = () => {
       return;
     }
 
+    if (!quote) {
+      refreshQuote();
+      Alert.alert(
+        t('cart.networkErrorTitle', 'Connection Needed'),
+        t(
+          'cart.networkErrorBody',
+          'Please ensure internet is connected so we can verify final pricing before placing the order.',
+        ),
+      );
+      return;
+    }
+
     setSubmitting(true);
     try {
       const order = await createCheckoutOrder(
@@ -141,6 +162,8 @@ const PaymentMethodScreen = () => {
   }, [
     clearCart,
     lines,
+    quote,
+    refreshQuote,
     navigation,
     openAddresses,
     checkoutCouponCode,
@@ -266,11 +289,11 @@ const PaymentMethodScreen = () => {
             onPress={() => {
               void onPlaceOrder();
             }}
-            disabled={submitting || quoteLoading}
+            disabled={submitting || quoteLoading || !quote}
             style={({ pressed }) => [
               styles.placeBtn,
               pressed && styles.pressed,
-              (submitting || quoteLoading) && styles.placeDisabled,
+              (submitting || quoteLoading || !quote) && styles.placeDisabled,
             ]}
             accessibilityRole="button"
             accessibilityLabel={t('cart.placeOrder')}

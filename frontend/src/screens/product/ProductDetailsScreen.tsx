@@ -273,20 +273,46 @@ const ProductDetailsScreen = () => {
 
             {/* Rating & Packaging Info */}
             <View style={styles.metaRow}>
-              <View style={styles.ratingPill}>
-                <Ionicons name="star" size={moderateScale(12)} color="#F59E0B" />
-                <Text style={styles.ratingText}>{medicine.rating.toFixed(1)}</Text>
-              </View>
-              <Text style={[styles.reviews, { color: colors.textSecondary }]}>
-                {medicine.reviews.toLocaleString()} ratings
-              </Text>
-              <View style={[styles.dot, { backgroundColor: colors.textMuted }]} />
-              <View style={styles.unitPill}>
-                <Ionicons name="cube-outline" size={12} color={colors.textSecondary} />
-                <Text style={[styles.unit, { color: colors.textSecondary }]}>
-                  {medicine.unit}
+              <View style={styles.ratingGroup}>
+                <View style={styles.ratingPill}>
+                  <Ionicons name="star" size={moderateScale(12)} color="#F59E0B" />
+                  <Text style={styles.ratingText} maxFontSizeMultiplier={1.3}>
+                    {medicine.rating.toFixed(1)}
+                  </Text>
+                </View>
+                <Text
+                  style={[styles.reviews, { color: colors.textSecondary }]}
+                  numberOfLines={1}
+                  maxFontSizeMultiplier={1.3}
+                >
+                  {medicine.reviews.toLocaleString()} ratings
                 </Text>
               </View>
+
+              {medicine.unit ? (
+                <View
+                  style={[
+                    styles.unitPill,
+                    {
+                      backgroundColor: colors.surfaceSecondary,
+                      borderColor: colors.borderLight,
+                    },
+                  ]}
+                >
+                  <Ionicons
+                    name="cube-outline"
+                    size={moderateScale(12)}
+                    color={colors.textSecondary}
+                  />
+                  <Text
+                    style={[styles.unit, { color: colors.textSecondary }]}
+                    numberOfLines={2}
+                    maxFontSizeMultiplier={1.3}
+                  >
+                    {medicine.unit}
+                  </Text>
+                </View>
+              ) : null}
             </View>
 
             <View style={[styles.divider, { backgroundColor: colors.borderLight }]} />
@@ -688,26 +714,44 @@ const ProductDetailsScreen = () => {
         {medicine.price > 0 ? (
           <>
             <View style={styles.bottomPrice}>
-              <Text style={[styles.bottomPriceLabel, { color: colors.textSecondary }]}>
+              <Text
+                style={[styles.bottomPriceLabel, { color: colors.textSecondary }]}
+                maxFontSizeMultiplier={1.2}
+              >
                 TOTAL PRICE
               </Text>
               <View style={styles.bottomPriceRow}>
-                <Text style={[styles.bottomPriceValue, { color: colors.textPrimary }]}>
+                <Text
+                  style={[styles.bottomPriceValue, { color: colors.textPrimary }]}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.8}
+                  maxFontSizeMultiplier={1.25}
+                >
                   ₹{((quantity > 0 ? quantity : 1) * medicine.price).toFixed(2)}
                 </Text>
-                <Text style={[styles.bottomPriceUnit, { color: colors.textMuted }]}>
-                  /{medicine.unit}
-                </Text>
+                {medicine.unit ? (
+                  <Text
+                    style={[styles.bottomPriceUnit, { color: colors.textMuted }]}
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
+                    maxFontSizeMultiplier={1.2}
+                  >
+                    /{medicine.unit}
+                  </Text>
+                ) : null}
               </View>
             </View>
 
-            <QuantityStepper
-              size="lg"
-              reserveSlot={false}
-              quantity={quantity}
-              onIncrement={handleAdd}
-              onDecrement={handleRemove}
-            />
+            <View style={styles.bottomAction}>
+              <QuantityStepper
+                size="lg"
+                reserveSlot={false}
+                quantity={quantity}
+                onIncrement={handleAdd}
+                onDecrement={handleRemove}
+              />
+            </View>
           </>
         ) : (
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 6 }}>
@@ -912,8 +956,15 @@ const styles = StyleSheet.create({
   metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    flexWrap: 'wrap',
     gap: 8,
     marginTop: 10,
+  },
+  ratingGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flexShrink: 0,
   },
   ratingPill: {
     flexDirection: 'row',
@@ -932,19 +983,21 @@ const styles = StyleSheet.create({
   reviews: {
     fontSize: 12,
   },
-  dot: {
-    width: 3,
-    height: 3,
-    borderRadius: 1.5,
-  },
   unitPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 5,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    borderWidth: 1,
+    maxWidth: '100%',
+    flexShrink: 1,
   },
   unit: {
     fontSize: 12,
-    fontWeight: '500',
+    fontWeight: '600',
+    flexShrink: 1,
   },
   divider: {
     height: 1,
@@ -1179,6 +1232,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 12,
     minHeight: 68,
+    gap: 12,
     borderTopWidth: 1,
     ...Platform.select({
       ios: {
@@ -1191,6 +1245,8 @@ const styles = StyleSheet.create({
     }),
   },
   bottomPrice: {
+    flex: 1,
+    minWidth: 0,
     justifyContent: 'center',
   },
   bottomPriceLabel: {
@@ -1201,7 +1257,9 @@ const styles = StyleSheet.create({
   bottomPriceRow: {
     flexDirection: 'row',
     alignItems: 'baseline',
-    gap: 2,
+    flexWrap: 'wrap',
+    columnGap: 4,
+    rowGap: 1,
   },
   bottomPriceValue: {
     fontSize: 21,
@@ -1211,6 +1269,12 @@ const styles = StyleSheet.create({
   bottomPriceUnit: {
     fontSize: 11,
     fontWeight: '500',
+    flexShrink: 1,
+  },
+  bottomAction: {
+    flexShrink: 0,
+    alignItems: 'flex-end',
+    justifyContent: 'center',
   },
 });
 

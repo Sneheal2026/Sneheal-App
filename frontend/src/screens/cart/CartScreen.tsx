@@ -27,7 +27,7 @@ import {
 } from '@/components/cart';
 import { useCart } from '@/context/CartContext';
 import { useSavedAddresses } from '@/hooks/useSavedAddresses';
-import { emptyCartBill, formatInr } from '@/utils/cartBilling';
+import { emptyCartBill, estimateCartBill, formatInr } from '@/utils/cartBilling';
 import { resolveCatalogImage } from '@/utils/productImage';
 import { getTabBarHeight } from '@/navigation/tabBarConfig';
 import { isLocationServiceable } from '@/utils/serviceableArea';
@@ -52,6 +52,8 @@ const CartScreen = ({ navigation: tabNavigation }: TabScreenProps<'Cart'>) => {
     decrement,
     quote,
     quoteLoading,
+    quoteError,
+    refreshQuote,
     couponDraft,
     setCouponDraft,
     applyCouponDraft,
@@ -60,7 +62,6 @@ const CartScreen = ({ navigation: tabNavigation }: TabScreenProps<'Cart'>) => {
     couponApplying,
     autoApplyToast,
     dismissAutoApplyToast,
-    quoteError,
     hasRxItems,
     attachedPrescription,
     attachPrescription,
@@ -73,10 +74,17 @@ const CartScreen = ({ navigation: tabNavigation }: TabScreenProps<'Cart'>) => {
   useFocusEffect(
     useCallback(() => {
       void refresh(false);
-    }, [refresh]),
+      if (lines.length > 0 && (!quote || quoteError)) {
+        refreshQuote();
+      }
+    }, [refresh, lines.length, quote, quoteError, refreshQuote]),
   );
 
-  const bill = quote?.bill ?? emptyCartBill();
+  const bill = useMemo(() => {
+    if (quote?.bill) return quote.bill;
+    if (lines.length > 0) return estimateCartBill(lines);
+    return emptyCartBill();
+  }, [quote?.bill, lines]);
 
   const billLines = useMemo<BillLine[]>(() => {
     const rows: BillLine[] = [
@@ -194,6 +202,22 @@ const CartScreen = ({ navigation: tabNavigation }: TabScreenProps<'Cart'>) => {
       return;
     }
 
+    if (!quote && lines.length > 0) {
+      refreshQuote();
+      Alert.alert(
+        t('cart.networkErrorTitle', 'Connection Needed'),
+        t(
+          'cart.networkErrorBody',
+          'Please ensure internet is connected so we can verify latest medicine prices and discounts before proceeding.',
+        ),
+        [
+          { text: t('common.cancel', 'Cancel'), style: 'cancel' },
+          { text: t('common.retry', 'Retry'), onPress: refreshQuote },
+        ],
+      );
+      return;
+    }
+
     const parent = navigation.getParent<NativeStackNavigationProp<AuthStackParamList>>();
     parent?.navigate('PaymentMethod');
   }, [
@@ -203,6 +227,9 @@ const CartScreen = ({ navigation: tabNavigation }: TabScreenProps<'Cart'>) => {
     navigation,
     openAddresses,
     selectedAddress,
+    quote,
+    lines.length,
+    refreshQuote,
     t,
   ]);
 
@@ -379,7 +406,22 @@ const CartScreen = ({ navigation: tabNavigation }: TabScreenProps<'Cart'>) => {
           />
 
           {quoteError ? (
-            <Text style={styles.quoteErrorText}>{quoteError}</Text>
+            <View style={styles.quoteErrorBanner}>
+              <Ionicons name="cloud-offline-outline" size={16} color={colors.error} />
+              <Text style={styles.quoteErrorText} numberOfLines={2}>
+                {quoteError}
+              </Text>
+              <Pressable
+                onPress={refreshQuote}
+                hitSlop={8}
+                style={styles.quoteRetryBtn}
+                accessibilityRole="button"
+                accessibilityLabel="Retry refreshing cart totals"
+              >
+                <Ionicons name="refresh" size={13} color={colors.white} />
+                <Text style={styles.quoteRetryBtnText}>Retry</Text>
+              </Pressable>
+            </View>
           ) : null}
 
           <View style={isUpdating ? styles.billingDimmed : undefined}>
@@ -664,11 +706,38 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: colors.white,
   },
+  quoteErrorBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FECACA',
+    borderRadius: borderRadius.md,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    gap: 8,
+  },
   quoteErrorText: {
     ...typography.caption,
     color: colors.error,
     fontWeight: '600',
-    textAlign: 'center',
+    flex: 1,
+  },
+  quoteRetryBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: colors.error,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: borderRadius.sm,
+  },
+  quoteRetryBtnText: {
+    ...typography.caption,
+    color: colors.white,
+    fontWeight: '700',
+    fontSize: 11,
   },
   billingDimmed: {
     opacity: 0.6,
