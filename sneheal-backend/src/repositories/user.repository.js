@@ -238,6 +238,21 @@ const findByIdForUpdate = async (id, connection) => {
   return mapUser(rows[0]);
 };
 
+const updatePushToken = async (userId, pushToken, connection = db) => {
+  await connection.execute(
+    'UPDATE users SET push_token = ? WHERE id = ?',
+    [pushToken, userId]
+  );
+};
+
+const findPushTokenByPhone = async (phone, connection = db) => {
+  const [rows] = await connection.execute(
+    'SELECT id, phone, push_token, role FROM users WHERE phone = ? LIMIT 1',
+    [phone]
+  );
+  return rows[0] || null;
+};
+
 module.exports = {
   findByPhone,
   findById,
@@ -250,4 +265,6 @@ module.exports = {
   completeProfile,
   isUserApproved,
   mapUser,
+  updatePushToken,
+  findPushTokenByPhone,
 };

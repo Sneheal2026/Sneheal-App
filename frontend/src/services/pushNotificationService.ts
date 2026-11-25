@@ -2,8 +2,10 @@ import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
 import { navigate } from '@/navigation/navigationRef';
+import { authenticatedApiRequest, getValidAccessToken } from '@/services/authTokenManager';
 
 export const PROMO_CHANNEL_ID = 'offers-and-promotions';
+export const ORDERS_CHANNEL_ID = 'orders-and-deliveries';
 
 let pushServiceInitialized = false;
 
@@ -30,12 +32,35 @@ export async function setupPromoNotificationChannel(): Promise<void> {
 }
 
 /**
+ * Creates the max-priority notification channel for delivery agent order dispatch alerts.
+ */
+export async function setupOrdersNotificationChannel(): Promise<void> {
+  if (Platform.OS !== 'android') return;
+
+  try {
+    await Notifications.setNotificationChannelAsync(ORDERS_CHANNEL_ID, {
+      name: 'Orders & Deliveries',
+      description: 'Immediate alerts for new orders and delivery dispatches',
+      importance: Notifications.AndroidImportance.MAX,
+      vibrationPattern: [0, 500, 250, 500],
+      lightColor: '#CA2164',
+      sound: 'default',
+      enableVibrate: true,
+      showBadge: true,
+    });
+  } catch (error) {
+    console.warn('[PushNotification] Failed to set orders channel:', error);
+  }
+}
+
+/**
  * Requests push notification permissions (required for Android 13+ / iOS).
  */
 export async function requestPushPermissions(): Promise<boolean> {
   try {
     if (Platform.OS === 'android') {
       await setupPromoNotificationChannel();
+      await setupOrdersNotificationChannel();
     }
 
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
@@ -66,6 +91,16 @@ export function handleNotificationTap(data: Record<string, any> | undefined): vo
 
   // Medicine reminder actions are handled separately by reminderNotificationService
   if (data.type === 'medicine_reminder') {
+    return;
+  }
+
+  // Delivery alert tapped by agent
+  if (data.type === 'new_order_delivery') {
+    if (data.orderId) {
+      navigate('DeliveryOrderDetail', { orderId: String(data.orderId) });
+    } else {
+      navigate('DeliveryAgentMain');
+    }
     return;
   }
 
@@ -128,4 +163,40 @@ export function addPushNotificationTapListener(): Notifications.Subscription {
     const data = response.notification.request.content.data as Record<string, any> | undefined;
     handleNotificationTap(data);
   });
+}
+
+/**
+ * Obtains the Expo Push Token for this physical device and syncs it with the backend database.
+ * Safe to call at startup or login. Fails silently if offline or unauthenticated.
+ */
+export async function syncPushTokenWithBackend(): Promise<string | null> {
+  try {
+    const accessToken = await getValidAccessToken();
+    if (!accessToken) return null;
+
+    const hasPermission = await requestPushPermissions();
+    if (!hasPermission) return null;
+
+    const projectId =
+      Constants?.expoConfig?.extra?.eas?.projectId ??
+      Constants?.easConfig?.projectId;
+
+    const tokenResponse = await Notifications.getExpoPushTokenAsync(
+      projectId ? { projectId } : undefined,
+    );
+
+    const token = tokenResponse?.data;
+    if (!token) return null;
+
+    await authenticatedApiRequest('/api/auth/push-token', {
+      method: 'POST',
+      body: { pushToken: token },
+    });
+
+    return token;
+  } catch (error) {
+    // Non-blocking, fails gracefully in dev or if offline
+    console.warn('[PushNotification] Could not sync push token:', error);
+    return null;
+  }
 }

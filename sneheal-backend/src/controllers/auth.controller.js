@@ -32,10 +32,25 @@ const getMe = async (req, res) => {
   return success(res, 'User profile', { user });
 };
 
+const updatePushToken = async (req, res) => {
+  const userId = req.user.sub;
+  const { pushToken } = req.body;
+
+  if (!pushToken || typeof pushToken !== 'string') {
+    return fail(res, 400, 'Valid pushToken string is required');
+  }
+
+  const cleanToken = pushToken.trim().slice(0, 255);
+  await userRepo.updatePushToken(userId, cleanToken);
+
+  return success(res, 'Push token updated successfully', { pushToken: cleanToken });
+};
+
 module.exports = {
   sendOtp,
   verifyOtp,
   refreshSession,
   completeRegistration,
   getMe,
+  updatePushToken,
 };

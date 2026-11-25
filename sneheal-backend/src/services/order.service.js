@@ -13,6 +13,7 @@ const promotionRepo = require('../repositories/promotion.repository');
 const prescriptionRepo = require('../repositories/prescription.repository');
 const { evaluatePromotions } = require('./promotion.service');
 const mailService = require('./mail.service');
+const pushNotificationService = require('./pushNotification.service');
 const { isLocationServiceable } = require('../utils/serviceableArea');
 
 const makePublicId = () => {
@@ -248,6 +249,9 @@ const createCheckoutOrder = async (userId, body) => {
     setImmediate(() => {
       mailService.notifyOpsNewOrder(detail).catch((err) => {
         console.error('[mail] ops order email failed', err.message);
+      });
+      pushNotificationService.notifyDeliveryAgentNewOrder(detail).catch((err) => {
+        console.error('[push] delivery agent notification failed', err.message);
       });
     });
     return detail;

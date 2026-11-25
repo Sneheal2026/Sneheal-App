@@ -27,5 +27,6 @@ router.post(
   asyncHandler(authController.completeRegistration)
 );
 router.get('/me', authenticateToken, asyncHandler(authController.getMe));
+router.post('/push-token', authenticateToken, asyncHandler(authController.updatePushToken));
 
 module.exports = router;

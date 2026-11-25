@@ -20,6 +20,7 @@ import { buildAuthInitialState } from '@/navigation/buildAuthInitialState';
 import { resolveAuthRoute } from '@/navigation/resolveAuthRoute';
 import { invalidateOrdersCache } from '@/services/orderService';
 import { fetchCurrentUser } from '@/services/authService';
+import { syncPushTokenWithBackend } from '@/services/pushNotificationService';
 import { devLog } from '@/utils/devLogger';
 import type { AuthUser, VerifyOtpResponse } from '@/types/auth';
 
@@ -96,6 +97,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
 
       applySession(activeSession);
+      void syncPushTokenWithBackend();
       // Hold for 2 seconds on success so user enjoys the branded splash experience
       await new Promise((resolve) => setTimeout(resolve, 2000));
     } catch (error) {
@@ -126,6 +128,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       refreshToken: data.refreshToken,
       user: data.user,
     });
+    void syncPushTokenWithBackend();
     devLog('Auth', 'Signed in', {
       userId: data.user.id,
       profileCompleted: data.user.profileCompleted,
