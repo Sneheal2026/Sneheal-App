@@ -185,8 +185,8 @@ const searchProducts = async (query) => {
 
   try {
     const controller = new AbortController();
-    // 2.5-second timeout guard to prevent long hanging
-    const timeout = setTimeout(() => controller.abort(), 2500);
+    // 5-second timeout guard to allow DrugSetu sufficient time while protecting UI responsiveness
+    const timeout = setTimeout(() => controller.abort(), 5000);
 
     // retryOn429 = false, retries = 0: Fail fast on 429 so user immediately gets local results
     const response = await fetchWithRetry(
@@ -222,7 +222,11 @@ const searchProducts = async (query) => {
 
     return results;
   } catch (error) {
-    console.error(`[DrugSetu] Search API error for "${term}":`, error.message);
+    if (error.name === 'AbortError') {
+      console.warn(`[DrugSetu] Search API timed out after 5s for "${term}" — fell back to local catalog.`);
+    } else {
+      console.error(`[DrugSetu] Search API error for "${term}":`, error.message);
+    }
     return [];
   }
 };
