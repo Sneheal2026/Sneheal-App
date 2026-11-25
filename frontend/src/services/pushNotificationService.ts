@@ -2,7 +2,9 @@ import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
 import { navigate } from '@/navigation/navigationRef';
-import { authenticatedApiRequest, getValidAccessToken } from '@/services/authTokenManager';
+import { apiRequest } from '@/services/apiClient';
+import { getValidAccessToken } from '@/services/authTokenManager';
+import { devLog } from '@/utils/devLogger';
 
 export const PROMO_CHANNEL_ID = 'offers-and-promotions';
 export const ORDERS_CHANNEL_ID = 'orders-and-deliveries';
@@ -167,35 +169,51 @@ export function addPushNotificationTapListener(): Notifications.Subscription {
 
 /**
  * Obtains the Expo Push Token for this physical device and syncs it with the backend database.
- * Safe to call at startup or login. Fails silently if offline or unauthenticated.
+ * Safe to call at startup, login, or screen focus.
  */
-export async function syncPushTokenWithBackend(): Promise<string | null> {
+export async function syncPushTokenWithBackend(explicitToken?: string): Promise<string | null> {
   try {
-    const accessToken = await getValidAccessToken();
-    if (!accessToken) return null;
+    const accessToken = explicitToken || (await getValidAccessToken());
+    if (!accessToken) {
+      devLog('PushNotification', 'No access token available, skipping push token sync');
+      return null;
+    }
 
     const hasPermission = await requestPushPermissions();
-    if (!hasPermission) return null;
+    if (!hasPermission) {
+      devLog('PushNotification', 'Push permissions not granted by user');
+      return null;
+    }
 
+    // Always provide fallback projectId for EAS Update builds where expoConfig might be null
     const projectId =
       Constants?.expoConfig?.extra?.eas?.projectId ??
-      Constants?.easConfig?.projectId;
+      Constants?.easConfig?.projectId ??
+      '0ecd72c6-b621-4e90-bbae-2cb584ae8f61';
 
-    const tokenResponse = await Notifications.getExpoPushTokenAsync(
-      projectId ? { projectId } : undefined,
-    );
+    devLog('PushNotification', 'Requesting Expo push token for project:', projectId);
 
-    const token = tokenResponse?.data;
-    if (!token) return null;
-
-    await authenticatedApiRequest('/api/auth/push-token', {
-      method: 'POST',
-      body: { pushToken: token },
+    const tokenResponse = await Notifications.getExpoPushTokenAsync({
+      projectId,
     });
 
+    const token = tokenResponse?.data;
+    if (!token) {
+      devLog('PushNotification', 'Expo did not return a push token');
+      return null;
+    }
+
+    devLog('PushNotification', 'Syncing push token with backend:', token);
+
+    await apiRequest('/api/auth/push-token', {
+      method: 'POST',
+      body: { pushToken: token },
+      token: accessToken,
+    });
+
+    devLog('PushNotification', 'Push token successfully synced with MySQL!');
     return token;
   } catch (error) {
-    // Non-blocking, fails gracefully in dev or if offline
     console.warn('[PushNotification] Could not sync push token:', error);
     return null;
   }

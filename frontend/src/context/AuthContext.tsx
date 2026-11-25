@@ -97,7 +97,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
 
       applySession(activeSession);
-      void syncPushTokenWithBackend();
+      void syncPushTokenWithBackend(activeSession.accessToken);
       // Hold for 2 seconds on success so user enjoys the branded splash experience
       await new Promise((resolve) => setTimeout(resolve, 2000));
     } catch (error) {
@@ -128,7 +128,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       refreshToken: data.refreshToken,
       user: data.user,
     });
-    void syncPushTokenWithBackend();
+    void syncPushTokenWithBackend(data.accessToken);
     devLog('Auth', 'Signed in', {
       userId: data.user.id,
       profileCompleted: data.user.profileCompleted,

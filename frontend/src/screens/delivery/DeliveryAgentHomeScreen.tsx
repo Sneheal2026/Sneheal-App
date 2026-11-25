@@ -34,6 +34,7 @@ import {
   DELIVERY_QUEUE_PAGE_SIZE,
   fetchDeliveryQueuePage,
 } from '@/services/orderService';
+import { syncPushTokenWithBackend } from '@/services/pushNotificationService';
 import { ApiError } from '@/services/apiClient';
 import type { DeliveryQueueOrder } from '@/types/order.types';
 
@@ -49,6 +50,7 @@ const DeliveryAgentHomeScreen = () => {
   useFocusEffect(
     useCallback(() => {
       refreshAnnouncements();
+      void syncPushTokenWithBackend();
     }, [refreshAnnouncements]),
   );
   const [isOnline, setIsOnline] = useState(true);
