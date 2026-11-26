@@ -104,9 +104,9 @@ const OrbitSvg = () => {
           y2="36.59"
           gradientUnits="userSpaceOnUse"
         >
-          <Stop offset="0%" stopColor="#FF1F6D" stopOpacity="0.30" />
-          <Stop offset="60%" stopColor="#FF6B9E" stopOpacity="0.12" />
-          <Stop offset="100%" stopColor="#FFAEC8" stopOpacity="0.0" />
+          <Stop offset="0%" stopColor="#2563EB" stopOpacity="0.30" />
+          <Stop offset="60%" stopColor="#60A5FA" stopOpacity="0.12" />
+          <Stop offset="100%" stopColor="#BFDBFE" stopOpacity="0.0" />
         </LinearGradient>
 
         {/* Arc 1 Main Stroke Gradient */}
@@ -118,10 +118,10 @@ const OrbitSvg = () => {
           y2="36.59"
           gradientUnits="userSpaceOnUse"
         >
-          <Stop offset="0%" stopColor="#FF1F6D" stopOpacity="1" />
-          <Stop offset="40%" stopColor="#FF4789" stopOpacity="0.95" />
-          <Stop offset="75%" stopColor="#FF82AD" stopOpacity="0.55" />
-          <Stop offset="100%" stopColor="#FFAEC8" stopOpacity="0.12" />
+          <Stop offset="0%" stopColor="#2563EB" stopOpacity="1" />
+          <Stop offset="40%" stopColor="#3B82F6" stopOpacity="0.95" />
+          <Stop offset="75%" stopColor="#93C5FD" stopOpacity="0.55" />
+          <Stop offset="100%" stopColor="#BFDBFE" stopOpacity="0.12" />
         </LinearGradient>
 
         {/* Arc 2 Stroke Gradient (Head: 47.75, 66.41 -> Tail: 90.33, 183.41) */}
@@ -133,10 +133,10 @@ const OrbitSvg = () => {
           y2="183.41"
           gradientUnits="userSpaceOnUse"
         >
-          <Stop offset="0%" stopColor="#FF2D78" stopOpacity="0.95" />
-          <Stop offset="45%" stopColor="#FF659B" stopOpacity="0.75" />
-          <Stop offset="80%" stopColor="#FFA5C5" stopOpacity="0.40" />
-          <Stop offset="100%" stopColor="#FFD1E3" stopOpacity="0.10" />
+          <Stop offset="0%" stopColor="#1D4ED8" stopOpacity="0.95" />
+          <Stop offset="45%" stopColor="#3B82F6" stopOpacity="0.75" />
+          <Stop offset="80%" stopColor="#93C5FD" stopOpacity="0.40" />
+          <Stop offset="100%" stopColor="#DBEAFE" stopOpacity="0.10" />
         </LinearGradient>
       </Defs>
 
@@ -181,22 +181,22 @@ const BottomWaves = ({ height }: { height: number }) => {
         <Defs>
           {/* Ambient soft glow gradient (deepest layer) */}
           <LinearGradient id="bottomWaveGrad1" x1="0.2" y1="1" x2="0.8" y2="0">
-            <Stop offset="0%" stopColor="#FCE7F3" stopOpacity="0.85" />
-            <Stop offset="55%" stopColor="#FDF2F8" stopOpacity="0.40" />
+            <Stop offset="0%" stopColor="#E0F2FE" stopOpacity="0.85" />
+            <Stop offset="55%" stopColor="#F0F9FF" stopOpacity="0.40" />
             <Stop offset="100%" stopColor="#FFFFFF" stopOpacity="0" />
           </LinearGradient>
 
           {/* Fluid ribbon gradient (middle layer) */}
           <LinearGradient id="bottomWaveGrad2" x1="0" y1="1" x2="1" y2="0">
-            <Stop offset="0%" stopColor="#FD84BA" stopOpacity="0.45" />
-            <Stop offset="50%" stopColor="#FE9CC5" stopOpacity="0.26" />
-            <Stop offset="100%" stopColor="#FDB3D7" stopOpacity="0.08" />
+            <Stop offset="0%" stopColor="#93C5FD" stopOpacity="0.45" />
+            <Stop offset="50%" stopColor="#BFDBFE" stopOpacity="0.26" />
+            <Stop offset="100%" stopColor="#DBEAFE" stopOpacity="0.08" />
           </LinearGradient>
 
-          {/* Vibrant rose crest gradient (front layer) */}
+          {/* Vibrant blue crest gradient (front layer) */}
           <LinearGradient id="bottomWaveGrad3" x1="0" y1="1" x2="0.8" y2="0">
-            <Stop offset="0%" stopColor="#F43F5E" stopOpacity="0.36" />
-            <Stop offset="55%" stopColor="#FD84BA" stopOpacity="0.18" />
+            <Stop offset="0%" stopColor="#2563EB" stopOpacity="0.36" />
+            <Stop offset="55%" stopColor="#93C5FD" stopOpacity="0.18" />
             <Stop offset="100%" stopColor="#FFFFFF" stopOpacity="0" />
           </LinearGradient>
         </Defs>
@@ -207,13 +207,13 @@ const BottomWaves = ({ height }: { height: number }) => {
           fill="url(#bottomWaveGrad1)"
         />
 
-        {/* Soft pastel pink flowing ribbon (Layer 2 - middle) */}
+        {/* Soft pastel blue flowing ribbon (Layer 2 - middle) */}
         <Path
           d="M 0 68 C 150 42, 310 50, 460 84 C 590 114, 760 55, 890 38 C 935 32, 970 42, 1000 52 L 1000 180 L 0 180 Z"
           fill="url(#bottomWaveGrad2)"
         />
 
-        {/* Vibrant rose crest curve (Layer 3 - front accent, rich fluid crest) */}
+        {/* Vibrant blue crest curve (Layer 3 - front accent, rich fluid crest) */}
         <Path
           d="M 0 102 C 150 76, 310 84, 460 116 C 590 144, 760 90, 890 70 C 935 62, 970 72, 1000 84 L 1000 180 L 0 180 Z"
           fill="url(#bottomWaveGrad3)"
@@ -222,7 +222,7 @@ const BottomWaves = ({ height }: { height: number }) => {
         {/* Delicate glowing highlight along crest line */}
         <Path
           d="M 0 102 C 150 76, 310 84, 460 116 C 590 144, 760 90, 890 70 C 935 62, 970 72, 1000 84"
-          stroke="#FF1F6D"
+          stroke="#2563EB"
           strokeWidth={1.5}
           strokeOpacity={0.24}
           fill="none"
@@ -750,7 +750,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '800',
     fontStyle: 'italic',
-    color: '#FF1764',
+    color: '#2563EB',
     letterSpacing: -0.3,
   },
   subtitle: {
@@ -765,14 +765,14 @@ const styles = StyleSheet.create({
     width: BAR_WIDTH,
     height: BAR_HEIGHT,
     borderRadius: BAR_RADIUS,
-    backgroundColor: '#FDE8F1',
+    backgroundColor: '#EFF6FF',
     overflow: 'hidden',
     marginTop: 18,
   },
   progressFill: {
     height: BAR_HEIGHT,
     borderRadius: BAR_RADIUS,
-    backgroundColor: '#FF1764',
+    backgroundColor: '#2563EB',
     overflow: 'hidden',
   },
   stripesStrip: {

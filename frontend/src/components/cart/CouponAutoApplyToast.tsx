@@ -38,21 +38,23 @@ type Props = {
   onDismiss: () => void;
 };
 
-const isDiwaliOffer = (payload: AutoApplyToastPayload) =>
+const isFestiveOffer = (payload: AutoApplyToastPayload) =>
+  payload.code === 'WINTER25' ||
   payload.code === 'DIWALI25' ||
+  payload.title.toLowerCase().includes('winter') ||
   payload.title.toLowerCase().includes('diwali');
 
 const resolveToastVariant = (
   payload: AutoApplyToastPayload,
   hasSavings: boolean,
 ): FestiveCouponVariant => {
-  if (isDiwaliOffer(payload)) {
-    return 'diwali';
+  if (isFestiveOffer(payload)) {
+    return 'winter';
   }
   if (payload.deliveryUnlocked && !hasSavings) {
     return 'delivery';
   }
-  return 'diwali';
+  return 'winter';
 };
 
 const CouponAutoApplyToast = ({ visible, payload, onDismiss }: Props) => {
@@ -101,9 +103,9 @@ const CouponAutoApplyToast = ({ visible, payload, onDismiss }: Props) => {
 
   const hasSavings = payload.promoDiscount > 0;
   const variant = resolveToastVariant(payload, hasSavings);
-  const diwali = variant === 'diwali';
+  const isSeasonal = variant === 'winter' || variant === 'diwali';
 
-  const badgeLabel = diwali
+  const badgeLabel = isSeasonal
     ? t('cart.offersDiwaliBadge')
     : t('cart.offersAutoAppliedDeliveryShort');
 

@@ -1,10 +1,10 @@
 // Base palette — primary brand tokens are overridden at runtime by ThemeProvider.
 // Use `useTheme()` from '@/hooks/useTheme' for dynamic primary colors.
 const colors = {
-  // Brand Colors — default rose accent (Classic Blue theme swatch)
-  primary: '#CA2164',
-  primaryLight: '#E85792',
-  primaryDark: '#9B1A4E',
+  // Brand Colors — default healthcare blue
+  primary: '#2563EB',
+  primaryLight: '#60A5FA',
+  primaryDark: '#1D4ED8',
 
   // Accent — teal complement for pharmacy / wellness
   secondary: '#0D9488',
@@ -35,16 +35,16 @@ const colors = {
   // Borders
   border: '#E2E8F0',
   borderLight: '#F1F5F9',
-  borderFocused: '#CA2164',
+  borderFocused: '#2563EB',
 
   // Pharmacy / Medicine Delivery
   headerGreenDark: '#0D3B2E',
   headerGreenMid: '#145A3C',
   headerGreenLight: '#1A7A52',
 
-  // Home header — Blinkit-style yellow → white
-  headerGradientStart: '#CA2164',
-  headerGradientMid: '#FCE8F0',
+  // Home header — brand gradient → white
+  headerGradientStart: '#2563EB',
+  headerGradientMid: '#DBEAFE',
   headerGradientEnd: '#FFFFFF',
   headerAccent: '#0D9488',
   headerAccentDark: '#0F766E',
@@ -57,7 +57,7 @@ const colors = {
   headerGlassBorder: 'rgba(0,0,0,0.06)',
   headerTextDark: '#0F172A',
   accentGold: '#F5B942',
-  accentPink: '#FFE0EC',
+  accentPink: '#DBEAFE',
   accentTeal: '#00897B',
   accentPurple: '#5B2E91',
   cardBorder: '#D1D5DB',

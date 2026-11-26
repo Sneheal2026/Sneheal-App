@@ -10,33 +10,52 @@ const { colors, spacing, typography, borderRadius, moderateScale, shadows } = th
 export const CART_PAGE_BG = '#F5F6F8';
 const GREEN = '#0C831F';
 
-const DIWALI_GRADIENT = ['#FF8A00', '#E85D04', '#9D0208'] as const;
-const GOLD_FRAME_GRADIENT = ['#FFF8DC', '#F5D061', '#C9A227', '#F5D061', '#FFF8DC'] as const;
-const DIWALI_COUPON_BG = ['#2D1B4E', '#6A040F', '#9D0208', '#E85D04', '#FFBA08'] as const;
+const WINTER_GRADIENT = ['#38BDF8', '#2563EB', '#1D4ED8'] as const;
+const SILVER_FRAME_GRADIENT = ['#E0F2FE', '#BAE6FD', '#7DD3FC', '#38BDF8', '#E0F2FE'] as const;
+const WINTER_COUPON_BG = ['#0A192F', '#0F2B5C', '#1E40AF', '#2563EB', '#38BDF8'] as const;
 const DELIVERY_COUPON_BG = ['#052E16', '#0B5345', '#0C831F', '#2D6A4F', '#95D5B2'] as const;
 
 const COUPON_NOTCH_SIZE = 16;
 const PERF_DOT_COUNT = 28;
 
-export type FestiveCouponVariant = 'diwali' | 'delivery';
+export type FestiveCouponVariant = 'winter' | 'diwali' | 'delivery';
 
 const VARIANT_THEME = {
+  winter: {
+    frame: SILVER_FRAME_GRADIENT,
+    body: WINTER_COUPON_BG,
+    shadowColor: '#1E40AF',
+    notchBorderColor: 'rgba(56, 189, 248, 0.85)',
+    badgeIcon: 'snow-outline' as const,
+    badgeIconColor: '#2563EB',
+    badgeTextColor: '#2563EB',
+    perfDot: 'rgba(224, 242, 254, 0.65)',
+    glowSmall: 'rgba(255, 255, 255, 0.16)',
+    decorIcon: 'snow-outline' as const,
+    decorIconColor: 'rgba(224, 242, 254, 0.35)',
+    stubIcon: 'snow-outline' as const,
+    stubIconColor: '#93C5FD',
+  },
   diwali: {
-    body: DIWALI_COUPON_BG,
-    shadowColor: '#9D0208',
-    badgeIcon: 'sparkles' as const,
-    badgeIconColor: DIWALI_GRADIENT[1],
-    badgeTextColor: DIWALI_GRADIENT[1],
-    perfDot: 'rgba(255, 248, 220, 0.55)',
-    glowSmall: 'rgba(255, 255, 255, 0.12)',
-    decorIcon: 'sparkles' as const,
-    decorIconColor: 'rgba(255, 248, 220, 0.35)',
-    stubIcon: 'ticket' as const,
-    stubIconColor: '#FFE566',
+    frame: SILVER_FRAME_GRADIENT,
+    body: WINTER_COUPON_BG,
+    shadowColor: '#1E40AF',
+    notchBorderColor: 'rgba(56, 189, 248, 0.85)',
+    badgeIcon: 'snow-outline' as const,
+    badgeIconColor: '#2563EB',
+    badgeTextColor: '#2563EB',
+    perfDot: 'rgba(224, 242, 254, 0.65)',
+    glowSmall: 'rgba(255, 255, 255, 0.16)',
+    decorIcon: 'snow-outline' as const,
+    decorIconColor: 'rgba(224, 242, 254, 0.35)',
+    stubIcon: 'snow-outline' as const,
+    stubIconColor: '#93C5FD',
   },
   delivery: {
+    frame: SILVER_FRAME_GRADIENT,
     body: DELIVERY_COUPON_BG,
     shadowColor: '#0C831F',
+    notchBorderColor: 'rgba(45, 106, 79, 0.85)',
     badgeIcon: 'bicycle' as const,
     badgeIconColor: GREEN,
     badgeTextColor: GREEN,
@@ -82,7 +101,7 @@ export const FestiveCouponShell = ({
   return (
     <View style={[styles.couponShell, { shadowColor: themeVariant.shadowColor }]}>
       <LinearGradient
-        colors={[...GOLD_FRAME_GRADIENT]}
+        colors={[...themeVariant.frame]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.couponGoldFrame}
@@ -291,7 +310,7 @@ const styles = StyleSheet.create({
     borderRadius: COUPON_NOTCH_SIZE / 2,
     backgroundColor: CART_PAGE_BG,
     borderWidth: 2,
-    borderColor: 'rgba(201, 162, 39, 0.85)',
+    borderColor: 'rgba(56, 189, 248, 0.85)',
     marginLeft: -COUPON_NOTCH_SIZE / 2,
   },
   couponSideNotchRight: {
@@ -300,7 +319,7 @@ const styles = StyleSheet.create({
     borderRadius: COUPON_NOTCH_SIZE / 2,
     backgroundColor: CART_PAGE_BG,
     borderWidth: 2,
-    borderColor: 'rgba(201, 162, 39, 0.85)',
+    borderColor: 'rgba(56, 189, 248, 0.85)',
     marginRight: -COUPON_NOTCH_SIZE / 2,
   },
   couponTearTrack: {

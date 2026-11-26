@@ -256,7 +256,7 @@ const mr: TranslationResources = {
     offersApply: 'लागू करा',
     offersClearCode: 'सर्वोत्तम ऑफर वापरा',
     offersAutoAppliedSaved: '{{amount}} बचत',
-    offersDiwaliBadge: 'दिवाळी',
+    offersDiwaliBadge: 'हिवाळा',
     offersAutoAppliedDeliveryShort: 'मोफत डिलिव्हरी',
     rxAttachedTitle: 'डॉक्टरांचे प्रिस्क्रिप्शन जोडले आहे',
     rxRequiredTitle: 'डॉक्टरांचे प्रिस्क्रिप्शन आवश्यक आहे',

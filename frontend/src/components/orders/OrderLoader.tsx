@@ -64,10 +64,10 @@ const OrderLoader: React.FC<OrderLoaderProps> = ({
               y2="67.89"
               gradientUnits="userSpaceOnUse"
             >
-              <Stop offset="0%" stopColor="#E91E63" stopOpacity="1" />
-              <Stop offset="40%" stopColor="#F06292" stopOpacity="0.75" />
-              <Stop offset="75%" stopColor="#F8BBD0" stopOpacity="0.30" />
-              <Stop offset="100%" stopColor="#FCE4EC" stopOpacity="0.04" />
+              <Stop offset="0%" stopColor="#2563EB" stopOpacity="1" />
+              <Stop offset="40%" stopColor="#60A5FA" stopOpacity="0.75" />
+              <Stop offset="75%" stopColor="#BFDBFE" stopOpacity="0.30" />
+              <Stop offset="100%" stopColor="#EFF6FF" stopOpacity="0.04" />
             </LinearGradient>
 
             {/* Arc 2 Gradient: Bottom-Left Head -> Faded Tail (180° Symmetrical) */}
@@ -79,10 +79,10 @@ const OrderLoader: React.FC<OrderLoaderProps> = ({
               y2="12.11"
               gradientUnits="userSpaceOnUse"
             >
-              <Stop offset="0%" stopColor="#E91E63" stopOpacity="1" />
-              <Stop offset="40%" stopColor="#F06292" stopOpacity="0.75" />
-              <Stop offset="75%" stopColor="#F8BBD0" stopOpacity="0.30" />
-              <Stop offset="100%" stopColor="#FCE4EC" stopOpacity="0.04" />
+              <Stop offset="0%" stopColor="#2563EB" stopOpacity="1" />
+              <Stop offset="40%" stopColor="#60A5FA" stopOpacity="0.75" />
+              <Stop offset="75%" stopColor="#BFDBFE" stopOpacity="0.30" />
+              <Stop offset="100%" stopColor="#EFF6FF" stopOpacity="0.04" />
             </LinearGradient>
           </Defs>
 

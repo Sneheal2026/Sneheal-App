@@ -109,7 +109,7 @@
         "expo-notifications",
         {
           "icon": "./assets/images/icon.png",
-          "color": "#CA2164",
+          "color": "#2563EB",
           "defaultChannel": "medicine-reminders",
           "mode": "production"
         }

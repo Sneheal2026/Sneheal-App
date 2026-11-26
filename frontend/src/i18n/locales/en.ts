@@ -257,7 +257,7 @@ const en = {
     offersApply: 'Apply',
     offersClearCode: 'Use best offer instead',
     offersAutoAppliedSaved: '{{amount}} saved',
-    offersDiwaliBadge: 'Diwali',
+    offersDiwaliBadge: 'Winter',
     offersAutoAppliedDeliveryShort: 'Free delivery',
     rxAttachedTitle: 'Doctor Prescription Attached',
     rxRequiredTitle: 'Doctor Prescription Required',

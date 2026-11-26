@@ -78,7 +78,7 @@ const CartOffersSection = ({
 
       {featured ? (
         <FestiveOfferCoupon
-          variant="diwali"
+          variant="winter"
           offer={featured}
           badgeLabel={t('cart.offersFestive')}
           appliedLabel={appliedLabel}

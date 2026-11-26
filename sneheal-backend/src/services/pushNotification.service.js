@@ -20,6 +20,7 @@ const sendExpoPushNotification = async ({ to, title, body, data = {}, sound = 'd
     data,
     channelId,
     priority,
+    color: '#2563EB',
     _displayInForeground: true,
   };
 
