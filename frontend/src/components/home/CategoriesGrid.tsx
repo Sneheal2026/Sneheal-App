@@ -14,6 +14,8 @@ import theme from '@/styles/theme';
 import Shimmer from '@/components/common/Shimmer';
 import { useTheme } from '@/hooks/useTheme';
 import { useCategories } from '@/hooks/useCatalog';
+import { useHomeScreenImages } from '@/context/HomeScreenImagesContext';
+import { resolveHomeScreenImageSource } from '@/utils/homeScreenImage';
 import type { Category } from '@/types/product.types';
 
 const { colors, spacing, typography, moderateScale } = theme;
@@ -27,7 +29,6 @@ const CARD_WIDTH = (GRID_WIDTH - GRID_GAP * (NUM_COLUMNS - 1)) / NUM_COLUMNS;
 const IMAGE_BOX_SIZE = CARD_WIDTH;
 
 const OFFER_GREEN = '#1F9D55';
-const FLOWER_DESIGN = require('../../../assets/images/FlowerDesignn.webp');
 const TITLE_FLOWER_SIZE = moderateScale(38);
 
 const CATEGORY_IMAGES = {
@@ -159,6 +160,11 @@ interface CategoriesGridProps {
 
 const CategoriesGrid = ({ onPressCategory }: CategoriesGridProps) => {
   const { t } = useTranslation();
+  const { getImage } = useHomeScreenImages();
+  const flowerSource = resolveHomeScreenImageSource(
+    'header_flower',
+    getImage('header_flower'),
+  );
   const { data: categories, loading } = useCategories();
   const displayCategories = useMemo(
     () => sortCategoriesForDisplay(categories),
@@ -174,17 +180,27 @@ const CategoriesGrid = ({ onPressCategory }: CategoriesGridProps) => {
   <View style={styles.section}>
     <View style={styles.sectionTitleRow}>
       <Image
-        source={FLOWER_DESIGN}
+        source={flowerSource}
         style={styles.titleFlowerLeft}
         contentFit="contain"
+        recyclingKey={
+          typeof flowerSource === 'object' && 'uri' in flowerSource
+            ? `${flowerSource.uri}-categories-left`
+            : 'categories_flower_left'
+        }
         accessibilityElementsHidden
         importantForAccessibility="no-hide-descendants"
       />
       <Text style={styles.sectionTitle}>{t('home.categories')}</Text>
       <Image
-        source={FLOWER_DESIGN}
+        source={flowerSource}
         style={styles.titleFlowerRight}
         contentFit="contain"
+        recyclingKey={
+          typeof flowerSource === 'object' && 'uri' in flowerSource
+            ? `${flowerSource.uri}-categories-right`
+            : 'categories_flower_right'
+        }
         accessibilityElementsHidden
         importantForAccessibility="no-hide-descendants"
       />

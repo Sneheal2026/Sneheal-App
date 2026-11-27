@@ -14,13 +14,14 @@ import theme from '@/styles/theme';
 import { useTheme } from '@/hooks/useTheme';
 import Shimmer from '@/components/common/Shimmer';
 import QuantityStepper from '@/components/common/QuantityStepper';
+import { useHomeScreenImages } from '@/context/HomeScreenImagesContext';
+import { resolveHomeScreenImageSource } from '@/utils/homeScreenImage';
 import type { Product } from '@/types/product.types';
 
 export type { Product } from '@/types/product.types';
 
 const { colors, spacing, typography, moderateScale } = theme;
 
-const FLOWER_DESIGN = require('../../../assets/images/FlowerDesignn.webp');
 const TITLE_FLOWER_SIZE = moderateScale(38);
 
 interface ProductCardProps {
@@ -148,6 +149,12 @@ const FeaturedProducts = ({
   const { colors } = useTheme();
   const { t } = useTranslation();
 
+  const { getImage } = useHomeScreenImages();
+  const flowerSource = resolveHomeScreenImageSource(
+    'header_flower',
+    getImage('header_flower'),
+  );
+
   const productRows = useMemo(() => {
     const rows: Product[][] = [];
     for (let i = 0; i < products.length; i += 2) {
@@ -164,17 +171,27 @@ const FeaturedProducts = ({
     <View style={styles.container}>
       <View style={styles.sectionTitleRow}>
         <ExpoImage
-          source={FLOWER_DESIGN}
+          source={flowerSource}
           style={styles.titleFlowerLeft}
           contentFit="contain"
+          recyclingKey={
+            typeof flowerSource === 'object' && 'uri' in flowerSource
+              ? `${flowerSource.uri}-featured-left`
+              : 'featured_flower_left'
+          }
           accessibilityElementsHidden
           importantForAccessibility="no-hide-descendants"
         />
         <Text style={styles.sectionTitle}>{t('home.featuredProducts')}</Text>
         <ExpoImage
-          source={FLOWER_DESIGN}
+          source={flowerSource}
           style={styles.titleFlowerRight}
           contentFit="contain"
+          recyclingKey={
+            typeof flowerSource === 'object' && 'uri' in flowerSource
+              ? `${flowerSource.uri}-featured-right`
+              : 'featured_flower_right'
+          }
           accessibilityElementsHidden
           importantForAccessibility="no-hide-descendants"
         />

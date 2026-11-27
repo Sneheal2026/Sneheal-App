@@ -171,20 +171,6 @@ const CartScreen = ({ navigation: tabNavigation }: TabScreenProps<'Cart'>) => {
 
     if (hasRxItems && !attachedPrescription) {
       setOpenPickerSignal((prev) => prev + 1);
-      Alert.alert(
-        t('cart.rxRequiredTitle', 'Doctor Prescription Required'),
-        t(
-          'cart.rxRequiredAlertBody',
-          'Your order contains prescription medicines. Please upload or select a valid doctor prescription to proceed.',
-        ),
-        [
-          { text: t('common.cancel', 'Cancel'), style: 'cancel' },
-          {
-            text: t('cart.attachPrescriptionCta', 'Attach Prescription'),
-            onPress: () => setOpenPickerSignal((prev) => prev + 1),
-          },
-        ],
-      );
       return;
     }
 
