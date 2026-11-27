@@ -51,8 +51,8 @@ import type { AuthStackParamList, TabParamList } from '@/navigation/types';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const PILL_IMAGE = require('../../../assets/images/Sneheal-Pill-2.webp');
-const LIGHTING_BELOW_SEARCH_RIGHT = require('../../../assets/images/LightingDesign1.webp');
-const LIGHTING_BELOW_SEARCH_LEFT = require('../../../assets/images/LightingDesign3.webp');
+const WINTER_SNOWFLAKE = require('../../../assets/images/SnowflakeWinter.png');
+
 
 const { colors, spacing, moderateScale, verticalScale } = theme;
 
@@ -419,14 +419,14 @@ const HomeScreen = () => {
 
           <View style={styles.belowSearchLighting} pointerEvents="none">
             <ExpoImage
-              source={LIGHTING_BELOW_SEARCH_LEFT}
+              source={WINTER_SNOWFLAKE}
               style={styles.belowSearchLightingImage}
               contentFit="contain"
               accessibilityElementsHidden
               importantForAccessibility="no-hide-descendants"
             />
             <ExpoImage
-              source={LIGHTING_BELOW_SEARCH_RIGHT}
+              source={WINTER_SNOWFLAKE}
               style={styles.belowSearchLightingImage}
               contentFit="contain"
               accessibilityElementsHidden
@@ -496,8 +496,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   belowSearchLightingImage: {
-    width: moderateScale(58),
-    height: moderateScale(58),
+    width: moderateScale(42),
+    height: moderateScale(42),
+    opacity: 0.9,
   },
   contentSection: {
     paddingTop: 0,

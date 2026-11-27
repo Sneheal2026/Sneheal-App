@@ -12,11 +12,11 @@ import { Image } from 'expo-image';
 import { useTranslation } from 'react-i18next';
 import theme from '@/styles/theme';
 import Shimmer from '@/components/common/Shimmer';
-import { useTheme } from '@/hooks/useTheme';
 import { useCategories } from '@/hooks/useCatalog';
 import { useHomeScreenImages } from '@/context/HomeScreenImagesContext';
 import { resolveHomeScreenImageSource } from '@/utils/homeScreenImage';
 import type { Category } from '@/types/product.types';
+import SnowCap from './SnowCap';
 
 const { colors, spacing, typography, moderateScale } = theme;
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -111,15 +111,14 @@ CategoryImage.displayName = 'CategoryImage';
 
 const CategoryCard = React.memo(
   ({ item, onPress }: { item: Category; onPress: (item: Category) => void }) => {
-    const { colors } = useTheme();
-
     return (
     <TouchableOpacity
       style={styles.gridItem}
       activeOpacity={0.85}
       onPress={() => onPress(item)}
     >
-      <View style={[styles.imageBox, { backgroundColor: colors.infoLight }]}>
+      <View style={styles.imageBox}>
+        <SnowCap />
         <CategoryImage source={resolveCategoryImage(item)} />
         {item.offerLabel ? (
           <View style={styles.offerBanner}>
@@ -140,11 +139,10 @@ const CategoryCard = React.memo(
 CategoryCard.displayName = 'CategoryCard';
 
 const CategorySkeleton = () => {
-  const { colors } = useTheme();
-
   return (
   <View style={styles.gridItem}>
-    <View style={[styles.imageBox, { backgroundColor: colors.infoLight }]}>
+    <View style={styles.imageBox}>
+      <SnowCap />
       <Shimmer width="100%" height="100%" borderRadius={moderateScale(16)} />
     </View>
     <View style={styles.skeletonLabel}>
@@ -270,10 +268,12 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: '#D9EBF9',
+    paddingTop: moderateScale(6),
   },
   productImage: {
-    width: '88%',
-    height: '88%',
+    width: '82%',
+    height: '82%',
   },
   offerBanner: {
     position: 'absolute',

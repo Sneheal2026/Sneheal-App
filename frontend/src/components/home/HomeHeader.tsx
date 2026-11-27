@@ -24,7 +24,7 @@ import { resolveHomeScreenImageSource } from '@/utils/homeScreenImage';
 
 const { colors, spacing, borderRadius, moderateScale, verticalScale } = theme;
 
-const LIGHTING_DESIGN_2 = require('../../../assets/images/LightingDesign2.webp');
+const WINTER_SNOWFLAKE = require('../../../assets/images/SnowflakeWinter.png');
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const LANTERN_WIDTH = SCREEN_WIDTH * 0.62;
 const LANTERN_HEIGHT = verticalScale(108);
@@ -118,8 +118,8 @@ const HomeHeader: React.FC<HomeHeaderProps> = ({
             <View style={styles.deliveryTimeRow}>
               <View style={styles.deliveryTimeWrap}>
                 <Image
-                  source={LIGHTING_DESIGN_2}
-                  style={styles.lightingAboveCare}
+                  source={WINTER_SNOWFLAKE}
+                  style={styles.snowflakeAboveCare}
                   contentFit="contain"
                   accessibilityElementsHidden
                   importantForAccessibility="no-hide-descendants"
@@ -216,12 +216,13 @@ const styles = StyleSheet.create({
     position: 'relative',
     alignSelf: 'flex-start',
   },
-  lightingAboveCare: {
+  snowflakeAboveCare: {
     position: 'absolute',
-    top: -moderateScale(28),
+    top: -moderateScale(18),
     left: moderateScale(118),
-    width: moderateScale(50),
-    height: moderateScale(50),
+    width: moderateScale(34),
+    height: moderateScale(34),
+    opacity: 0.9,
     zIndex: 6,
   },
   brandRow: {

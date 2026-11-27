@@ -10,3 +10,4 @@ export { default as FullWidthBanner } from './FullWidthBanner';
 export { default as CategoriesGrid } from './CategoriesGrid';
 export { default as UploadActions } from './UploadActions';
 export { default as FeaturedProducts } from './FeaturedProducts';
+export { default as SnowCap } from './SnowCap';
