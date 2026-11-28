@@ -26,6 +26,8 @@ interface CartPrescriptionCardProps {
   hasRxItems: boolean;
   attachedPrescription: SavedPrescription | null;
   onAttach: (prescription: SavedPrescription | null) => void;
+  prescriptionMode?: 'upload' | 'doctor_call' | null;
+  onSelectMode?: (mode: 'upload' | 'doctor_call' | null) => void;
   openPickerSignal?: number; // Allows parent screen to trigger the picker modal
 }
 
@@ -33,6 +35,8 @@ export const CartPrescriptionCard = ({
   hasRxItems,
   attachedPrescription,
   onAttach,
+  prescriptionMode = null,
+  onSelectMode,
   openPickerSignal,
 }: CartPrescriptionCardProps) => {
   const { t } = useTranslation();
@@ -45,12 +49,17 @@ export const CartPrescriptionCard = ({
   const [loadingSaved, setLoadingSaved] = useState(false);
   const [previewVisible, setPreviewVisible] = useState(false);
 
-  // Trigger modal when parent checkout button signals Rx required
+  // Trigger modal when parent checkout button signals Rx required and neither option is fulfilled
   useEffect(() => {
-    if (openPickerSignal && openPickerSignal > 0 && !attachedPrescription) {
+    if (
+      openPickerSignal &&
+      openPickerSignal > 0 &&
+      !attachedPrescription &&
+      prescriptionMode !== 'doctor_call'
+    ) {
       setModalVisible(true);
     }
-  }, [openPickerSignal, attachedPrescription]);
+  }, [openPickerSignal, attachedPrescription, prescriptionMode]);
 
   const handlePickSource = useCallback(
     async (source: 'camera' | 'gallery') => {
@@ -73,6 +82,7 @@ export const CartPrescriptionCard = ({
         setUploading(true);
         const saved = await savePrescription(picked.uri);
         onAttach(saved);
+        onSelectMode?.('upload');
       } catch (err: any) {
         Alert.alert(
           t('common.error', 'Error'),
@@ -83,7 +93,7 @@ export const CartPrescriptionCard = ({
         setUploading(false);
       }
     },
-    [onAttach, t],
+    [onAttach, onSelectMode, t],
   );
 
   const handleOpenSaved = useCallback(async () => {
@@ -103,189 +113,303 @@ export const CartPrescriptionCard = ({
   const handleSelectSaved = useCallback(
     (item: SavedPrescription) => {
       onAttach(item);
+      onSelectMode?.('upload');
       setSavedModalVisible(false);
     },
-    [onAttach],
+    [onAttach, onSelectMode],
   );
+
+  const handleSelectDoctorCall = useCallback(() => {
+    setModalVisible(false);
+    onAttach(null);
+    onSelectMode?.('doctor_call');
+  }, [onAttach, onSelectMode]);
+
+  const handleSelectUploadOption = useCallback(() => {
+    if (attachedPrescription) {
+      onSelectMode?.('upload');
+    } else {
+      setModalVisible(true);
+    }
+  }, [attachedPrescription, onSelectMode]);
 
   const handleRemovePrescription = useCallback(() => {
     Alert.alert(
       t('cart.removeRxTitle', 'Remove Prescription?'),
       t(
         'cart.removeRxBody',
-        'Are you sure you want to remove this attached prescription? You will need to upload a valid prescription before placing this order.',
+        'Are you sure you want to remove this prescription slip? You can upload another or choose our free doctor consultation call.',
       ),
       [
         { text: t('common.cancel', 'Cancel'), style: 'cancel' },
         {
           text: t('common.remove', 'Remove'),
           style: 'destructive',
-          onPress: () => onAttach(null),
+          onPress: () => {
+            onAttach(null);
+            onSelectMode?.(null);
+          },
         },
       ],
     );
-  }, [onAttach, t]);
+  }, [onAttach, onSelectMode, t]);
 
   if (!hasRxItems) {
     return null;
   }
 
-  const bottomInset = Math.max(insets.bottom, 16);
+  // Safe Android and iOS bottom inset padding for sheets
+  const sheetBottomInset = Math.max(insets.bottom, 20) + (Platform.OS === 'android' ? 12 : 0);
+
+  const isDoctorCall = prescriptionMode === 'doctor_call';
+  const isUpload = prescriptionMode === 'upload' || Boolean(attachedPrescription);
 
   return (
     <View style={styles.container}>
-      {/* Rx Header Banner */}
-      <View style={[styles.card, attachedPrescription ? styles.cardSuccess : styles.cardWarning]}>
-        <View style={styles.topRow}>
+      {/* Outer Card */}
+      <View
+        style={[
+          styles.mainCard,
+          isDoctorCall
+            ? styles.cardBorderDoctor
+            : isUpload
+            ? styles.cardBorderSuccess
+            : styles.cardBorderWarning,
+        ]}
+      >
+        {/* Card Header */}
+        <View style={styles.headerRow}>
           <View
             style={[
-              styles.iconBadge,
-              attachedPrescription ? styles.iconBadgeSuccess : styles.iconBadgeWarning,
+              styles.headerIconBadge,
+              isDoctorCall
+                ? styles.badgeDoctor
+                : isUpload
+                ? styles.badgeSuccess
+                : styles.badgeWarning,
             ]}
           >
             <Ionicons
-              name={attachedPrescription ? 'checkmark-circle' : 'medical'}
-              size={22}
-              color={attachedPrescription ? '#059669' : '#DC2626'}
+              name={isDoctorCall ? 'call' : isUpload ? 'checkmark-circle' : 'medical'}
+              size={20}
+              color={isDoctorCall ? '#0D9488' : isUpload ? '#059669' : '#DC2626'}
             />
           </View>
-          <View style={styles.textWrap}>
-            <View style={styles.titleRow}>
-              <Text
-                style={[
-                  styles.title,
-                  { color: attachedPrescription ? '#065F46' : '#991B1B' },
-                ]}
-              >
-                {attachedPrescription
-                  ? t('cart.rxAttachedTitle', 'Doctor Prescription Attached')
-                  : t('cart.rxRequiredTitle', 'Doctor Prescription Required')}
+          <View style={styles.headerTextWrap}>
+            <View style={styles.titleLine}>
+              <Text style={styles.headerTitle}>
+                {isDoctorCall
+                  ? 'Doctor Call Consultation'
+                  : isUpload
+                  ? 'Doctor Prescription Attached'
+                  : 'Prescription Required'}
               </Text>
               <View
                 style={[
-                  styles.rxTag,
-                  attachedPrescription ? styles.rxTagSuccess : styles.rxTagWarning,
+                  styles.statusTag,
+                  isDoctorCall
+                    ? styles.statusTagDoctor
+                    : isUpload
+                    ? styles.statusTagSuccess
+                    : styles.statusTagWarning,
                 ]}
               >
-                <Text style={styles.rxTagText}>
-                  {attachedPrescription ? 'Rx Verified' : 'Rx Required'}
+                <Text style={styles.statusTagText}>
+                  {isDoctorCall ? 'Free Call' : isUpload ? 'Slip Ready' : 'Choose 1'}
                 </Text>
               </View>
             </View>
-            <Text style={styles.subtitle}>
-              {attachedPrescription
-                ? t(
-                    'cart.rxAttachedSubtitle',
-                    'A registered pharmacist will verify this prescription before dispensing.',
-                  )
-                : t(
-                    'cart.rxRequiredSubtitle',
-                    'Your cart contains prescription drugs. Please upload a valid doctor prescription to proceed.',
-                  )}
+            <Text style={styles.headerSubtitle}>
+              Please select one option below to fulfill prescription requirement:
             </Text>
           </View>
         </View>
 
-        {/* Requirements Chips (when pending) */}
-        {!attachedPrescription && !uploading && (
-          <View style={styles.checklistRow}>
-            <View style={styles.checkChip}>
-              <Ionicons name="checkmark-sharp" size={13} color="#991B1B" />
-              <Text style={styles.checkChipText}>Doctor seal & sign</Text>
-            </View>
-            <View style={styles.checkChip}>
-              <Ionicons name="checkmark-sharp" size={13} color="#991B1B" />
-              <Text style={styles.checkChipText}>Patient details visible</Text>
-            </View>
-          </View>
-        )}
-
         {uploading ? (
-          <View style={styles.loadingRow}>
+          <View style={styles.uploadingBox}>
             <ActivityIndicator size="small" color="#DC2626" />
-            <Text style={styles.loadingText}>
+            <Text style={styles.uploadingText}>
               {t('cart.uploadingRx', 'Uploading and securing prescription…')}
             </Text>
           </View>
-        ) : attachedPrescription ? (
-          /* Attached State Preview */
-          <View style={styles.attachedPreviewRow}>
+        ) : (
+          <View style={styles.optionsContainer}>
+            {/* ============================================================== */}
+            {/* OPTION 1: UPLOAD PRESCRIPTION SLIP                             */}
+            {/* ============================================================== */}
             <Pressable
-              onPress={() => setPreviewVisible(true)}
-              style={({ pressed }) => [styles.thumbTouch, pressed && styles.pressed]}
-              accessibilityRole="button"
-              accessibilityLabel="View full prescription"
+              onPress={handleSelectUploadOption}
+              style={({ pressed }) => [
+                styles.optionRowCard,
+                isUpload && styles.optionRowCardSelectedUpload,
+                pressed && styles.cardPressed,
+              ]}
+              accessibilityRole="radio"
+              accessibilityState={{ selected: isUpload }}
             >
-              <Image
-                source={{ uri: attachedPrescription.imageUrl }}
-                style={styles.thumbnail}
-                resizeMode="cover"
-              />
-              <View style={styles.thumbZoomOverlay}>
-                <Ionicons name="scan-outline" size={14} color="#FFFFFF" />
+              {/* Radio Indicator */}
+              <View style={styles.radioCol}>
+                <View style={[styles.radioOuter, isUpload && styles.radioOuterActiveUpload]}>
+                  {isUpload ? <View style={styles.radioInnerUpload} /> : null}
+                </View>
+              </View>
+
+              {/* Option Details */}
+              <View style={styles.optionDetailsCol}>
+                <View style={styles.optionTitleRow}>
+                  <Text
+                    style={[
+                      styles.optionTitleText,
+                      isUpload && { color: '#065F46', fontWeight: '800' },
+                    ]}
+                  >
+                    Option 1: Upload Prescription Slip
+                  </Text>
+                </View>
+
+                <Text style={styles.optionDescription}>
+                  Upload a photo of doctor&apos;s slip from your phone (Camera or Gallery)
+                </Text>
+
+                {/* If slip is attached */}
+                {attachedPrescription ? (
+                  <View style={styles.attachedPreviewRow}>
+                    <Pressable
+                      onPress={() => setPreviewVisible(true)}
+                      style={({ pressed }) => [styles.thumbTouch, pressed && styles.pressed]}
+                    >
+                      <Image
+                        source={{ uri: attachedPrescription.imageUrl }}
+                        style={styles.thumbnail}
+                        resizeMode="cover"
+                      />
+                      <View style={styles.thumbZoomOverlay}>
+                        <Ionicons name="scan-outline" size={13} color="#FFFFFF" />
+                      </View>
+                    </Pressable>
+
+                    <View style={styles.attachedInfo}>
+                      <View style={styles.attachedHeaderLine}>
+                        <Text style={styles.attachedFileName}>Prescription Slip</Text>
+                        <View style={styles.readyPill}>
+                          <Text style={styles.readyPillText}>Ready</Text>
+                        </View>
+                      </View>
+                      <Text style={styles.tapToPreview}>Tap image to preview</Text>
+                    </View>
+
+                    <View style={styles.attachedActions}>
+                      <Pressable
+                        onPress={() => setModalVisible(true)}
+                        style={({ pressed }) => [styles.actionBtn, pressed && styles.pressed]}
+                      >
+                        <Ionicons name="swap-horizontal" size={13} color="#1E293B" />
+                        <Text style={styles.actionBtnText}>Change</Text>
+                      </Pressable>
+                      <Pressable
+                        onPress={handleRemovePrescription}
+                        style={({ pressed }) => [
+                          styles.actionBtn,
+                          styles.removeBtn,
+                          pressed && styles.pressed,
+                        ]}
+                      >
+                        <Ionicons name="trash-outline" size={13} color="#DC2626" />
+                      </Pressable>
+                    </View>
+                  </View>
+                ) : (
+                  /* Action to upload */
+                  <Pressable
+                    onPress={() => setModalVisible(true)}
+                    style={({ pressed }) => [styles.uploadCtaBtn, pressed && styles.pressed]}
+                  >
+                    <Ionicons name="cloud-upload-outline" size={15} color="#DC2626" />
+                    <Text style={styles.uploadCtaText}>Upload Photo of Prescription</Text>
+                  </Pressable>
+                )}
               </View>
             </Pressable>
 
-            <View style={styles.attachedInfo}>
-              <View style={styles.attachedHeaderLine}>
-                <Text style={styles.attachedFileName} numberOfLines={1}>
-                  {t('cart.prescriptionSlip', 'Prescription Slip')}
-                </Text>
-                <View style={styles.statusAttachedPill}>
-                  <Text style={styles.statusAttachedPillText}>Ready</Text>
+            {/* ============================================================== */}
+            {/* OPTION 2: DOCTOR WILL CALL YOU (1MG FREE TELECONSULTATION)     */}
+            {/* ============================================================== */}
+            <Pressable
+              onPress={handleSelectDoctorCall}
+              style={({ pressed }) => [
+                styles.optionRowCard,
+                isDoctorCall && styles.optionRowCardSelectedDoctor,
+                pressed && styles.cardPressed,
+              ]}
+              accessibilityRole="radio"
+              accessibilityState={{ selected: isDoctorCall }}
+            >
+              {/* Radio Indicator */}
+              <View style={styles.radioCol}>
+                <View style={[styles.radioOuter, isDoctorCall && styles.radioOuterActiveDoctor]}>
+                  {isDoctorCall ? <View style={styles.radioInnerDoctor} /> : null}
                 </View>
               </View>
-              <Text style={styles.attachedDate}>
-                {new Date(attachedPrescription.createdAt).toLocaleDateString(undefined, {
-                  month: 'short',
-                  day: 'numeric',
-                  year: 'numeric',
-                })}
-              </Text>
-              <Text style={styles.tapToViewText}>Tap image to preview</Text>
-            </View>
 
-            <View style={styles.attachedActionsCol}>
-              <Pressable
-                onPress={() => setModalVisible(true)}
-                style={({ pressed }) => [styles.actionButton, styles.changeBtn, pressed && styles.pressed]}
-                accessibilityRole="button"
-                accessibilityLabel="Change prescription"
-              >
-                <Ionicons name="swap-horizontal" size={14} color="#1E293B" />
-                <Text style={styles.changeBtnText}>{t('common.change', 'Change')}</Text>
-              </Pressable>
+              {/* Option Details */}
+              <View style={styles.optionDetailsCol}>
+                <View style={styles.optionTitleRow}>
+                  <Text
+                    style={[
+                      styles.optionTitleText,
+                      isDoctorCall && { color: '#0F766E', fontWeight: '800' },
+                    ]}
+                  >
+                    Option 2: Doctor Will Call You
+                  </Text>
+                  <View style={styles.freeBadge}>
+                    <Text style={styles.freeBadgeText}>100% FREE</Text>
+                  </View>
+                </View>
 
-              <Pressable
-                onPress={handleRemovePrescription}
-                style={({ pressed }) => [styles.actionButton, styles.removeBtn, pressed && styles.pressed]}
-                accessibilityRole="button"
-                accessibilityLabel="Remove prescription"
-              >
-                <Ionicons name="trash-outline" size={14} color="#DC2626" />
-              </Pressable>
-            </View>
-          </View>
-        ) : (
-          /* Action CTA to attach */
-          <View style={styles.ctaRow}>
-            <Pressable
-              onPress={() => setModalVisible(true)}
-              style={({ pressed }) => [styles.uploadBtn, pressed && styles.uploadBtnPressed]}
-              accessibilityRole="button"
-              accessibilityLabel={t('cart.attachPrescriptionCta', 'Upload Prescription')}
-            >
-              <Ionicons name="cloud-upload-outline" size={19} color="#FFFFFF" />
-              <Text style={styles.uploadBtnText}>
-                {t('cart.attachPrescriptionCta', 'Upload Prescription')}
-              </Text>
-              <Ionicons name="chevron-forward" size={16} color="#FFFFFF" style={{ marginLeft: 2 }} />
+                <Text style={styles.optionDescription}>
+                  Don&apos;t have a paper prescription? Our certified doctor will call you to confirm your dosage & prescribe medicines for FREE.
+                </Text>
+
+                {/* Features highlight */}
+                <View style={styles.doctorHighlightsRow}>
+                  <View style={styles.highlightChip}>
+                    <Ionicons name="checkmark-circle" size={13} color="#0D9488" />
+                    <Text style={styles.highlightChipText}>No Paper Slip Needed</Text>
+                  </View>
+                  <View style={styles.highlightChip}>
+                    <Ionicons name="call" size={12} color="#0D9488" />
+                    <Text style={styles.highlightChipText}>Doctor Calls Your Phone</Text>
+                  </View>
+                  <View style={styles.highlightChip}>
+                    <Ionicons name="shield-checkmark" size={12} color="#0D9488" />
+                    <Text style={styles.highlightChipText}>Zero Extra Cost</Text>
+                  </View>
+                </View>
+
+                {isDoctorCall ? (
+                  <View style={styles.doctorSelectedIndicator}>
+                    <Ionicons name="checkmark-circle" size={15} color="#0D9488" />
+                    <Text style={styles.doctorSelectedText}>
+                      Free Doctor Call Selected — Proceed to checkout
+                    </Text>
+                  </View>
+                ) : (
+                  <Pressable
+                    onPress={handleSelectDoctorCall}
+                    style={({ pressed }) => [styles.selectDoctorCtaBtn, pressed && styles.pressed]}
+                  >
+                    <Ionicons name="call-outline" size={14} color="#0F766E" />
+                    <Text style={styles.selectDoctorCtaText}>Select Free Doctor Call</Text>
+                  </Pressable>
+                )}
+              </View>
             </Pressable>
           </View>
         )}
       </View>
 
-      {/* 3-Options Upload Choice Modal (Bottom Sheet Style) */}
+      {/* Upload Choice Bottom Sheet Modal */}
       <Modal
         visible={modalVisible}
         transparent
@@ -294,34 +418,27 @@ export const CartPrescriptionCard = ({
       >
         <Pressable style={styles.modalOverlay} onPress={() => setModalVisible(false)}>
           <Pressable
-            style={[styles.sheetCard, { paddingBottom: bottomInset }]}
+            style={[styles.sheetCard, { paddingBottom: sheetBottomInset }]}
             onPress={(e) => e.stopPropagation()}
           >
-            {/* Sheet Handle */}
             <View style={styles.sheetHandle} />
 
-            {/* Header */}
             <View style={styles.sheetHeader}>
               <View style={styles.sheetHeaderTitleRow}>
                 <View style={styles.sheetHeaderIconWrap}>
                   <Ionicons name="document-text" size={20} color="#DC2626" />
                 </View>
-                <View>
-                  <Text style={styles.sheetTitle}>
-                    {t('cart.selectRxSource', 'Upload Prescription')}
-                  </Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.sheetTitle}>Upload Prescription</Text>
                   <Text style={styles.sheetSubtitle}>
-                    {t(
-                      'cart.selectRxSourceHint',
-                      'Ensure doctor name, registration number & medicines are visible.',
-                    )}
+                    Ensure doctor name and medicines are readable in the photo.
                   </Text>
                 </View>
               </View>
               <Pressable
                 onPress={() => setModalVisible(false)}
                 style={styles.closeIconBtn}
-                hitSlop={12}
+                hitSlop={10}
                 accessibilityRole="button"
                 accessibilityLabel="Close"
               >
@@ -329,9 +446,11 @@ export const CartPrescriptionCard = ({
               </Pressable>
             </View>
 
-            {/* 3 Interactive Choice Buttons */}
-            <View style={styles.modalOptions}>
-              {/* Option 1: Camera */}
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.modalOptionsScroll}
+            >
+              {/* Camera */}
               <Pressable
                 onPress={() => void handlePickSource('camera')}
                 style={({ pressed }) => [styles.optionCard, pressed && styles.optionCardPressed]}
@@ -342,21 +461,19 @@ export const CartPrescriptionCard = ({
                 </View>
                 <View style={styles.optionContent}>
                   <View style={styles.optionHeadingRow}>
-                    <Text style={styles.optionTitle}>{t('scan.camera', 'Take Photo')}</Text>
+                    <Text style={styles.optionCardTitle}>{t('scan.camera', 'Take Photo')}</Text>
                     <View style={styles.instantBadge}>
                       <Text style={styles.instantBadgeText}>Instant</Text>
                     </View>
                   </View>
                   <Text style={styles.optionDesc}>
-                    {t('cart.takePhotoDesc', 'Click a photo of your paper prescription slip')}
+                    Click a clear photo of your paper prescription slip
                   </Text>
                 </View>
-                <View style={styles.chevronWrap}>
-                  <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
-                </View>
+                <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
               </Pressable>
 
-              {/* Option 2: Gallery */}
+              {/* Gallery */}
               <Pressable
                 onPress={() => void handlePickSource('gallery')}
                 style={({ pressed }) => [styles.optionCard, pressed && styles.optionCardPressed]}
@@ -366,17 +483,15 @@ export const CartPrescriptionCard = ({
                   <Ionicons name="images" size={22} color="#4F46E5" />
                 </View>
                 <View style={styles.optionContent}>
-                  <Text style={styles.optionTitle}>{t('scan.gallery', 'Choose from Gallery')}</Text>
+                  <Text style={styles.optionCardTitle}>{t('scan.gallery', 'Choose from Gallery')}</Text>
                   <Text style={styles.optionDesc}>
-                    {t('cart.galleryDesc', 'Upload saved photo or image from your device')}
+                    Upload saved photo or image from your device
                   </Text>
                 </View>
-                <View style={styles.chevronWrap}>
-                  <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
-                </View>
+                <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
               </Pressable>
 
-              {/* Option 3: Saved Prescriptions */}
+              {/* Saved Prescriptions */}
               <Pressable
                 onPress={() => void handleOpenSaved()}
                 style={({ pressed }) => [styles.optionCard, pressed && styles.optionCardPressed]}
@@ -386,40 +501,56 @@ export const CartPrescriptionCard = ({
                   <Ionicons name="folder-open" size={22} color="#059669" />
                 </View>
                 <View style={styles.optionContent}>
-                  <Text style={styles.optionTitle}>
-                    {t('cart.savedPrescriptions', 'Saved Prescriptions')}
-                  </Text>
+                  <Text style={styles.optionCardTitle}>Saved Prescriptions</Text>
                   <Text style={styles.optionDesc}>
-                    {t('cart.savedPrescriptionsDesc', 'Select from previously uploaded prescriptions')}
+                    Select from previously uploaded prescriptions in your account
                   </Text>
                 </View>
-                <View style={styles.chevronWrap}>
-                  <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
-                </View>
+                <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
               </Pressable>
-            </View>
 
-            {/* Trust and Compliance Banner */}
-            <View style={styles.securityBanner}>
-              <Ionicons name="shield-checkmark" size={16} color="#059669" />
-              <Text style={styles.securityBannerText}>
-                Your health data is safe & private. Verified only by registered pharmacists.
-              </Text>
-            </View>
+              {/* Don't have prescription -> Free Doctor Call */}
+              <Pressable
+                onPress={handleSelectDoctorCall}
+                style={({ pressed }) => [
+                  styles.optionCard,
+                  styles.optionCardDoctorHighlighted,
+                  pressed && styles.optionCardPressed,
+                ]}
+                accessibilityRole="button"
+              >
+                <View style={[styles.optionIconBadge, { backgroundColor: '#CCFBF1' }]}>
+                  <Ionicons name="call" size={22} color="#0F766E" />
+                </View>
+                <View style={styles.optionContent}>
+                  <View style={styles.optionHeadingRow}>
+                    <Text style={[styles.optionCardTitle, { color: '#115E59' }]}>
+                      Don&apos;t have a prescription?
+                    </Text>
+                    <View style={styles.freeBadge}>
+                      <Text style={styles.freeBadgeText}>FREE CALL</Text>
+                    </View>
+                  </View>
+                  <Text style={[styles.optionDesc, { color: '#0F766E' }]}>
+                    Our certified doctor will call you to confirm dosage & approve medicines.
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color="#0F766E" />
+              </Pressable>
 
-            {/* Cancel Button */}
-            <Pressable
-              onPress={() => setModalVisible(false)}
-              style={({ pressed }) => [styles.cancelSheetBtn, pressed && styles.pressed]}
-              accessibilityRole="button"
-            >
-              <Text style={styles.cancelSheetBtnText}>{t('common.cancel', 'Cancel')}</Text>
-            </Pressable>
+              <Pressable
+                onPress={() => setModalVisible(false)}
+                style={({ pressed }) => [styles.cancelSheetBtn, pressed && styles.pressed]}
+                accessibilityRole="button"
+              >
+                <Text style={styles.cancelSheetBtnText}>{t('common.cancel', 'Cancel')}</Text>
+              </Pressable>
+            </ScrollView>
           </Pressable>
         </Pressable>
       </Modal>
 
-      {/* Saved Prescriptions Modal (Bottom Sheet Style) */}
+      {/* Saved Prescriptions Modal */}
       <Modal
         visible={savedModalVisible}
         transparent
@@ -428,13 +559,11 @@ export const CartPrescriptionCard = ({
       >
         <Pressable style={styles.modalOverlay} onPress={() => setSavedModalVisible(false)}>
           <Pressable
-            style={[styles.savedSheetCard, { paddingBottom: bottomInset }]}
+            style={[styles.savedSheetCard, { paddingBottom: sheetBottomInset }]}
             onPress={(e) => e.stopPropagation()}
           >
-            {/* Sheet Handle */}
             <View style={styles.sheetHandle} />
 
-            {/* Header with Back button */}
             <View style={styles.savedSheetHeader}>
               <Pressable
                 onPress={() => {
@@ -449,9 +578,7 @@ export const CartPrescriptionCard = ({
                 <Ionicons name="chevron-back" size={22} color={colors.textPrimary} />
               </Pressable>
 
-              <Text style={styles.savedSheetTitle}>
-                {t('cart.chooseSavedRx', 'Saved Prescriptions')}
-              </Text>
+              <Text style={styles.savedSheetTitle}>Saved Prescriptions</Text>
 
               <Pressable
                 onPress={() => setSavedModalVisible(false)}
@@ -474,9 +601,7 @@ export const CartPrescriptionCard = ({
                 <View style={styles.emptyIconCircle}>
                   <Ionicons name="document-text-outline" size={38} color="#94A3B8" />
                 </View>
-                <Text style={styles.savedEmptyTitle}>
-                  {t('cart.noSavedRx', 'No saved prescriptions found')}
-                </Text>
+                <Text style={styles.savedEmptyTitle}>No saved prescriptions found</Text>
                 <Text style={styles.savedEmptyDesc}>
                   You do not have any saved prescriptions in your account yet. Choose an option to add one:
                 </Text>
@@ -527,9 +652,7 @@ export const CartPrescriptionCard = ({
                           day: 'numeric',
                         })}
                       </Text>
-                      <Text style={styles.savedItemHint}>
-                        {t('cart.tapToAttach', 'Tap to attach to order')}
-                      </Text>
+                      <Text style={styles.savedItemHint}>Tap to attach to order</Text>
                     </View>
                     <View style={styles.selectRxBtn}>
                       <Text style={styles.selectRxBtnText}>Select</Text>
@@ -559,155 +682,272 @@ const styles = StyleSheet.create({
     marginHorizontal: spacing.md,
     marginBottom: spacing.md,
   },
-  card: {
+  mainCard: {
     borderRadius: borderRadius.xl,
     padding: spacing.md,
+    backgroundColor: '#FFFFFF',
     borderWidth: 1.5,
     ...shadows.sm,
   },
-  cardWarning: {
-    backgroundColor: '#FFF8F8',
+  cardBorderWarning: {
     borderColor: '#FECACA',
+    backgroundColor: '#FFFBFB',
   },
-  cardSuccess: {
-    backgroundColor: '#F0FDF4',
+  cardBorderSuccess: {
     borderColor: '#86EFAC',
+    backgroundColor: '#F8FDF9',
   },
-  topRow: {
+  cardBorderDoctor: {
+    borderColor: '#99F6E4',
+    backgroundColor: '#F9FEFD',
+  },
+  headerRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: spacing.sm + 2,
+    marginBottom: spacing.sm + 2,
   },
-  iconBadge: {
+  headerIconBadge: {
     width: 38,
     height: 38,
     borderRadius: 19,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  iconBadgeWarning: {
+  badgeWarning: {
     backgroundColor: '#FEE2E2',
   },
-  iconBadgeSuccess: {
+  badgeSuccess: {
     backgroundColor: '#D1FAE5',
   },
-  textWrap: {
+  badgeDoctor: {
+    backgroundColor: '#CCFBF1',
+  },
+  headerTextWrap: {
     flex: 1,
   },
-  titleRow: {
+  titleLine: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs + 2,
     flexWrap: 'wrap',
   },
-  title: {
+  headerTitle: {
     ...typography.bodySmall,
     fontWeight: '800',
     fontSize: moderateScale(14, 0.35),
+    color: colors.textPrimary,
   },
-  rxTag: {
+  statusTag: {
     paddingHorizontal: 7,
     paddingVertical: 2,
     borderRadius: 6,
   },
-  rxTagWarning: {
+  statusTagWarning: {
     backgroundColor: '#DC2626',
   },
-  rxTagSuccess: {
+  statusTagSuccess: {
     backgroundColor: '#059669',
   },
-  rxTagText: {
+  statusTagDoctor: {
+    backgroundColor: '#0D9488',
+  },
+  statusTagText: {
     color: '#FFFFFF',
     fontSize: 10,
     fontWeight: '800',
     letterSpacing: 0.2,
   },
-  subtitle: {
+  headerSubtitle: {
     ...typography.caption,
     color: colors.textSecondary,
-    marginTop: 4,
-    lineHeight: 17,
+    marginTop: 3,
+    lineHeight: 16,
   },
-  checklistRow: {
+  optionsContainer: {
+    gap: spacing.sm + 2,
+    marginTop: spacing.xs,
+  },
+  optionRowCard: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.xs,
-    marginTop: spacing.sm,
-    paddingTop: spacing.xs,
+    alignItems: 'flex-start',
+    backgroundColor: '#FFFFFF',
+    borderRadius: borderRadius.lg,
+    padding: spacing.md,
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    gap: spacing.sm + 2,
+    ...shadows.sm,
   },
-  checkChip: {
+  optionRowCardSelectedUpload: {
+    borderColor: '#10B981',
+    backgroundColor: '#F0FDF4',
+  },
+  optionRowCardSelectedDoctor: {
+    borderColor: '#14B8A6',
+    backgroundColor: '#F0FDFA',
+  },
+  cardPressed: {
+    opacity: 0.9,
+    transform: [{ scale: 0.995 }],
+  },
+  radioCol: {
+    paddingTop: 2,
+  },
+  radioOuter: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: '#CBD5E1',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+  },
+  radioOuterActiveUpload: {
+    borderColor: '#059669',
+  },
+  radioOuterActiveDoctor: {
+    borderColor: '#0D9488',
+  },
+  radioInnerUpload: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#059669',
+  },
+  radioInnerDoctor: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#0D9488',
+  },
+  optionDetailsCol: {
+    flex: 1,
+  },
+  optionTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    backgroundColor: '#FEE2E2',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 12,
+    justifyContent: 'space-between',
+    gap: 6,
+    flexWrap: 'wrap',
   },
-  checkChipText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#991B1B',
+  optionTitleText: {
+    fontSize: moderateScale(13.5, 0.35),
+    fontWeight: '700',
+    color: colors.textPrimary,
   },
-  ctaRow: {
-    marginTop: spacing.md,
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
+  freeBadge: {
+    backgroundColor: '#CCFBF1',
+    borderWidth: 1,
+    borderColor: '#14B8A6',
+    paddingHorizontal: 6,
+    paddingVertical: 1.5,
+    borderRadius: 4,
   },
-  uploadBtn: {
+  freeBadgeText: {
+    color: '#0F766E',
+    fontSize: 9.5,
+    fontWeight: '800',
+  },
+  optionDescription: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    marginTop: 3,
+    lineHeight: 16,
+  },
+  uploadCtaBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#DC2626',
-    paddingHorizontal: spacing.md + 4,
-    paddingVertical: spacing.sm + 2,
-    borderRadius: borderRadius.lg,
-    ...shadows.sm,
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FECACA',
+    paddingHorizontal: spacing.md,
+    paddingVertical: 7,
+    borderRadius: borderRadius.md,
+    marginTop: spacing.sm,
+    alignSelf: 'flex-start',
   },
-  uploadBtnPressed: {
-    backgroundColor: '#B91C1C',
-    opacity: 0.92,
-    transform: [{ scale: 0.98 }],
+  uploadCtaText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#DC2626',
   },
-  uploadBtnText: {
-    color: '#FFFFFF',
-    fontWeight: '800',
-    fontSize: moderateScale(13.5, 0.35),
-    letterSpacing: 0.1,
-  },
-  loadingRow: {
+  selectDoctorCtaBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
-    marginTop: spacing.md,
-    backgroundColor: '#FEF2F2',
-    padding: spacing.sm,
+    gap: 6,
+    backgroundColor: '#CCFBF1',
+    borderWidth: 1,
+    borderColor: '#99F6E4',
+    paddingHorizontal: spacing.md,
+    paddingVertical: 7,
     borderRadius: borderRadius.md,
+    marginTop: spacing.sm,
+    alignSelf: 'flex-start',
   },
-  loadingText: {
-    ...typography.caption,
-    color: '#DC2626',
+  selectDoctorCtaText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#0F766E',
+  },
+  doctorHighlightsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginTop: spacing.sm,
+  },
+  highlightChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#F0FDFA',
+    paddingHorizontal: 7,
+    paddingVertical: 2.5,
+    borderRadius: 8,
+    borderWidth: 0.5,
+    borderColor: '#99F6E4',
+  },
+  highlightChipText: {
+    fontSize: 10.5,
     fontWeight: '600',
+    color: '#0F766E',
+  },
+  doctorSelectedIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginTop: spacing.sm,
+    backgroundColor: '#CCFBF1',
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    borderRadius: 6,
+    alignSelf: 'flex-start',
+  },
+  doctorSelectedText: {
+    fontSize: 11.5,
+    fontWeight: '800',
+    color: '#0F766E',
   },
   attachedPreviewRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: spacing.md,
+    marginTop: spacing.sm,
     backgroundColor: '#FFFFFF',
-    padding: spacing.sm + 2,
-    borderRadius: borderRadius.lg,
-    gap: spacing.sm,
+    padding: spacing.sm,
+    borderRadius: borderRadius.md,
     borderWidth: 1,
     borderColor: '#A7F3D0',
-    ...shadows.sm,
+    gap: spacing.sm,
   },
   thumbTouch: {
     position: 'relative',
   },
   thumbnail: {
-    width: 50,
-    height: 50,
-    borderRadius: 8,
+    width: 44,
+    height: 44,
+    borderRadius: 6,
     backgroundColor: '#E5E7EB',
   },
   thumbZoomOverlay: {
@@ -715,8 +955,8 @@ const styles = StyleSheet.create({
     right: 2,
     bottom: 2,
     backgroundColor: 'rgba(0,0,0,0.5)',
-    borderRadius: 4,
-    padding: 2,
+    borderRadius: 3,
+    padding: 1.5,
   },
   attachedInfo: {
     flex: 1,
@@ -727,57 +967,63 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   attachedFileName: {
-    ...typography.bodySmall,
+    fontSize: 12.5,
     fontWeight: '700',
     color: colors.textPrimary,
   },
-  statusAttachedPill: {
+  readyPill: {
     backgroundColor: '#DCFCE7',
     paddingHorizontal: 5,
     paddingVertical: 1,
     borderRadius: 4,
   },
-  statusAttachedPillText: {
-    fontSize: 10,
-    fontWeight: '700',
+  readyPillText: {
+    fontSize: 9.5,
+    fontWeight: '800',
     color: '#15803D',
   },
-  attachedDate: {
-    ...typography.caption,
-    color: colors.textMuted,
-    marginTop: 2,
-  },
-  tapToViewText: {
-    fontSize: 11,
+  tapToPreview: {
+    fontSize: 10.5,
     fontWeight: '600',
     color: '#059669',
     marginTop: 2,
   },
-  attachedActionsCol: {
+  attachedActions: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
   },
-  actionButton: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: borderRadius.md,
-    paddingVertical: 7,
-    paddingHorizontal: 10,
-  },
-  changeBtn: {
-    backgroundColor: '#F1F5F9',
+  actionBtn: {
     flexDirection: 'row',
-    gap: 4,
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: '#F1F5F9',
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: borderRadius.sm,
   },
-  changeBtnText: {
-    ...typography.caption,
+  actionBtnText: {
+    fontSize: 11,
     fontWeight: '700',
     color: '#1E293B',
   },
   removeBtn: {
     backgroundColor: '#FEE2E2',
-    paddingHorizontal: 9,
+    paddingHorizontal: 7,
+  },
+  uploadingBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    backgroundColor: '#FEF2F2',
+    padding: spacing.md,
+    borderRadius: borderRadius.md,
+    marginTop: spacing.sm,
+  },
+  uploadingText: {
+    ...typography.caption,
+    color: '#DC2626',
+    fontWeight: '600',
   },
   modalOverlay: {
     flex: 1,
@@ -790,6 +1036,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 24,
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.sm,
+    maxHeight: Platform.OS === 'android' ? '90%' : '85%',
     ...shadows.lg,
   },
   savedSheetCard: {
@@ -798,7 +1045,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 24,
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.sm,
-    maxHeight: '85%',
+    maxHeight: Platform.OS === 'android' ? '90%' : '85%',
     ...shadows.lg,
   },
   sheetHandle: {
@@ -852,9 +1099,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  modalOptions: {
-    gap: spacing.sm + 2,
-    marginVertical: spacing.md,
+  modalOptionsScroll: {
+    paddingVertical: spacing.sm,
+    gap: spacing.sm,
   },
   optionCard: {
     flexDirection: 'row',
@@ -867,15 +1114,19 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     ...shadows.sm,
   },
+  optionCardDoctorHighlighted: {
+    borderColor: '#5EEAD4',
+    backgroundColor: '#F0FDFA',
+  },
   optionCardPressed: {
     backgroundColor: '#F8FAFC',
     borderColor: '#CBD5E1',
     transform: [{ scale: 0.99 }],
   },
   optionIconBadge: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -886,11 +1137,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+    flexWrap: 'wrap',
   },
-  optionTitle: {
+  optionCardTitle: {
     ...typography.bodySmall,
     fontWeight: '800',
-    fontSize: moderateScale(14.5, 0.35),
+    fontSize: moderateScale(14, 0.35),
     color: colors.textPrimary,
   },
   instantBadge: {
@@ -911,28 +1163,6 @@ const styles = StyleSheet.create({
     marginTop: 3,
     lineHeight: 16,
   },
-  chevronWrap: {
-    paddingLeft: spacing.xs,
-  },
-  securityBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#ECFDF5',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: borderRadius.md,
-    gap: 8,
-    marginBottom: spacing.md,
-    borderWidth: 1,
-    borderColor: '#A7F3D0',
-  },
-  securityBannerText: {
-    ...typography.caption,
-    color: '#065F46',
-    fontWeight: '600',
-    flex: 1,
-    lineHeight: 16,
-  },
   cancelSheetBtn: {
     backgroundColor: '#F8FAFC',
     borderWidth: 1,
@@ -941,6 +1171,7 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.lg,
     alignItems: 'center',
     justifyContent: 'center',
+    marginTop: spacing.xs,
   },
   cancelSheetBtnText: {
     ...typography.bodySmall,

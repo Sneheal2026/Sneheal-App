@@ -15,6 +15,8 @@ import {
   saveCartLines,
   getStoredQuote,
   saveStoredQuote,
+  getStoredRxMode,
+  saveStoredRxMode,
 } from '@/services/cartStorage';
 import { fetchCartQuote } from '@/services/cartQuoteService';
 import { ApiError } from '@/services/apiClient';
@@ -58,6 +60,9 @@ type CartContextValue = {
   hasRxItems: boolean;
   attachedPrescription: SavedPrescription | null;
   attachPrescription: (rx: SavedPrescription | null) => void;
+  prescriptionMode: 'upload' | 'doctor_call' | null;
+  setPrescriptionMode: (mode: 'upload' | 'doctor_call' | null) => void;
+  isRxFulfilled: boolean;
 };
 
 const CartContext = createContext<CartContextValue | null>(null);
@@ -82,6 +87,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   const [couponApplying, setCouponApplying] = useState(false);
   const [autoApplyToast, setAutoApplyToast] = useState<AutoApplyToastPayload | null>(null);
   const [attachedPrescription, setAttachedPrescription] = useState<SavedPrescription | null>(null);
+  const [prescriptionMode, setPrescriptionModeState] = useState<'upload' | 'doctor_call' | null>(null);
 
   const quoteRequestId = useRef(0);
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -111,14 +117,23 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     let active = true;
-    void Promise.all([getCartLines(), getStoredQuote()]).then(([storedLines, storedQuote]) => {
-      if (!active) return;
-      setLines(storedLines);
-      if (storedQuote && storedLines.length > 0) {
-        setQuote(storedQuote);
-      }
-      setReady(true);
-    });
+    void Promise.all([getCartLines(), getStoredQuote(), getStoredRxMode()]).then(
+      ([storedLines, storedQuote, storedMode]) => {
+        if (!active) return;
+        setLines(storedLines);
+        if (storedQuote && storedLines.length > 0) {
+          setQuote(storedQuote);
+        }
+        const hasRx = storedLines.some((l) => Boolean(l.prescriptionRequired));
+        if (hasRx && storedMode) {
+          setPrescriptionModeState(storedMode);
+        } else {
+          setPrescriptionModeState(null);
+          void saveStoredRxMode(null);
+        }
+        setReady(true);
+      },
+    );
     return () => {
       active = false;
     };
@@ -404,14 +419,30 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     setLines((prev) => prev.filter((line) => line.productId !== productId));
   }, []);
 
+  const setPrescriptionMode = useCallback((mode: 'upload' | 'doctor_call' | null) => {
+    setPrescriptionModeState(mode);
+    void saveStoredRxMode(mode);
+    if (mode === 'doctor_call') {
+      // User opted for doctor call - prescription will be provided by consultation
+    } else if (mode === null) {
+      setAttachedPrescription(null);
+    }
+  }, []);
+
   const attachPrescription = useCallback((rx: SavedPrescription | null) => {
     setAttachedPrescription(rx);
+    if (rx) {
+      setPrescriptionModeState('upload');
+      void saveStoredRxMode('upload');
+    }
   }, []);
 
   const clearCart = useCallback(() => {
     setLines([]);
     setQuote(null);
     setAttachedPrescription(null);
+    setPrescriptionModeState(null);
+    void saveStoredRxMode(null);
     clearCoupon();
     void saveStoredQuote(null);
   }, [clearCoupon]);
@@ -420,6 +451,24 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     () => lines.some((line) => Boolean(line.prescriptionRequired)) || Boolean(quote?.hasPrescriptionItems),
     [lines, quote?.hasPrescriptionItems],
   );
+
+  // When cart becomes empty or no prescription items remain, reset prescription mode
+  useEffect(() => {
+    if (!ready) return;
+    if (lines.length === 0 || !hasRxItems) {
+      setAttachedPrescription(null);
+      setPrescriptionModeState(null);
+      void saveStoredRxMode(null);
+    }
+  }, [lines.length, hasRxItems, ready]);
+
+  const isRxFulfilled = useMemo(() => {
+    if (!hasRxItems) return true;
+    if (prescriptionMode === 'doctor_call') return true;
+    if (prescriptionMode === 'upload' && attachedPrescription != null) return true;
+    if (attachedPrescription != null) return true;
+    return false;
+  }, [hasRxItems, prescriptionMode, attachedPrescription]);
 
   const totalItems = useMemo(
     () => lines.reduce((sum, line) => sum + line.quantity, 0),
@@ -456,6 +505,9 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       hasRxItems,
       attachedPrescription,
       attachPrescription,
+      prescriptionMode,
+      setPrescriptionMode,
+      isRxFulfilled,
     }),
     [
       ready,
@@ -483,6 +535,9 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       hasRxItems,
       attachedPrescription,
       attachPrescription,
+      prescriptionMode,
+      setPrescriptionMode,
+      isRxFulfilled,
     ],
   );
 

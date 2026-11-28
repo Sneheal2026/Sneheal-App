@@ -8,6 +8,7 @@ import {
   Pressable,
   Alert,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
@@ -65,6 +66,9 @@ const CartScreen = ({ navigation: tabNavigation }: TabScreenProps<'Cart'>) => {
     hasRxItems,
     attachedPrescription,
     attachPrescription,
+    prescriptionMode,
+    setPrescriptionMode,
+    isRxFulfilled,
   } = useCart();
   const { selectedAddress, addresses, refresh } = useSavedAddresses();
   const [addressMissing, setAddressMissing] = useState(false);
@@ -169,7 +173,7 @@ const CartScreen = ({ navigation: tabNavigation }: TabScreenProps<'Cart'>) => {
   const onContinue = useCallback(() => {
     if (isContinueDisabled) return;
 
-    if (hasRxItems && !attachedPrescription) {
+    if (hasRxItems && !isRxFulfilled) {
       setOpenPickerSignal((prev) => prev + 1);
       return;
     }
@@ -209,7 +213,7 @@ const CartScreen = ({ navigation: tabNavigation }: TabScreenProps<'Cart'>) => {
   }, [
     isContinueDisabled,
     hasRxItems,
-    attachedPrescription,
+    isRxFulfilled,
     navigation,
     openAddresses,
     selectedAddress,
@@ -256,7 +260,7 @@ const CartScreen = ({ navigation: tabNavigation }: TabScreenProps<'Cart'>) => {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={[
             styles.scrollContent,
-            { paddingBottom: tabBarHeight + spacing.xl },
+            { paddingBottom: tabBarHeight + spacing.xl + (Platform.OS === 'android' ? 24 : 12) },
           ]}
         >
           <Pressable
@@ -378,6 +382,8 @@ const CartScreen = ({ navigation: tabNavigation }: TabScreenProps<'Cart'>) => {
             hasRxItems={hasRxItems}
             attachedPrescription={attachedPrescription}
             onAttach={attachPrescription}
+            prescriptionMode={prescriptionMode}
+            onSelectMode={setPrescriptionMode}
             openPickerSignal={openPickerSignal}
           />
 
@@ -435,7 +441,7 @@ const CartScreen = ({ navigation: tabNavigation }: TabScreenProps<'Cart'>) => {
               disabled={isContinueDisabled}
               style={({ pressed }) => [
                 styles.proceedBtn,
-                hasRxItems && !attachedPrescription && styles.proceedBtnRxRequired,
+                hasRxItems && !isRxFulfilled && styles.proceedBtnRxRequired,
                 isContinueDisabled && styles.proceedBtnDisabled,
                 pressed && !isContinueDisabled && styles.pressed,
               ]}
@@ -448,11 +454,11 @@ const CartScreen = ({ navigation: tabNavigation }: TabScreenProps<'Cart'>) => {
                   <ActivityIndicator size="small" color={colors.white} />
                   <Text style={styles.proceedText}>{t('cart.updating', 'Updating…')}</Text>
                 </View>
-              ) : hasRxItems && !attachedPrescription ? (
+              ) : hasRxItems && !isRxFulfilled ? (
                 <View style={styles.updatingBtnContent}>
                   <Ionicons name="document-text-outline" size={16} color={colors.white} />
                   <Text style={styles.proceedText}>
-                    {t('cart.attachRxToProceed', 'Attach Rx to Continue')}
+                    {t('cart.selectRxToProceed', 'Select Prescription Option')}
                   </Text>
                 </View>
               ) : (

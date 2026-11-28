@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  Platform,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -46,6 +47,8 @@ const PaymentMethodScreen = () => {
     checkoutCouponCode,
     hasRxItems,
     attachedPrescription,
+    prescriptionMode,
+    isRxFulfilled,
   } = useCart();
   const { selectedAddress, addresses, refresh } = useSavedAddresses();
   const [submitting, setSubmitting] = useState(false);
@@ -104,12 +107,12 @@ const PaymentMethodScreen = () => {
       return;
     }
 
-    if (hasRxItems && !attachedPrescription) {
+    if (hasRxItems && !isRxFulfilled) {
       Alert.alert(
         t('cart.rxRequiredTitle', 'Doctor Prescription Required'),
         t(
           'cart.rxRequiredAlertBody',
-          'Please attach a valid doctor prescription before placing the order.',
+          'Please attach a prescription or select free doctor consultation before placing the order.',
         ),
         [{ text: t('common.ok', 'OK'), onPress: () => navigation.goBack() }],
       );
@@ -140,6 +143,7 @@ const PaymentMethodScreen = () => {
         lines.map((line) => ({ productId: line.productId, quantity: line.quantity })),
         checkoutCouponCode,
         attachedPrescription ? attachedPrescription.id : null,
+        prescriptionMode === 'doctor_call' ? 'doctor_consultation' : 'upload',
       );
       seedOrderInCache(order);
       clearCart();
@@ -247,7 +251,27 @@ const PaymentMethodScreen = () => {
           <Text style={styles.trustText}>{t('cart.codSecureNote')}</Text>
         </Animated.View>
 
-        {attachedPrescription ? (
+        {prescriptionMode === 'doctor_call' ? (
+          <Animated.View entering={FadeInDown.delay(140).duration(280)} style={styles.rxDoctorSummaryCard}>
+            <View style={styles.rxDoctorSummaryIconWrap}>
+              <Ionicons name="call" size={20} color="#0F766E" />
+            </View>
+            <View style={styles.rxSummaryInfo}>
+              <View style={styles.rxSummaryTitleRow}>
+                <Ionicons name="checkmark-circle" size={16} color="#0D9488" />
+                <Text style={[styles.rxSummaryTitle, { color: '#0F766E' }]}>
+                  {t('cart.doctorCallScheduled', 'Doctor Call Scheduled')}
+                </Text>
+              </View>
+              <Text style={[styles.rxSummarySub, { color: '#115E59' }]}>
+                {t(
+                  'cart.doctorCallNotice',
+                  'Our certified doctor will call you to confirm symptoms & prescribe medicines for FREE.',
+                )}
+              </Text>
+            </View>
+          </Animated.View>
+        ) : attachedPrescription ? (
           <Animated.View entering={FadeInDown.delay(140).duration(280)} style={styles.rxSummaryCard}>
             <Image source={{ uri: attachedPrescription.imageUrl }} style={styles.rxSummaryThumb} />
             <View style={styles.rxSummaryInfo}>
@@ -278,7 +302,15 @@ const PaymentMethodScreen = () => {
         </Animated.View>
       </ScrollView>
 
-      <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, spacing.md) }]}>
+      <View
+        style={[
+          styles.footer,
+          {
+            paddingBottom:
+              Math.max(insets.bottom, spacing.md) + (Platform.OS === 'android' ? 12 : 0),
+          },
+        ]}
+      >
         {error ? <Text style={styles.errorText}>{error}</Text> : null}
         <View style={styles.checkoutBar}>
           <View>
@@ -505,6 +537,25 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     gap: spacing.md,
     marginTop: spacing.md,
+  },
+  rxDoctorSummaryCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F0FDFA',
+    borderWidth: 1,
+    borderColor: '#99F6E4',
+    borderRadius: borderRadius.lg,
+    padding: spacing.md,
+    gap: spacing.md,
+    marginTop: spacing.md,
+  },
+  rxDoctorSummaryIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#CCFBF1',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   rxSummaryThumb: {
     width: 48,

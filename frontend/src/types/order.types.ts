@@ -7,6 +7,7 @@ export type OrderStatus =
 export type PaymentStatus = 'pending' | 'paid' | 'failed';
 export type PaymentMethod = 'cod';
 export type PrescriptionStatus = 'not_required' | 'pending_verification' | 'verified' | 'rejected';
+export type PrescriptionMode = 'upload' | 'doctor_consultation';
 
 export type OrderBill = {
   itemMrp: number;
@@ -57,6 +58,7 @@ export type OrderDetail = {
   prescriptionId?: string | null;
   prescriptionUrl?: string | null;
   prescriptionStatus?: PrescriptionStatus;
+  prescriptionMode?: PrescriptionMode;
   prescriptionRejectedReason?: string | null;
   grandTotal: number;
   coords?: {

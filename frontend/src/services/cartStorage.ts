@@ -4,6 +4,7 @@ import type { CartQuote } from '@/types/cartQuote.types';
 
 export const CART_STORAGE_KEY = '@sneheal/cart';
 export const CART_QUOTE_STORAGE_KEY = '@sneheal/cart_quote';
+export const CART_RX_MODE_STORAGE_KEY = '@sneheal/cart_rx_mode';
 
 const parseLines = (raw: string | null): CartLine[] => {
   if (!raw) return [];
@@ -57,6 +58,28 @@ export const saveStoredQuote = async (quote: CartQuote | null): Promise<void> =>
       await AsyncStorage.removeItem(CART_QUOTE_STORAGE_KEY);
     } else {
       await AsyncStorage.setItem(CART_QUOTE_STORAGE_KEY, JSON.stringify(quote));
+    }
+  } catch {
+    // Ignore storage write failures
+  }
+};
+
+export const getStoredRxMode = async (): Promise<'upload' | 'doctor_call' | null> => {
+  try {
+    const raw = await AsyncStorage.getItem(CART_RX_MODE_STORAGE_KEY);
+    if (raw === 'upload' || raw === 'doctor_call') return raw;
+    return null;
+  } catch {
+    return null;
+  }
+};
+
+export const saveStoredRxMode = async (mode: 'upload' | 'doctor_call' | null): Promise<void> => {
+  try {
+    if (!mode) {
+      await AsyncStorage.removeItem(CART_RX_MODE_STORAGE_KEY);
+    } else {
+      await AsyncStorage.setItem(CART_RX_MODE_STORAGE_KEY, mode);
     }
   } catch {
     // Ignore storage write failures

@@ -139,7 +139,32 @@ const OrderPlacedScreen = () => {
           onHome={goHome}
         />
 
-        {order?.prescriptionStatus === 'pending_verification' ? (
+        {order?.prescriptionMode === 'doctor_consultation' && order?.prescriptionStatus !== 'verified' ? (
+          <View style={styles.rxStatusCardDoctor}>
+            <View style={styles.rxStatusHeader}>
+              <Ionicons name="call" size={18} color="#0D9488" />
+              <Text style={[styles.rxStatusTitle, { color: '#0F766E' }]}>
+                {t('orders.doctorCallTitle', 'Doctor Consultation Scheduled (FREE)')}
+              </Text>
+            </View>
+            <Text style={[styles.rxStatusBody, { color: '#115E59' }]}>
+              {t(
+                'orders.doctorCallBody',
+                'Our certified doctor will call you shortly on your registered number to review your symptoms and prescribe medicines before dispatch.',
+              )}
+            </Text>
+            <View style={styles.doctorConsultBadgeRow}>
+              <View style={styles.doctorConsultChip}>
+                <Ionicons name="shield-checkmark" size={13} color="#0D9488" />
+                <Text style={styles.doctorConsultChipText}>Zero Extra Fee</Text>
+              </View>
+              <View style={styles.doctorConsultChip}>
+                <Ionicons name="time" size={13} color="#0D9488" />
+                <Text style={styles.doctorConsultChipText}>Quick Callback</Text>
+              </View>
+            </View>
+          </View>
+        ) : order?.prescriptionStatus === 'pending_verification' ? (
           <View style={styles.rxStatusCardWarning}>
             <View style={styles.rxStatusHeader}>
               <Ionicons name="time" size={18} color="#D97706" />
@@ -421,6 +446,36 @@ const styles = StyleSheet.create({
     marginHorizontal: spacing.lg,
     marginTop: spacing.md,
     padding: spacing.md,
+  },
+  rxStatusCardDoctor: {
+    backgroundColor: '#F0FDFA',
+    borderWidth: 1,
+    borderColor: '#99F6E4',
+    borderRadius: 16,
+    marginHorizontal: spacing.lg,
+    marginTop: spacing.md,
+    padding: spacing.md,
+  },
+  doctorConsultBadgeRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: spacing.sm,
+    paddingTop: spacing.xs,
+  },
+  doctorConsultChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#CCFBF1',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 12,
+  },
+  doctorConsultChipText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#0F766E',
   },
   rxStatusCardSuccess: {
     backgroundColor: '#ECFDF5',

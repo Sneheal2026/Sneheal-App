@@ -42,9 +42,15 @@ const buildBodies = (order) => {
     )
     .join('');
 
+  const isDoctorCall = order.prescriptionMode === 'doctor_consultation';
+
   const text = [
     `New order ${order.publicId}`,
-    order.prescriptionUrl ? `⚠️ PRESCRIPTION REQUIRED ORDER` : '',
+    isDoctorCall
+      ? `🩺 DOCTOR CONSULTATION REQUESTED (Doctor call to customer needed before dispatch)`
+      : order.prescriptionUrl
+      ? `⚠️ PRESCRIPTION REQUIRED ORDER`
+      : '',
     order.prescriptionUrl ? `Prescription image: ${order.prescriptionUrl}` : '',
     `Amount: ${inr(order.grandTotal)}`,
     `Payment: Cash on Delivery`,
@@ -61,7 +67,12 @@ const buildBodies = (order) => {
     .filter(Boolean)
     .join('\n');
 
-  const rxHtml = order.prescriptionUrl
+  const rxHtml = isDoctorCall
+    ? `<div style="background:#F0FDFA;border:1px solid #99F6E4;padding:12px;border-radius:8px;margin:12px 0;">
+         <p style="color:#0F766E;font-weight:bold;margin:0 0 8px 0;">🩺 DOCTOR CONSULTATION REQUESTED (FREE)</p>
+         <p style="margin:0;color:#115E59;">Customer does not have a paper prescription. Sneheal doctor must call customer at <strong>${escapeHtml(address.mobile || '-')}</strong> to review symptoms and prescribe medicines before dispatching.</p>
+       </div>`
+    : order.prescriptionUrl
     ? `<div style="background:#FEF2F2;border:1px solid #FCA5A5;padding:12px;border-radius:8px;margin:12px 0;">
          <p style="color:#DC2626;font-weight:bold;margin:0 0 8px 0;">⚠️ PRESCRIPTION REQUIRED ORDER (Pharmacist review needed)</p>
          <p style="margin:0 0 8px 0;"><strong>Attached Prescription:</strong> <a href="${escapeHtml(order.prescriptionUrl)}" target="_blank">Open Full Image</a></p>
@@ -108,7 +119,7 @@ const notifyOpsNewOrder = async (order) => {
         email: process.env.BREVO_FROM_EMAIL,
       },
       to: [{ email: process.env.BREVO_OPS_EMAIL }],
-      subject: `${order.prescriptionUrl ? '⚠️ [Rx REQUIRED] ' : ''}New Sneheal order ${order.publicId}`,
+      subject: `${order.prescriptionMode === 'doctor_consultation' ? '🩺 [DOCTOR CALL NEEDED] ' : order.prescriptionUrl ? '⚠️ [Rx REQUIRED] ' : ''}New Sneheal order ${order.publicId}`,
       htmlContent: html,
       textContent: text,
     }),
