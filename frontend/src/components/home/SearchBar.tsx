@@ -84,7 +84,7 @@ const AnimatedPlaceholder: React.FC<AnimatedPlaceholderProps> = ({ terms, search
   return (
     <View style={styles.placeholderRow} pointerEvents="none">
       <Text style={[styles.placeholderPrefix, typography.bodySmall, { color: colors.textMuted, fontWeight: '500' }]}>
-        {searchPrefix}&quot;
+        {searchPrefix} &quot;
       </Text>
       <View style={styles.termClip}>
         <Animated.View style={termStyle}>

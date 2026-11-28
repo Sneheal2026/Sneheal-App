@@ -199,10 +199,10 @@ export const CartPrescriptionCard = ({
             <View style={styles.titleLine}>
               <Text style={styles.headerTitle}>
                 {isDoctorCall
-                  ? 'Doctor Call Consultation'
+                  ? t('cart.doctorCallTitle', 'Doctor Call Consultation')
                   : isUpload
-                  ? 'Doctor Prescription Attached'
-                  : 'Prescription Required'}
+                  ? t('cart.rxAttachedTitle', 'Doctor Prescription Attached')
+                  : t('cart.rxRequiredTitle', 'Prescription Required')}
               </Text>
               <View
                 style={[
@@ -215,12 +215,19 @@ export const CartPrescriptionCard = ({
                 ]}
               >
                 <Text style={styles.statusTagText}>
-                  {isDoctorCall ? 'Free Call' : isUpload ? 'Slip Ready' : 'Choose 1'}
+                  {isDoctorCall
+                    ? t('cart.rxTagFreeCall', 'Free Call')
+                    : isUpload
+                    ? t('cart.rxTagSlipReady', 'Slip Ready')
+                    : t('cart.rxTagChoose1', 'Choose 1')}
                 </Text>
               </View>
             </View>
             <Text style={styles.headerSubtitle}>
-              Please select one option below to fulfill prescription requirement:
+              {t(
+                'cart.rxOptionsSubtitle',
+                'Please select one option below to fulfill prescription requirement:',
+              )}
             </Text>
           </View>
         </View>
@@ -263,12 +270,15 @@ export const CartPrescriptionCard = ({
                       isUpload && { color: '#065F46', fontWeight: '800' },
                     ]}
                   >
-                    Option 1: Upload Prescription Slip
+                    {t('cart.option1Title', 'Option 1: Upload Prescription Slip')}
                   </Text>
                 </View>
 
                 <Text style={styles.optionDescription}>
-                  Upload a photo of doctor&apos;s slip from your phone (Camera or Gallery)
+                  {t(
+                    'cart.option1Desc',
+                    "Upload a photo of doctor's slip from your phone (Camera or Gallery)",
+                  )}
                 </Text>
 
                 {/* If slip is attached */}
@@ -290,12 +300,18 @@ export const CartPrescriptionCard = ({
 
                     <View style={styles.attachedInfo}>
                       <View style={styles.attachedHeaderLine}>
-                        <Text style={styles.attachedFileName}>Prescription Slip</Text>
+                        <Text style={styles.attachedFileName}>
+                          {t('cart.prescriptionSlip', 'Prescription Slip')}
+                        </Text>
                         <View style={styles.readyPill}>
-                          <Text style={styles.readyPillText}>Ready</Text>
+                          <Text style={styles.readyPillText}>
+                            {t('cart.readyPill', 'Ready')}
+                          </Text>
                         </View>
                       </View>
-                      <Text style={styles.tapToPreview}>Tap image to preview</Text>
+                      <Text style={styles.tapToPreview}>
+                        {t('cart.tapToPreviewSlip', 'Tap image to preview')}
+                      </Text>
                     </View>
 
                     <View style={styles.attachedActions}>
@@ -304,7 +320,9 @@ export const CartPrescriptionCard = ({
                         style={({ pressed }) => [styles.actionBtn, pressed && styles.pressed]}
                       >
                         <Ionicons name="swap-horizontal" size={13} color="#1E293B" />
-                        <Text style={styles.actionBtnText}>Change</Text>
+                        <Text style={styles.actionBtnText}>
+                          {t('cart.changeSlip', 'Change')}
+                        </Text>
                       </Pressable>
                       <Pressable
                         onPress={handleRemovePrescription}
@@ -325,7 +343,9 @@ export const CartPrescriptionCard = ({
                     style={({ pressed }) => [styles.uploadCtaBtn, pressed && styles.pressed]}
                   >
                     <Ionicons name="cloud-upload-outline" size={15} color="#DC2626" />
-                    <Text style={styles.uploadCtaText}>Upload Photo of Prescription</Text>
+                    <Text style={styles.uploadCtaText}>
+                      {t('cart.uploadPhotoBtn', 'Upload Photo of Prescription')}
+                    </Text>
                   </Pressable>
                 )}
               </View>
@@ -360,38 +380,52 @@ export const CartPrescriptionCard = ({
                       isDoctorCall && { color: '#0F766E', fontWeight: '800' },
                     ]}
                   >
-                    Option 2: Doctor Will Call You
+                    {t('cart.option2Title', 'Option 2: Doctor Will Call You')}
                   </Text>
                   <View style={styles.freeBadge}>
-                    <Text style={styles.freeBadgeText}>100% FREE</Text>
+                    <Text style={styles.freeBadgeText}>
+                      {t('cart.freeBadge100', '100% FREE')}
+                    </Text>
                   </View>
                 </View>
 
                 <Text style={styles.optionDescription}>
-                  Don&apos;t have a paper prescription? Our certified doctor will call you to confirm your dosage & prescribe medicines for FREE.
+                  {t(
+                    'cart.option2Desc',
+                    "Don't have a paper prescription? Our certified doctor will call you to confirm your dosage & prescribe medicines for FREE.",
+                  )}
                 </Text>
 
                 {/* Features highlight */}
                 <View style={styles.doctorHighlightsRow}>
                   <View style={styles.highlightChip}>
                     <Ionicons name="checkmark-circle" size={13} color="#0D9488" />
-                    <Text style={styles.highlightChipText}>No Paper Slip Needed</Text>
+                    <Text style={styles.highlightChipText}>
+                      {t('cart.doctorChipNoSlip', 'No Paper Slip Needed')}
+                    </Text>
                   </View>
                   <View style={styles.highlightChip}>
                     <Ionicons name="call" size={12} color="#0D9488" />
-                    <Text style={styles.highlightChipText}>Doctor Calls Your Phone</Text>
+                    <Text style={styles.highlightChipText}>
+                      {t('cart.doctorChipPhoneCall', 'Doctor Calls Your Phone')}
+                    </Text>
                   </View>
                   <View style={styles.highlightChip}>
                     <Ionicons name="shield-checkmark" size={12} color="#0D9488" />
-                    <Text style={styles.highlightChipText}>Zero Extra Cost</Text>
+                    <Text style={styles.highlightChipText}>
+                      {t('cart.doctorChipZeroCost', 'Zero Extra Cost')}
+                    </Text>
                   </View>
                 </View>
 
                 {isDoctorCall ? (
                   <View style={styles.doctorSelectedIndicator}>
-                    <Ionicons name="checkmark-circle" size={15} color="#0D9488" />
+                    <Ionicons name="checkmark-circle" size={16} color="#0D9488" />
                     <Text style={styles.doctorSelectedText}>
-                      Free Doctor Call Selected — Proceed to checkout
+                      {t(
+                        'cart.doctorSelectedText',
+                        'Free Doctor Call Selected • Ready to continue',
+                      )}
                     </Text>
                   </View>
                 ) : (
@@ -400,7 +434,9 @@ export const CartPrescriptionCard = ({
                     style={({ pressed }) => [styles.selectDoctorCtaBtn, pressed && styles.pressed]}
                   >
                     <Ionicons name="call-outline" size={14} color="#0F766E" />
-                    <Text style={styles.selectDoctorCtaText}>Select Free Doctor Call</Text>
+                    <Text style={styles.selectDoctorCtaText}>
+                      {t('cart.selectDoctorBtn', 'Select Free Doctor Call')}
+                    </Text>
                   </Pressable>
                 )}
               </View>
@@ -687,6 +723,7 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     backgroundColor: '#FFFFFF',
     borderWidth: 1.5,
+    overflow: 'hidden',
     ...shadows.sm,
   },
   cardBorderWarning: {
@@ -704,13 +741,13 @@ const styles = StyleSheet.create({
   headerRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: spacing.sm + 2,
-    marginBottom: spacing.sm + 2,
+    gap: spacing.sm,
+    marginBottom: spacing.sm,
   },
   headerIconBadge: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -725,18 +762,20 @@ const styles = StyleSheet.create({
   },
   headerTextWrap: {
     flex: 1,
+    minWidth: 0,
   },
   titleLine: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xs + 2,
+    gap: spacing.xs,
     flexWrap: 'wrap',
   },
   headerTitle: {
     ...typography.bodySmall,
     fontWeight: '800',
-    fontSize: moderateScale(14, 0.35),
+    fontSize: moderateScale(13.5, 0.35),
     color: colors.textPrimary,
+    flexShrink: 1,
   },
   statusTag: {
     paddingHorizontal: 7,
@@ -773,10 +812,11 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     backgroundColor: '#FFFFFF',
     borderRadius: borderRadius.lg,
-    padding: spacing.md,
+    padding: spacing.sm + 4,
     borderWidth: 1.5,
     borderColor: '#E2E8F0',
-    gap: spacing.sm + 2,
+    gap: spacing.sm,
+    overflow: 'hidden',
     ...shadows.sm,
   },
   optionRowCardSelectedUpload: {
@@ -824,6 +864,7 @@ const styles = StyleSheet.create({
   },
   optionDetailsCol: {
     flex: 1,
+    minWidth: 0,
   },
   optionTitleRow: {
     flexDirection: 'row',
@@ -836,6 +877,8 @@ const styles = StyleSheet.create({
     fontSize: moderateScale(13.5, 0.35),
     fontWeight: '700',
     color: colors.textPrimary,
+    flex: 1,
+    minWidth: moderateScale(120, 0.35),
   },
   freeBadge: {
     backgroundColor: '#CCFBF1',
@@ -908,38 +951,47 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 0.5,
     borderColor: '#99F6E4',
+    maxWidth: '100%',
   },
   highlightChipText: {
     fontSize: 10.5,
     fontWeight: '600',
     color: '#0F766E',
+    flexShrink: 1,
   },
   doctorSelectedIndicator: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: 6,
     marginTop: spacing.sm,
     backgroundColor: '#CCFBF1',
-    paddingHorizontal: 9,
-    paddingVertical: 5,
-    borderRadius: 6,
-    alignSelf: 'flex-start',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: '#99F6E4',
+    alignSelf: 'stretch',
+    maxWidth: '100%',
   },
   doctorSelectedText: {
-    fontSize: 11.5,
+    fontSize: moderateScale(11.5, 0.35),
     fontWeight: '800',
     color: '#0F766E',
+    flex: 1,
+    flexShrink: 1,
+    lineHeight: 16,
   },
   attachedPreviewRow: {
     flexDirection: 'row',
     alignItems: 'center',
     marginTop: spacing.sm,
     backgroundColor: '#FFFFFF',
-    padding: spacing.sm,
+    padding: spacing.xs + 3,
     borderRadius: borderRadius.md,
     borderWidth: 1,
     borderColor: '#A7F3D0',
-    gap: spacing.sm,
+    gap: spacing.xs + 2,
+    overflow: 'hidden',
   },
   thumbTouch: {
     position: 'relative',
@@ -960,6 +1012,7 @@ const styles = StyleSheet.create({
   },
   attachedInfo: {
     flex: 1,
+    minWidth: 0,
   },
   attachedHeaderLine: {
     flexDirection: 'row',
@@ -967,9 +1020,10 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   attachedFileName: {
-    fontSize: 12.5,
+    fontSize: moderateScale(12, 0.35),
     fontWeight: '700',
     color: colors.textPrimary,
+    flexShrink: 1,
   },
   readyPill: {
     backgroundColor: '#DCFCE7',
@@ -991,19 +1045,20 @@ const styles = StyleSheet.create({
   attachedActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 4,
+    flexShrink: 0,
   },
   actionBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 3,
+    gap: 2,
     backgroundColor: '#F1F5F9',
-    paddingHorizontal: 8,
+    paddingHorizontal: 7,
     paddingVertical: 5,
     borderRadius: borderRadius.sm,
   },
   actionBtnText: {
-    fontSize: 11,
+    fontSize: 10.5,
     fontWeight: '700',
     color: '#1E293B',
   },

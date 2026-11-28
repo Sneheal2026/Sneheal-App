@@ -145,11 +145,15 @@ const OrderDetailScreen = () => {
             <View style={styles.doctorConsultBadgeRow}>
               <View style={styles.doctorConsultChip}>
                 <Ionicons name="shield-checkmark" size={13} color="#0D9488" />
-                <Text style={styles.doctorConsultChipText}>Zero Extra Fee</Text>
+                <Text style={styles.doctorConsultChipText}>
+                  {t('orders.doctorConsultZeroFee', 'Zero Extra Fee')}
+                </Text>
               </View>
               <View style={styles.doctorConsultChip}>
                 <Ionicons name="time" size={13} color="#0D9488" />
-                <Text style={styles.doctorConsultChipText}>Quick Callback</Text>
+                <Text style={styles.doctorConsultChipText}>
+                  {t('orders.doctorConsultQuickCall', 'Quick Callback')}
+                </Text>
               </View>
             </View>
           </View>
