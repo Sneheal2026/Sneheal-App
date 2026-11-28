@@ -125,8 +125,10 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
           setQuote(storedQuote);
         }
         const hasRx = storedLines.some((l) => Boolean(l.prescriptionRequired));
-        if (hasRx && storedMode) {
-          setPrescriptionModeState(storedMode);
+        if (hasRx) {
+          const mode = storedMode ?? 'doctor_call';
+          setPrescriptionModeState(mode);
+          void saveStoredRxMode(mode);
         } else {
           setPrescriptionModeState(null);
           void saveStoredRxMode(null);
@@ -452,15 +454,19 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     [lines, quote?.hasPrescriptionItems],
   );
 
-  // When cart becomes empty or no prescription items remain, reset prescription mode
+  // When cart becomes empty or no prescription items remain, reset prescription mode.
+  // When prescription items are present, auto-select doctor_call by default for frictionless checkout.
   useEffect(() => {
     if (!ready) return;
     if (lines.length === 0 || !hasRxItems) {
       setAttachedPrescription(null);
       setPrescriptionModeState(null);
       void saveStoredRxMode(null);
+    } else if (hasRxItems && !attachedPrescription && !prescriptionMode) {
+      setPrescriptionModeState('doctor_call');
+      void saveStoredRxMode('doctor_call');
     }
-  }, [lines.length, hasRxItems, ready]);
+  }, [lines.length, hasRxItems, ready, attachedPrescription, prescriptionMode]);
 
   const isRxFulfilled = useMemo(() => {
     if (!hasRxItems) return true;

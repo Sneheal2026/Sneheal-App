@@ -49,6 +49,13 @@ export const CartPrescriptionCard = ({
   const [loadingSaved, setLoadingSaved] = useState(false);
   const [previewVisible, setPreviewVisible] = useState(false);
 
+  // Auto-select Free Doctor Call by default when user hasn't uploaded a slip
+  useEffect(() => {
+    if (hasRxItems && !attachedPrescription && !prescriptionMode && onSelectMode) {
+      onSelectMode('doctor_call');
+    }
+  }, [hasRxItems, attachedPrescription, prescriptionMode, onSelectMode]);
+
   // Trigger modal when parent checkout button signals Rx required and neither option is fulfilled
   useEffect(() => {
     if (
@@ -135,10 +142,10 @@ export const CartPrescriptionCard = ({
 
   const handleRemovePrescription = useCallback(() => {
     Alert.alert(
-      t('cart.removeRxTitle', 'Remove Prescription?'),
+      t('cart.removeRxTitle', 'Remove Prescription Slip?'),
       t(
         'cart.removeRxBody',
-        'Are you sure you want to remove this prescription slip? You can upload another or choose our free doctor consultation call.',
+        'Are you sure you want to remove this prescription slip? You will be switched to our free doctor consultation call.',
       ),
       [
         { text: t('common.cancel', 'Cancel'), style: 'cancel' },
@@ -147,7 +154,7 @@ export const CartPrescriptionCard = ({
           style: 'destructive',
           onPress: () => {
             onAttach(null);
-            onSelectMode?.(null);
+            onSelectMode?.('doctor_call');
           },
         },
       ],
@@ -242,7 +249,98 @@ export const CartPrescriptionCard = ({
         ) : (
           <View style={styles.optionsContainer}>
             {/* ============================================================== */}
-            {/* OPTION 1: UPLOAD PRESCRIPTION SLIP                             */}
+            {/* OPTION 1: DOCTOR WILL CALL YOU (AUTO-SELECTED BY DEFAULT)      */}
+            {/* ============================================================== */}
+            <Pressable
+              onPress={handleSelectDoctorCall}
+              style={({ pressed }) => [
+                styles.optionRowCard,
+                isDoctorCall && styles.optionRowCardSelectedDoctor,
+                pressed && styles.cardPressed,
+              ]}
+              accessibilityRole="radio"
+              accessibilityState={{ selected: isDoctorCall }}
+            >
+              {/* Radio Indicator */}
+              <View style={styles.radioCol}>
+                <View style={[styles.radioOuter, isDoctorCall && styles.radioOuterActiveDoctor]}>
+                  {isDoctorCall ? <View style={styles.radioInnerDoctor} /> : null}
+                </View>
+              </View>
+
+              {/* Option Details */}
+              <View style={styles.optionDetailsCol}>
+                <View style={styles.optionTitleRow}>
+                  <Text
+                    style={[
+                      styles.optionTitleText,
+                      isDoctorCall && { color: '#0F766E', fontWeight: '800' },
+                    ]}
+                  >
+                    {t('cart.option1DoctorTitle', 'Option 1: Free Doctor Call')}
+                  </Text>
+                  <View style={styles.freeBadge}>
+                    <Text style={styles.freeBadgeText}>
+                      {t('cart.freeBadge100', '100% FREE')}
+                    </Text>
+                  </View>
+                </View>
+
+                <Text style={styles.optionDescription}>
+                  {t(
+                    'cart.option1DoctorDesc',
+                    'Don’t have a slip? Our doctor will call you to approve medicines for free.',
+                  )}
+                </Text>
+
+                {/* Features highlight */}
+                <View style={styles.doctorHighlightsRow}>
+                  <View style={styles.highlightChip}>
+                    <Ionicons name="call" size={12} color="#0D9488" />
+                    <Text style={styles.highlightChipText}>
+                      {t('cart.doctorChipPhoneCall', 'Doctor Calls You')}
+                    </Text>
+                  </View>
+                  <View style={styles.highlightChip}>
+                    <Ionicons name="shield-checkmark" size={12} color="#0D9488" />
+                    <Text style={styles.highlightChipText}>
+                      {t('cart.doctorChipZeroCost', 'Zero Extra Fee')}
+                    </Text>
+                  </View>
+                  <View style={styles.highlightChip}>
+                    <Ionicons name="checkmark-circle" size={13} color="#0D9488" />
+                    <Text style={styles.highlightChipText}>
+                      {t('cart.doctorChipNoSlip', 'No Paper Slip Needed')}
+                    </Text>
+                  </View>
+                </View>
+
+                {isDoctorCall ? (
+                  <View style={styles.doctorSelectedIndicator}>
+                    <Ionicons name="checkmark-circle" size={16} color="#0D9488" />
+                    <Text style={styles.doctorSelectedText}>
+                      {t(
+                        'cart.doctorSelectedText',
+                        'Free Doctor Call Selected • Ready to continue',
+                      )}
+                    </Text>
+                  </View>
+                ) : (
+                  <Pressable
+                    onPress={handleSelectDoctorCall}
+                    style={({ pressed }) => [styles.selectDoctorCtaBtn, pressed && styles.pressed]}
+                  >
+                    <Ionicons name="call-outline" size={14} color="#0F766E" />
+                    <Text style={styles.selectDoctorCtaText}>
+                      {t('cart.selectDoctorBtn', 'Select Free Doctor Call')}
+                    </Text>
+                  </Pressable>
+                )}
+              </View>
+            </Pressable>
+
+            {/* ============================================================== */}
+            {/* OPTION 2: UPLOAD PRESCRIPTION SLIP (FOR USERS WITH PAPER SLIP) */}
             {/* ============================================================== */}
             <Pressable
               onPress={handleSelectUploadOption}
@@ -270,14 +368,14 @@ export const CartPrescriptionCard = ({
                       isUpload && { color: '#065F46', fontWeight: '800' },
                     ]}
                   >
-                    {t('cart.option1Title', 'Option 1: Upload Prescription Slip')}
+                    {t('cart.option2UploadTitle', 'Option 2: Upload Prescription Slip')}
                   </Text>
                 </View>
 
                 <Text style={styles.optionDescription}>
                   {t(
-                    'cart.option1Desc',
-                    "Upload a photo of doctor's slip from your phone (Camera or Gallery)",
+                    'cart.option2UploadDesc',
+                    'Already have a doctor’s slip? Upload photo from camera or gallery.',
                   )}
                 </Text>
 
@@ -344,98 +442,7 @@ export const CartPrescriptionCard = ({
                   >
                     <Ionicons name="cloud-upload-outline" size={15} color="#DC2626" />
                     <Text style={styles.uploadCtaText}>
-                      {t('cart.uploadPhotoBtn', 'Upload Photo of Prescription')}
-                    </Text>
-                  </Pressable>
-                )}
-              </View>
-            </Pressable>
-
-            {/* ============================================================== */}
-            {/* OPTION 2: DOCTOR WILL CALL YOU (1MG FREE TELECONSULTATION)     */}
-            {/* ============================================================== */}
-            <Pressable
-              onPress={handleSelectDoctorCall}
-              style={({ pressed }) => [
-                styles.optionRowCard,
-                isDoctorCall && styles.optionRowCardSelectedDoctor,
-                pressed && styles.cardPressed,
-              ]}
-              accessibilityRole="radio"
-              accessibilityState={{ selected: isDoctorCall }}
-            >
-              {/* Radio Indicator */}
-              <View style={styles.radioCol}>
-                <View style={[styles.radioOuter, isDoctorCall && styles.radioOuterActiveDoctor]}>
-                  {isDoctorCall ? <View style={styles.radioInnerDoctor} /> : null}
-                </View>
-              </View>
-
-              {/* Option Details */}
-              <View style={styles.optionDetailsCol}>
-                <View style={styles.optionTitleRow}>
-                  <Text
-                    style={[
-                      styles.optionTitleText,
-                      isDoctorCall && { color: '#0F766E', fontWeight: '800' },
-                    ]}
-                  >
-                    {t('cart.option2Title', 'Option 2: Doctor Will Call You')}
-                  </Text>
-                  <View style={styles.freeBadge}>
-                    <Text style={styles.freeBadgeText}>
-                      {t('cart.freeBadge100', '100% FREE')}
-                    </Text>
-                  </View>
-                </View>
-
-                <Text style={styles.optionDescription}>
-                  {t(
-                    'cart.option2Desc',
-                    "Don't have a paper prescription? Our certified doctor will call you to confirm your dosage & prescribe medicines for FREE.",
-                  )}
-                </Text>
-
-                {/* Features highlight */}
-                <View style={styles.doctorHighlightsRow}>
-                  <View style={styles.highlightChip}>
-                    <Ionicons name="checkmark-circle" size={13} color="#0D9488" />
-                    <Text style={styles.highlightChipText}>
-                      {t('cart.doctorChipNoSlip', 'No Paper Slip Needed')}
-                    </Text>
-                  </View>
-                  <View style={styles.highlightChip}>
-                    <Ionicons name="call" size={12} color="#0D9488" />
-                    <Text style={styles.highlightChipText}>
-                      {t('cart.doctorChipPhoneCall', 'Doctor Calls Your Phone')}
-                    </Text>
-                  </View>
-                  <View style={styles.highlightChip}>
-                    <Ionicons name="shield-checkmark" size={12} color="#0D9488" />
-                    <Text style={styles.highlightChipText}>
-                      {t('cart.doctorChipZeroCost', 'Zero Extra Cost')}
-                    </Text>
-                  </View>
-                </View>
-
-                {isDoctorCall ? (
-                  <View style={styles.doctorSelectedIndicator}>
-                    <Ionicons name="checkmark-circle" size={16} color="#0D9488" />
-                    <Text style={styles.doctorSelectedText}>
-                      {t(
-                        'cart.doctorSelectedText',
-                        'Free Doctor Call Selected • Ready to continue',
-                      )}
-                    </Text>
-                  </View>
-                ) : (
-                  <Pressable
-                    onPress={handleSelectDoctorCall}
-                    style={({ pressed }) => [styles.selectDoctorCtaBtn, pressed && styles.pressed]}
-                  >
-                    <Ionicons name="call-outline" size={14} color="#0F766E" />
-                    <Text style={styles.selectDoctorCtaText}>
-                      {t('cart.selectDoctorBtn', 'Select Free Doctor Call')}
+                      {t('cart.uploadPhotoBtn', 'Upload Prescription Slip (Optional)')}
                     </Text>
                   </Pressable>
                 )}
