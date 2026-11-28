@@ -7,7 +7,16 @@ const EXPO_PUSH_URL = 'https://exp.host/--/api/v2/push/send';
  * Sends a push notification payload via Expo Push API.
  * Free, standard HTTP POST request.
  */
-const sendExpoPushNotification = async ({ to, title, body, data = {}, sound = 'default', channelId = 'orders-and-deliveries', priority = 'high' }) => {
+const sendExpoPushNotification = async ({
+  to,
+  title,
+  body,
+  data = {},
+  sound = 'default',
+  channelId = 'orders-and-deliveries',
+  priority = 'high',
+  color = '#2563eb',
+}) => {
   if (!to || typeof to !== 'string') {
     return { success: false, reason: 'invalid_token' };
   }
@@ -20,7 +29,7 @@ const sendExpoPushNotification = async ({ to, title, body, data = {}, sound = 'd
     data,
     channelId,
     priority,
-    color: '#2563EB',
+    color: typeof color === 'string' ? color.toLowerCase() : '#2563eb',
     _displayInForeground: true,
   };
 
